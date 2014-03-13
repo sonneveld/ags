@@ -642,7 +642,7 @@ void engine_prepare_screen()
         // when we're using 32-bit colour, it converts hi-color images
         // the wrong way round - so fix that
 
-#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(PSP_VERSION)
+#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(MAC_VERSION)
         _rgb_b_shift_16 = 0;
         _rgb_g_shift_16 = 5;
         _rgb_r_shift_16 = 11;

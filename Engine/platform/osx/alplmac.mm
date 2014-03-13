@@ -10,7 +10,7 @@ void AGSMacInitPaths(char gamename[256], char appdata[PATH_MAX])
   NSString *resourcedir = [bundle resourcePath];
   [[NSFileManager defaultManager] changeCurrentDirectoryPath:resourcedir];
 
-  strcpy(gamename, "agsgame.dat");
+  strcpy(gamename, "ac2game.dat");
 
   NSURL *path = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
   

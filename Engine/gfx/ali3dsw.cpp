@@ -355,6 +355,10 @@ bool ALSoftwareGraphicsDriver::Init(int width, int height, int colourDepth, bool
 
     virtualScreen = BitmapHelper::GetScreenBitmap();
 
+    // [ER] 2014-03-13
+    // Hide the system cursor via allegro
+    show_os_cursor(MOUSE_CURSOR_NONE);
+
 #ifdef _WIN32
     if (!windowed)
     {

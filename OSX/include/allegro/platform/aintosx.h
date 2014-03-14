@@ -42,7 +42,7 @@
 #define OSX_GFX_NONE                    0
 #define OSX_GFX_WINDOW                  1
 #define OSX_GFX_FULL                    2
-#define OSX_GFX_GL_WINDOW               3
+#define OSX_GFX_GL                      3
 
 #define BMP_EXTRA(bmp)                  ((BMP_EXTRA_INFO *)((bmp)->extra))
 
@@ -72,8 +72,12 @@
 
 
 @interface AllegroWindow : NSWindow
+#ifdef ENABLE_QUICKDRAW
 - (void)display;
 - (void)miniaturize: (id)sender;
+#endif
+- (BOOL)canBecomeKeyWindow;
+- (BOOL)canBecomeMainWindow;
 @end
 
 
@@ -83,13 +87,16 @@
 @end
 
 
+#ifdef ENABLE_QUICKDRAW
 @interface AllegroView: NSQuickDrawView
 - (void)resetCursorRects;
 @end
+#endif
 
 @interface AllegroCocoaGLView: NSOpenGLView
 - (void)resetCursorRects;
-- (id) initWithFrame: (NSRect) frame;
+- (id) initWithFrame: (NSRect) frame windowed:(BOOL)windowed;
+- (BOOL)canBecomeKeyView;
 @end
 
 typedef void RETSIGTYPE;

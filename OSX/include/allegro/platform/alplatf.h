@@ -1,3 +1,4 @@
+#define ALLEGRO_SDL2
 /* #undef ALLEGRO_BCC32 */
 /* #undef ALLEGRO_BEOS */
 /* #undef ALLEGRO_DJGPP */

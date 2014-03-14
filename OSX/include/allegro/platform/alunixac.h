@@ -69,7 +69,7 @@
 #define ALLEGRO_DARWIN
 
 /* Define if you have the pthread library. */
-/* #undef ALLEGRO_HAVE_LIBPTHREAD */
+#define ALLEGRO_HAVE_LIBPTHREAD
 
 /* Define if constructor attribute is supported. */
 #define ALLEGRO_USE_CONSTRUCTOR
@@ -154,6 +154,9 @@
 
 /* Define if SGI AL DIGI driver is supported. */
 /* #undef ALLEGRO_WITH_SGIALDIGI */
+
+/* Define if SDL2 DIGI driver is supported. */
+#define ALLEGRO_WITH_SDL2DIGI
 
 /*---------------------------------------------------------------------------*/
 

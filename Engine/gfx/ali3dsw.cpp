@@ -225,7 +225,7 @@ private:
 
 bool ALSoftwareGraphicsDriver::IsModeSupported(int driver, int width, int height, int colDepth)
 {
-#if defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(IOS_VERSION)
+#if defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(IOS_VERSION) || defined(ALLEGRO_SDL2)
   // Everything is drawn to a virtual screen, so all resolutions are supported.
   return true;
 #endif
@@ -299,7 +299,7 @@ int ALSoftwareGraphicsDriver::GetAllegroGfxDriverID(bool windowed)
   if (windowed)
     return GFX_DIRECTX_WIN;
   return GFX_DIRECTX;
-#elif defined (LINUX_VERSION) && (!defined (ALLEGRO_MAGIC_DRV))
+#elif defined (LINUX_VERSION) && (!defined (ALLEGRO_MAGIC_DRV)) && !defined(ALLEGRO_SDL2)
   if (windowed)
     return GFX_XWINDOWS;
   return GFX_XWINDOWS_FULLSCREEN;

@@ -23,6 +23,7 @@
 #include "ac/runtime_defines.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
+#include "media/audio/audio.h"
 #include <libcda.h>
 
 #include <pwd.h>
@@ -114,7 +115,14 @@ void AGSLinux::DisplayAlert(const char *text, ...) {
 }
 
 void AGSLinux::Delay(int millis) {
-  usleep(millis);
+  while (millis >= 5) {
+    usleep(5);
+    millis -= 5;
+
+    update_polled_stuff(false);
+  }
+  if (millis > 0)
+    usleep(millis);
 }
 
 unsigned long AGSLinux::GetDiskFreeSpaceMB() {

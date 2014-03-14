@@ -87,9 +87,11 @@
 @end
 
 
+#ifdef ENABLE_QUICKDRAW
 @interface AllegroView: NSQuickDrawView
 - (void)resetCursorRects;
 @end
+#endif
 
 @interface AllegroCocoaGLView: NSOpenGLView
 - (void)resetCursorRects;

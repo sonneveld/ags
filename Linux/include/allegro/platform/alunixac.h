@@ -78,30 +78,30 @@
 /* #undef ALLEGRO_WITH_MAGIC_MAIN */
 
 /* Define if dynamically loaded modules are supported. */
-#define ALLEGRO_WITH_MODULES
+/* #undef ALLEGRO_WITH_MODULES */
 
 /*---------------------------------------------------------------------------*/
 
 /* Define if you need support for X-Windows. */
-#define ALLEGRO_WITH_XWINDOWS
+/* #undef ALLEGRO_WITH_XWINDOWS */
 
 /* Define if MIT-SHM extension is supported. */
-#define ALLEGRO_XWINDOWS_WITH_SHM
+/* #undef ALLEGRO_XWINDOWS_WITH_SHM */
 
 /* Define if XCursor ARGB extension is available. */
-#define ALLEGRO_XWINDOWS_WITH_XCURSOR
+/* #undef ALLEGRO_XWINDOWS_WITH_XCURSOR */
 
 /* Define if DGA version 2.0 or newer is supported */
-#define ALLEGRO_XWINDOWS_WITH_XF86DGA2
+/* #undef ALLEGRO_XWINDOWS_WITH_XF86DGA2 */
 
 /* Define if XF86VidMode extension is supported. */
-#define ALLEGRO_XWINDOWS_WITH_XF86VIDMODE
+/* #undef ALLEGRO_XWINDOWS_WITH_XF86VIDMODE */
 
 /* Define if XIM extension is supported. */
-#define ALLEGRO_XWINDOWS_WITH_XIM
+/* #undef ALLEGRO_XWINDOWS_WITH_XIM */
 
 /* Define if xpm bitmap support is available. */
-#define ALLEGRO_XWINDOWS_WITH_XPM
+/* #undef ALLEGRO_XWINDOWS_WITH_XPM */
 
 /*---------------------------------------------------------------------------*/
 
@@ -129,13 +129,13 @@
 /*---------------------------------------------------------------------------*/
 
 /* Define to the installed ALSA version. */
-#define ALLEGRO_ALSA_VERSION 9
+/* #undef ALLEGRO_ALSA_VERSION */
 
 /* Define if ALSA DIGI driver is supported. */
-#define ALLEGRO_WITH_ALSADIGI
+/* #undef ALLEGRO_WITH_ALSADIGI */
 
 /* Define if ALSA MIDI driver is supported. */
-#define ALLEGRO_WITH_ALSAMIDI
+/* #undef ALLEGRO_WITH_ALSAMIDI */
 
 /* Define if aRts DIGI driver is supported. */
 /* #undef ALLEGRO_WITH_ARTSDIGI */
@@ -147,10 +147,10 @@
 /* #undef ALLEGRO_WITH_JACKDIGI */
 
 /* Define if OSS DIGI driver is supported. */
-#define ALLEGRO_WITH_OSSDIGI
+/* #undef ALLEGRO_WITH_OSSDIGI */
 
 /* Define if OSS MIDI driver is supported. */
-#define ALLEGRO_WITH_OSSMIDI
+/* #undef ALLEGRO_WITH_OSSMIDI */
 
 /* Define if SGI AL DIGI driver is supported. */
 /* #undef ALLEGRO_WITH_SGIALDIGI */

@@ -10,6 +10,8 @@
 		110F58A71885B8450061BB0A /* ac2game.dat in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A21885B8450061BB0A /* ac2game.dat */; };
 		110F58A81885B8450061BB0A /* audio.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A31885B8450061BB0A /* audio.vox */; };
 		110F58A91885B8450061BB0A /* speech.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A41885B8450061BB0A /* speech.vox */; };
+		117B8228194F2DA600542747 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 117B8227194F2DA600542747 /* Images.xcassets */; };
+		119529A318B3EDD300923A50 /* agswadjetutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1195299A18B3EDD300923A50 /* agswadjetutil.cpp */; };
 		28FD15000DC6FC520079059D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGL.framework */; };
 		6007696216E9F56E00DCE88E /* test_version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6007696116E9F56E00DCE88E /* test_version.cpp */; };
 		6007696416E9F57A00DCE88E /* test_sprintf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6007696316E9F57A00DCE88E /* test_sprintf.cpp */; };
@@ -311,6 +313,8 @@
 		60DC155816675BBF002D0474 /* agsstaticobject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60DC155116675BBE002D0474 /* agsstaticobject.cpp */; };
 		60DC155A16675BBF002D0474 /* staticarray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60DC155416675BBE002D0474 /* staticarray.cpp */; };
 		60F49A4A155131E500A07887 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60F49A49155131E500A07887 /* AudioToolbox.framework */; };
+		DB5FC7AD18D29B9A00DC24B7 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB5FC7AC18D29B9A00DC24B7 /* SDL2.framework */; };
+		DB5FC7AE18D29BB300DC24B7 /* SDL2.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = DB5FC7AC18D29B9A00DC24B7 /* SDL2.framework */; };
 		DB994B1D180ECA6C00835511 /* acplmac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DB994B1C180ECA6C00835511 /* acplmac.cpp */; };
 		DB994B23180ECAAF00835511 /* liballeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DB994B21180ECAAF00835511 /* liballeg.a */; };
 		DB994B27180ECB9B00835511 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB994B26180ECB9B00835511 /* AppKit.framework */; };
@@ -339,6 +343,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				DBCDB735180EDC3600FF80B1 /* FreeType.framework in Copy Frameworks */,
+				DB5FC7AE18D29BB300DC24B7 /* SDL2.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -349,6 +354,9 @@
 		110F58A21885B8450061BB0A /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/ac2game.dat; sourceTree = "<group>"; };
 		110F58A31885B8450061BB0A /* audio.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = audio.vox; path = game_files/audio.vox; sourceTree = "<group>"; };
 		110F58A41885B8450061BB0A /* speech.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = speech.vox; path = game_files/speech.vox; sourceTree = "<group>"; };
+		117B8227194F2DA600542747 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Legacy/Images.xcassets; sourceTree = "<group>"; };
+		1195299A18B3EDD300923A50 /* agswadjetutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = agswadjetutil.cpp; sourceTree = "<group>"; };
+		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* Legacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Legacy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		28FD14FF0DC6FC520079059D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		32CA4F630368D1EE00C91783 /* Legacy_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Legacy_Prefix.pch; sourceTree = "<group>"; };
@@ -1012,6 +1020,7 @@
 		60DC155716675BBF002D0474 /* staticobject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = staticobject.h; sourceTree = "<group>"; };
 		60F49A49155131E500A07887 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* Legacy-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Legacy-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
+		DB5FC7AC18D29B9A00DC24B7 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		DB994B1C180ECA6C00835511 /* acplmac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = acplmac.cpp; sourceTree = "<group>"; };
 		DB994B21180ECAAF00835511 /* liballeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = liballeg.a; path = ../lib/liballeg.a; sourceTree = "<group>"; };
 		DB994B26180ECB9B00835511 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -1044,6 +1053,7 @@
 				DBCDB73B180EE47C00FF80B1 /* libdumb.a in Frameworks */,
 				DB994B2D180ECBCB00835511 /* IOKit.framework in Frameworks */,
 				DB994B2B180ECBBE00835511 /* CoreAudio.framework in Frameworks */,
+				DB5FC7AD18D29B9A00DC24B7 /* SDL2.framework in Frameworks */,
 				DBCDB72E180EDBAA00FF80B1 /* libtheoradec.a in Frameworks */,
 				DB994B29180ECBB200835511 /* AudioUnit.framework in Frameworks */,
 				DBCDB731180EDBF500FF80B1 /* libvorbis.a in Frameworks */,
@@ -1066,6 +1076,15 @@
 			children = (
 			);
 			path = Classes;
+			sourceTree = "<group>";
+		};
+		1195299918B3EDD300923A50 /* agswadjetutil */ = {
+			isa = PBXGroup;
+			children = (
+				1195299A18B3EDD300923A50 /* agswadjetutil.cpp */,
+				1195299B18B3EDD300923A50 /* agswadjetutil.h */,
+			);
+			path = agswadjetutil;
 			sourceTree = "<group>";
 		};
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
@@ -1104,6 +1123,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				117B8227194F2DA600542747 /* Images.xcassets */,
 				110F58A21885B8450061BB0A /* ac2game.dat */,
 				110F58A31885B8450061BB0A /* audio.vox */,
 				110F58A41885B8450061BB0A /* speech.vox */,
@@ -1123,6 +1143,7 @@
 				DBCDB72C180EDBAA00FF80B1 /* libvorbisfile.a */,
 				DB994B21180ECAAF00835511 /* liballeg.a */,
 				DBCDB732180EDC1D00FF80B1 /* FreeType.framework */,
+				DB5FC7AC18D29B9A00DC24B7 /* SDL2.framework */,
 				DBCDB724180ED3CF00FF80B1 /* System Frameworks */,
 			);
 			name = Frameworks;
@@ -1141,6 +1162,7 @@
 		60898C2B160779D9009E152F /* Plugins */ = {
 			isa = PBXGroup;
 			children = (
+				1195299918B3EDD300923A50 /* agswadjetutil */,
 				608778461699CE3000015533 /* ags_parallax */,
 				60898C2C160779D9009E152F /* agsblend */,
 				60898C39160779D9009E152F /* AGSflashlight */,
@@ -2265,7 +2287,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
 				TargetAttributes = {
 					1D6058900D05DD3D006BFB54 = {
 						DevelopmentTeam = 69P49K3LPW;
@@ -2299,6 +2321,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				110F58A71885B8450061BB0A /* ac2game.dat in Resources */,
+				117B8228194F2DA600542747 /* Images.xcassets in Resources */,
 				110F58A81885B8450061BB0A /* audio.vox in Resources */,
 				110F58A91885B8450061BB0A /* speech.vox in Resources */,
 			);
@@ -2347,6 +2370,7 @@
 				60CA3A96160713D300CFB3BD /* cc_options.cpp in Sources */,
 				60CA3A97160713D300CFB3BD /* cc_script.cpp in Sources */,
 				60CA3A98160713D300CFB3BD /* cc_treemap.cpp in Sources */,
+				119529A318B3EDD300923A50 /* agswadjetutil.cpp in Sources */,
 				60CA3A99160713D300CFB3BD /* script_common.cpp in Sources */,
 				60CA3A9A160713D300CFB3BD /* alignedstream.cpp in Sources */,
 				60CA3A9C160713D300CFB3BD /* compress.cpp in Sources */,
@@ -2621,7 +2645,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -2631,6 +2658,7 @@
 				INFOPLIST_FILE = "Legacy-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_NAME = Legacy;
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -2638,7 +2666,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -2646,13 +2677,13 @@
 				INFOPLIST_FILE = "Legacy-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				PRODUCT_NAME = Legacy;
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
 		C01FCF4F08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				FRAMEWORK_SEARCH_PATHS = "${SOURCE_ROOT}/../../lib";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -2688,7 +2719,6 @@
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				FRAMEWORK_SEARCH_PATHS = "${SOURCE_ROOT}/../../lib";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_PREPROCESSOR_DEFINITIONS = (

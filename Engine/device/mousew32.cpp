@@ -38,9 +38,12 @@
 
 #include "device/mousew32.h"
 #include "gfx/bitmap.h"
+//#include "debug/debug.h" //j
+#include "ac/global_game.h" //j
+
 
 using AGS::Common::Bitmap;
-
+extern void write_log(char *); //j
 
 /*
 int  minstalled();    // this returns number of buttons (or 0)
@@ -240,13 +243,26 @@ int mgetbutton()
     return NONE;  // don't allow holding button down
 
   if (butis & 1)
+  {
     toret = LEFT;
+    // j Ctrl-left click should be right-click
+    if (IsKeyPressed(405) || IsKeyPressed(406))
+    {
+      toret = RIGHT;
+    }
+  }
   else if (butis & 2)
+  {
     toret = RIGHT;
+  }
   else if (butis & 4)
+  {
     toret = MIDDLE;
+  }
 
   butwas = butis;
+  
+  
   return toret;
 }
 

@@ -95,3 +95,17 @@ OSX/xcode/legacy/Legacy.xcodeproj/xcuserdata/janetcampbell68.xcuserdatad/xcschem
 OSX/xcode/legacy/Legacy.xcodeproj/xcuserdata/janetcampbell68.xcuserdatad/xcschemes/xcschememanagement.plist
 
 OSX/xcode/shivah/Shivah.xcodeproj/project.xcworkspace/xcuserdata/janetcampbell68.xcuserdatad/UserInterfaceState.xcuserstate
+
+OSX/xcode/legacy/Legacy.xcodeproj/project.xcworkspace/xcuserdata/janetcampbell68.xcuserdatad/UserInterfaceState.xcuserstate
+
+*.xcuserstate
+
+OSX/xcode/shivah/Shivah.xcodeproj/project.xcworkspace/xcuserdata/janetcampbell68.xcuserdatad/UserInterfaceState.xcuserstate
+
+*.dat
+
+*.vox
+
+*.xcworkspacedata
+
+*.xccheckout

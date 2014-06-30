@@ -10,7 +10,7 @@
 		110F58A71885B8450061BB0A /* ac2game.dat in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A21885B8450061BB0A /* ac2game.dat */; };
 		110F58A81885B8450061BB0A /* audio.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A31885B8450061BB0A /* audio.vox */; };
 		110F58A91885B8450061BB0A /* speech.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A41885B8450061BB0A /* speech.vox */; };
-		117B8228194F2DA600542747 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 117B8227194F2DA600542747 /* Images.xcassets */; };
+		1123B7581958B7BC0003CAD5 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1123B7571958B7BC0003CAD5 /* Images.xcassets */; };
 		119529A318B3EDD300923A50 /* agswadjetutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1195299A18B3EDD300923A50 /* agswadjetutil.cpp */; };
 		28FD15000DC6FC520079059D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGL.framework */; };
 		6007696216E9F56E00DCE88E /* test_version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6007696116E9F56E00DCE88E /* test_version.cpp */; };
@@ -354,12 +354,12 @@
 		110F58A21885B8450061BB0A /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/ac2game.dat; sourceTree = "<group>"; };
 		110F58A31885B8450061BB0A /* audio.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = audio.vox; path = game_files/audio.vox; sourceTree = "<group>"; };
 		110F58A41885B8450061BB0A /* speech.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = speech.vox; path = game_files/speech.vox; sourceTree = "<group>"; };
-		117B8227194F2DA600542747 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Legacy/Images.xcassets; sourceTree = "<group>"; };
+		1123B7571958B7BC0003CAD5 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Convergence/Images.xcassets; sourceTree = "<group>"; };
 		1195299A18B3EDD300923A50 /* agswadjetutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = agswadjetutil.cpp; sourceTree = "<group>"; };
 		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
-		1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Legacy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1D6058910D05DD3D006BFB54 /* Blackwell-Convergence.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Convergence.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		28FD14FF0DC6FC520079059D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
-		32CA4F630368D1EE00C91783 /* Legacy_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Legacy_Prefix.pch; sourceTree = "<group>"; };
+		32CA4F630368D1EE00C91783 /* Convergence_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Convergence_Prefix.pch; sourceTree = "<group>"; };
 		6007696116E9F56E00DCE88E /* test_version.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_version.cpp; sourceTree = "<group>"; };
 		6007696316E9F57A00DCE88E /* test_sprintf.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_sprintf.cpp; sourceTree = "<group>"; };
 		6007696716E9F5CE00DCE88E /* game_version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = game_version.h; sourceTree = "<group>"; };
@@ -1019,7 +1019,7 @@
 		60DC155516675BBE002D0474 /* staticarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = staticarray.h; sourceTree = "<group>"; };
 		60DC155716675BBF002D0474 /* staticobject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = staticobject.h; sourceTree = "<group>"; };
 		60F49A49155131E500A07887 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
-		8D1107310486CEB800E47090 /* Legacy-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Legacy-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
+		8D1107310486CEB800E47090 /* Convergence-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Convergence-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		DB5FC7AC18D29B9A00DC24B7 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		DB994B1C180ECA6C00835511 /* acplmac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = acplmac.cpp; sourceTree = "<group>"; };
 		DB994B21180ECAAF00835511 /* liballeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = liballeg.a; path = ../lib/liballeg.a; sourceTree = "<group>"; };
@@ -1090,7 +1090,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */,
+				1D6058910D05DD3D006BFB54 /* Blackwell-Convergence.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1115,7 +1115,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				32CA4F630368D1EE00C91783 /* Legacy_Prefix.pch */,
+				32CA4F630368D1EE00C91783 /* Convergence_Prefix.pch */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";
@@ -1123,11 +1123,11 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				117B8227194F2DA600542747 /* Images.xcassets */,
+				1123B7571958B7BC0003CAD5 /* Images.xcassets */,
 				110F58A21885B8450061BB0A /* ac2game.dat */,
 				110F58A31885B8450061BB0A /* audio.vox */,
 				110F58A41885B8450061BB0A /* speech.vox */,
-				8D1107310486CEB800E47090 /* Legacy-Info.plist */,
+				8D1107310486CEB800E47090 /* Convergence-Info.plist */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -2263,9 +2263,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1D6058900D05DD3D006BFB54 /* Legacy */ = {
+		1D6058900D05DD3D006BFB54 /* Convergence */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Legacy" */;
+			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Convergence" */;
 			buildPhases = (
 				1D60588D0D05DD3D006BFB54 /* Resources */,
 				1D60588E0D05DD3D006BFB54 /* Sources */,
@@ -2276,9 +2276,9 @@
 			);
 			dependencies = (
 			);
-			name = Legacy;
+			name = Convergence;
 			productName = Legacy;
-			productReference = 1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */;
+			productReference = 1D6058910D05DD3D006BFB54 /* Blackwell-Convergence.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -2294,7 +2294,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Legacy" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Convergence" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
@@ -2310,7 +2310,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1D6058900D05DD3D006BFB54 /* Legacy */,
+				1D6058900D05DD3D006BFB54 /* Convergence */,
 			);
 		};
 /* End PBXProject section */
@@ -2321,7 +2321,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				110F58A71885B8450061BB0A /* ac2game.dat in Resources */,
-				117B8228194F2DA600542747 /* Images.xcassets in Resources */,
+				1123B7581958B7BC0003CAD5 /* Images.xcassets in Resources */,
 				110F58A81885B8450061BB0A /* audio.vox in Resources */,
 				110F58A91885B8450061BB0A /* speech.vox in Resources */,
 			);
@@ -2654,10 +2654,10 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
-				INFOPLIST_FILE = "Legacy-Info.plist";
+				GCC_PREFIX_HEADER = Convergence_Prefix.pch;
+				INFOPLIST_FILE = "Convergence-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = "Blackwell-Legacy";
+				PRODUCT_NAME = "Blackwell-Convergence";
 				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
@@ -2673,10 +2673,10 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
-				INFOPLIST_FILE = "Legacy-Info.plist";
+				GCC_PREFIX_HEADER = Convergence_Prefix.pch;
+				INFOPLIST_FILE = "Convergence-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = "Blackwell-Legacy";
+				PRODUCT_NAME = "Blackwell-Convergence";
 				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
@@ -2752,7 +2752,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Legacy" */ = {
+		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Convergence" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1D6058940D05DD3E006BFB54 /* Debug */,
@@ -2761,7 +2761,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Legacy" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Convergence" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

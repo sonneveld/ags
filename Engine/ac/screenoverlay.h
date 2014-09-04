@@ -35,6 +35,7 @@ struct ScreenOverlay {
     int associatedOverlayHandle;
     bool hasAlphaChannel;
     bool positionRelativeToScreen;
+    bool hasSerializedBitmap;
 
     void ReadFromFile(Common::Stream *in);
     void WriteToFile(Common::Stream *out);

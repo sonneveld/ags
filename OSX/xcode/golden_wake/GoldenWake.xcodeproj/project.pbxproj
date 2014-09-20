@@ -337,7 +337,6 @@
 		11617E8419C20D4100F5A88A /* SDL2.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = DB5FC7AC18D29B9A00DC24B7 /* SDL2.framework */; };
 		11617E8B19C20D6700F5A88A /* ac2game.dat in Resources */ = {isa = PBXBuildFile; fileRef = 11617E8A19C20D6700F5A88A /* ac2game.dat */; };
 		11617E8E19C2100F00F5A88A /* steam_appid.txt in Resources */ = {isa = PBXBuildFile; fileRef = 11617E8D19C2100F00F5A88A /* steam_appid.txt */; };
-		11617E9019C2102000F5A88A /* steam_appid.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = 11617E8D19C2100F00F5A88A /* steam_appid.txt */; };
 		11617E9219C2125E00F5A88A /* libsteam_api.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 11617E9119C2125E00F5A88A /* libsteam_api.dylib */; };
 		11617E9419C2126700F5A88A /* libagsteam.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 11617E9319C2126700F5A88A /* libagsteam.dylib */; };
 		11617E9519C2160800F5A88A /* libagsteam.dylib in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 11617E9319C2126700F5A88A /* libagsteam.dylib */; };
@@ -697,7 +696,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 6;
 			files = (
-				11617E9019C2102000F5A88A /* steam_appid.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

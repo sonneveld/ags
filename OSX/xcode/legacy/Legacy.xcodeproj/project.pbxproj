@@ -696,6 +696,7 @@
 /* Begin PBXFileReference section */
 		110F58A31885B8450061BB0A /* audio.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = audio.vox; path = game_files/audio.vox; sourceTree = "<group>"; };
 		110F58A41885B8450061BB0A /* speech.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = speech.vox; path = game_files/speech.vox; sourceTree = "<group>"; };
+		1171EACC19D8E5FD00C86442 /* Legacy_Steam-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Legacy_Steam-Info.plist"; sourceTree = "<group>"; };
 		117B8227194F2DA600542747 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Legacy/Images.xcassets; sourceTree = "<group>"; };
 		1195299A18B3EDD300923A50 /* agswadjetutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = agswadjetutil.cpp; sourceTree = "<group>"; };
 		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
@@ -704,8 +705,7 @@
 		119FFB6D19D8802900031D4B /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libagsteam.dylib; sourceTree = "<group>"; };
 		119FFB6F19D8803700031D4B /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libsteam_api.dylib; sourceTree = "<group>"; };
 		119FFB7119D8829E00031D4B /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/steam/steam_appid.txt; sourceTree = "<group>"; };
-		11C3C47719D63B9700CE4E49 /* Legacy copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Legacy copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		11C3C47819D63B9700CE4E49 /* Legacy copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Legacy copy-Info.plist"; path = "/Users/janetcampbell68/Documents/ags/OSX/xcode/legacy/Legacy copy-Info.plist"; sourceTree = "<absolute>"; };
+		11C3C47719D63B9700CE4E49 /* Legacy_Steam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Legacy_Steam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Legacy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		28FD14FF0DC6FC520079059D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		32CA4F630368D1EE00C91783 /* Legacy_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Legacy_Prefix.pch; sourceTree = "<group>"; };
@@ -1466,7 +1466,7 @@
 			isa = PBXGroup;
 			children = (
 				1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */,
-				11C3C47719D63B9700CE4E49 /* Legacy copy.app */,
+				11C3C47719D63B9700CE4E49 /* Legacy_Steam.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1482,7 +1482,6 @@
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
-				11C3C47819D63B9700CE4E49 /* Legacy copy-Info.plist */,
 			);
 			indentWidth = 2;
 			name = CustomTemplate;
@@ -1500,6 +1499,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				1171EACC19D8E5FD00C86442 /* Legacy_Steam-Info.plist */,
 				119FFB7119D8829E00031D4B /* steam_appid.txt */,
 				119FFB6B19D87B9C00031D4B /* ac2game.dat */,
 				119FFB6919D8713C00031D4B /* ac2game.dat */,
@@ -2659,7 +2659,7 @@
 			);
 			name = Legacy_Steam;
 			productName = Legacy;
-			productReference = 11C3C47719D63B9700CE4E49 /* Legacy copy.app */;
+			productReference = 11C3C47719D63B9700CE4E49 /* Legacy_Steam.app */;
 			productType = "com.apple.product-type.application";
 		};
 		1D6058900D05DD3D006BFB54 /* Legacy */ = {
@@ -3376,7 +3376,7 @@
 				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
 				INFOPLIST_FILE = "Legacy_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = "Legacy copy";
+				PRODUCT_NAME = Legacy_Steam;
 				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
@@ -3394,7 +3394,7 @@
 				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
 				INFOPLIST_FILE = "Legacy_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = "Legacy copy";
+				PRODUCT_NAME = Legacy_Steam;
 				PROVISIONING_PROFILE = "";
 			};
 			name = Release;

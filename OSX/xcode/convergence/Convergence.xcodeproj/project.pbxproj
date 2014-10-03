@@ -698,12 +698,12 @@
 		110F58A31885B8450061BB0A /* audio.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = audio.vox; path = game_files/audio.vox; sourceTree = "<group>"; };
 		110F58A41885B8450061BB0A /* speech.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = speech.vox; path = game_files/speech.vox; sourceTree = "<group>"; };
 		1123B7571958B7BC0003CAD5 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Convergence/Images.xcassets; sourceTree = "<group>"; };
-		1150244E19D8EBDF009FDFF6 /* Convergence_Steam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Convergence_Steam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1150244E19D8EBDF009FDFF6 /* Blackwell-Convergence.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Convergence.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1150245019D8ECF7009FDFF6 /* Convergence_Steam-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Convergence_Steam-Info.plist"; sourceTree = "<group>"; };
 		1150245119D8ED01009FDFF6 /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/Steam/ac2game.dat; sourceTree = "<group>"; };
 		1150245319D8ED0D009FDFF6 /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/Steam/steam_appid.txt; sourceTree = "<group>"; };
-		1150245519D8EE29009FDFF6 /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libagsteam.dylib; path = ../../lib/libagsteam.dylib; sourceTree = "<group>"; };
-		1150245719D8EE38009FDFF6 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = ../../lib/libsteam_api.dylib; sourceTree = "<group>"; };
+		1150245519D8EE29009FDFF6 /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libagsteam.dylib; sourceTree = "<group>"; };
+		1150245719D8EE38009FDFF6 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libsteam_api.dylib; sourceTree = "<group>"; };
 		1195299A18B3EDD300923A50 /* agswadjetutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = agswadjetutil.cpp; sourceTree = "<group>"; };
 		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* Blackwell-Convergence.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Convergence.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1466,7 +1466,7 @@
 			isa = PBXGroup;
 			children = (
 				1D6058910D05DD3D006BFB54 /* Blackwell-Convergence.app */,
-				1150244E19D8EBDF009FDFF6 /* Convergence_Steam.app */,
+				1150244E19D8EBDF009FDFF6 /* Blackwell-Convergence.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1474,8 +1474,6 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
-				1150245719D8EE38009FDFF6 /* libsteam_api.dylib */,
-				1150245519D8EE29009FDFF6 /* libagsteam.dylib */,
 				60898C2B160779D9009E152F /* Plugins */,
 				60CA3AA7160713FD00CFB3BD /* Engine */,
 				60CA39A8160713D200CFB3BD /* Common */,
@@ -1516,6 +1514,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1150245519D8EE29009FDFF6 /* libagsteam.dylib */,
+				1150245719D8EE38009FDFF6 /* libsteam_api.dylib */,
 				DBCDB738180EE47C00FF80B1 /* libaldmb.a */,
 				DBCDB739180EE47C00FF80B1 /* libdumb.a */,
 				DBCDB72A180EDBAA00FF80B1 /* libogg.a */,
@@ -2659,7 +2659,7 @@
 			);
 			name = Convergence_Steam;
 			productName = Legacy;
-			productReference = 1150244E19D8EBDF009FDFF6 /* Convergence_Steam.app */;
+			productReference = 1150244E19D8EBDF009FDFF6 /* Blackwell-Convergence.app */;
 			productType = "com.apple.product-type.application";
 		};
 		1D6058900D05DD3D006BFB54 /* Convergence */ = {
@@ -3376,7 +3376,7 @@
 				GCC_PREFIX_HEADER = Convergence_Prefix.pch;
 				INFOPLIST_FILE = "Convergence_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = Convergence_Steam;
+				PRODUCT_NAME = "Blackwell-Convergence";
 				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
@@ -3394,7 +3394,7 @@
 				GCC_PREFIX_HEADER = Convergence_Prefix.pch;
 				INFOPLIST_FILE = "Convergence_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = Convergence_Steam;
+				PRODUCT_NAME = "Blackwell-Convergence";
 				PROVISIONING_PROFILE = "";
 			};
 			name = Release;

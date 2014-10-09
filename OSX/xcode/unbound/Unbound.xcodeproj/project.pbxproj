@@ -701,8 +701,8 @@
 		1171EAC119D8C82500C86442 /* Unbound_Steam-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Unbound_Steam-Info.plist"; sourceTree = "<group>"; };
 		1171EAC419D8E2FC00C86442 /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/Steam/ac2game.dat; sourceTree = "<group>"; };
 		1171EAC619D8E32200C86442 /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/Steam/steam_appid.txt; sourceTree = "<group>"; };
-		1171EAC819D8E5D400C86442 /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libagsteam.dylib; path = ../../lib/libagsteam.dylib; sourceTree = "<group>"; };
-		1171EACA19D8E5E200C86442 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = ../../lib/libsteam_api.dylib; sourceTree = "<group>"; };
+		1171EAC819D8E5D400C86442 /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libagsteam.dylib; sourceTree = "<group>"; };
+		1171EACA19D8E5E200C86442 /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libsteam_api.dylib; sourceTree = "<group>"; };
 		1195299A18B3EDD300923A50 /* agswadjetutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = agswadjetutil.cpp; sourceTree = "<group>"; };
 		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
 		11C5699119586DB30096BB80 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Unbound/Images.xcassets; sourceTree = "<group>"; };
@@ -1474,8 +1474,6 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
-				1171EACA19D8E5E200C86442 /* libsteam_api.dylib */,
-				1171EAC819D8E5D400C86442 /* libagsteam.dylib */,
 				60898C2B160779D9009E152F /* Plugins */,
 				60CA3AA7160713FD00CFB3BD /* Engine */,
 				60CA39A8160713D200CFB3BD /* Common */,
@@ -1516,6 +1514,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				1171EAC819D8E5D400C86442 /* libagsteam.dylib */,
+				1171EACA19D8E5E200C86442 /* libsteam_api.dylib */,
 				DBCDB738180EE47C00FF80B1 /* libaldmb.a */,
 				DBCDB739180EE47C00FF80B1 /* libdumb.a */,
 				DBCDB72A180EDBAA00FF80B1 /* libogg.a */,

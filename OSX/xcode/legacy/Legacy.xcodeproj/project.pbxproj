@@ -705,7 +705,7 @@
 		119FFB6D19D8802900031D4B /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libagsteam.dylib; sourceTree = "<group>"; };
 		119FFB6F19D8803700031D4B /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libsteam_api.dylib; sourceTree = "<group>"; };
 		119FFB7119D8829E00031D4B /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/steam/steam_appid.txt; sourceTree = "<group>"; };
-		11C3C47719D63B9700CE4E49 /* Legacy_Steam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Legacy_Steam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		11C3C47719D63B9700CE4E49 /* Blackwell-Legacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Legacy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Legacy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		28FD14FF0DC6FC520079059D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		32CA4F630368D1EE00C91783 /* Legacy_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Legacy_Prefix.pch; sourceTree = "<group>"; };
@@ -1466,7 +1466,7 @@
 			isa = PBXGroup;
 			children = (
 				1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */,
-				11C3C47719D63B9700CE4E49 /* Legacy_Steam.app */,
+				11C3C47719D63B9700CE4E49 /* Blackwell-Legacy.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2659,7 +2659,7 @@
 			);
 			name = Legacy_Steam;
 			productName = Legacy;
-			productReference = 11C3C47719D63B9700CE4E49 /* Legacy_Steam.app */;
+			productReference = 11C3C47719D63B9700CE4E49 /* Blackwell-Legacy.app */;
 			productType = "com.apple.product-type.application";
 		};
 		1D6058900D05DD3D006BFB54 /* Legacy */ = {
@@ -3376,7 +3376,7 @@
 				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
 				INFOPLIST_FILE = "Legacy_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = Legacy_Steam;
+				PRODUCT_NAME = "Blackwell-Legacy";
 				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
@@ -3394,7 +3394,7 @@
 				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
 				INFOPLIST_FILE = "Legacy_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				PRODUCT_NAME = Legacy_Steam;
+				PRODUCT_NAME = "Blackwell-Legacy";
 				PROVISIONING_PROFILE = "";
 			};
 			name = Release;

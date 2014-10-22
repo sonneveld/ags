@@ -343,6 +343,10 @@
 		119DA6B619DD927D00E7F388 /* speech.vox in Resources */ = {isa = PBXBuildFile; fileRef = 119DA6B519DD927D00E7F388 /* speech.vox */; };
 		119DA6B719DD927D00E7F388 /* speech.vox in Resources */ = {isa = PBXBuildFile; fileRef = 119DA6B519DD927D00E7F388 /* speech.vox */; };
 		11B215D519B0FD3000E8FA42 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 11B215D419B0FD3000E8FA42 /* Images.xcassets */; };
+		11BB40B919F7F05B00AE4BF8 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 11BB40B819F7F05B00AE4BF8 /* acsetup.cfg */; };
+		11BB40BA19F7F05B00AE4BF8 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 11BB40B819F7F05B00AE4BF8 /* acsetup.cfg */; };
+		11BB40BE19F805F500AE4BF8 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 11BB40BD19F805F500AE4BF8 /* acsetup.cfg */; };
+		11BB40BF19F805F500AE4BF8 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 11BB40BD19F805F500AE4BF8 /* acsetup.cfg */; };
 		11FD002E19DC60F000C4A61D /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 11B215D419B0FD3000E8FA42 /* Images.xcassets */; };
 		11FD002F19DC60F000C4A61D /* audio.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A31885B8450061BB0A /* audio.vox */; };
 		11FD003219DC60F000C4A61D /* audiocliptype.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60CA39AB160713D200CFB3BD /* audiocliptype.cpp */; };
@@ -1426,6 +1430,8 @@
 		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
 		119DA6B519DD927D00E7F388 /* speech.vox */ = {isa = PBXFileReference; lastKnownFileType = file; name = speech.vox; path = game_files_demo/speech.vox; sourceTree = "<group>"; };
 		11B215D419B0FD3000E8FA42 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = GoldenWake/Images.xcassets; sourceTree = "<group>"; };
+		11BB40B819F7F05B00AE4BF8 /* acsetup.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = acsetup.cfg; path = game_files/acsetup.cfg; sourceTree = "<group>"; };
+		11BB40BD19F805F500AE4BF8 /* acsetup.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = acsetup.cfg; path = game_files_demo/acsetup.cfg; sourceTree = "<group>"; };
 		11FD017A19DC60F000C4A61D /* GoldenWake_Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GoldenWake_Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		11FD017C19DC85CE00C4A61D /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/ac2game.dat; sourceTree = "<group>"; };
 		11FD017E19DC85DF00C4A61D /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files_demo/ac2game.dat; sourceTree = "<group>"; };
@@ -2285,6 +2291,8 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				11BB40BD19F805F500AE4BF8 /* acsetup.cfg */,
+				11BB40B819F7F05B00AE4BF8 /* acsetup.cfg */,
 				119DA6B519DD927D00E7F388 /* speech.vox */,
 				11FD018219DC864300C4A61D /* GoldenWake_Demo-Info.plist */,
 				11FD017C19DC85CE00C4A61D /* ac2game.dat */,
@@ -3557,6 +3565,7 @@
 				11617D3D19C20D4100F5A88A /* Images.xcassets in Resources */,
 				11617D3E19C20D4100F5A88A /* audio.vox in Resources */,
 				11617D3F19C20D4100F5A88A /* speech.vox in Resources */,
+				11BB40BA19F7F05B00AE4BF8 /* acsetup.cfg in Resources */,
 				11617E8B19C20D6700F5A88A /* ac2game.dat in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3568,6 +3577,7 @@
 				11FD002E19DC60F000C4A61D /* Images.xcassets in Resources */,
 				119DA6B619DD927D00E7F388 /* speech.vox in Resources */,
 				11FD002F19DC60F000C4A61D /* audio.vox in Resources */,
+				11BB40BE19F805F500AE4BF8 /* acsetup.cfg in Resources */,
 				11FD017F19DC85DF00C4A61D /* ac2game.dat in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3577,6 +3587,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				11FD018719DC86C000C4A61D /* Images.xcassets in Resources */,
+				11BB40BF19F805F500AE4BF8 /* acsetup.cfg in Resources */,
 				11FD018819DC86C000C4A61D /* audio.vox in Resources */,
 				11FD02DB19DC872400C4A61D /* ac2game.dat in Resources */,
 				11FD02DD19DC872A00C4A61D /* steam_appid.txt in Resources */,
@@ -3589,6 +3600,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				11B215D519B0FD3000E8FA42 /* Images.xcassets in Resources */,
+				11BB40B919F7F05B00AE4BF8 /* acsetup.cfg in Resources */,
 				110F58A81885B8450061BB0A /* audio.vox in Resources */,
 				110F58A91885B8450061BB0A /* speech.vox in Resources */,
 				11FD017D19DC85CE00C4A61D /* ac2game.dat in Resources */,

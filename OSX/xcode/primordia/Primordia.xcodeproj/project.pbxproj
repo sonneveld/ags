@@ -11,6 +11,8 @@
 		110F58A91885B8450061BB0A /* speech.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A41885B8450061BB0A /* speech.vox */; };
 		1158744E19F1955E000D5DEB /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1158744D19F1955E000D5DEB /* Images.xcassets */; };
 		119529A318B3EDD300923A50 /* agswadjetutil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1195299A18B3EDD300923A50 /* agswadjetutil.cpp */; };
+		11BB40C119F8316500AE4BF8 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 11BB40C019F8316500AE4BF8 /* acsetup.cfg */; };
+		11BB40C219F8316500AE4BF8 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 11BB40C019F8316500AE4BF8 /* acsetup.cfg */; };
 		11CB489F19F575520015C412 /* audio.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A31885B8450061BB0A /* audio.vox */; };
 		11CB48A019F575520015C412 /* speech.vox in Resources */ = {isa = PBXBuildFile; fileRef = 110F58A41885B8450061BB0A /* speech.vox */; };
 		11CB48A119F575520015C412 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1158744D19F1955E000D5DEB /* Images.xcassets */; };
@@ -717,8 +719,8 @@
 		11617E9319C2126700F5A88A /* libagsteam.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libagsteam.dylib; sourceTree = "<group>"; };
 		1195299A18B3EDD300923A50 /* agswadjetutil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = agswadjetutil.cpp; sourceTree = "<group>"; };
 		1195299B18B3EDD300923A50 /* agswadjetutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agswadjetutil.h; sourceTree = "<group>"; };
+		11BB40C019F8316500AE4BF8 /* acsetup.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = acsetup.cfg; path = game_files/acsetup.cfg; sourceTree = "<group>"; };
 		11CB49EC19F575520015C412 /* Primordia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Primordia.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		11CB49ED19F575540015C412 /* Primordia copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Primordia copy-Info.plist"; path = "/Users/janetcampbell68/Documents/ags/OSX/xcode/primordia/Primordia copy-Info.plist"; sourceTree = "<absolute>"; };
 		11FD017C19DC85CE00C4A61D /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/ac2game.dat; sourceTree = "<group>"; };
 		11FD018019DC862800C4A61D /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/steam/steam_appid.txt; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* Primordia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Primordia.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1497,7 +1499,6 @@
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
-				11CB49ED19F575540015C412 /* Primordia copy-Info.plist */,
 			);
 			indentWidth = 2;
 			name = CustomTemplate;
@@ -1515,6 +1516,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				11BB40C019F8316500AE4BF8 /* acsetup.cfg */,
 				1158744D19F1955E000D5DEB /* Images.xcassets */,
 				1158744819F190F8000D5DEB /* Primordia_Steam-Info.plist */,
 				11FD017C19DC85CE00C4A61D /* ac2game.dat */,
@@ -2742,6 +2744,7 @@
 				11CB489F19F575520015C412 /* audio.vox in Resources */,
 				11CB48A019F575520015C412 /* speech.vox in Resources */,
 				11CB48A119F575520015C412 /* Images.xcassets in Resources */,
+				11BB40C219F8316500AE4BF8 /* acsetup.cfg in Resources */,
 				11CB49EE19F57B670015C412 /* ac2game.dat in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2751,6 +2754,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				110F58A81885B8450061BB0A /* audio.vox in Resources */,
+				11BB40C119F8316500AE4BF8 /* acsetup.cfg in Resources */,
 				110F58A91885B8450061BB0A /* speech.vox in Resources */,
 				1158744E19F1955E000D5DEB /* Images.xcassets in Resources */,
 				11FD017D19DC85CE00C4A61D /* ac2game.dat in Resources */,

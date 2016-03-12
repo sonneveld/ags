@@ -63,29 +63,20 @@ namespace AGS.Editor.Components
         {
             DockingContainer container = (DockingContainer)sender;
             ScriptEditor editor = (ScriptEditor)container.Panel;
-            if (editor.DockingContainer.DockState == DockingState.Hidden) return;
-            if (editor.DockingContainer.DockState != DockingState.Document && !editor.MovedFromDocument)
-            {
-                editor.MovedFromDocument = true;
-                ReInitializeScriptEditor(editor);
-            }
-            else if (editor.DockingContainer.DockState == DockingState.Document && editor.MovedFromDocument)
-            {
-                editor.MovedFromDocument = false;
-                ReInitializeScriptEditor(editor);
-            }            
+            if (container.DockState == DockingState.Hidden) return;            
+            container.InitScriptIfNeeded<ScriptEditor>(ReInitializeScriptEditor, editor);            
         }
 
         protected void UpdateScriptWindowTitle(ScriptEditor editor)
         {
             string newTitle = editor.Script.FileName + (editor.IsModified ? " *" : "");
-            ContentDocument document = GetDocument(editor);
-            if (document != null)
+            ContentDocument document = GetDocument(editor);            
+            if (document != null && document.Name != newTitle)
             {
                 document.Name = newTitle;
                 document.Control.DockingContainer.Text = newTitle;
-            }
-            _guiController.DocumentTitlesChanged();
+                _guiController.DocumentTitlesChanged();
+            }            
         }
         
         protected virtual void ReInitializeScriptEditor(ScriptEditor editor)

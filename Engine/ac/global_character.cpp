@@ -16,7 +16,7 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
+#include <stdio.h>
 #include "ac/global_character.h"
 #include "ac/common.h"
 #include "ac/view.h"
@@ -366,15 +366,13 @@ void MoveCharacterBlocking(int chaa,int xx,int yy,int direct) {
 
 int GetCharacterSpeechAnimationDelay(CharacterInfo *cha)
 {
-    if (game.options[OPT_OLDTALKANIMSPD])
-    {
-        // The talkanim property only applies to Lucasarts style speech.
-        // Sierra style speech has a fixed delay of 5.
-        if (game.options[OPT_SPEECHTYPE] == 0)
-            return play.talkanim_speed;
-        else
-            return 5;
-    }
+	if ((loaded_game_file_version < kGameVersion_312) && (game.options[OPT_SPEECHTYPE] != 0))
+	{
+		// legacy versions of AGS assigned a fixed delay to Sierra-style speech only
+		return 5;
+	}
+	if (game.options[OPT_GLOBALTALKANIMSPD] != 0)
+		return play.talkanim_speed;
     else
         return cha->speech_anim_speed;
 }
@@ -524,31 +522,18 @@ void LoseInventoryFromCharacter(int charid, int inum) {
     Character_LoseInventory(&game.chars[charid], &scrInv[inum]);
 }
 
-void DisplayThought(int chid, const char*texx, ...) {
+void DisplayThought(int chid, const char *text) {
     if ((chid < 0) || (chid >= game.numcharacters))
         quit("!DisplayThought: invalid character specified");
 
-    char displbuf[STD_BUFFER_SIZE];
-    va_list ap;
-    va_start(ap,texx);
-    vsprintf(displbuf, get_translation(texx), ap);
-    va_end(ap);
-
-    _DisplayThoughtCore(chid, displbuf);
+    _DisplayThoughtCore(chid, text);
 }
 
-void __sc_displayspeech(int chid, const char*texx, ...) {
+void __sc_displayspeech(int chid, const char *text) {
     if ((chid<0) || (chid>=game.numcharacters))
         quit("!DisplaySpeech: invalid character specified");
 
-    char displbuf[STD_BUFFER_SIZE];
-    va_list ap;
-    va_start(ap,texx);
-    vsprintf(displbuf, get_translation(texx), ap);
-    va_end(ap);
-
-    _DisplaySpeechCore(chid, displbuf);
-
+    _DisplaySpeechCore(chid, text);
 }
 
 // **** THIS IS UNDOCUMENTED BECAUSE IT DOESN'T WORK PROPERLY

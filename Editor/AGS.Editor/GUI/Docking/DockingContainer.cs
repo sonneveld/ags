@@ -12,6 +12,7 @@ namespace AGS.Editor
     {
         private EditorContentPanel _panel;
         private bool _isShowing;
+        private bool _movedFromDocument;
         
         public DockingContainer(EditorContentPanel panel)
         {
@@ -26,11 +27,22 @@ namespace AGS.Editor
 
         public new void Refresh()
         {
-            //Ugly Hack for a scenario when moving from floating to document dock, and the panel
-            //dock is changed.
-            _panel.Dock = DockStyle.Bottom;
-            _panel.Dock = DockStyle.Fill;
+            PerformUglyDockHack();
             base.Refresh();
+        }
+
+        public void InitScriptIfNeeded<TState>(Action<TState> action, TState state)
+        {
+            if (DockState != DockingState.Document && !_movedFromDocument)
+            {
+                _movedFromDocument = true;
+                action(state);
+            }
+            else if (DockState == DockingState.Document && _movedFromDocument)
+            {
+                _movedFromDocument = false;
+                action(state);
+            }            
         }
 
         public new IDockingPane FloatPane 
@@ -68,9 +80,22 @@ namespace AGS.Editor
             {
                 base.Show(dockPanel, dockData.Location);
             }
-            base.Show(dockPanel, (DockState)dockData.DockState);
+            else
+            {
+                PerformUglyDockHack();
+                base.Show(dockPanel, (DockState)dockData.DockState);
+            }
+            IsShowing = false;
         }
 
         #endregion
+
+        private void PerformUglyDockHack()
+        {
+            //Ugly Hack for a scenario when moving from floating to document dock, and the panel
+            //dock is changed.
+            _panel.SuspendLayout();
+            _panel.ResumeLayout();
+        }
     }
 }

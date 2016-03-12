@@ -18,6 +18,7 @@
 #ifndef __AGS_CN_UTIL__FILESTREAM_H
 #define __AGS_CN_UTIL__FILESTREAM_H
 
+#include <stdio.h>
 #include "util/datastream.h"
 #include "util/file.h"
 
@@ -34,6 +35,7 @@ public:
     virtual ~FileStream();
 
     virtual void    Close();
+    virtual bool    Flush();
 
     // TODO
     // Temporary solution for cases when the code can't live without

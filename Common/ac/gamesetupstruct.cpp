@@ -12,17 +12,18 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/common.h"
+#include "core/assetmanager.h"
 #include "util/string_utils.h"      // fputstring, etc
 #include "util/string.h"
 #include "util/alignedstream.h"
-#include "core/assetmanager.h"
+#include "util/math.h"
 
 using AGS::Common::AlignedStream;
 using AGS::Common::Stream;
 using AGS::Common::String;
+namespace Math = AGS::Common::Math;
 
 
 // Create the missing audioClips data structure for 3.1.x games.
@@ -227,7 +228,7 @@ void GameSetupStruct::read_interaction_scripts(Common::Stream *in, GAME_STRUCT_R
 
 void GameSetupStruct::read_words_dictionary(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data)
 {
-    if (dict != NULL) {
+    if (load_dictionary) {
         dict = (WordsDictionary*)malloc(sizeof(WordsDictionary));
         read_dictionary (dict, in);
     }
@@ -277,7 +278,7 @@ void GameSetupStruct::read_characters(Common::Stream *in, GAME_STRUCT_READ_DATA 
         }
     }
 
-    if (read_data.filever <= kGameVersion_300) // fix character walk speed for < 3.1.1
+    if (read_data.filever <= kGameVersion_310) // fix character walk speed for < 3.1.1
     {
         for (int i = 0; i < numcharacters; i++)
         {
@@ -305,7 +306,7 @@ void GameSetupStruct::read_lipsync(Common::Stream *in, GAME_STRUCT_READ_DATA &re
 void GameSetupStruct::read_messages(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data)
 {
     for (int ee=0;ee<MAXGLOBALMES;ee++) {
-        if (messages[ee]==NULL) continue;
+        if (!load_messages[ee]) continue;
         messages[ee]=(char*)malloc(500);
 
         if (read_data.filever < kGameVersion_261) // Global messages are not encrypted on < 2.61
@@ -323,6 +324,8 @@ void GameSetupStruct::read_messages(Common::Stream *in, GAME_STRUCT_READ_DATA &r
         else
             read_string_decrypt(in, messages[ee]);
     }
+    delete [] load_messages;
+    load_messages = NULL;
 }
 
 void GameSetupStruct::ReadCharacters_Aligned(Stream *in)
@@ -440,7 +443,7 @@ void GameSetupStruct::read_audio(Common::Stream *in, GAME_STRUCT_READ_DATA &read
 
 void GameSetupStruct::read_room_names(Stream *in, GAME_STRUCT_READ_DATA &read_data)
 {
-    if ((read_data.filever >= kGameVersion_pre300) && (options[OPT_DEBUGMODE] != 0))
+    if ((read_data.filever >= kGameVersion_301) && (options[OPT_DEBUGMODE] != 0))
     {
         roomCount = in->ReadInt32();
         roomNumbers = (int*)malloc(roomCount * sizeof(int));
@@ -493,7 +496,7 @@ void GameSetupStruct::ReadFromSaveGame_v321(Stream *in, char* gswas, ccScript* c
     dict = olddict;
     for (int vv=0;vv<MAXGLOBALMES;vv++) messages[vv]=mesbk[vv];
 
-    in->ReadArrayOfInt32(&options[0], OPT_HIGHESTOPTION+1);
+    in->ReadArrayOfInt32(&options[0], OPT_HIGHESTOPTION_321 + 1);
     options[OPT_LIPSYNCTEXT] = in->ReadByte();
 
     ReadCharacters_Aligned(in);
@@ -513,7 +516,7 @@ void GameSetupStruct::WriteForSaveGame_v321(Stream *out)
         out->WriteArrayOfInt32 (&intrChar[bb]->timesRun[0], MAX_NEWINTERACTION_EVENTS); 
     }
 
-    out->WriteArrayOfInt32 (&options[0], OPT_HIGHESTOPTION+1);
+    out->WriteArrayOfInt32 (&options[0], OPT_HIGHESTOPTION_321 + 1);
     out->WriteInt8 (options[OPT_LIPSYNCTEXT]);
 
     WriteCharacters_Aligned(out);

@@ -31,6 +31,8 @@
 #include "ac/dynobj/all_dynamicclasses.h"
 #include "ac/dynobj/all_scriptclasses.h"
 #include "debug/debug_log.h"
+#include "debug/out.h"
+#include "font/fonts.h"
 #include "gui/guilabel.h"
 #include "main/main.h"
 #include "platform/base/agsplatformdriver.h"
@@ -43,11 +45,9 @@
 #include "ac/statobj/agsstaticobject.h"
 #include "ac/statobj/staticarray.h"
 #include "util/alignedstream.h"
+#include "ac/gamesetup.h"
 
-using AGS::Common::AlignedStream;
-using AGS::Common::Bitmap;
-using AGS::Common::Stream;
-using AGS::Common::String;
+using namespace AGS::Common;
 
 extern char saveGameSuffix[MAX_SG_EXT_LENGTH + 1];
 
@@ -123,31 +123,35 @@ GameDataVersion filever;
 int psp_is_old_datafile = 0; // Set for 3.1.1 and 3.1.2 datafiles
 String game_file_name;
 
+const String MainGameAssetName_v3 = "game28.dta"; // 3.x data file name
+const String MainGameAssetName_v2 = "ac2game.dta"; // 2.x data file name
+
 
 Stream * game_file_open()
 {
-	Stream*in = Common::AssetManager::OpenAsset("game28.dta"); // 3.x data file name
+	Stream*in = Common::AssetManager::OpenAsset(MainGameAssetName_v3); // 3.x data file name
     if (in==NULL) {
-        in = Common::AssetManager::OpenAsset("ac2game.dta"); // 2.x data file name
+        in = Common::AssetManager::OpenAsset(MainGameAssetName_v2); // 2.x data file name
     }
 
 	return in;
 }
 
-int game_file_read_version(Stream *in)
+GameFileError game_file_read_version(Stream *in)
 {
 	char teststr[31];
 
 	teststr[30]=0;
     in->Read(&teststr[0],30);
     filever=(GameDataVersion)in->ReadInt32();
+    Out::FPrint("Game data version: %d", filever);
 
     if (filever < kGameVersion_321) {
         // Allow loading of 2.x+ datafiles
         if (filever < kGameVersion_250) // < 2.5.0
         {
             delete in;
-            return -2;
+            return kGameFile_UnsupportedOldFormat;
         }
         psp_is_old_datafile = 1;
     }
@@ -155,21 +159,21 @@ int game_file_read_version(Stream *in)
 	int engineverlen = in->ReadInt32();
     String version_string = String::FromStreamCount(in, engineverlen);
     AGS::Engine::Version requested_engine_version(version_string);
+    Out::FPrint("Requested engine version: %s", requested_engine_version.LongString.GetCStr());
 
     if (filever > kGameVersion_Current) {
-        platform->DisplayAlert("This game requires a newer version of AGS (%s). It cannot be run.",
+        platform->DisplayAlert("This game requires a different version of AGS (%s). It cannot be run.",
             requested_engine_version.LongString.GetCStr());
         delete in;
-        return -2;
+        return kGameFile_UnsupportedNewFormat;
     }
 
     if (requested_engine_version > EngineVersion)
-        platform->DisplayAlert("This game requires a newer version of AGS (%s). It may not run correctly.",
+        platform->DisplayAlert("This game suggests a different version of AGS (%s). It may not run correctly.",
         requested_engine_version.LongString.GetCStr());
 
     loaded_game_file_version = filever;
-
-	return RETURN_CONTINUE;
+    return kGameFile_NoError;
 }
 
 void game_file_read_dialog_script(Stream *in)
@@ -270,7 +274,7 @@ void game_file_read_dialogs(Stream *in)
         dialog[iteratorCount].ReadFromFile(in);
     }
 
-    if (filever <= kGameVersion_300) // Dialog script
+    if (filever <= kGameVersion_310) // Dialog script
     {
         old_dialog_scripts = (unsigned char**)malloc(game.numdialog * sizeof(unsigned char**));
 
@@ -500,7 +504,7 @@ void init_and_register_fonts()
         if (fontsize == 0)
             fontsize = 8;
 
-        if ((game.options[OPT_NOSCALEFNT] == 0) && (game.default_resolution > 2))
+        if ((game.options[OPT_NOSCALEFNT] == 0) && game.IsHiRes())
             fontsize *= 2;
 
         if (!wloadfont_size(ee, fontsize))
@@ -518,7 +522,6 @@ void init_and_register_game_objects()
 	init_and_register_guis();
     init_and_register_fonts();    
 
-    wtexttransparent(TEXTFG);
     play.fade_effect=game.options[OPT_FADETYPE];
 
     our_eip=-21;
@@ -571,10 +574,55 @@ void WriteGameSetupStructBase_Aligned(Stream *out)
     gameBase->WriteToFile(&align_s);
 }
 
-int load_game_file() {
+void PreReadSaveFileInfo(Stream *in)
+{
+    GameSetupStruct::GAME_STRUCT_READ_DATA read_data;
+    read_data.filever        = filever;
+    read_data.saveGameSuffix = saveGameSuffix;
+    game.read_savegame_info(in, read_data);
+}
 
-	int res;    
+void fixup_save_directory()
+{
+    // If the save game folder was not specified by game author, create one of
+    // the game name, game GUID, or data file name, as a last resort
+    if (!game.saveGameFolderName[0])
+    {
+        if (game.gamename[0])
+            snprintf(game.saveGameFolderName, MAX_SG_FOLDER_LEN - 1, "%s", game.gamename);
+        else if (game.guid[0])
+            snprintf(game.saveGameFolderName, MAX_SG_FOLDER_LEN - 1, "%s", game.guid);
+        else
+            snprintf(game.saveGameFolderName, MAX_SG_FOLDER_LEN - 1, "AGS-Game-%d", game.uniqueid);
+    }
+    // Lastly, fixup folder name by removing any illegal characters
+    FixupFilename(game.saveGameFolderName);
+}
 
+GameFileError preload_game_data()
+{
+    Stream *in = game_file_open();
+    if (!in)
+        return kGameFile_NoMainData;
+
+    GameFileError err = game_file_read_version(in);
+    if (err != kGameFile_NoError)
+        return err;
+
+    {
+        AlignedStream align_s(in, Common::kAligned_Read);
+        game.ReadFromFile(&align_s);
+        // Discard game messages we do not need here
+        delete [] game.load_messages;
+        game.load_messages = NULL;
+    }
+    PreReadSaveFileInfo(in);
+    fixup_save_directory();
+    return kGameFile_NoError;
+}
+
+GameFileError load_game_file()
+{
     game_paused = 0;  // reset the game paused flag
     ifacepopped = -1;
 
@@ -583,8 +631,8 @@ int load_game_file() {
 	//-----------------------------------------------------------
 
     Stream *in = game_file_open();
-	if (in==NULL)
-		return -1;
+    if (in==NULL)
+        return kGameFile_NoMainData;
 
     our_eip=-18;
 
@@ -592,10 +640,9 @@ int load_game_file() {
 
     our_eip=-16;
 
-	res = game_file_read_version(in);
-	if (res != RETURN_CONTINUE) {
-		return res;
-	}
+    GameFileError err = game_file_read_version(in);
+    if (err != kGameFile_NoError)
+        return err;
 
     game.charScripts = NULL;
     game.invScripts = NULL;
@@ -603,18 +650,33 @@ int load_game_file() {
 
     ReadGameSetupStructBase_Aligned(in);
 
-    if (filever <= kGameVersion_300)
+    // The earlier versions of AGS provided support for "upscaling" low-res
+    // games (320x200 and 320x240) to hi-res (640x400 and 640x480
+    // respectively). The script API has means for detecting if the game is
+    // running upscaled, and game developer could use this opportunity to setup
+    // game accordingly (e.g. assign hi-res fonts, etc).
+    // This feature is officially deprecated since 3.1.0, however the engine
+    // itself still supports it, technically.
+    // This overriding option re-enables "upscaling". It works ONLY for low-res
+    // resolutions, such as 320x200 and 320x240.
+    if (usetup.override_upscale)
+    {
+        if (game.default_resolution == kGameResolution_320x200)
+            game.default_resolution = kGameResolution_640x400;
+        else if (game.default_resolution == kGameResolution_320x240)
+            game.default_resolution = kGameResolution_640x480;
+    }
+
+    if (filever < kGameVersion_312)
     {
         // Fix animation speed for old formats
-        game.options[OPT_OLDTALKANIMSPD] = 1;
+		game.options[OPT_GLOBALTALKANIMSPD] = 5;
     }
-    // 3.20: Fixed GUI AdditiveOpacity mode not working properly if you tried to have a non-alpha sprite on an alpha GUI
-    if (loaded_game_file_version < kGameVersion_320)
+    else if (filever < kGameVersion_330)
     {
-        // Force new style rendering for gui sprites with alpha channel
-        game.options[OPT_NEWGUIALPHA] = 1;
+        // Convert game option for 3.1.2 - 3.2 games
+        game.options[OPT_GLOBALTALKANIMSPD] = game.options[OPT_GLOBALTALKANIMSPD] != 0 ? 5 : (-5 - 1);
     }
-    init_blenders((GameGuiAlphaRenderingStyle)game.options[OPT_NEWGUIALPHA]);
 
     if (game.numfonts > MAX_FONTS)
         quit("!This game requires a newer version of AGS. Too many fonts for this version to handle.");
@@ -629,7 +691,7 @@ int load_game_file() {
     game.ReadFromFile_Part1(in, read_data);
     //-----------------------------------------------------
 
-    if (game.compiled_script == NULL)
+    if (!game.load_compiled_script)
         quit("No global script in game; data load error");
 
     gamescript = ccScript::CreateFromStream(in);
@@ -695,10 +757,12 @@ int load_game_file() {
 	// Reading from file is finished here
 	//-----------------------------------------------------------
 
+    fixup_save_directory();
+
     update_gui_zorder();
 
     if (game.numfonts == 0)
-        return -2;  // old v2.00 version
+        return kGameFile_UnsupportedOldFormat;  // old v2.00 version
 
     our_eip=-11;
 
@@ -714,7 +778,28 @@ int load_game_file() {
     ccSetStringClassImpl(&myScriptStringImpl);
 
     if (create_global_script())
-        return -3;
+        return kGameFile_ScriptLinkFailed;
 
-    return 0;
+    return kGameFile_NoError;
+}
+
+void display_game_file_error(GameFileError err)
+{
+    String err_str;
+    switch (err)
+    {
+    case kGameFile_NoMainData:
+        err_str = "Main game file not found. The file may be corrupt, or from unsupported version of AGS.\n";
+        break;
+    case kGameFile_UnsupportedOldFormat:
+        err_str = "Unsupported file format. The file may be corrupt, or from very old version of AGS.\nThis engine can only run games made with AGS 2.5 or later.\n";
+        break;
+    case kGameFile_UnsupportedNewFormat:
+        err_str = "Unsupported file format. The file may be corrupt, or from newer version of AGS.\n";
+        break;
+    case kGameFile_ScriptLinkFailed:
+        err_str.Format("Script link failed: %s\n", ccErrorString);
+        break;
+    }
+    platform->DisplayAlert(err_str);
 }

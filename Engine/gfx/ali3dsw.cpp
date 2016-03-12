@@ -17,13 +17,14 @@
 //=============================================================================
 
 #include <allegro.h>
+#include <stdio.h>
 #include "gfx/ali3d.h"
 #include "platform/base/agsplatformdriver.h"
 #include "gfx/bitmap.h"
 #include "gfx/ddb.h"
+#include "gfx/gfx_util.h"
 #include "gfx/graphicsdriver.h"
-
-#include <stdio.h>
+#include "main/main_allegro.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
@@ -63,6 +64,9 @@ unsigned long _trans_alpha_blender32(unsigned long x, unsigned long y, unsigned 
 class ALSoftwareBitmap : public IDriverDependantBitmap
 {
 public:
+  // NOTE by CJ:
+  // Transparency is a bit counter-intuitive
+  // 0=not transparent, 255=invisible, 1..254 barely visible .. mostly visible
   virtual void SetTransparency(int transparency) { _transparency = transparency; }
   virtual void SetFlippedLeftRight(bool isFlipped) { _flipped = isFlipped; }
   virtual void SetStretch(int width, int height) 
@@ -114,6 +118,35 @@ public:
 
 };
 
+class ALSoftwareGfxModeList : public IGfxModeList
+{
+public:
+    ALSoftwareGfxModeList(GFX_MODE_LIST *alsw_gfx_mode_list)
+        : _gfxModeList(alsw_gfx_mode_list)
+    {
+    }
+
+    virtual int GetModeCount()
+    {
+        return _gfxModeList ? _gfxModeList->num_modes : 0;
+    }
+
+    virtual bool GetMode(int index, DisplayResolution &resolution)
+    {
+        if (_gfxModeList && index >= 0 && index < _gfxModeList->num_modes)
+        {
+            resolution.Width = _gfxModeList->mode[index].width;
+            resolution.Height = _gfxModeList->mode[index].height;
+            resolution.ColorDepth = _gfxModeList->mode[index].bpp;
+            return true;
+        }
+        return false;
+    }
+
+private:
+    GFX_MODE_LIST *_gfxModeList;
+};
+
 #include "gfx/gfxfilter_allegro.h"
 
 class ALSoftwareGraphicsDriver : public IGraphicsDriver
@@ -142,10 +175,12 @@ public:
 
   virtual const char*GetDriverName() { return "Allegro/DX5"; }
   virtual const char*GetDriverID() { return "DX5"; }
+  virtual void SetGraphicsFilter(GFXFilter *filter);
   virtual void SetTintMethod(TintMethod method);
   virtual bool Init(int width, int height, int colourDepth, bool windowed, volatile int *loopTimer);
   virtual bool Init(int virtualWidth, int virtualHeight, int realWidth, int realHeight, int colourDepth, bool windowed, volatile int *loopTimer);
-  virtual int  FindSupportedResolutionWidth(int idealWidth, int height, int colDepth, int widthRangeAllowed);
+  virtual IGfxModeList *GetSupportedModeList(int color_depth);
+  virtual DisplayResolution GetResolution();
   virtual void SetCallbackForPolling(GFXDRV_CLIENTCALLBACK callback) { _callback = callback; }
   virtual void SetCallbackToDrawScreen(GFXDRV_CLIENTCALLBACK callback) { _drawScreenCallback = callback; }
   virtual void SetCallbackOnInit(GFXDRV_CLIENTCALLBACKINITGFX callback) { _initGfxCallback = callback; }
@@ -186,6 +221,7 @@ public:
 private:
   volatile int* _loopTimer;
   int _screenWidth, _screenHeight;
+  int actualInitWid, actualInitHit;
   int _colorDepth;
   bool _windowed;
   bool _autoVsync;
@@ -214,7 +250,6 @@ private:
   DDCAPS ddrawCaps;
 #endif
 
-  void draw_sprite_with_transparency(Bitmap *piccy, int xxx, int yyy, int transparency);
   void highcolor_fade_out(int speed, int targetColourRed, int targetColourGreen, int targetColourBlue);
   void highcolor_fade_in(Bitmap *bmp_orig, int speed, int targetColourRed, int targetColourGreen, int targetColourBlue);
   void __fade_from_range(PALLETE source, PALLETE dest, int speed, int from, int to) ;
@@ -251,46 +286,28 @@ bool ALSoftwareGraphicsDriver::IsModeSupported(int driver, int width, int height
         return true;
       }
     }
-    strcpy(allegro_error, "This graphics mode is not supported");
+    set_allegro_error("This graphics mode is not supported");
     return false;
   }
   return true;
 }
 
-int ALSoftwareGraphicsDriver::FindSupportedResolutionWidth(int idealWidth, int height, int colDepth, int widthRangeAllowed)
+IGfxModeList *ALSoftwareGraphicsDriver::GetSupportedModeList(int color_depth)
 {
   if (_gfxModeList == NULL)
   {
     _gfxModeList = get_gfx_mode_list(GetAllegroGfxDriverID(false));
   }
-  if (_gfxModeList != NULL)
+  if (_gfxModeList == NULL)
   {
-    int unfilteredWidth = idealWidth;
-    _filter->GetRealResolution(&idealWidth, &height);
-    int filterFactor = idealWidth / unfilteredWidth;
-
-    int nearestWidthFound = 0;
-
-    for (int i = 0; i < _gfxModeList->num_modes; i++)
-    {
-      if ((_gfxModeList->mode[i].height == height) &&
-          (_gfxModeList->mode[i].bpp == colDepth))
-      {
-        if (_gfxModeList->mode[i].width == idealWidth)
-          return idealWidth / filterFactor;
-
-        if (abs(_gfxModeList->mode[i].width - idealWidth) <
-            abs(nearestWidthFound - idealWidth))
-        {
-          nearestWidthFound = _gfxModeList->mode[i].width;
-        }
-      }
-    }
-
-    if (abs(nearestWidthFound - idealWidth) <= widthRangeAllowed * filterFactor)
-      return nearestWidthFound / filterFactor;
+    return NULL;
   }
-  return 0;
+  return new ALSoftwareGfxModeList(_gfxModeList);
+}
+
+DisplayResolution ALSoftwareGraphicsDriver::GetResolution()
+{
+    return DisplayResolution(actualInitWid, actualInitHit, _colorDepth);
 }
 
 int ALSoftwareGraphicsDriver::GetAllegroGfxDriverID(bool windowed)
@@ -310,28 +327,32 @@ int ALSoftwareGraphicsDriver::GetAllegroGfxDriverID(bool windowed)
 #endif
 }
 
+void ALSoftwareGraphicsDriver::SetGraphicsFilter(GFXFilter *filter)
+{
+  _filter = (AllegroGFXFilter*)filter;
+}
+
 void ALSoftwareGraphicsDriver::SetTintMethod(TintMethod method) 
 {
   // TODO: support new D3D-style tint method
 }
 
-bool ALSoftwareGraphicsDriver::Init(int virtualWidth, int virtualHeight, int realWidth, int realHeight, int colourDepth, bool windowed, volatile int *loopTimer)
-{
-  throw Ali3DException("this overload is not supported, you must use the normal Init method");
-}
-
 bool ALSoftwareGraphicsDriver::Init(int width, int height, int colourDepth, bool windowed, volatile int *loopTimer)
 {
-  _screenWidth = width;
-  _screenHeight = height;
+    return Init(width, height, width ,height, colourDepth, windowed, loopTimer);
+}
+
+bool ALSoftwareGraphicsDriver::Init(int virtualWidth, int virtualHeight, int realWidth, int realHeight, int colourDepth, bool windowed, volatile int *loopTimer)
+{
+  _screenWidth = virtualWidth;
+  _screenHeight = virtualHeight;
   _colorDepth = colourDepth;
   _windowed = windowed;
   _loopTimer = loopTimer;
   int driver = GetAllegroGfxDriverID(windowed);
 
   set_color_depth(colourDepth);
-  int actualInitWid = width, actualInitHit = height;
-  _filter->GetRealResolution(&actualInitWid, &actualInitHit);
+  actualInitWid = realWidth, actualInitHit = realHeight;
 
   if (_initGfxCallback != NULL)
     _initGfxCallback(NULL);
@@ -343,11 +364,11 @@ bool ALSoftwareGraphicsDriver::Init(int width, int height, int colourDepth, bool
     // set_gfx_mode is an allegro function that creates screen bitmap;
     // following code assumes the screen is already created, therefore we should
     // ensure global bitmap wraps over existing allegro screen bitmap.
-    _allegroScreenWrapper = BitmapHelper::CreateRawObjectWrapper(screen);
+    _allegroScreenWrapper = BitmapHelper::CreateRawBitmapWrapper(screen);
     BitmapHelper::SetScreenBitmap( _allegroScreenWrapper );
 
     BitmapHelper::GetScreenBitmap()->Clear();
-    BitmapHelper::SetScreenBitmap( _filter->ScreenInitialized(BitmapHelper::GetScreenBitmap(), width, height) );
+    BitmapHelper::SetScreenBitmap( _filter->ScreenInitialized(BitmapHelper::GetScreenBitmap(), _screenWidth, _screenHeight) );
 
     // [IKM] 2012-09-07
     // At this point the wrapper we created is saved by filter for future reference,
@@ -499,51 +520,6 @@ void ALSoftwareGraphicsDriver::ClearDrawList()
   numToDraw = 0;
 }
 
-void ALSoftwareGraphicsDriver::draw_sprite_with_transparency(Bitmap *piccy, int xxx, int yyy, int transparency)
-{
-  int screen_depth = virtualScreen->GetColorDepth();
-  int sprite_depth = piccy->GetColorDepth();
-
-  if (sprite_depth < screen_depth) {
-
-    if ((sprite_depth == 8) && (screen_depth >= 24)) {
-      // 256-col sprite -> truecolor background
-      // this is automatically supported by allegro, no twiddling needed
-      virtualScreen->Blit(piccy, xxx, yyy, Common::kBitmap_Transparency);
-      return;
-    }
-    // 256-col spirte -> hi-color background, or
-    // 16-bit sprite -> 32-bit background
-    Bitmap* hctemp=BitmapHelper::CreateBitmap(piccy->GetWidth(), piccy->GetHeight(), screen_depth);
-    hctemp->Blit(piccy,0,0,0,0,hctemp->GetWidth(),hctemp->GetHeight());
-    int bb,cc,mask_col = virtualScreen->GetMaskColor();
-
-    if (sprite_depth == 8) {
-      // only do this for 256-col, cos the Blit call converts
-      // transparency for 16->32 bit
-      for (bb=0;bb<hctemp->GetWidth();bb++) {
-        for (cc=0;cc<hctemp->GetHeight();cc++)
-          if (piccy->GetPixel(bb,cc)==0) hctemp->PutPixel(bb,cc,mask_col);
-      }
-    }
-
-    virtualScreen->Blit(hctemp, xxx, yyy, Common::kBitmap_Transparency);
-    delete hctemp;
-  }
-  else
-  {
-    if ((transparency != 0) && (screen_depth > 8) &&
-        (sprite_depth > 8) && (virtualScreen->GetColorDepth() > 8)) 
-    {
-      set_trans_blender(0,0,0, transparency);
-	  virtualScreen->TransBlendBlt(piccy, xxx, yyy);
-    }
-    else
-      virtualScreen->Blit(piccy, xxx, yyy, Common::kBitmap_Transparency);
-  }
-  
-}
-
 void ALSoftwareGraphicsDriver::SetRenderOffset(int x, int y)
 {
   _global_x_offset = x;
@@ -580,16 +556,19 @@ void ALSoftwareGraphicsDriver::RenderToBackBuffer()
     }
     else if (bitmap->_hasAlpha)
     {
-      if (bitmap->_transparency == 0)
+      if (bitmap->_transparency == 0) // this means opaque
         set_alpha_blender();
       else
+        // here _transparency is used as alpha (between 1 and 254)
         set_blender_mode(NULL, NULL, _trans_alpha_blender32, 0, 0, 0, bitmap->_transparency);
 
 	  virtualScreen->TransBlendBlt(bitmap->_bmp, drawAtX, drawAtY);
     }
     else
     {
-      draw_sprite_with_transparency(bitmap->_bmp, drawAtX, drawAtY, bitmap->_transparency);
+      // here _transparency is used as alpha (between 1 and 254), but 0 means opaque!
+      GfxUtil::DrawSpriteWithTransparency(virtualScreen, bitmap->_bmp, drawAtX, drawAtY,
+          bitmap->_transparency ? bitmap->_transparency : 255);
     }
   }
 
@@ -660,7 +639,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *currentVirtScreen, int 
    if ((_global_y_offset != 0) || (_global_x_offset != 0))
    {
      bmp_orig = BitmapHelper::CreateBitmap(_screenWidth, _screenHeight);
-     bmp_orig->Clear();
+     bmp_orig->Fill(0);
      bmp_orig->Blit(currentVirtScreen, 0, 0, _global_x_offset, _global_y_offset, currentVirtScreen->GetWidth(), currentVirtScreen->GetHeight());
    }
 
@@ -674,7 +653,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *currentVirtScreen, int 
    for (a = 0; a < 256; a+=speed)
    {
        int timerValue = *_loopTimer;
-       bmp_buff->Clear(clearColor);
+       bmp_buff->Fill(clearColor);
        set_trans_blender(0,0,0,a);
        bmp_buff->TransBlendBlt(bmp_orig, 0, 0);
        this->Vsync();
@@ -713,7 +692,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(int speed, int targetColourRed
             for (a = 255-speed; a > 0; a-=speed)
             {
                 int timerValue = *_loopTimer;
-                bmp_buff->Clear(clearColor);
+                bmp_buff->Fill(clearColor);
                 set_trans_blender(0,0,0,a);
                 bmp_buff->TransBlendBlt(bmp_orig, 0, 0);
                 this->Vsync();
@@ -831,7 +810,6 @@ bool ALSoftwareGraphicsDriver::PlayVideo(const char *filename, bool useAVISound,
   int result = dxmedia_play_video(filename, useAVISound, skipType, stretchToFullScreen ? 1 : 0);
   return (result == 0);
 #else
-#warning ffmpeg implementation needed
   return 0;
 #endif
 }

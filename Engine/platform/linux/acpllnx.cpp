@@ -18,40 +18,27 @@
 
 // ********* LINUX PLACEHOLDER DRIVER *********
 
-#include "util/wgt2allg.h"
+#include <stdio.h>
+#include <allegro.h>
+#include <xalleg.h>
 #include "gfx/ali3d.h"
 #include "ac/runtime_defines.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
-#include "media/audio/audio.h"
+#include "util/string.h"
 #include <libcda.h>
 
 #include <pwd.h>
 #include <sys/stat.h>
 
-#include "binreloc.h"
+using AGS::Common::String;
+
 
 // Replace the default Allegro icon. The original defintion is in the
 // Allegro 4.4 source under "src/x/xwin.c".
-extern "C" {
-#include "icon.xpm";
-}
-extern void *allegro_icon = icon_xpm;
-
-// PSP variables
-int psp_video_framedrop = 1;
-int psp_audio_enabled = 1;
-int psp_midi_enabled = 1;
-int psp_ignore_acsetup_cfg_file = 0;
-int psp_clear_cache_on_room_change = 0;
-
-int psp_midi_preload_patches = 0;
-int psp_audio_cachesize = 10;
-char psp_game_file_name[256];
-int psp_gfx_smooth_sprites = 1;
-char psp_translation[100];
-
-char userAppDataRoot[PATH_MAX];
+#include "icon.xpm"
+void* allegro_icon = icon_xpm;
+String LinuxOutputDirectory;
 
 struct AGSLinux : AGSPlatformDriver {
   AGSLinux();
@@ -59,18 +46,19 @@ struct AGSLinux : AGSPlatformDriver {
   virtual int  CDPlayerCommand(int cmdd, int datt);
   virtual void Delay(int millis);
   virtual void DisplayAlert(const char*, ...);
+  virtual const char *GetUserSavedgamesDirectory();
+  virtual const char *GetAppOutputDirectory();
   virtual unsigned long GetDiskFreeSpaceMB();
   virtual const char* GetNoMouseErrorString();
+  virtual const char* GetAllegroFailUserHint();
   virtual eScriptSystemOSID GetSystemOSID();
   virtual int  InitializeCDPlayer();
   virtual void PlayVideo(const char* name, int skip, int flags);
   virtual void PostAllegroExit();
-  virtual int  RunSetup();
   virtual void SetGameWindowIcon();
   virtual void ShutdownCDPlayer();
-  virtual void WriteConsole(const char*, ...);
-  virtual void WriteDebugString(const char* texx, ...);
-  virtual void ReplaceSpecialPaths(const char*, char*);
+  virtual bool LockMouseToWindow();
+  virtual void UnlockMouse();
 };
 
 AGSLinux::AGSLinux() {
@@ -94,17 +82,6 @@ int AGSLinux::CDPlayerCommand(int cmdd, int datt) {
   return cd_player_control(cmdd, datt);
 }
 
-void AGSLinux::WriteDebugString(const char* texx, ...) {
-  char displbuf[STD_BUFFER_SIZE] = "AGS: ";
-  va_list ap;
-  va_start(ap,texx);
-  vsprintf(&displbuf[5],texx,ap);
-  va_end(ap);
-  strcat(displbuf, "\n");
-
-  printf(displbuf);
-}
-
 void AGSLinux::DisplayAlert(const char *text, ...) {
   char displbuf[2000];
   va_list ap;
@@ -112,6 +89,58 @@ void AGSLinux::DisplayAlert(const char *text, ...) {
   vsprintf(displbuf, text, ap);
   va_end(ap);
   printf("%s", displbuf);
+}
+
+size_t BuildXDGPath(char *destPath, size_t destSize)
+{
+  // Check to see if XDG_DATA_HOME is set in the enviroment
+  const char* home_dir = getenv("XDG_DATA_HOME");
+  size_t l = 0;
+  if (home_dir)
+  {
+    l = snprintf(destPath, destSize, "%s", home_dir);
+  }
+  else
+  {
+    // No evironment variable, so we fall back to home dir in /etc/passwd
+    struct passwd *p = getpwuid(getuid());
+    l = snprintf(destPath, destSize, "%s/.local", p->pw_dir);
+    if (mkdir(destPath, 0755) != 0 && errno != EEXIST)
+      return 0;
+    l += snprintf(destPath + l, destSize - l, "/share");
+    if (mkdir(destPath, 0755) != 0 && errno != EEXIST)
+      return 0;
+  }
+  l += snprintf(destPath + l, destSize - l, "/ags");
+  if (mkdir(destPath, 0755) != 0 && errno != EEXIST)
+    return 0;
+  return l;
+}
+
+void DetermineAppOutputDirectory()
+{
+  if (!LinuxOutputDirectory.IsEmpty())
+  {
+    return;
+  }
+
+  char xdg_path[256];
+  if (BuildXDGPath(xdg_path, sizeof(xdg_path)) > 0)
+    LinuxOutputDirectory = xdg_path;
+  else
+    LinuxOutputDirectory = "/tmp";
+}
+
+const char *AGSLinux::GetUserSavedgamesDirectory()
+{
+  DetermineAppOutputDirectory();
+  return LinuxOutputDirectory;
+}
+
+const char *AGSLinux::GetAppOutputDirectory()
+{
+  DetermineAppOutputDirectory();
+  return LinuxOutputDirectory;
 }
 
 void AGSLinux::Delay(int millis) {
@@ -134,15 +163,21 @@ const char* AGSLinux::GetNoMouseErrorString() {
   return "This game requires a mouse. You need to configure and setup your mouse to play this game.\n";
 }
 
-extern int INIreadint (const char *sectn, const char *item, int errornosect = 1);
+// extern int INIreadint (const char *sectn, const char *item, int errornosect = 1);
+
+const char* AGSLinux::GetAllegroFailUserHint()
+{
+  return "Make sure you have latest version of Allegro 4 libraries installed, and X server is running.";
+}
 
 eScriptSystemOSID AGSLinux::GetSystemOSID() {
-  int fake_win =  INIreadint("misc", "fake_os", 0);
-  if (fake_win > 0) {
-    return (eScriptSystemOSID)fake_win;
-  } else {
-    return eOS_Linux;
-  }
+  // int fake_win =  INIreadint("misc", "fake_os", 0);
+  // if (fake_win > 0) {
+  //   return (eScriptSystemOSID)fake_win;
+  // } else {
+  //   return eOS_Linux;
+  // }
+  return eOS_Linux;
 }
 
 int AGSLinux::InitializeCDPlayer() {
@@ -157,21 +192,8 @@ void AGSLinux::PostAllegroExit() {
   // do nothing
 }
 
-int AGSLinux::RunSetup() {
-  return 0;
-}
-
 void AGSLinux::SetGameWindowIcon() {
   // do nothing
-}
-
-void AGSLinux::WriteConsole(const char *text, ...) {
-  char displbuf[2000];
-  va_list ap;
-  va_start(ap, text);
-  vsprintf(displbuf, text, ap);
-  va_end(ap);
-  printf("%s", displbuf);
 }
 
 void AGSLinux::ShutdownCDPlayer() {
@@ -217,4 +239,16 @@ void AGSLinux::ReplaceSpecialPaths(const char *sourcePath, char *destPath) {
   } else {
     strcpy(destPath, sourcePath);
   }
+}
+
+bool AGSLinux::LockMouseToWindow()
+{
+    return XGrabPointer(_xwin.display, _xwin.window, False,
+        PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
+        GrabModeAsync, GrabModeAsync, _xwin.window, None, CurrentTime) == GrabSuccess;
+}
+
+void AGSLinux::UnlockMouse()
+{
+    XUngrabPointer(_xwin.display, CurrentTime);
 }

@@ -13,15 +13,21 @@
 //=============================================================================
 
 #include <windows.h>
-#include <stdio.h>
+#include <commctrl.h>
+#include <shlobj.h>
+#include <shlwapi.h>
 #include <io.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "resource/resource.h"
+#include "ac/gamestructdefines.h"
 #include "gfx/gfxfilter.h"
+#include "main/config.h"
+#include "platform/base/agsplatformdriver.h"
 #include "util/filestream.h"
+#include "util/ini_util.h"
 
-using AGS::Common::Stream;
-using namespace AGS; // FIXME later
+using namespace AGS::Common;
 
 #define AL_ID(a,b,c,d)     (((a)<<24) | ((b)<<16) | ((c)<<8) | (d))
 
@@ -35,58 +41,69 @@ using namespace AGS; // FIXME later
 #define MIDI_NONE             0 
 #define MIDI_WIN32MAPPER         AL_ID('W','3','2','M')
 
+#define MOUSE_SPEED_MIN     1
+#define MOUSE_SPEED_MAX     100
+
 extern "C" HWND allegro_wnd;
-extern int  INIreadint(const char*, const char*, int=0);
 extern void fgetstring_limit (char *, Stream *, int);
-extern char* ac_config_file;
 const char*setupstring, *enginever;
 int curscrn=-1,csendto,curdigi=0,curmidi=0,windowed=0,useletterbox = 0;
-int defaultRes = -1, mustBeLetterbox = 0, gameColDep = 0;
+GameResolutionType defaultRes = kGameResolution_Undefined;
+int gameColDep = 0;
 int refresh = 0, antialias = 0, reduce32to16 = 0;
 int sideBorders = 1;
-char curtranslation[200] = "", curreplay[200] = "";
-char curdatadir[MAX_PATH] = ".";
-char curFilter[100] = "";
-char curGfxDriver[100] = "";
-char gameNameForTitleBar[200] = "";
+String curtranslation = "";
+String curdatadir = ".";
+String curFilter = "";
+String curGfxDriver = "";
+String gameNameForTitleBar = "";
 int curmaxcache = 1024 * 20, curusespeech = 1;
 int wwidth, wheight;
+int base_height;
 GFXFilter **filterList = NULL;
+const int specialFilterListIndex = 1;
+const char *specialFilterName = "Max nearest-neighbour filter";
+const char *specialFilterID = "max";
+ConfigTree *wincfg;
+
+void MakeFullLongPath(const char *path, char *out_buf, int buf_len)
+{
+    GetFullPathName(path, buf_len, out_buf, NULL);
+    GetLongPathName(out_buf, out_buf, buf_len);
+}
+
+int get_filter_real_index(int list_index)
+{
+    if (list_index == specialFilterListIndex)
+    {
+        return -1;
+    }
+
+    return list_index > specialFilterListIndex ? list_index - 1 : list_index;    
+}
+
+int get_filter_list_index(int real_index)
+{
+    return real_index >= specialFilterListIndex ? real_index + 1 : real_index;
+}
+
+const char *get_filter_id(int list_index)
+{
+    if (list_index < 0)
+    {
+        return "";
+    }
+
+    int real_index = get_filter_real_index(list_index);
+    return real_index >= 0 ? filterList[real_index]->GetFilterID() : specialFilterID;
+}
 
 void update_resolution_texts(HWND hDlg) {
-  int resx, resy;
-  if (defaultRes >= 6) {
-    resx = 1024;
-    resy = 768;
-  }
-  else if (defaultRes == 5) {
-    resx = 800;
-    resy = 600;
-  }
-  else if ((SendDlgItemMessage(hDlg,IDC_LETTERBOX,BM_GETCHECK,0,0) == BST_CHECKED) ||
-      (mustBeLetterbox != 0)) 
-  {
-    if (defaultRes >= 3)
-    {
-      resx = 640;
-      resy = 480;
-    }
-    else
-    {
-      resx = 320;
-      resy = 240;
-    }
-  }
-  else if (defaultRes >= 3)
-  {
-    resx = 640;
-    resy = 400;
-  }
-  else 
-  {
-    resx = 320;
-    resy = 200;
-  }
+  
+  bool letterbox_by_design = INIreadint(*wincfg, "misc", "letterbox") > 0;
+  Size res_size = ResolutionTypeToSize(defaultRes, letterbox_by_design);
+  int resx = res_size.Width;
+  int resy = res_size.Height;
   
   int selectedFilter = SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_GETCURSEL, 0, 0);
 
@@ -95,66 +112,13 @@ void update_resolution_texts(HWND hDlg) {
 
   thisx = resx;
   thisy = resy;
-  filterList[selectedFilter]->GetRealResolution(&thisx, &thisy);
+  selectedFilter = get_filter_real_index(selectedFilter);
+  if (selectedFilter >= 0)
+  {
+    filterList[selectedFilter]->GetRealResolution(&thisx, &thisy);
+  }
   sprintf(buffer, "Resolution: %d""x%d", thisx, thisy);
   SendDlgItemMessage (hDlg, IDC_RESOLUTION, WM_SETTEXT, 0, (LPARAM)buffer);
-}
-
-void get_replay_name (const char *filename, char *namebuf) {
-  Stream *in = Common::File::OpenFileRead(filename);
-  if (in == NULL)
-    return;
-
-  char buffer [100];
-  in->Read (buffer, 12);
-  buffer[12] = 0;
-  if (strcmp (buffer, "AGSRecording") != 0) {
-    delete in;
-    return;
-  }
-
-  fgetstring_limit (buffer, in, 12);
-  if (buffer[0] != '2')  {
-    // very first alpha version, can't play it
-    delete in;
-    return;
-  }
-  int replayver = in->ReadInt32();
-
-  if ((replayver < 1) || (replayver > 3)) {
-    delete in;
-    return;
-  }
-
-  namebuf[0] = 0;
-  if (strcmp (buffer, enginever))
-    strcpy (namebuf, "!! ");
-
-  if (replayver == 1) {
-    // first version didn't save info
-    strcat (namebuf, "(unknown replay)");
-    delete in;
-    return;
-  }
-
-  fgetstring_limit (buffer, in, 99);
-  // skip the UID
-  in->ReadInt32 ();
-  strcat (namebuf, buffer);
-  strcat (namebuf, " (");
-  // skip the total time
-  int tottime = in->ReadInt32 ();
-  sprintf (&namebuf[strlen(namebuf)], "%02d:%02d:%02d)", tottime / 3600, (tottime % 3600) / 60, tottime % 60);
-  // replay description, maybe we'll use this later
-  fgetstring_limit (buffer, in, 99);
-
-  if (buffer[0] == 0)
-    strcpy (buffer, "No description");
-
-  strcat (namebuf, ": ");
-  strcat (namebuf, buffer);
-  delete in;
-
 }
 
 void retrieve_filter_list(bool isD3D)
@@ -183,9 +147,10 @@ void populate_drop_down_with_filters(HWND hDlg)
 
   int idx = 0;
   GFXFilter *thisFilter = filterList[idx];
+  int selected_filter = 0;
   while (thisFilter != NULL) {
 
-    if ((idx != 0) && (INIreadint("disabled", thisFilter->GetFilterID(), 0) == 1)) {
+    if ((idx != 0) && (INIreadint(*wincfg, "disabled", thisFilter->GetFilterID()) == 1)) {
       // this filter is disabled
       delete thisFilter;
       // remove from list of filters
@@ -211,12 +176,25 @@ void populate_drop_down_with_filters(HWND hDlg)
 
     SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_ADDSTRING, 0, (LPARAM)filterNameBuffer);
 
-    if ((strcmp(curFilter, thisFilter->GetFilterID()) == 0) || (idx == 0))
-      SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_SETCURSEL, idx, 0);
+    if (strcmp(curFilter, thisFilter->GetFilterID()) == 0)
+    {
+      selected_filter = idx;
+    }
 
     idx++;
     thisFilter = filterList[idx];
   }
+
+  SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_INSERTSTRING, specialFilterListIndex, (LPARAM)specialFilterName);
+  if (stricmp(curFilter, specialFilterID) == 0)
+  {
+    selected_filter = specialFilterListIndex;
+  }
+  else
+  {
+    selected_filter = get_filter_list_index(selected_filter);
+  }
+  SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_SETCURSEL, selected_filter, 0);
 }
 
 void update_gfx_filter_box_enabled(HWND hDlg)
@@ -230,6 +208,14 @@ void update_gfx_filter_box_enabled(HWND hDlg)
     SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_SETCURSEL, 0, 0);
   EnableWindow(GetDlgItem(hDlg, IDC_GFXFILTER), selDrv == 0);*/
   update_resolution_texts(hDlg);
+}
+
+void update_mouse_speed_text(HWND hDlg)
+{
+  int slider_pos = SendDlgItemMessage(hDlg,IDC_MOUSESPEED, TBM_GETPOS, 0, 0);
+  float mouse_speed = (float)slider_pos / 10.f;
+  String text = mouse_speed == 1.f ? "Mouse speed: x 1.0 (Default)" : String::FromFormat("Mouse speed: x %0.1f", mouse_speed);
+  SendDlgItemMessage(hDlg, IDC_MOUSESPEED_TEXT, WM_SETTEXT, 0, (LPARAM)text.GetCStr());
 }
 
 void InitializeDialog(HWND hDlg) {
@@ -251,7 +237,7 @@ void InitializeDialog(HWND hDlg) {
   SendDlgItemMessage(hDlg,IDC_COMBO1,CB_SETTOPINDEX,0,0);
   SendDlgItemMessage(hDlg,IDC_COMBO1,CB_SETCURSEL,curdigi,0);
   SendDlgItemMessage(hDlg,IDC_COMBO2,CB_ADDSTRING,0,(LPARAM)"Default MCI Music Device");
-  SendDlgItemMessage(hDlg,IDC_COMBO2,CB_ADDSTRING,0,(LPARAM)"Disable music");
+  SendDlgItemMessage(hDlg,IDC_COMBO2,CB_ADDSTRING,0,(LPARAM)"Disable MIDI music");
   SendDlgItemMessage(hDlg,IDC_COMBO2,CB_ADDSTRING,0,(LPARAM)"Win32 MIDI Mapper");
   SendDlgItemMessage(hDlg,IDC_COMBO2,CB_SETTOPINDEX,0,0);
   SendDlgItemMessage(hDlg,IDC_COMBO2,CB_SETCURSEL,curmidi,0);
@@ -260,7 +246,7 @@ void InitializeDialog(HWND hDlg) {
   idx = 1;
 
   char translationFindSpec[255];
-  sprintf(translationFindSpec, "%s\\*.tra", curdatadir);
+  sprintf(translationFindSpec, "%s\\*.tra", curdatadir.GetCStr());
   // Find and add all translations in folder
   if ((hFile = _findfirst(translationFindSpec, &c_file )) != -1L ) {
     do {
@@ -284,6 +270,32 @@ void InitializeDialog(HWND hDlg) {
 
     _findclose( hFile );
   }
+
+  // Custom save dir controls
+  String custom_save_dir = INIreadstring(*wincfg, "misc", "user_data_dir");
+  bool has_save_dir = !custom_save_dir.IsEmpty();
+  if (!has_save_dir)
+      custom_save_dir = curdatadir;
+  SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIRCHECK, BM_SETCHECK, has_save_dir ? BST_CHECKED : BST_UNCHECKED, 0);
+  char full_save_dir[MAX_PATH] = {0};
+  MakeFullLongPath(custom_save_dir, full_save_dir, MAX_PATH);
+  SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIR, WM_SETTEXT, 0, (LPARAM)full_save_dir);
+  EnableWindow(GetDlgItem(hDlg, IDC_CUSTOMSAVEDIR), has_save_dir ? TRUE : FALSE);
+  EnableWindow(GetDlgItem(hDlg, IDC_CUSTOMSAVEDIRBTN), has_save_dir ? TRUE : FALSE);
+
+  bool mouse_autolock = INIreadint(*wincfg, "mouse", "auto_lock") > 0;
+  if (mouse_autolock)
+      SendDlgItemMessage(hDlg, IDC_MOUSE_AUTOLOCK, BM_SETCHECK, BST_CHECKED, 0);
+
+  SendDlgItemMessage(hDlg, IDC_MOUSESPEED, TBM_SETRANGE, (WPARAM)TRUE,
+      (LPARAM)MAKELONG(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX));
+  float mouse_speed = INIreadfloat(*wincfg, "mouse", "speed", 1.f);
+  if (mouse_speed <= 0.f)
+      mouse_speed = 1.f;
+  int slider_pos = (int)(mouse_speed * 10.f + .5f);
+  SendDlgItemMessage(hDlg,IDC_MOUSESPEED, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)slider_pos);
+  update_mouse_speed_text(hDlg);
+
   SendDlgItemMessage(hDlg,IDC_COMBO4,CB_ADDSTRING,0,(LPARAM)"10 MB");
   SendDlgItemMessage(hDlg,IDC_COMBO4,CB_ADDSTRING,0,(LPARAM)"20 MB (default)");
   SendDlgItemMessage(hDlg,IDC_COMBO4,CB_ADDSTRING,0,(LPARAM)"50 MB");
@@ -297,37 +309,6 @@ void InitializeDialog(HWND hDlg) {
     idx = 1;
     
   SendDlgItemMessage(hDlg,IDC_COMBO4,CB_SETCURSEL,idx,0);
-
-  SendDlgItemMessage(hDlg,IDC_REPLAYBOX,CB_ADDSTRING,0,(LPARAM)"Don't run a replay");
-  SendDlgItemMessage(hDlg,IDC_REPLAYBOX,CB_SETCURSEL,0,0);
-  idx = 1;
-  // Find and add all replays in folder
-  if ((hFile = _findfirst( "*.agr", &c_file )) != -1L ) {
-    do {
-      if (c_file.name[strlen(c_file.name)-4] == '.') {
-        // it actually returns *.agr* so make sure it's a .AGR file,
-        // then add to our list
-        char listentry[300] = "(unknown replay)";
-        get_replay_name (c_file.name, listentry);
-        strcat (listentry, " (File: ");
-        strcat (listentry, c_file.name);
-        strcat (listentry, ")");
-
-        int needToSet = 0;
-        // if this is the translation we're using, set it
-        if (stricmp (curreplay, c_file.name) == 0)
-          needToSet = 1;
-        
-        SendDlgItemMessage(hDlg,IDC_REPLAYBOX,CB_ADDSTRING,0,(LPARAM)listentry);
-
-        if (needToSet)
-          SendDlgItemMessage (hDlg, IDC_REPLAYBOX, CB_SETCURSEL, idx, 0);
-        idx++;
-      }
-    } while( _findnext( hFile, &c_file ) == 0 );
-
-    _findclose( hFile );
-  }
 
   populate_drop_down_with_filters(hDlg);
 
@@ -354,12 +335,6 @@ void InitializeDialog(HWND hDlg) {
 
   if (useletterbox > 0)
     SendDlgItemMessage(hDlg, IDC_LETTERBOX,BM_SETCHECK,BST_CHECKED,0);
-  // If the game is 320x240, don't let them un-tick it
-  if (mustBeLetterbox)
-    EnableWindow (GetDlgItem (hDlg, IDC_LETTERBOX), FALSE);
-  // If it's 800x600, hide the letterbox option
-  if (defaultRes >= 5)
-    ShowWindow (GetDlgItem (hDlg, IDC_LETTERBOX), SW_HIDE);
 
   // If the game isn't 32-bit, disable it
   if (gameColDep < 32)
@@ -368,33 +343,79 @@ void InitializeDialog(HWND hDlg) {
     SendDlgItemMessage(hDlg, IDC_REDUCESPR, BM_SETCHECK, BST_CHECKED,0);
 
   // if no speech pack, disable the checkbox
-  if (!Common::File::TestReadFile("speech.vox"))
+  if (!File::TestReadFile("speech.vox"))
     EnableWindow (GetDlgItem (hDlg, IDC_SPEECHPACK), FALSE);
 
-  if (INIreadint("disabled", "speechvox", 0) == 1)
+  if (INIreadint(*wincfg, "disabled", "speechvox") == 1)
     EnableWindow (GetDlgItem (hDlg, IDC_SPEECHPACK), FALSE);
 
-  if (INIreadint("disabled", "16bit", 0) == 1)
+  if (INIreadint(*wincfg, "disabled", "16bit") == 1)
     EnableWindow (GetDlgItem (hDlg, IDC_REDUCESPR), FALSE);
 
-  if (INIreadint("disabled", "filters", 0) == 1)
+  if (INIreadint(*wincfg, "disabled", "filters") == 1)
     EnableWindow (GetDlgItem(hDlg, IDC_GFXFILTER), FALSE);
 
-  RECT winsize;
-  GetWindowRect (hDlg, &winsize);
-  wwidth = winsize.right - winsize.left;
-  wheight = winsize.bottom - winsize.top;
+  RECT win_rect, client_rect;
+  GetWindowRect (hDlg, &win_rect);
+  wwidth = win_rect.right - win_rect.left;
+  wheight = win_rect.bottom - win_rect.top;
+  GetClientRect(hDlg, &client_rect);
+  const int cl_height_diff = wheight - (client_rect.bottom - client_rect.top);
 
-  MoveWindow (hDlg, winsize.left, winsize.top, wwidth, wheight-175, TRUE);
+  RECT closed_dlg_unit_rect;
+  ZeroMemory(&closed_dlg_unit_rect, sizeof(closed_dlg_unit_rect));
+  closed_dlg_unit_rect.bottom = 121;
+  MapDialogRect(hDlg, &closed_dlg_unit_rect);
+  base_height = closed_dlg_unit_rect.bottom - closed_dlg_unit_rect.top + cl_height_diff;
+
+  MoveWindow (hDlg, max(0, win_rect.left), max(0, win_rect.top + (wheight - base_height) / 2), wwidth, base_height, TRUE);
   update_resolution_texts (hDlg);
 
-  SendMessage(hDlg, WM_SETTEXT, NULL, (LPARAM)gameNameForTitleBar);
-  SendMessage(allegro_wnd, WM_SETTEXT, NULL, (LPARAM)gameNameForTitleBar);
+  SendMessage(hDlg, WM_SETTEXT, NULL, (LPARAM)gameNameForTitleBar.GetCStr());
+  SendMessage(allegro_wnd, WM_SETTEXT, NULL, (LPARAM)gameNameForTitleBar.GetCStr());
+}
+
+// Browse-for-folder dialog callback
+int CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+    if (uMsg == BFFM_INITIALIZED)
+    {
+        // Set initial selection
+        SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)lpData);
+    }
+    return 0;
+}
+
+// Open common Browse-for-folder dialog
+bool BrowseForFolder(char *dir_buf, int buf_max)
+{
+    bool res = false;
+    CoInitialize(NULL);
+
+    BROWSEINFO bi = { 0 };
+    bi.lpszTitle = "Select location for game saves and custom data files";
+    bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_RETURNFSANCESTORS;
+    bi.lpfn = BrowseCallbackProc;
+    bi.lParam = (LPARAM)dir_buf;
+    LPITEMIDLIST pidl = SHBrowseForFolder ( &bi );
+    if (pidl)
+    {
+        char path[MAX_PATH];
+        if (SHGetPathFromIDList(pidl, path) != FALSE)
+        {
+            _snprintf(dir_buf, buf_max - 1, path);
+            res = true;
+        }
+        CoTaskMemFree(pidl);
+    }
+
+    CoUninitialize();
+    return res;
 }
 
 // handler for Settings dialog
 LRESULT CALLBACK callback_settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
-  char tbuf[200];
+  char tbuf[MAX_PATH];
   int idx = 1;
   //sprintf(tbuf,"event %d wp %d lp %d",message,wParam,lParam);
   switch (message) {
@@ -414,14 +435,37 @@ LRESULT CALLBACK callback_settings(HWND hDlg, UINT message, WPARAM wParam, LPARA
         ShowWindow (GetDlgItem(hDlg, IDC_STATICADV), SW_SHOW);
         ShowWindow (GetDlgItem(hDlg, IDC_STATICADV2), SW_SHOW);
         ShowWindow (GetDlgItem(hDlg, IDC_STATICADV3), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_COMBO1), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_COMBO2), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_SPEECHPACK), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_REFRESH), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_SIDEBORDERS), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_ANTIALIAS), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_REDUCESPR), SW_SHOW);
+        ShowWindow (GetDlgItem(hDlg, IDC_LETTERBOX), SW_SHOW);
         ShowWindow (GetDlgItem(hDlg, IDC_COMBO4), SW_SHOW);
 
-        MoveWindow (hDlg, winsize.left, winsize.top, wwidth, wheight, TRUE);
+        MoveWindow (hDlg, max(0, winsize.left), max(0, winsize.top - (wheight - base_height) / 2), wwidth, wheight, TRUE);
         //SetActiveWindow (GetDlgItem(hDlg, IDOK));
         SetFocus (GetDlgItem(hDlg, IDOK));
       }
       else if ((LOWORD(wParam) == IDC_LETTERBOX) || (LOWORD(wParam) == IDC_GFXFILTER)) {
         update_resolution_texts(hDlg);
+      }
+      else if (LOWORD(wParam) == IDC_CUSTOMSAVEDIRCHECK)
+      {
+        bool custom_save_dir = SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIRCHECK, BM_GETCHECK, 0, 0) == BST_CHECKED;
+        EnableWindow(GetDlgItem(hDlg, IDC_CUSTOMSAVEDIR), custom_save_dir ? TRUE : FALSE);
+        EnableWindow(GetDlgItem(hDlg, IDC_CUSTOMSAVEDIRBTN), custom_save_dir ? TRUE : FALSE);
+      }
+      else if (LOWORD(wParam) == IDC_CUSTOMSAVEDIRBTN)
+      {
+        char save_dir[MAX_PATH] = {0};
+        SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIR, WM_GETTEXT, MAX_PATH, (LPARAM)save_dir);
+        if (BrowseForFolder(save_dir, MAX_PATH))
+        {
+          SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIR, WM_SETTEXT, 0, (LPARAM)save_dir);
+        }
       }
 
       if (LOWORD(wParam) == IDC_GFXDRIVER)
@@ -431,7 +475,7 @@ LRESULT CALLBACK callback_settings(HWND hDlg, UINT message, WPARAM wParam, LPARA
       else if (LOWORD(wParam) == IDC_GFXFILTER)
       {
         int curSel = SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_GETCURSEL, 0, 0);
-        strcpy(curFilter, filterList[curSel]->GetFilterID());
+        curFilter = get_filter_id(curSel);
       }
 
       if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL || LOWORD(wParam) == IDOKRUN) {
@@ -439,28 +483,22 @@ LRESULT CALLBACK callback_settings(HWND hDlg, UINT message, WPARAM wParam, LPARA
 
           csendto = 0;
 
-          if (defaultRes > 2) 
+          if (IsHiRes(defaultRes)) 
           {
             csendto = 1;
           }
 
           sprintf(tbuf,"%d",csendto);
-          if (!WritePrivateProfileString("misc","screenres",tbuf,ac_config_file)) 
-          {
-            DWORD errCode = GetLastError();
-            sprintf(tbuf, "Unable to write to the configuration file (error code 0x%08X). If you are using Windows Vista, you may need to right-click and Run as Administrator on the Setup application.", errCode);
-            MessageBox(hDlg, tbuf, "Save error", MB_OK | MB_ICONEXCLAMATION);
-            return TRUE;
-          }
+          INIwritestring(*wincfg, "misc","screenres",tbuf);
           sprintf(tbuf,"-1");
-          WritePrivateProfileString("sound","digiid",tbuf,ac_config_file);
-          WritePrivateProfileString("sound","midiid",tbuf,ac_config_file);
+          INIwritestring(*wincfg, "sound","digiid",tbuf);
+          INIwritestring(*wincfg, "sound","midiid",tbuf);
           sprintf(tbuf,"0");
-          WritePrivateProfileString("sound","digiindx",tbuf,ac_config_file);
-          WritePrivateProfileString("sound","midiindx",tbuf,ac_config_file);
+          INIwritestring(*wincfg, "sound","digiindx",tbuf);
+          INIwritestring(*wincfg, "sound","midiindx",tbuf);
           int idx=SendDlgItemMessage(hDlg,IDC_COMBO1,CB_GETCURSEL,0,0);
           sprintf(tbuf,"%d",idx);
-          WritePrivateProfileString("sound","digiwinindx",tbuf,ac_config_file);
+          INIwritestring(*wincfg, "sound","digiwinindx",tbuf);
           if (idx == 0)
             idx = DIGI_DIRECTAMX(0);
           else if (idx == 1)
@@ -469,44 +507,31 @@ LRESULT CALLBACK callback_settings(HWND hDlg, UINT message, WPARAM wParam, LPARA
             idx = DIGI_DIRECTX(0);
           else idx = DIGI_NONE;
           sprintf(tbuf,"%d",idx);
-          WritePrivateProfileString("sound","digiwin",tbuf,ac_config_file);
+          INIwritestring(*wincfg, "sound","digiwin",tbuf);
 
           idx=SendDlgItemMessage(hDlg,IDC_COMBO2,CB_GETCURSEL,0,0);
           sprintf(tbuf,"%d",idx);
-          WritePrivateProfileString("sound","midiwinindx",tbuf,ac_config_file);
+          INIwritestring(*wincfg, "sound","midiwinindx",tbuf);
           if (idx == 0)
             idx = MIDI_AUTODETECT;
           else if (idx == 1)
             idx = MIDI_NONE;
           else idx = MIDI_WIN32MAPPER;
           sprintf(tbuf,"%d",idx);
-          WritePrivateProfileString("sound","midiwin",tbuf,ac_config_file);
+          INIwritestring(*wincfg, "sound","midiwin",tbuf);
 
           idx = SendDlgItemMessage(hDlg,IDC_COMBO3,CB_GETCURSEL,0,0);
           if (idx > 0) {
-            SendDlgItemMessage(hDlg,IDC_COMBO3,CB_GETLBTEXT,idx,(LPARAM)curtranslation);
+            SendDlgItemMessage(hDlg,IDC_COMBO3,CB_GETLBTEXT,idx,(LPARAM)tbuf);
             // cut the end off
-            strstr (curtranslation, " translation")[0] = 0;
+            strstr (tbuf, " translation")[0] = 0;
+            curtranslation = tbuf;
           }
           else
-            curreplay[0] = 0;
+            curtranslation.Empty();
 
-          WritePrivateProfileString ("language", "translation",
-              (idx == 0) ? NULL : curtranslation, ac_config_file);
-
-          idx = SendDlgItemMessage(hDlg,IDC_REPLAYBOX,CB_GETCURSEL,0,0);
-          if (idx > 0) {
-            SendDlgItemMessage(hDlg,IDC_REPLAYBOX,CB_GETLBTEXT,idx,(LPARAM)curreplay);
-            // cut the end bracket off
-            curreplay[strlen(curreplay)-1] = 0;
-            // get the filename
-            char *fnptr = &strstr (curreplay, "File: ")[6];
-            memmove (curreplay, fnptr, strlen (fnptr) + 1);
-          }
-          else
-            curtranslation[0] = 0;
-          WritePrivateProfileString ("misc", "replay",
-              (idx == 0) ? NULL : curreplay, ac_config_file);
+          INIwritestring (*wincfg, "language", "translation",
+              (idx == 0) ? NULL : curtranslation);
 
           idx = SendDlgItemMessage(hDlg,IDC_COMBO4,CB_GETCURSEL,0,0);
           SendDlgItemMessage(hDlg,IDC_COMBO4,CB_GETLBTEXT,idx,(LPARAM)tbuf);
@@ -516,125 +541,160 @@ LRESULT CALLBACK callback_settings(HWND hDlg, UINT message, WPARAM wParam, LPARA
           // if it's the default, erase from config file
           if (idx == 20)
             toWrite = NULL;
-          WritePrivateProfileString("misc","cachemax", toWrite,ac_config_file);
+          INIwritestring(*wincfg, "misc","cachemax", toWrite);
 
           if (SendDlgItemMessage(hDlg,IDC_SPEECHPACK,BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString ("sound", "usespeech", NULL, ac_config_file);
+            INIwritestring (*wincfg, "sound", "usespeech", "1");
           else
-            WritePrivateProfileString ("sound", "usespeech", "0", ac_config_file);
+            INIwritestring (*wincfg, "sound", "usespeech", "0");
 
           if (SendDlgItemMessage(hDlg,IDC_WINDOWED,BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString("misc","windowed","1",ac_config_file);
+            INIwritestring(*wincfg, "misc","windowed","1");
           else
-            WritePrivateProfileString("misc","windowed","0",ac_config_file);
+            INIwritestring(*wincfg, "misc","windowed","0");
 
           if (SendDlgItemMessage(hDlg,IDC_ANTIALIAS,BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString("misc","antialias","1",ac_config_file);
+            INIwritestring(*wincfg, "misc","antialias","1");
           else
-            WritePrivateProfileString("misc","antialias",NULL,ac_config_file);
+            INIwritestring(*wincfg, "misc","antialias",NULL);
 
           if (SendDlgItemMessage(hDlg, IDC_SIDEBORDERS, BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString("misc","sideborders",NULL,ac_config_file);
+            INIwritestring(*wincfg, "misc","prefer_sideborders","1");
           else
-            WritePrivateProfileString("misc","sideborders","0",ac_config_file);
+            INIwritestring(*wincfg, "misc","prefer_sideborders","0");
 
           if (SendDlgItemMessage(hDlg,IDC_REFRESH,BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString("misc","refresh","85",ac_config_file);
+            INIwritestring(*wincfg, "misc","refresh","85");
           else
-            WritePrivateProfileString("misc","refresh","0",ac_config_file);
+            INIwritestring(*wincfg, "misc","refresh","0");
 
-          if (mustBeLetterbox) ;
-            // don't modify the Force Letterbox setting while it doesn't apply
-          else if (SendDlgItemMessage(hDlg,IDC_LETTERBOX,BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString ("misc", "forceletterbox", "1", ac_config_file);
+          if (SendDlgItemMessage(hDlg,IDC_LETTERBOX,BM_GETCHECK,0,0) == BST_CHECKED)
+            INIwritestring (*wincfg, "misc", "prefer_letterbox", "1");
           else
-            WritePrivateProfileString ("misc", "forceletterbox", NULL, ac_config_file);
+            INIwritestring (*wincfg, "misc", "prefer_letterbox", "0");
 
           if (SendDlgItemMessage(hDlg, IDC_REDUCESPR, BM_GETCHECK,0,0) == BST_CHECKED)
-            WritePrivateProfileString ("misc", "notruecolor", "1", ac_config_file);
+            INIwritestring (*wincfg, "misc", "notruecolor", "1");
           else
-            WritePrivateProfileString ("misc", "notruecolor", NULL, ac_config_file);
+            INIwritestring (*wincfg, "misc", "notruecolor", NULL);
 
           if (SendDlgItemMessage(hDlg, IDC_GFXDRIVER, CB_GETCURSEL,0,0) == 0)
-            WritePrivateProfileString ("misc", "gfxdriver", "DX5", ac_config_file);
+            INIwritestring (*wincfg, "misc", "gfxdriver", "DX5");
           else
-            WritePrivateProfileString ("misc", "gfxdriver", "D3D9", ac_config_file);
+            INIwritestring (*wincfg, "misc", "gfxdriver", "D3D9");
 
           idx = SendDlgItemMessage(hDlg, IDC_GFXFILTER, CB_GETCURSEL, 0, 0);
-          WritePrivateProfileString("misc", "gfxfilter", filterList[idx]->GetFilterID(), ac_config_file);
+          const char *filter_id = get_filter_id(idx);
+          INIwritestring(*wincfg, "misc", "gfxfilter", filter_id);
+
+          bool custom_save_dir = SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIRCHECK, BM_GETCHECK, 0, 0) == BST_CHECKED;
+          if (custom_save_dir)
+          {
+              // Compare user path with the game data directory. If user chose
+              // path pointing inside game's directory, then store relative
+              // path instead; thus the path will keep pointing at game's
+              // directory if user moves game elsewhere.
+              char save_dir[MAX_PATH] = {0};
+              SendDlgItemMessage(hDlg, IDC_CUSTOMSAVEDIR, WM_GETTEXT, MAX_PATH, (LPARAM)save_dir);
+              char full_data_dir[MAX_PATH] = {0};
+              char full_save_dir[MAX_PATH] = {0};
+              MakeFullLongPath(curdatadir.GetCStr(), full_data_dir, MAX_PATH);
+              MakeFullLongPath(save_dir, full_save_dir, MAX_PATH);
+              char rel_save_dir[MAX_PATH] = {0};
+              if (PathRelativePathTo(rel_save_dir, full_data_dir, FILE_ATTRIBUTE_DIRECTORY, full_save_dir, FILE_ATTRIBUTE_DIRECTORY) &&
+                  strstr(rel_save_dir, "..") == NULL)
+              {
+                INIwritestring(*wincfg, "misc", "user_data_dir", rel_save_dir);
+              }
+              else
+              {
+                INIwritestring(*wincfg, "misc", "user_data_dir", save_dir);
+              }
+          }
+          else
+          {
+              INIwritestring(*wincfg, "misc", "user_data_dir", "");
+          }
+
+          bool mouse_autolock = SendDlgItemMessage(hDlg, IDC_MOUSE_AUTOLOCK, BM_GETCHECK, 0, 0) == BST_CHECKED;
+          INIwritestring(*wincfg, "mouse", "auto_lock", mouse_autolock ? "1" : "0");
+          int slider_pos = SendDlgItemMessage(hDlg,IDC_MOUSESPEED, TBM_GETPOS, 0, 0);
+          float mouse_speed = (float)slider_pos / 10.f;
+          sprintf(tbuf, "%0.1f", mouse_speed);
+          INIwritestring(*wincfg, "mouse", "speed", tbuf);
         }
 	EndDialog(hDlg, LOWORD(wParam));
  	return TRUE;
       }
       return FALSE;
+    case WM_HSCROLL:
+      update_mouse_speed_text(hDlg);
+      return TRUE;
     default: return FALSE;
     }
   return TRUE;
   }
 
 
-int acwsetup(const char*vername, const char*enbuild) {
+SetupReturnValue acwsetup(ConfigTree &cfg, const String &game_data_dir, const char*vername, const char*enbuild)
+{
+  curdatadir = game_data_dir;
   setupstring = vername;
   enginever = enbuild;
-  if (Common::File::TestReadFile(ac_config_file)) {
-    curscrn=INIreadint("misc","screenres");
+  wincfg = &cfg;
+  if (wincfg->size() > 0) {
+    curscrn=INIreadint(*wincfg, "misc","screenres");
     if (curscrn > 1)
       curscrn = 1;
-    defaultRes = INIreadint ("misc", "defaultres", 0);
+    defaultRes = (GameResolutionType)INIreadint (*wincfg, "misc", "defaultres");
     if (defaultRes < 1)
-      defaultRes = -1;
+      defaultRes = kGameResolution_Default;
 
-    curdigi=INIreadint("sound","digiwinindx");
-    curmidi=INIreadint("sound","midiwinindx");
+    curdigi=INIreadint(*wincfg, "sound","digiwinindx");
+    curmidi=INIreadint(*wincfg, "sound","midiwinindx");
 
     if (curdigi < 0) curdigi=0;
     if (curdigi > 3) curdigi = 0;
     if (curmidi < 0) curmidi=0;
 
-    windowed = INIreadint("misc","windowed",0);
-    useletterbox = INIreadint("misc","forceletterbox",0);
+    windowed = INIreadint(*wincfg, "misc","windowed");
+    useletterbox = INIreadint(*wincfg, "misc","prefer_letterbox") != 0;
 
-    reduce32to16 = INIreadint("misc","notruecolor",0);
+    reduce32to16 = INIreadint(*wincfg, "misc","notruecolor");
     if (reduce32to16 < 0)
       reduce32to16 = 0;
 
-    gameColDep = INIreadint("misc", "gamecolordepth", 0);
+    gameColDep = INIreadint(*wincfg, "misc", "gamecolordepth");
     if (gameColDep < 0)
       gameColDep = 0;
 
-    if ((defaultRes == 2) || (defaultRes == 4)) {
-      useletterbox = 1;
-      mustBeLetterbox = 1;
-    }
-
-    refresh = INIreadint("misc","refresh",0);
+    refresh = INIreadint(*wincfg, "misc","refresh");
     if (refresh < 1)
       refresh = 0;
-    antialias = INIreadint("misc","antialias",0);
+    antialias = INIreadint(*wincfg, "misc","antialias");
     if (antialias < 1)
       antialias = 0;
 
-    sideBorders = INIreadint("misc","sideborders",0);
-    if (sideBorders == -1)
-      sideBorders = 1;
+    sideBorders = INIreadint(*wincfg, "misc","prefer_sideborders") != 0;
 
-    int cacheval = INIreadint ("misc", "cachemax", 0);
+    int cacheval = INIreadint (*wincfg, "misc", "cachemax");
     if (cacheval > 0)
       curmaxcache = cacheval;
-    curusespeech = INIreadint ("sound", "usespeech", 0);
+    curusespeech = INIreadint (*wincfg, "sound", "usespeech");
     if (curusespeech < 0)
       curusespeech = 1;
 
-    GetPrivateProfileString("language", "translation", "", curtranslation, 200, ac_config_file);
-    GetPrivateProfileString("misc", "replay", "", curreplay, 200, ac_config_file);
-    GetPrivateProfileString("misc", "datadir", ".", curdatadir, 255, ac_config_file);
-    GetPrivateProfileString("misc", "gfxfilter", "None", curFilter, 100, ac_config_file);
-    GetPrivateProfileString("misc", "gfxdriver", "D3D9", curGfxDriver, 100, ac_config_file);
-    GetPrivateProfileString("misc", "titletext", "Game Setup", gameNameForTitleBar, 200, ac_config_file);
+    curtranslation = INIreadstring(*wincfg, "language", "translation", "");
+    curFilter = INIreadstring(*wincfg, "misc", "gfxfilter", "None");
+    curGfxDriver = INIreadstring(*wincfg, "misc", "gfxdriver", "D3D9");
+    gameNameForTitleBar = INIreadstring(*wincfg, "misc", "titletext", "Game Setup");
   }
-  if (DialogBox(GetModuleHandle(NULL), (LPCTSTR)IDD_DIALOG1,allegro_wnd,(DLGPROC)callback_settings) == IDOKRUN)
-    return 1;
-  return 0;
+  INT_PTR res = DialogBox(GetModuleHandle(NULL), (LPCTSTR)IDD_DIALOG1,allegro_wnd,(DLGPROC)callback_settings);
+  if (res == IDOKRUN)
+    return kSetup_RunGame;
+  if (res == IDOK)
+    return kSetup_Done;
+  return kSetup_Cancel;
 }
 
 void set_icon() {

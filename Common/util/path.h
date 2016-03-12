@@ -27,11 +27,21 @@ namespace Common
 
 namespace Path
 {
+    // Tells if the given path is a directory
+    bool    IsDirectory(const String &directory);
+    // Tells if the given path is a file
+    bool    IsFile(const String &filename);
+
     // Makes a platform-dependant path comparison.
     // This takes into consideration platform's filename case (in)sensivity and
     // DOS-compatible 8.3 filenames;
     // The result value corresponds to stdlib strcmp function.
     int     ComparePaths(const String &path1, const String &path2);
+
+    // Tells if the path points to the parent path's location or lower directory;
+    // return FALSE if the path points to outside of the parent location.
+    bool    IsSameOrSubDir(const String &parent, const String &path);
+
     // Makes a path have only '/' slashes; this is to make it easier to work
     // with path, knowing it contains only one type of directory separators
     void    FixupPath(String &path);

@@ -9,12 +9,13 @@ using System.Windows.Forms;
 
 namespace AGS.Editor.Components
 {
-    public abstract class BaseComponentWithFolders<ItemType,FolderType> : BaseComponent 
+    public abstract class BaseComponentWithFolders<ItemType,FolderType> : BaseComponent, IRePopulatableComponent
         where ItemType : IToXml
         where FolderType : BaseFolderCollection<ItemType,FolderType>
     {
         protected abstract FolderType GetRootFolder();
         protected abstract ProjectTreeItem CreateTreeItemForItem(ItemType item);
+        protected abstract void AddNewItemCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu);
         protected abstract void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu);
         protected abstract void ItemCommandClick(string controlID);
         protected abstract string GetFolderDeleteConfirmationText();
@@ -174,17 +175,19 @@ namespace AGS.Editor.Components
             IList<MenuCommand> menu = new List<MenuCommand>();
             if (controlID == TOP_LEVEL_COMMAND_ID)
             {
+                AddNewItemCommandsToFolderContextMenu(controlID, menu);
                 menu.Add(new MenuCommand(COMMAND_NEW_FOLDER, "New Folder", null));
                 AddExtraCommandsToFolderContextMenu(controlID, menu);
             }
             else if (controlID.StartsWith(NODE_ID_PREFIX_FOLDER))
             {
+                AddNewItemCommandsToFolderContextMenu(controlID, menu);
+                menu.Add(new MenuCommand(COMMAND_NEW_SUB_FOLDER, "New Sub-Folder", null));
+                menu.Add(MenuCommand.Separator);
                 menu.Add(new MenuCommand(COMMAND_RENAME_FOLDER, "Rename", null));
                 menu.Add(new MenuCommand(COMMAND_DELETE_FOLDER, "Delete", null));
-                menu.Add(new MenuCommand(COMMAND_MOVE_DOWN_FOLDER, "Move Down", null));
                 menu.Add(new MenuCommand(COMMAND_MOVE_UP_FOLDER, "Move Up", null));
-                menu.Add(MenuCommand.Separator);
-                menu.Add(new MenuCommand(COMMAND_NEW_SUB_FOLDER, "New Sub-Folder", null));
+                menu.Add(new MenuCommand(COMMAND_MOVE_DOWN_FOLDER, "Move Down", null));
                 AddExtraCommandsToFolderContextMenu(controlID, menu);
             }
             return menu;
@@ -330,6 +333,20 @@ namespace AGS.Editor.Components
             _guiController.ProjectTree.SelectNode(this, source.ID);
         }
 
+        /// <summary>
+        /// Call this method when moving folders/folder items as part of a big transaction that shouldn't actually
+        /// affect IDs ordering
+        /// </summary>
+        /// <param name="folder">The folder to perform the action on</param>
+        /// <param name="action">The action to perform on the folder</param>
+        private void PerformActionWithoutNotification(FolderType folder, Action<FolderType> action)
+        {
+            bool skipNotification = folder.ShouldSkipChangeNotifications;
+            folder.ShouldSkipChangeNotifications = true;
+            action(folder);
+            folder.ShouldSkipChangeNotifications = skipNotification;
+        }
+
         private void DragItemToBeBeforeItem(ItemType itemToMove, ItemType targetItem)
         {
             FolderType sourceFolder = FindFolderThatContainsItem(this.GetRootFolder(), itemToMove);
@@ -348,8 +365,8 @@ namespace AGS.Editor.Components
                 throw new AGSEditorException("Target item was not found in folder");
             }
 
-            sourceFolder.Items.Remove(itemToMove);
-            targetFolder.Items.Insert(targetIndex, itemToMove);            
+            PerformActionWithoutNotification(sourceFolder, folder => folder.Items.Remove(itemToMove));
+            PerformActionWithoutNotification(targetFolder, folder => folder.Items.Insert(targetIndex, itemToMove));            
         }
 
         private void DragItemToFolder(ItemType itemToMove, FolderType targetFolder)
@@ -360,8 +377,8 @@ namespace AGS.Editor.Components
                 throw new AGSEditorException("Source item was not in a folder");
             }
 
-            sourceFolder.Items.Remove(itemToMove);
-            targetFolder.Items.Add(itemToMove);
+            PerformActionWithoutNotification(sourceFolder, folder => folder.Items.Remove(itemToMove));
+            PerformActionWithoutNotification(targetFolder, folder => folder.Items.Add(itemToMove));            
         }
 
         private bool DropFolderToFolder(FolderType folderToMove, FolderType targetFolder)
@@ -383,8 +400,8 @@ namespace AGS.Editor.Components
                 return false;
             }
 
-            parentOfSource.SubFolders.Remove(folderToMove);
-            targetFolder.SubFolders.Add(folderToMove);
+            PerformActionWithoutNotification(parentOfSource, folder => folder.SubFolders.Remove(folderToMove));
+            PerformActionWithoutNotification(targetFolder, folder => folder.SubFolders.Add(folderToMove));            
             return true;
         }
 
@@ -438,13 +455,13 @@ namespace AGS.Editor.Components
             return null;
         }
 
-        protected void RePopulateTreeView(string selectedNodeID)
+        public void RePopulateTreeView(string selectedNodeID)
         {
             RePopulateTreeView();
             _guiController.ProjectTree.SelectNode(this, selectedNodeID);
         }
 
-        protected void RePopulateTreeView()
+        public void RePopulateTreeView()
         {            
             _items.Clear();
             _folders.Clear();
@@ -454,6 +471,5 @@ namespace AGS.Editor.Components
             AddExtraManualNodesToTree();
             PopulateTreeForFolder(this.GetRootFolder(), TOP_LEVEL_COMMAND_ID);
         }
-
     }
 }

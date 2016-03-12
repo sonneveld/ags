@@ -1,12 +1,9 @@
+using AGS.Editor.TextProcessing;
 using AGS.Types;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
 using System.Text;
 using System.Windows.Forms;
-using AGS.Editor.TextProcessing;
 
 namespace AGS.Editor
 {
@@ -24,16 +21,23 @@ namespace AGS.Editor
         private Dialog _dialog;
         private List<DialogOptionEditor> _optionPanes = new List<DialogOptionEditor>();
         private MenuCommands _extraMenu = new MenuCommands("&Edit", GUIController.FILE_MENU_ID);
-        
+
         private string _lastSearchText = string.Empty;
         private bool _lastCaseSensitive = false;
         private AGSEditor _agsEditor;
+        private string _lastKnownScriptText;
 
         public DialogEditor(Dialog dialogToEdit, AGSEditor agsEditor)
         {
-            InitializeComponent();
             _dialog = dialogToEdit;
             _agsEditor = agsEditor;
+
+            Init();
+        }
+
+        public void Init()
+        {
+            InitializeComponent();
 
             _extraMenu.Commands.Add(new MenuCommand(FIND_COMMAND, "Find...", System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.F, "FindMenuIcon"));
             _extraMenu.Commands.Add(new MenuCommand(FIND_NEXT_COMMAND, "Find next", System.Windows.Forms.Keys.F3, "FindNextMenuIcon"));
@@ -43,23 +47,10 @@ namespace AGS.Editor
             _extraMenu.Commands.Add(new MenuCommand(REPLACE_ALL_COMMAND, "Replace All...", System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift | System.Windows.Forms.Keys.E));
             _extraMenu.Commands.Add(new MenuCommand(GOTO_LINE_COMMAND, "Go To Line...", System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.G));
 
-            scintillaEditor.SetAsDialog();
-            scintillaEditor.AutoCompleteEnabled = true;
-            scintillaEditor.IgnoreLinesWithoutIndent = true;
-			scintillaEditor.AutoSpaceAfterComma = false;
-            scintillaEditor.CallTipsEnabled = true;
-            scintillaEditor.FixedTypeForThisKeyword = "Dialog";
-            scintillaEditor.SetFillupKeys(Constants.AUTOCOMPLETE_ACCEPT_KEYS);
-            //scintillaEditor.SetKeyWords(dialogKeyWords);
-            scintillaEditor.SetKeyWords(Constants.SCRIPT_KEY_WORDS);
-            scintillaEditor.SetClassNamesList(BuildCharacterKeywords());
-            scintillaEditor.SetAutoCompleteKeyWords(Constants.SCRIPT_KEY_WORDS);
-            scintillaEditor.SetAutoCompleteSource(_dialog);
-            scintillaEditor.SetText(dialogToEdit.Script);
-
+            InitScintilla();
 
             flowLayoutPanel1.Controls.Remove(btnNewOption);
-            foreach (DialogOption option in dialogToEdit.Options)
+            foreach (DialogOption option in _dialog.Options)
             {
                 DialogOptionEditor optionEditor = new DialogOptionEditor(option);
                 _optionPanes.Add(optionEditor);
@@ -76,6 +67,75 @@ namespace AGS.Editor
             {
                 btnDeleteOption.Visible = false;
             }
+        }
+
+        public void OnFirstInit()
+        {
+            RegisterEvents();
+            DockingContainer_DockStateChanged(this, null);
+        }
+
+        private void RegisterEvents()
+        {
+            DockingContainer.DockStateChanged += new EventHandler(DockingContainer_DockStateChanged);
+            scintillaEditor.IsModifiedChanged += new EventHandler(scintillaEditor_IsModifiedChanged);
+        }
+
+        private void UnregisterEvents()
+        {
+            DockingContainer.DockStateChanged -= new EventHandler(DockingContainer_DockStateChanged);
+            scintillaEditor.IsModifiedChanged -= new EventHandler(scintillaEditor_IsModifiedChanged);
+        }
+
+        void scintillaEditor_IsModifiedChanged(object sender, EventArgs e)
+        {
+            //Using the same hack as in ScriptEditor.scintillaEditor_IsModifiedChanged
+            if (_lastKnownScriptText == null)
+            {
+                _lastKnownScriptText = _dialog.Text;
+            }
+            string newText = scintillaEditor.GetText();
+            if (_lastKnownScriptText == newText)
+            {
+                DockingContainer container = (DockingContainer)DockingContainer;
+                //container.InitScriptIfNeeded<object>(Reinitialize, null);
+                Reinitialize(null);
+            }
+            _lastKnownScriptText = newText;
+        }
+
+        void DockingContainer_DockStateChanged(object sender, EventArgs e)
+        {
+            DockingContainer container = (DockingContainer)DockingContainer;
+            container.InitScriptIfNeeded<object>(Reinitialize, null);
+        }
+
+        private void Reinitialize(object state)
+        {
+            this.Controls.Clear();
+            _extraMenu.Commands.Clear();
+            flowLayoutPanel1.Controls.Clear();
+            UnregisterEvents();
+            Init();
+            RegisterEvents();
+            scintillaEditor.ActivateTextEditor();
+        }
+
+        private void InitScintilla()
+        {
+            scintillaEditor.SetAsDialog();
+            scintillaEditor.AutoCompleteEnabled = true;
+            scintillaEditor.IgnoreLinesWithoutIndent = true;
+            scintillaEditor.AutoSpaceAfterComma = false;
+            scintillaEditor.CallTipsEnabled = true;
+            scintillaEditor.FixedTypeForThisKeyword = "Dialog";
+            scintillaEditor.SetFillupKeys(Constants.AUTOCOMPLETE_ACCEPT_KEYS);
+            //scintillaEditor.SetKeyWords(dialogKeyWords);
+            scintillaEditor.SetKeyWords(Constants.SCRIPT_KEY_WORDS);
+            scintillaEditor.SetClassNamesList(BuildCharacterKeywords());
+            scintillaEditor.SetAutoCompleteKeyWords(Constants.SCRIPT_KEY_WORDS);
+            scintillaEditor.SetAutoCompleteSource(_dialog);
+            scintillaEditor.SetText(_dialog.Script);
         }
 
         public ScintillaWrapper ScriptEditor
@@ -105,7 +165,7 @@ namespace AGS.Editor
         {
             return "Dialogs";
         }
-        
+
         protected override void OnCommandClick(string command)
         {
             base.OnCommandClick(command);
@@ -129,14 +189,14 @@ namespace AGS.Editor
             }
             else if (command == GOTO_LINE_COMMAND)
             {
-                GotoLineDialog gotoLineDialog = new GotoLineDialog 
+                GotoLineDialog gotoLineDialog = new GotoLineDialog
                 {
                     Minimum = 0,
                     Maximum = scintillaEditor.LineCount,
                     LineNumber = scintillaEditor.CurrentLine
                 };
                 if (gotoLineDialog.ShowDialog() != DialogResult.OK) return;
-                scintillaEditor.GoToLine(gotoLineDialog.LineNumber); 
+                scintillaEditor.GoToLine(gotoLineDialog.LineNumber);
             }
         }
 
@@ -156,17 +216,17 @@ namespace AGS.Editor
             _dialog.Script = scintillaEditor.GetText();
         }
 
-		public void GoToScriptLine(ZoomToFileEventArgs evArgs)
-		{
+        public void GoToScriptLine(ZoomToFileEventArgs evArgs)
+        {
             if (evArgs.ZoomType == ZoomToFileZoomType.ZoomToCharacterPosition)
             {
                 scintillaEditor.GoToPosition(evArgs.ZoomPosition);
             }
             else if (evArgs.ZoomType == ZoomToFileZoomType.ZoomToLineNumber)
             {
-			    scintillaEditor.GoToLine(evArgs.ZoomPosition);
+                scintillaEditor.GoToLine(evArgs.ZoomPosition);
             }
-			scintillaEditor.Focus();
+            scintillaEditor.Focus();
 
             if (evArgs.IsDebugExecutionPoint)
             {
@@ -176,7 +236,7 @@ namespace AGS.Editor
                     scintillaEditor.ShowErrorMessagePopup(evArgs.ErrorMessage);
                 }
             }
-		}
+        }
 
         public void RemoveExecutionPointMarker()
         {
@@ -216,17 +276,17 @@ namespace AGS.Editor
         {
             DialogOption newOption = new DialogOption();
             newOption.ID = _dialog.Options.Count + 1;
-			if (_dialog.Options.Count > 0)
-			{
-				// Copy Show & Say settings from previous option
-				newOption.Say = _dialog.Options[_dialog.Options.Count - 1].Say;
-				newOption.Show = _dialog.Options[_dialog.Options.Count - 1].Show;
-			}
-			else
-			{
-				newOption.Say = true;
-				newOption.Show = true;
-			}
+            if (_dialog.Options.Count > 0)
+            {
+                // Copy Show & Say settings from previous option
+                newOption.Say = _dialog.Options[_dialog.Options.Count - 1].Say;
+                newOption.Show = _dialog.Options[_dialog.Options.Count - 1].Show;
+            }
+            else
+            {
+                newOption.Say = true;
+                newOption.Show = true;
+            }
             _dialog.Options.Add(newOption);
             DialogOptionEditor newEditor = new DialogOptionEditor(newOption);
             _optionPanes.Add(newEditor);

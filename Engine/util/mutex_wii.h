@@ -23,7 +23,7 @@ namespace Engine
 {
 
 
-class WiiMutex : BaseMutex
+class WiiMutex : public BaseMutex
 {
 public:
   inline WiiMutex()
@@ -33,7 +33,6 @@ public:
 
   inline ~WiiMutex()
   {
-    Unlock();
     LWP_MutexDestroy(_mutex);
   }
 

@@ -13,7 +13,6 @@
 //=============================================================================
 
 #define USE_CLIB
-#include "util/wgt2allg.h"
 #include "util/string_utils.h" //strlwr()
 #include "gfx/ali3d.h"
 #include "ac/common.h"
@@ -59,14 +58,18 @@
 #include "ac/spritecache.h"
 #include "util/stream.h"
 #include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
 #include "core/assetmanager.h"
 #include "ac/dynobj/all_dynamicclasses.h"
+#include "gfx/bitmap.h"
+#include "util/math.h"
+#include "main/graphics_mode.h"
+#include "device/mousew32.h"
 
 using AGS::Common::Bitmap;
 using AGS::Common::Stream;
 using AGS::Common::String;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
+namespace Math = AGS::Common::Math;
 namespace Out = AGS::Common::Out;
 
 #if !defined (WINDOWS_VERSION)
@@ -216,13 +219,13 @@ Bitmap *fix_bitmap_size(Bitmap *todubl) {
         return todubl;
 
     //  Bitmap *tempb=BitmapHelper::CreateBitmap(scrnwid,scrnhit);
+    //todubl->SetClip(Rect(0,0,oldw-1,oldh-1)); // CHECKME! [IKM] Not sure this is needed here
     Bitmap *tempb=BitmapHelper::CreateBitmap(newWidth, newHeight, todubl->GetColorDepth());
     tempb->SetClip(Rect(0,0,tempb->GetWidth()-1,tempb->GetHeight()-1));
-    todubl->SetClip(Rect(0,0,oldw-1,oldh-1));
-    tempb->Clear();
+    tempb->Fill(0);
     tempb->StretchBlt(todubl, RectWH(0,0,oldw,oldh), RectWH(0,0,tempb->GetWidth(),tempb->GetHeight()));
-    delete todubl; todubl=tempb;
-    return todubl;
+    delete todubl;
+    return tempb;
 }
 
 
@@ -251,7 +254,8 @@ void unload_old_room() {
 
     current_fade_out_effect();
 
-    abuf->Clear();
+    Bitmap *ds = GetVirtualScreen();
+    ds->Fill(0);
     for (ff=0;ff<croom->numobj;ff++)
         objs[ff].moving = 0;
 
@@ -423,14 +427,14 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     // load the room from disk
     our_eip=200;
     thisroom.gameId = NO_GAME_ID_IN_ROOM_FILE;
-    load_room(room_filename, &thisroom, (game.default_resolution > 2));
+    load_room(room_filename, &thisroom, game.IsHiRes());
 
     if ((thisroom.gameId != NO_GAME_ID_IN_ROOM_FILE) &&
         (thisroom.gameId != game.uniqueid)) {
             quitprintf("!Unable to load '%s'. This room file is assigned to a different game.", room_filename.GetCStr());
     }
 
-    if ((game.default_resolution > 2) && (game.options[OPT_NATIVECOORDINATES] == 0))
+    if (game.IsHiRes() && (game.options[OPT_NATIVECOORDINATES] == 0))
     {
         convert_room_coordinates_to_low_res(&thisroom);
     }
@@ -494,17 +498,31 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     update_polled_stuff_if_runtime();
 
     our_eip=202;
-    if (usetup.want_letterbox) {
+    const int real_room_height = multiply_up_coordinate(thisroom.height);
+    // Frame size is updated when letterbox mode is on, or when room's size is smaller than game's size.
+    // NOTE: if "want_letterbox" is false, GameSize.Height = final_scrn_hit always.
+    if (usetup.want_letterbox ||
+            real_room_height < GameSize.Height || scrnhit < GameSize.Height) {
         int abscreen=0;
 
-        if (abuf==BitmapHelper::GetScreenBitmap()) abscreen=1;
-        else if (abuf==virtual_screen) abscreen=2;
-        // if this is a 640x480 room and we're in letterbox mode, full-screen it
+        Bitmap *ds = GetVirtualScreen();
+        if (ds==BitmapHelper::GetScreenBitmap()) abscreen=1;
+        else if (ds==virtual_screen) abscreen=2;
         int newScreenHeight = final_scrn_hit;
-        if (multiply_up_coordinate(thisroom.height) < final_scrn_hit) {
+        // [IKM] 2015-05-04: in original engine the letterbox feature only allowed viewports of
+        // either 200 or 240 (400 and 480) pixels, if the room height was equal or greater than 200 (400).
+        const int viewport_height = real_room_height < GameSize.Height ? real_room_height :
+            (real_room_height >= GameSize.Height && real_room_height < LetterboxedGameSize.Height) ? GameSize.Height :
+            LetterboxedGameSize.Height;
+        if (viewport_height < final_scrn_hit) {
             clear_letterbox_borders();
-            newScreenHeight = get_fixed_pixel_size(200);
+            newScreenHeight = viewport_height;
         }
+
+        // If the game is run not in letterbox mode, but there's a random room smaller than the game size,
+        // then the sub_screen does not exist at this point; so we create it here.
+        if (!_sub_screen)
+            _sub_screen = BitmapHelper::CreateSubBitmap(_old_screen, RectWH(final_scrn_wid / 2 - scrnwid / 2, final_scrn_hit / 2-newScreenHeight/2, scrnwid, newScreenHeight));
 
         if (newScreenHeight == _sub_screen->GetHeight())
         {
@@ -524,6 +542,8 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
 
 		scrnhit = BitmapHelper::GetScreenBitmap()->GetHeight();
         vesa_yres = scrnhit;
+        game_frame_x_offset = (final_scrn_wid - scrnwid) / 2;
+        game_frame_y_offset = (final_scrn_hit - scrnhit) / 2;
 
         filter->SetMouseArea(0,0, scrnwid-1, vesa_yres-1);
 
@@ -538,8 +558,10 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
 
         gfxDriver->SetRenderOffset(get_screen_x_adjustment(virtual_screen), get_screen_y_adjustment(virtual_screen));
 
-		if (abscreen==1) abuf=BitmapHelper::GetScreenBitmap();
-        else if (abscreen==2) abuf=virtual_screen;
+		if (abscreen==1) //abuf=BitmapHelper::GetScreenBitmap();
+            SetVirtualScreen( BitmapHelper::GetScreenBitmap() );
+        else if (abscreen==2) //abuf=virtual_screen;
+            SetVirtualScreen( virtual_screen );
 
         update_polled_stuff_if_runtime();
     }
@@ -559,11 +581,10 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     // Make a backup copy of the walkable areas prior to
     // any RemoveWalkableArea commands
     delete walkareabackup;
-    walkareabackup=BitmapHelper::CreateBitmap(thisroom.walls->GetWidth(),thisroom.walls->GetHeight());
+    // copy the walls screen
+    walkareabackup=BitmapHelper::CreateBitmapCopy(thisroom.walls);
 
     our_eip=204;
-    // copy the walls screen
-    walkareabackup->Blit(thisroom.walls,0,0,0,0,thisroom.walls->GetWidth(),thisroom.walls->GetHeight());
     update_polled_stuff_if_runtime();
     redo_walkable_areas();
     // fix walk-behinds to current screen resolution
@@ -1057,6 +1078,7 @@ void compile_room_script() {
         quitprintf("Unable to create forked room instance: %s", ccErrorString);
 
     repExecAlways.roomHasFunction = true;
+    lateRepExecAlways.roomHasFunction = true;
     getDialogOptionsDimensionsFunc.roomHasFunction = true;
 }
 

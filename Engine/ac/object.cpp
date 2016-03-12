@@ -12,7 +12,6 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "ac/object.h"
 #include "gfx/ali3d.h"
 #include "ac/common.h"
@@ -34,6 +33,7 @@
 #include "ac/route_finder.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
+#include "gfx/gfx_util.h"
 #include "script/runtimescriptvalue.h"
 #include "ac/dynobj/cc_object.h"
 
@@ -90,12 +90,7 @@ int Object_GetTransparency(ScriptObject *objj) {
     if (!is_valid_object(objj->id))
         quit("!Object.Transparent: invalid object number specified");
 
-    if (objs[objj->id].transparent == 0)
-        return 0;
-    if (objs[objj->id].transparent == 255)
-       return 100;
-
-    return 100 - ((objs[objj->id].transparent * 10) / 25);
+    return GfxUtil::LegacyTrans255ToTrans100(objs[objj->id].transparent);
 }
 
 void Object_SetBaseline(ScriptObject *objj, int basel) {
@@ -347,7 +342,7 @@ void move_object(int objj,int tox,int toy,int spee,int ignwal) {
         mls[mslot].direct = ignwal;
 
         if ((game.options[OPT_NATIVECOORDINATES] != 0) &&
-            (game.default_resolution > 2))
+            game.IsHiRes())
         {
             convert_move_path_to_high_res(&mls[mslot]);
         }

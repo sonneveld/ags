@@ -37,6 +37,7 @@ class PosixLibrary : BaseLibrary
 {
 public:
   PosixLibrary()
+    : _library(NULL)
   {
   };
 
@@ -67,6 +68,8 @@ public:
 
   bool Load(AGS::Common::String libraryName)
   {
+    Unload();
+
     // Try rpath first
     _library = dlopen(BuildPath(NULL, libraryName).GetCStr(), RTLD_LAZY);
     AGS::Common::Out::FPrint("dlopen returned: %s", dlerror());

@@ -57,7 +57,9 @@ namespace AGS.Types
         private int _dialogBulletImage = 0;
         private SkipSpeechStyle _skipSpeech = SkipSpeechStyle.MouseOrKeyboardOrTimer;
         private SpeechStyle _speechStyle = SpeechStyle.Lucasarts;
-        private bool _numberDialogOptions = false;
+        private int _globalSpeechAnimationDelay = 5;
+        private bool _useGlobalSpeechAnimationDelay = false;
+        private DialogOptionsNumbering _numberDialogOptions = DialogOptionsNumbering.KeyShortcutsOnly;
         private bool _dialogOptionsBackwards = false;
         private SpeechPortraitSide _speechPortraitSide = SpeechPortraitSide.Left;
         private int _textWindowGUI = 0;
@@ -72,10 +74,10 @@ namespace AGS.Types
         private int _totalScore = 0;
         private bool _binaryFilesInSourceControl = false;
         private GUIAlphaStyle _guiAlphaStyle = GUIAlphaStyle.MultiplyTranslucenceSrcBlend;
+        private SpriteAlphaStyle _spriteAlphaStyle = SpriteAlphaStyle.Improved;
         private bool _runGameLoopsWhileDialogOptionsDisplayed = false;
         private InventoryHotspotMarker _inventoryHotspotMarker = new InventoryHotspotMarker();
         private bool _useLowResCoordinatesInScript = true;
-        private bool _legacySpeechAnimationSpeed = true;
         // Vista game explorer fields
 		private bool _enableGameExplorer = false;
 		private string _description = string.Empty;
@@ -241,7 +243,7 @@ namespace AGS.Types
         [DisplayName("Enable letterbox mode")]
         [Description("Game will run at 320x240 or 640x480 with top and bottom black borders to give a square aspect ratio")]
         [DefaultValue(false)]
-        [Category("Visual")]
+        [Category("(Setup)")]
         public bool LetterboxMode
         {
             get { return _letterboxMode; }
@@ -288,6 +290,17 @@ namespace AGS.Types
         {
             get { return _guiAlphaStyle; }
             set { _guiAlphaStyle = value; }
+        }
+
+        [DisplayName("Sprite alpha rendering style")]
+        [Description("When using 32-bit alpha-channel images, should sprites be drawn with the new improved alpha method, or the backwards-compatible method?")]
+        [DefaultValue(SpriteAlphaStyle.Improved)]
+        [Category("Visual")]
+        [TypeConverter(typeof(EnumTypeConverter))]
+        public SpriteAlphaStyle SpriteAlphaStyle
+        {
+            get { return _spriteAlphaStyle; }
+            set { _spriteAlphaStyle = value; }
         }
 
         [DisplayName("Run game loops while dialog options are displayed")]
@@ -444,16 +457,6 @@ namespace AGS.Types
             set { _leftToRightPrecedence = value; }
         }
 
-        [DisplayName("Old-style game-wide speech animation speed")]
-        [Description("Use the old-style game.talkanim_speed setting to determine the animation speed of character speech; individual character SpeechAnimationDelay settings will be ignored")]
-        [DefaultValue(false)]
-        [Category("Backwards Compatibility")]
-        public bool LegacySpeechAnimationSpeed
-        {
-            get { return _legacySpeechAnimationSpeed; }
-            set { _legacySpeechAnimationSpeed = value; }
-        }
-
         [DisplayName("Play sound when the player gets points")]
         [Description("This sound number will be played whenever the player scores points (0 to disable)")]
         [DefaultValue(0)]
@@ -528,11 +531,46 @@ namespace AGS.Types
             set { _speechStyle = value; }
         }
 
-        [DisplayName("Number dialog options")]
-        [Description("Dialog options become numbered bullet points, and the numeric keys can be used to select them")]
+        [DisplayName("Use game-wide speech animation delay")]
+        [Description("Determines whether to use game-wide speech animation delay or use the individual character settings.")]
         [DefaultValue(false)]
         [Category("Dialog")]
-        public bool NumberDialogOptions
+        [RefreshProperties(RefreshProperties.All)]
+        public bool UseGlobalSpeechAnimationDelay
+        {
+            get { return _useGlobalSpeechAnimationDelay; }
+            set { _useGlobalSpeechAnimationDelay = value; }
+        }
+
+        [DisplayName("Game-wide speech animation delay")]
+        [Description("Sets the Speech.GlobalSpeechAnimationDelay setting to determine the animation speed of character speech; individual character SpeechAnimationDelay settings will be ignored.")]
+        [DefaultValue(5)]
+        [Category("Dialog")]
+        public int GlobalSpeechAnimationDelay
+        {
+            get { return _globalSpeechAnimationDelay; }
+
+            set
+            {
+                if (value < 0) throw new ArgumentOutOfRangeException("Value must be greater than or equal to zero. Value was " + value.ToString() + ".");
+                _globalSpeechAnimationDelay = value;
+            }
+        }
+
+        [Browsable(false)]
+        [Obsolete("LegacySpeechAnimationSpeed has been replaced by UseGlobalSpeechAnimationDelay.")]
+        public bool LegacySpeechAnimationSpeed
+        {
+            get { return UseGlobalSpeechAnimationDelay; }
+            set { UseGlobalSpeechAnimationDelay = value; }
+        }
+
+        [DisplayName("Number dialog options")]
+        [Description("Dialog options become numbered bullet points, and the numeric keys can be used to select them")]
+        [DefaultValue(DialogOptionsNumbering.None)]
+        [Category("Dialog")]
+        [TypeConverter(typeof(EnumTypeConverter))]
+        public DialogOptionsNumbering NumberDialogOptions
         {
             get { return _numberDialogOptions; }
             set { _numberDialogOptions = value; }
@@ -817,10 +855,10 @@ namespace AGS.Types
             _saveGamesFolderName = null;
             _binaryFilesInSourceControl = false;
             _guiAlphaStyle = GUIAlphaStyle.Classic;
+            _spriteAlphaStyle = SpriteAlphaStyle.Classic;
             _runGameLoopsWhileDialogOptionsDisplayed = false;
             _inventoryHotspotMarker = new InventoryHotspotMarker();
             _useLowResCoordinatesInScript = true;
-            _legacySpeechAnimationSpeed = true;
             _audioIndexer = 0;
             _enforceNewAudio = false;
 
@@ -908,6 +946,10 @@ namespace AGS.Types
                          (property.Name == "LetterboxMode"))
                 {
                     // Only show letterbox option for 320x200 and 640x400 games
+                    wantThisProperty = false;
+                }
+                else if ((property.Name == "GlobalSpeechAnimationDelay") && (!UseGlobalSpeechAnimationDelay))
+                {
                     wantThisProperty = false;
                 }
 

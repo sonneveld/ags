@@ -21,6 +21,7 @@
 #include "util/wgt2allg.h"
 #include "gfx/ali3d.h"
 #include "ac/runtime_defines.h"
+#include "main/config.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
 #include "media/audio/audio.h"
@@ -50,6 +51,8 @@ int psp_gfx_smooth_sprites = 0;
 char psp_game_file_name[256];
 char userAppDataRoot[PATH_MAX];
 
+ConfigTree *wincfg;
+
 struct AGSMac : AGSPlatformDriver {
   AGSMac();
 
@@ -65,9 +68,7 @@ struct AGSMac : AGSPlatformDriver {
   virtual int  RunSetup();
   virtual void SetGameWindowIcon();
   virtual void ShutdownCDPlayer();
-  virtual void WriteConsole(const char*, ...);
-  virtual void ReplaceSpecialPaths(const char*, char*);  
-  virtual void WriteDebugString(const char* texx, ...);
+  virtual void ReplaceSpecialPaths(const char*, char*);
 };
 
 AGSMac::AGSMac()
@@ -111,7 +112,8 @@ void AGSMac::Delay(int millis) {
     usleep(5);
     millis -= 5;
 
-    update_polled_stuff(false);
+    // EDMUNDO: Disable for now...
+    //update_polled_stuff(false);
   }
   if (millis > 0)
     usleep(millis);
@@ -126,15 +128,15 @@ const char* AGSMac::GetNoMouseErrorString() {
   return "This game requires a mouse. You need to configure and setup your mouse to play this game.\n";
 }
 
-int INIreadint (const char *sectn, const char *item, int errornosect = 1);
-
 eScriptSystemOSID AGSMac::GetSystemOSID() {
-  int fake_win =  INIreadint("misc", "fake_os", 0);
-  if (fake_win > 0) {
-    return (eScriptSystemOSID)fake_win;
-  } else {
-    return eOS_Mac;
-  }
+  // TODO: Update the INI file.
+//  int fake_win =  INIreadint("misc", "fake_os", 0);
+//  if (fake_win > 0) {
+//    return (eScriptSystemOSID)fake_win;
+//  } else {
+//    return eOS_Mac;
+//  }
+  return eOS_Mac;
 }
 
 int AGSMac::InitializeCDPlayer() {
@@ -163,26 +165,6 @@ int AGSMac::RunSetup() {
 
 void AGSMac::SetGameWindowIcon() {
   // do nothing
-}
-
-void AGSMac::WriteDebugString(const char* texx, ...) {
-  char displbuf[STD_BUFFER_SIZE] = "AGS: ";
-  va_list ap;
-  va_start(ap,texx);
-  vsprintf(&displbuf[5],texx,ap);
-  va_end(ap);
-//  strcat(displbuf, "\n");
-
-  puts(displbuf);
-}
-
-void AGSMac::WriteConsole(const char *text, ...) {
-  char displbuf[2000];
-  va_list ap;
-  va_start(ap, text);
-  vsprintf(displbuf, text, ap);
-  va_end(ap);
-  puts(displbuf);
 }
 
 void AGSMac::ShutdownCDPlayer() {

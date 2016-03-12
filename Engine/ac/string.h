@@ -36,7 +36,6 @@ int String_EndsWith(const char *thisString, const char *checkForString, bool cas
 const char* String_Replace(const char *thisString, const char *lookForText, const char *replaceWithText, bool caseSensitive);
 const char* String_LowerCase(const char *thisString);
 const char* String_UpperCase(const char *thisString);
-const char* String_Format(const char *texx, ...);
 int String_GetChars(const char *texx, int index);
 int StringToInt(const char*stino);
 int StrContains (const char *s1, const char *s2);
@@ -46,7 +45,6 @@ int StrContains (const char *s1, const char *s2);
 const char* CreateNewScriptString(const char *fromText, bool reAllocate = true);
 void split_lines_rightleft (char *todis, int wii, int fonnt);
 char *reverse_text(const char *text);
-void wouttext_reverseifnecessary(int x, int y, int font, char *text);
 void break_up_text_into_lines(int wii,int fonnt, const char*todis);
 void check_strlen(char*ptt);
 void my_strncpy(char *dest, const char *src, int len);

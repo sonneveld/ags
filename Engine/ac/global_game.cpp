@@ -13,7 +13,7 @@
 //=============================================================================
 
 #define USE_CLIB
-#include "util/wgt2allg.h"
+#include <stdio.h>
 #include "ac/global_game.h"
 #include "ac/common.h"
 #include "ac/view.h"
@@ -52,9 +52,9 @@
 #include "script/script_runtime.h"
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
 #include "core/assetmanager.h"
 #include "main/game_file.h"
+#include "util/string_utils.h"
 
 using AGS::Common::String;
 using AGS::Common::Bitmap;
@@ -88,6 +88,7 @@ extern IGraphicsDriver *gfxDriver;
 extern int scrnwid,scrnhit;
 extern color palette[256];
 extern Bitmap *virtual_screen;
+extern int psp_gfx_renderer;
 
 void GiveScore(int amnt) 
 {
@@ -185,7 +186,6 @@ int LoadSaveSlotScreenshot(int slnum, int width, int height) {
 
     // resize the sprite to the requested size
     Bitmap *newPic = BitmapHelper::CreateBitmap(width, height, spriteset[gotSlot]->GetColorDepth());
-
     newPic->StretchBlt(spriteset[gotSlot],
         RectWH(0, 0, spritewidth[gotSlot], spriteheight[gotSlot]),
         RectWH(0, 0, width, height));
@@ -274,7 +274,8 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
     if (Common::AssetManager::SetDataFile(game_file_name) != Common::kAssetNoError)
         quitprintf("!RunAGSGame: unable to load new game file '%s'", game_file_name.GetCStr());
 
-    abuf->Clear();
+    Bitmap *ds = GetVirtualScreen();
+    ds->Fill(0);
     show_preload();
 
     if ((result = load_game_file ()) != 0) {
@@ -319,12 +320,15 @@ int GetGameParameter (int parm, int data1, int data2, int data3) {
    case GP_FRAMESOUND:
    case GP_ISFRAMEFLIPPED:
        {
-           if ((data1 < 1) || (data1 > game.numviews))
-               quit("!GetGameParameter: invalid view specified");
-           if ((data2 < 0) || (data2 >= views[data1 - 1].numLoops))
-               quit("!GetGameParameter: invalid loop specified");
-           if ((data3 < 0) || (data3 >= views[data1 - 1].loops[data2].numFrames))
-               quit("!GetGameParameter: invalid frame specified");
+           if ((data1 < 1) || (data1 > game.numviews)) {
+               quitprintf("!GetGameParameter: invalid view specified (v: %d, l: %d, f: %d)", data1, data2, data3);
+           }
+           if ((data2 < 0) || (data2 >= views[data1 - 1].numLoops)) {
+               quitprintf("!GetGameParameter: invalid loop specified (v: %d, l: %d, f: %d)", data1, data2, data3);
+           }
+           if ((data3 < 0) || (data3 >= views[data1 - 1].loops[data2].numFrames)) {
+               quitprintf("!GetGameParameter: invalid frame specified (v: %d, l: %d, f: %d)", data1, data2, data3);
+           }
 
            ViewFrame *pvf = &views[data1 - 1].loops[data2].frames[data3];
 
@@ -469,11 +473,17 @@ void EndSkippingUntilCharStops() {
 // 4 = mouse button or any key
 // 5 = right click or ESC only
 void StartCutscene (int skipwith) {
-    if (play.in_cutscene)
-        quit("!StartCutscene: already in a cutscene");
+    static ScriptPosition last_cutscene_script_pos;
+
+    if (play.in_cutscene) {
+        quitprintf("!StartCutscene: already in a cutscene; previous started in \"%s\", line %d",
+            last_cutscene_script_pos.Section.GetCStr(), last_cutscene_script_pos.Line);
+    }
 
     if ((skipwith < 1) || (skipwith > 5))
         quit("!StartCutscene: invalid argument, must be 1 to 5.");
+
+    get_script_position(last_cutscene_script_pos);
 
     // make sure they can't be skipping and cutsceneing at the same time
     EndSkippingUntilCharStops();
@@ -575,6 +585,12 @@ void GetLocationName(int xxx,int yyy,char*tempo) {
     if (loctype == LOCTYPE_OBJ) {
         aa = getloctype_index;
         strcpy(tempo,get_translation(thisroom.objectnames[aa]));
+        // Compatibility: < 3.1.1 games returned space for nameless object
+        // (presumably was a bug, but fixing it affected certain games behavior)
+        if (loaded_game_file_version < kGameVersion_311 && tempo[0] == 0) {
+            tempo[0] = ' ';
+            tempo[1] = 0;
+        }
         if (play.get_loc_name_last_time != 3000+aa)
             guis_need_update = 1;
         play.get_loc_name_last_time = 3000+aa;
@@ -591,7 +607,7 @@ int IsKeyPressed (int keycode) {
 #ifdef ALLEGRO_KEYBOARD_HANDLER
     if (keyboard_needs_poll())
         poll_keyboard();
-    if (keycode >= 300) {
+    if (keycode >= AGS_EXT_KEY_SHIFT) {
         // function keys are 12 lower in allegro 4
         if ((keycode>=359) & (keycode<=368)) keycode-=12;
         // F11-F12
@@ -615,9 +631,9 @@ int IsKeyPressed (int keycode) {
         else if (keycode==372) keycode=345;
         else if (keycode==373) keycode=346;
         // insert
-        else if (keycode == AGS_KEYCODE_INSERT) keycode = KEY_INSERT + 300;
+        else if (keycode == AGS_KEYCODE_INSERT) keycode = KEY_INSERT + AGS_EXT_KEY_SHIFT;
         // delete
-        else if (keycode == AGS_KEYCODE_DELETE) keycode = KEY_DEL + 300;
+        else if (keycode == AGS_KEYCODE_DELETE) keycode = KEY_DEL + AGS_EXT_KEY_SHIFT;
 
         // deal with shift/ctrl/alt
         if (keycode == 403) keycode = KEY_LSHIFT;
@@ -625,7 +641,7 @@ int IsKeyPressed (int keycode) {
         else if (keycode == 405) keycode = KEY_LCONTROL;
         else if (keycode == 406) keycode = KEY_RCONTROL;
         else if (keycode == 407) keycode = KEY_ALT;
-        else keycode -= 300;
+        else keycode -= AGS_EXT_KEY_SHIFT;
 
         if (rec_iskeypressed(keycode))
             return 1;
@@ -735,17 +751,23 @@ int SaveScreenShot(const char*namm) {
 
     if (gfxDriver->RequiresFullRedrawEachFrame()) 
     {
-        Bitmap *buffer = BitmapHelper::CreateBitmap(scrnwid, scrnhit, 32);
+        // FIXME this weird stuff! (related to incomplete OpenGL renderer)
+#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(WINDOWS_VERSION)
+        int color_depth = (psp_gfx_renderer > 0) ? 32 : final_col_dep;
+#else
+        int color_depth = final_col_dep;
+#endif
+        Bitmap *buffer = BitmapHelper::CreateBitmap(scrnwid, scrnhit, color_depth);
         gfxDriver->GetCopyOfScreenIntoBitmap(buffer);
 
-		if (!BitmapHelper::SaveToFile(buffer, fileName, palette)!=0)
+		if (!buffer->SaveToFile(fileName, palette)!=0)
         {
             delete buffer;
             return 0;
         }
         delete buffer;
     }
-	else if (!BitmapHelper::SaveToFile(virtual_screen, fileName, palette)!=0)
+	else if (!virtual_screen->SaveToFile(fileName, palette)!=0)
         return 0; // failed
 
     return 1;  // successful
@@ -755,20 +777,27 @@ void SetMultitasking (int mode) {
     if ((mode < 0) | (mode > 1))
         quit("!SetMultitasking: invalid mode parameter");
 
+    if (usetup.override_multitasking >= 0)
+    {
+        mode = usetup.override_multitasking;
+    }
+
     // Don't allow background running if full screen
-    if ((mode == 1) && (usetup.windowed == 0))
+    if ((mode == 1) && (!usetup.windowed))
         mode = 0;
 
     if (mode == 0) {
         if (set_display_switch_mode(SWITCH_PAUSE) == -1)
             set_display_switch_mode(SWITCH_AMNESIA);
         // install callbacks to stop the sound when switching away
-        set_display_switch_callback(SWITCH_IN, display_switch_in);
-        set_display_switch_callback(SWITCH_OUT, display_switch_out);
+        set_display_switch_callback(SWITCH_IN, display_switch_in_resume);
+        set_display_switch_callback(SWITCH_OUT, display_switch_out_suspend);
     }
     else {
         if (set_display_switch_mode (SWITCH_BACKGROUND) == -1)
             set_display_switch_mode(SWITCH_BACKAMNESIA);
+        set_display_switch_callback(SWITCH_IN, display_switch_in);
+        set_display_switch_callback(SWITCH_OUT, display_switch_out);
     }
 }
 
@@ -864,13 +893,9 @@ void SetNormalFont (int fontnum) {
     play.normal_font = fontnum;
 }
 
-void _sc_AbortGame(const char*texx, ...) {
+void _sc_AbortGame(const char* text) {
     char displbuf[STD_BUFFER_SIZE] = "!?";
-    va_list ap;
-    va_start(ap,texx);
-    vsprintf(&displbuf[2], get_translation(texx), ap);
-    va_end(ap);
-
+    snprintf(&displbuf[2], STD_BUFFER_SIZE - 3, "%s", text);
     quit(displbuf);
 }
 

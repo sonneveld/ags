@@ -12,7 +12,6 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "ac/gamesetup.h"
@@ -44,19 +43,15 @@ extern unsigned int loopcounter;
 
 int scrnwid,scrnhit;
 int current_screen_resolution_multiplier = 1;
-int force_letterbox = 0;
 
-int final_scrn_wid=0,final_scrn_hit=0,final_col_dep=0;
+int final_scrn_wid=0,final_scrn_hit=0,final_col_dep=0, game_frame_x_offset = 0, game_frame_y_offset = 0;
 int screen_reset = 0;
 
 int GetMaxScreenHeight () {
     int maxhit = BASEHEIGHT;
-    if ((maxhit == 200) || (maxhit == 400))
-    {
-        // uh ... BASEHEIGHT depends on Native Coordinates setting so be careful
-        if ((usetup.want_letterbox) && (thisroom.height > maxhit)) 
-            maxhit = divide_down_coordinate(multiply_up_coordinate(maxhit) + get_fixed_pixel_size(40));
-    }
+    // uh ... BASEHEIGHT depends on Native Coordinates setting so be careful
+    if ((usetup.want_letterbox) && (thisroom.height > maxhit)) 
+        maxhit = divide_down_coordinate(multiply_up_coordinate(maxhit) + game_frame_y_offset * 2);
     return maxhit;
 }
 
@@ -72,7 +67,7 @@ void ShakeScreen(int severe) {
         return;
 
     int hh;
-    Bitmap *oldsc=abuf;
+    //Bitmap *oldsc=abuf; // CHECKME!!!
     severe = multiply_up_coordinate(severe);
 
     if (gfxDriver->RequiresFullRedrawEachFrame())
@@ -114,7 +109,7 @@ void ShakeScreen(int severe) {
         delete tty;
     }
 
-    abuf=oldsc;
+    //abuf=oldsc;// CHECKME!!!
 }
 
 void ShakeScreenBackground (int delay, int amount, int length) {

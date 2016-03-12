@@ -584,16 +584,44 @@ namespace AGS.Editor
             return new string[0];
         }
 
-        public string ShowSelectDirectoryDialog(string title, string initialPath)
+        public string ShowSelectFolderOrNoneDialog(string title, string initialPath, bool allowNewFolder)
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
             dialog.Description = title;
             dialog.SelectedPath = initialPath;
+            dialog.ShowNewFolderButton = allowNewFolder;
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 return dialog.SelectedPath;
             }
             return null;
+        }
+
+        public string ShowSelectFolderOrNoneDialog(string title, string initialPath)
+        {
+            return ShowSelectFolderOrNoneDialog(title, initialPath, true);
+        }
+
+        public string ShowSelectFolderOrDefaultDialog(string title, string defaultPath, bool allowNewFolder)
+        {
+            string result = defaultPath;
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            dialog.Description = title;
+            dialog.ShowNewFolderButton = allowNewFolder;
+            if (defaultPath.Length > 0)
+            {
+                dialog.SelectedPath = defaultPath;
+            }
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                result = dialog.SelectedPath;
+            }
+            return result;
+        }
+
+        public string ShowSelectFolderOrDefaultDialog(string title, string defaultPath)
+        {
+            return ShowSelectFolderOrDefaultDialog(title, defaultPath, true);
         }
 
         public bool ShowCheckOutDialog(string fileName)
@@ -1526,6 +1554,28 @@ namespace AGS.Editor
         {
             _mainForm.statusLabel.Text = text;
         }
+
+        public void RePopulateTreeView(IEditorComponent component, string selectedNode)
+        {
+            IRePopulatableComponent repopulatableComponent = component as IRePopulatableComponent;
+            if (repopulatableComponent != null)
+            {
+                if (selectedNode == null)
+                {
+                    repopulatableComponent.RePopulateTreeView();
+                }
+                else
+                {
+                    repopulatableComponent.RePopulateTreeView(selectedNode);
+                }
+            }
+        }
+
+        public void RePopulateTreeView(IEditorComponent component)
+        {
+            RePopulateTreeView(component, null);
+        }
+
 
         void IGUIController.SetStatusBarText(string text)
         {

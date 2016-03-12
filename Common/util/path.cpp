@@ -1,9 +1,16 @@
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #if defined (WINDOWS_VERSION)
 #include <windows.h>
 #endif
 #include "util/path.h"
 #include "allegro/file.h"
+
+// TODO: implement proper portable path length
+#ifndef MAX_PATH
+#define MAX_PATH 512
+#endif
 
 namespace AGS
 {
@@ -12,6 +19,30 @@ namespace Common
 
 namespace Path
 {
+
+bool IsDirectory(const String &filename)
+{
+    struct stat st;
+    String fixed_path = filename;
+    // stat() does not like trailing slashes, remove them
+    fixed_path.TrimRight('/');
+    fixed_path.TrimRight('\\');
+    if (stat(fixed_path, &st) == 0)
+    {
+        return (st.st_mode & S_IFMT) == S_IFDIR;
+    }
+    return false;
+}
+
+bool IsFile(const String &filename)
+{
+    struct stat st;
+    if (stat(filename, &st) == 0)
+    {
+        return (st.st_mode & S_IFMT) == S_IFREG;
+    }
+    return false;
+}
 
 int ComparePaths(const String &path1, const String &path2)
 {
@@ -31,6 +62,25 @@ int ComparePaths(const String &path1, const String &path2)
     return cmp_result;
 }
 
+bool IsSameOrSubDir(const String &parent, const String &path)
+{
+    char can_parent[MAX_PATH];
+    char can_path[MAX_PATH];
+    char relative[MAX_PATH];
+    canonicalize_filename(can_parent, parent, MAX_PATH);
+    canonicalize_filename(can_path, path, MAX_PATH);
+    const char *pstr = make_relative_filename(relative, can_parent, can_path, MAX_PATH);
+    if (!pstr)
+        return false;
+    for (pstr = strstr(pstr, ".."); pstr && *pstr; pstr = strstr(pstr, ".."))
+    {
+        pstr += 2;
+        if (*pstr == '/' || *pstr == '\\' || *pstr == 0)
+            return false;
+    }
+    return true;
+}
+
 void FixupPath(String &path)
 {
     if (path.IsEmpty())
@@ -48,11 +98,13 @@ String MakeAbsolutePath(const String &path)
     }
     String abs_path = path;
 #if defined (WINDOWS_VERSION)
-    char long_path_buffer[MAX_PATH];
-    if (GetLongPathNameA(path, long_path_buffer, MAX_PATH) > 0)
-    {
-        abs_path = long_path_buffer;
-    }
+    // NOTE: cannot use long path names in the engine, because it does not have unicode strings support
+    //
+    //char long_path_buffer[MAX_PATH];
+    //if (GetLongPathNameA(path, long_path_buffer, MAX_PATH) > 0)
+    //{
+    //    abs_path = long_path_buffer;
+    //}
 #elif defined (PSP_VERSION)
     // FIXME: Properly construct a full PSP path
     return path;

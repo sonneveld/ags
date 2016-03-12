@@ -826,23 +826,23 @@ namespace AGS.Editor
             {
                 Script dialogScripts = CompileDialogs(errors, parameters.RebuildAll);
 
-                _game.ScriptsToCompile = new Scripts();
+                _game.ScriptsToCompile = new ScriptsAndHeaders();
 
                 foreach (Script script in GetInternalScriptModules())
                 {
                     CompileScript(script, headers, errors, false);
-                    _game.ScriptsToCompile.Add(script);
+                    _game.ScriptsToCompile.Add(new ScriptAndHeader(null, script));
                 }
 
                 foreach (ScriptAndHeader scripts in _game.RootScriptFolder.AllItemsFlat)
                 {
                     headers.Add(scripts.Header);
                     CompileScript(scripts.Script, headers, errors, false);
-                    _game.ScriptsToCompile.Add(scripts.Script);					
+                    _game.ScriptsToCompile.Add(scripts);					
                 }
 
                 CompileScript(dialogScripts, headers, errors, false);
-                _game.ScriptsToCompile.Add(dialogScripts);
+                _game.ScriptsToCompile.Add(new ScriptAndHeader(null, dialogScripts));
 			}
             catch (CompileMessage ex)
             {
@@ -1527,15 +1527,10 @@ namespace AGS.Editor
 					screenRes = 0;
 				}
 				NativeProxy.WritePrivateProfileString("misc", "screenres", screenRes.ToString(), configFilePath);
-
-				int letterbox = 0;
-				if ((_game.Settings.Resolution == GameResolutions.R320x240) ||
-					(_game.Settings.Resolution == GameResolutions.R640x480))
-				{
-					letterbox = 1;
-				}
-				NativeProxy.WritePrivateProfileString("misc", "letterbox", letterbox.ToString(), configFilePath);
 			}
+
+            int letterbox = _game.Settings.LetterboxMode ? 1 : 0;
+            NativeProxy.WritePrivateProfileString("misc", "letterbox", letterbox.ToString(), configFilePath);
 
 			NativeProxy.GetPrivateProfileString("misc", "defaultgfxdriver", "NULL", buffer, buffer.Capacity, configFilePath);
 			if (buffer.ToString() != _game.Settings.GraphicsDriver.ToString())

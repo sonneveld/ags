@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
+#include <stdio.h>
 #include "gfx/ali3d.h"
 #include "ac/global_object.h"
 #include "ac/common.h"
@@ -38,6 +38,7 @@
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
+#include "gfx/gfx_util.h"
 
 using AGS::Common::Bitmap;
 
@@ -161,7 +162,8 @@ void SetObjectFrame(int obn,int viw,int lop,int fra) {
     if (objs[obn].frame >= views[viw].loops[objs[obn].loop].numFrames)
         objs[obn].frame = 0;
 
-    if (loaded_game_file_version > kGameVersion_272) // Skip check on 2.x
+    // AGS >= 3.2.0 do not let assign an empty loop
+    if (loaded_game_file_version >= kGameVersion_320)
     {
         if (views[viw].loops[objs[obn].loop].numFrames == 0) 
             quit("!SetObjectFrame: specified loop has no frames");
@@ -176,12 +178,8 @@ void SetObjectFrame(int obn,int viw,int lop,int fra) {
 void SetObjectTransparency(int obn,int trans) {
     if (!is_valid_object(obn)) quit("!SetObjectTransparent: invalid object number specified");
     if ((trans < 0) || (trans > 100)) quit("!SetObjectTransparent: transparency value must be between 0 and 100");
-    if (trans == 0)
-        objs[obn].transparent=0;
-    else if (trans == 100)
-        objs[obn].transparent = 255;
-    else
-        objs[obn].transparent=((100-trans) * 25) / 10;
+
+    objs[obn].transparent = GfxUtil::Trans100ToLegacyTrans255(trans);
 }
 
 
@@ -252,19 +250,20 @@ void MergeObject(int obn) {
 
     construct_object_gfx(obn, NULL, &theHeight, true);
 
-    Bitmap *oldabuf = abuf;
-    abuf = thisroom.ebscene[play.bg_frame];
-    if (abuf->GetColorDepth() != actsps[obn]->GetColorDepth())
+    //Bitmap *oldabuf = graphics->bmp;
+    //abuf = thisroom.ebscene[play.bg_frame];
+    Bitmap *bg_frame = thisroom.ebscene[play.bg_frame];
+    if (bg_frame->GetColorDepth() != actsps[obn]->GetColorDepth())
         quit("!MergeObject: unable to merge object due to color depth differences");
 
     int xpos = multiply_up_coordinate(objs[obn].x);
     int ypos = (multiply_up_coordinate(objs[obn].y) - theHeight);
 
-    draw_sprite_support_alpha(xpos, ypos, actsps[obn], objs[obn].num);
+    draw_sprite_support_alpha(bg_frame, false, xpos, ypos, actsps[obn], (game.spriteflags[objs[obn].num] & SPF_ALPHACHANNEL) != 0);
     invalidate_screen();
     mark_current_background_dirty();
 
-    abuf = oldabuf;
+    //abuf = oldabuf;
     // mark the sprite as merged
     objs[obn].on = 2;
     DEBUG_CONSOLE("Object %d merged into background", obn);

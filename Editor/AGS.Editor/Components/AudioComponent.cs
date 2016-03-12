@@ -304,7 +304,7 @@ namespace AGS.Editor.Components
             {
                 string newScriptName = EnsureScriptNameIsUnique(Path.GetFileNameWithoutExtension(sourceFileName));
                 AudioClip newClip = new AudioClip(newScriptName, _agsEditor.CurrentGame.GetNextAudioIndex());
-                newClip.SourceFileName = sourceFileName;
+                newClip.SourceFileName = Utilities.GetRelativeToProjectPath(sourceFileName);
                 newClip.FileType = _fileTypeMappings[fileExtension];
                 newClip.FileLastModifiedDate = File.GetLastWriteTimeUtc(sourceFileName);
                 Utilities.CopyFileAndSetDestinationWritable(sourceFileName, newClip.CacheFileName);
@@ -658,9 +658,13 @@ namespace AGS.Editor.Components
             return treeItem;
         }
 
-        protected override void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
+        protected override void AddNewItemCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
         {
             menu.Add(new MenuCommand(COMMAND_ADD_AUDIO, "Add audio file(s)...", null));
+        }
+
+        protected override void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
+        {
             menu.Add(MenuCommand.Separator);
             menu.Add(new MenuCommand(COMMAND_PROPERTIES, "Properties", null));
         }

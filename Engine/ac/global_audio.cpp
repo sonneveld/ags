@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
+#include <stdio.h>
 #include "ac/common.h"
 #include "ac/file.h"
 #include "ac/game.h"
@@ -33,7 +33,7 @@ extern GameSetupStruct game;
 extern roomstruct thisroom;
 extern char *speech_file;
 extern SpeechLipSyncLine *splipsync;
-extern int numLipLines, curLipLine, curLipLinePhenome;
+extern int numLipLines, curLipLine, curLipLinePhoneme;
 
 void StopAmbientSound (int channel) {
     if ((channel < 0) || (channel >= MAX_SOUND_CHANNELS))
@@ -53,7 +53,8 @@ void PlayAmbientSound (int channel, int sndnum, int vol, int x, int y) {
     if ((vol < 1) || (vol > 255))
         quit("!PlayAmbientSound: volume must be 1 to 255");
 
-    if (usetup.digicard == DIGI_NONE)
+    ScriptAudioClip *aclip = get_audio_clip_for_old_style_number(false, sndnum);
+    if (aclip && !is_audiotype_allowed_to_play((AudioFileType)aclip->fileType))
         return;
 
     // only play the sound if it's not already playing
@@ -65,8 +66,7 @@ void PlayAmbientSound (int channel, int sndnum, int vol, int x, int y) {
             // in case a normal non-ambient sound was playing, stop it too
             stop_and_destroy_channel(channel);
 
-            SOUNDCLIP *asound = load_sound_from_path(sndnum, vol, true);
-
+            SOUNDCLIP *asound = aclip ? load_sound_and_play(aclip, true) : NULL;
             if (asound == NULL) {
                 debug_log ("Cannot load ambient sound %d", sndnum);
                 DEBUG_CONSOLE("FAILED to load ambient sound %d", sndnum);
@@ -120,9 +120,9 @@ int PlaySoundEx(int val1, int channel) {
     if (debug_flags & DBG_NOSFX)
         return -1;
 
-    // if no sound, ignore it
-    if (usetup.digicard == DIGI_NONE)
-        return -1;
+    ScriptAudioClip *aclip = get_audio_clip_for_old_style_number(false, val1);
+    if (aclip && !is_audiotype_allowed_to_play((AudioFileType)aclip->fileType))
+        return -1; // if sound is off, ignore it
 
     if ((channel < SCHAN_NORMAL) || (channel >= MAX_SOUND_CHANNELS))
         quit("!PlaySoundEx: invalid channel specified, must be 3-7");
@@ -155,8 +155,7 @@ int PlaySoundEx(int val1, int channel) {
 
     last_sound_played[channel] = val1;
 
-    SOUNDCLIP *soundfx = load_sound_from_path(val1, play.sound_volume, 0);
-
+    SOUNDCLIP *soundfx = aclip ? load_sound_and_play(aclip, false) : NULL;
     if (soundfx == NULL) {
         debug_log("Sound sample load failure: cannot load sound %d", val1);
         DEBUG_CONSOLE("FAILED to load sound %d", val1);
@@ -205,9 +204,6 @@ int GetMIDIPosition () {
 int IsMusicPlaying() {
     // in case they have a "while (IsMusicPlaying())" loop
     if ((play.fast_forward) && (play.skip_until_char_stops < 0))
-        return 0;
-
-    if (usetup.midicard == MIDI_NONE)
         return 0;
 
     if (current_music_type != 0) {
@@ -271,7 +267,7 @@ void scr_StopMusic() {
 }
 
 void SeekMODPattern(int patnum) {
-    if (current_music_type == MUS_MOD) {
+    if (current_music_type == MUS_MOD && channels[SCHAN_MUSIC]) {
         channels[SCHAN_MUSIC]->seek (patnum);
         DEBUG_CONSOLE("Seek MOD/XM to pattern %d", patnum);
     }
@@ -279,9 +275,9 @@ void SeekMODPattern(int patnum) {
 void SeekMP3PosMillis (int posn) {
     if (current_music_type) {
         DEBUG_CONSOLE("Seek MP3/OGG to %d ms", posn);
-        if (crossFading)
+        if (crossFading && channels[crossFading])
             channels[crossFading]->seek (posn);
-        else
+        else if (channels[SCHAN_MUSIC])
             channels[SCHAN_MUSIC]->seek (posn);
     }
 }
@@ -291,7 +287,7 @@ int GetMP3PosMillis () {
     if (play.fast_forward)
         return 999999;
 
-    if (current_music_type) {
+    if (current_music_type && channels[SCHAN_MUSIC]) {
         int result = channels[SCHAN_MUSIC]->get_pos_ms();
         if (result >= 0)
             return result;
@@ -303,16 +299,18 @@ int GetMP3PosMillis () {
 }
 
 void SetMusicVolume(int newvol) {
-    if ((newvol < -3) || (newvol > 5))
-        quit("!SetMusicVolume: invalid volume number. Must be from -3 to 5.");
+    if ((newvol < kRoomVolumeMin) || (newvol > kRoomVolumeMax))
+        quitprintf("!SetMusicVolume: invalid volume number. Must be from %d to %d.", kRoomVolumeMin, kRoomVolumeMax);
     thisroom.options[ST_VOLUME]=newvol;
     update_music_volume();
 }
 
 void SetMusicMasterVolume(int newvol) {
-    if ((newvol<0) | (newvol>100))
-        quit("!SetMusicMasterVolume: invalid volume - must be from 0-100");
-    play.music_master_volume=newvol+60;
+    const int min_volume = loaded_game_file_version < kGameVersion_330 ? 0 :
+        -LegacyMusicMasterVolumeAdjustment - (kRoomVolumeMax * LegacyRoomVolumeFactor);
+    if ((newvol < min_volume) | (newvol>100))
+        quitprintf("!SetMusicMasterVolume: invalid volume - must be from %d to %d", min_volume, 100);
+    play.music_master_volume=newvol+LegacyMusicMasterVolumeAdjustment;
     update_music_volume();
 }
 
@@ -406,8 +404,7 @@ void PlaySilentMIDI (int mnum) {
         quitprintf("!PlaySilentMIDI: failed to load aMusic%d", mnum);
     }
     channels[play.silent_midi_channel]->play();
-    channels[play.silent_midi_channel]->set_volume(0);
-    channels[play.silent_midi_channel]->volAsPercentage = 0;
+    channels[play.silent_midi_channel]->set_volume_origin(0);
 }
 
 void SetSpeechVolume(int newvol) {
@@ -438,6 +435,11 @@ void SetVoiceMode (int newmod) {
         play.want_speech = (-newmod) - 1;
     else
         play.want_speech = newmod;
+}
+
+int GetVoiceMode()
+{
+    return play.want_speech >= 0 ? play.want_speech : (-play.want_speech + 1);
 }
 
 int IsVoxAvailable() {
@@ -487,7 +489,7 @@ int play_speech(int charid,int sndid) {
     int ii;  // Compare the base file name to the .pam file name
     char *basefnptr = strchr (&finame[4], '~') + 1;
     curLipLine = -1;  // See if we have voice lip sync for this line
-    curLipLinePhenome = -1;
+    curLipLinePhoneme = -1;
     for (ii = 0; ii < numLipLines; ii++) {
         if (stricmp(splipsync[ii].filename, basefnptr) == 0) {
             curLipLine = ii;

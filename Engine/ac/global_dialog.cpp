@@ -13,19 +13,23 @@
 //=============================================================================
 
 #include "ac/global_dialog.h"
-#include "util/wgt2allg.h"
 #include "ac/common.h"
 #include "ac/dialog.h"
 #include "ac/dialogtopic.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/gamestate.h"
 #include "debug/debug_log.h"
+#include "debug/debugger.h"
+#include "debug/out.h"
 #include "script/script.h"
+
+using namespace AGS::Common;
 
 extern GameSetupStruct game;
 extern GameState play;
 extern DialogTopic *dialog;
 
+ScriptPosition last_in_dialog_request_script_pos;
 void RunDialog(int tum) {
     if ((tum<0) | (tum>=game.numdialog))
         quit("!RunDialog: invalid topic number specified");
@@ -36,9 +40,12 @@ void RunDialog(int tum) {
         if (play.stop_dialog_at_end == DIALOG_RUNNING)
             play.stop_dialog_at_end = DIALOG_NEWTOPIC + tum;
         else
-            quit("!NewRoom: two NewRoom/RunDiaolg/StopDialog requests within dialog");
+            quitprintf("!RunDialog: two NewRoom/RunDialog/StopDialog requests within dialog; last was called in \"%s\", line %d",
+                        last_in_dialog_request_script_pos.Section.GetCStr(), last_in_dialog_request_script_pos.Line);
         return;
     }
+
+    get_script_position(last_in_dialog_request_script_pos);
 
     if (inside_script) 
         curscript->queue_action(ePSARunDialog, tum, "RunDialog");
@@ -53,14 +60,25 @@ void StopDialog() {
     DEBUG_CONSOLE("StopDialog called but no dialog");
     return;
   }
+  get_script_position(last_in_dialog_request_script_pos);
   play.stop_dialog_at_end = DIALOG_STOP;
 }
 
-void SetDialogOption(int dlg,int opt,int onoroff) {
+void SetDialogOption(int dlg, int opt, int onoroff, bool dlg_script)
+{
   if ((dlg<0) | (dlg>=game.numdialog))
     quit("!SetDialogOption: Invalid topic number specified");
   if ((opt<1) | (opt>dialog[dlg].numoptions))
+  {
+    // Pre-3.1.1 games had "dialog scripts" that were written in different language and
+    // parsed differently; its "option-on/off" commands were more permissive.
+    if (dlg_script)
+    {
+      Out::FPrint("SetDialogOption: Invalid option number specified (%d : %d)", dlg, opt);
+      return;
+    }
     quit("!SetDialogOption: Invalid option number specified");
+  }
   opt--;
 
   dialog[dlg].optionflags[opt]&=~DFLG_ON;

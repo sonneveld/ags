@@ -21,7 +21,10 @@
 #include "util/string.h"
 
 #if defined (WINDOWS_VERSION)
-#undef GetCurrentDirectory  // undef the declaration from winbase.h
+// undef the declarations from winbase.h
+#undef CreateDirectory
+#undef SetCurrentDirectory
+#undef GetCurrentDirectory
 #endif
 
 namespace AGS
@@ -31,6 +34,8 @@ namespace Common
 
 namespace Directory
 {
+    // Creates new directory (if it does not exist)
+    bool   CreateDirectory(const String &path);
     // Sets current working directory, returns the resulting path
     String SetCurrentDirectory(const String &path);
     // Gets current working directory

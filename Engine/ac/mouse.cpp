@@ -13,7 +13,6 @@
 //=============================================================================
 
 #include "ac/mouse.h"
-#include "util/wgt2allg.h"
 #include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "ac/characterinfo.h"
@@ -31,7 +30,6 @@
 #include "device/mousew32.h"
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
@@ -105,29 +103,28 @@ void set_mouse_cursor(int newcurs) {
         ((game.hotdot > 0) || (game.invhotdotsprite > 0)) ) {
             // If necessary, create a copy of the cursor and put the hotspot
             // dot onto it
-            dotted_mouse_cursor = BitmapHelper::CreateBitmap(mousecurs[0]->GetWidth(),mousecurs[0]->GetHeight(),mousecurs[0]->GetColorDepth());
-            dotted_mouse_cursor->Blit (mousecurs[0], 0, 0, 0, 0, mousecurs[0]->GetWidth(), mousecurs[0]->GetHeight());
+            dotted_mouse_cursor = BitmapHelper::CreateBitmapCopy(mousecurs[0]);
 
             if (game.invhotdotsprite > 0) {
-                Bitmap *abufWas = abuf;
-                abuf = dotted_mouse_cursor;
+                //Bitmap *abufWas = abuf;
+                //abuf = dotted_mouse_cursor;
 
-                draw_sprite_support_alpha(
+                draw_sprite_slot_support_alpha(dotted_mouse_cursor,
+                    (game.spriteflags[game.mcurs[newcurs].pic] & SPF_ALPHACHANNEL) != 0,
                     hotspotx - spritewidth[game.invhotdotsprite] / 2,
                     hotspoty - spriteheight[game.invhotdotsprite] / 2,
-                    spriteset[game.invhotdotsprite],
                     game.invhotdotsprite);
 
-                abuf = abufWas;
+                //abuf = abufWas;
             }
             else {
                 putpixel_compensate (dotted_mouse_cursor, hotspotx, hotspoty,
-                    (dotted_mouse_cursor->GetColorDepth() > 8) ? get_col8_lookup (game.hotdot) : game.hotdot);
+                    (dotted_mouse_cursor->GetColorDepth() > 8) ? GetVirtualScreen()->GetCompatibleColor (game.hotdot) : game.hotdot);
 
                 if (game.hotdotouter > 0) {
                     int outercol = game.hotdotouter;
                     if (dotted_mouse_cursor->GetColorDepth () > 8)
-                        outercol = get_col8_lookup(game.hotdotouter);
+                        outercol = GetVirtualScreen()->GetCompatibleColor(game.hotdotouter);
 
                     putpixel_compensate (dotted_mouse_cursor, hotspotx + get_fixed_pixel_size(1), hotspoty, outercol);
                     putpixel_compensate (dotted_mouse_cursor, hotspotx, hotspoty + get_fixed_pixel_size(1), outercol);
@@ -345,8 +342,7 @@ void set_new_cursor_graphic (int spriteslot) {
     {
         if (blank_mouse_cursor == NULL)
         {
-            blank_mouse_cursor = BitmapHelper::CreateBitmap(1, 1, final_col_dep);
-            blank_mouse_cursor->Clear(blank_mouse_cursor->GetMaskColor());
+            blank_mouse_cursor = BitmapHelper::CreateTransparentBitmap(1, 1, final_col_dep);
         }
         mousecurs[0] = blank_mouse_cursor;
     }
@@ -507,6 +503,23 @@ RuntimeScriptValue Sc_Mouse_SetVisible(const RuntimeScriptValue *params, int32_t
 }
 
 
+RuntimeScriptValue Sc_Mouse_GetControlEnabled(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_BOOL(Mouse::IsControlEnabled);
+}
+
+RuntimeScriptValue Sc_Mouse_GetSpeed(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_FLOAT(Mouse::GetSpeed);
+}
+
+RuntimeScriptValue Sc_Mouse_SetSpeed(const RuntimeScriptValue *params, int32_t param_count)
+{
+    ASSERT_VARIABLE_VALUE("Mouse::Speed");
+    Mouse::SetSpeed(params[0].FValue);
+    return RuntimeScriptValue();
+}
+
 void RegisterMouseAPI()
 {
     ccAddExternalStaticFunction("Mouse::ChangeModeGraphic^2",       Sc_ChangeCursorGraphic);
@@ -523,8 +536,11 @@ void RegisterMouseAPI()
     ccAddExternalStaticFunction("Mouse::Update^0",                  Sc_RefreshMouse);
     ccAddExternalStaticFunction("Mouse::UseDefaultGraphic^0",       Sc_set_default_cursor);
     ccAddExternalStaticFunction("Mouse::UseModeGraphic^1",          Sc_set_mouse_cursor);
+    ccAddExternalStaticFunction("Mouse::get_ControlEnabled",        Sc_Mouse_GetControlEnabled);
     ccAddExternalStaticFunction("Mouse::get_Mode",                  Sc_GetCursorMode);
     ccAddExternalStaticFunction("Mouse::set_Mode",                  Sc_set_cursor_mode);
+    ccAddExternalStaticFunction("Mouse::get_Speed",                 Sc_Mouse_GetSpeed);
+    ccAddExternalStaticFunction("Mouse::set_Speed",                 Sc_Mouse_SetSpeed);
     ccAddExternalStaticFunction("Mouse::get_Visible",               Sc_Mouse_GetVisible);
     ccAddExternalStaticFunction("Mouse::set_Visible",               Sc_Mouse_SetVisible);
 

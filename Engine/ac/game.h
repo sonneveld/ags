@@ -21,10 +21,10 @@
 
 #include "ac/interaction.h"
 #include "ac/dynobj/scriptviewframe.h"
-#include "util/file.h"
+#include "main/game_file.h"
 
 // Forward declaration
-namespace AGS { namespace Common { class Stream; class String; } }
+namespace AGS { namespace Common { class Bitmap; class Stream; class String; } }
 using namespace AGS; // FIXME later
 
 #define RAGMODE_PRESERVEGLOBALINT 1
@@ -64,6 +64,7 @@ int Game_GetMODPattern();
 //=============================================================================
 int Game_GetDialogCount();
 
+int SetSaveGameDirectoryPath(const char *newFolder, bool allowAbsolutePaths);
 int Game_SetSaveGameDirectory(const char *newFolder);
 const char* Game_GetSaveSlotDescription(int slnum);
 
@@ -119,7 +120,7 @@ int  load_game_and_print_error(int toload);
 void restore_game_dialog();
 void save_game_dialog();
 void setup_sierra_interface();
-int  load_game_file();
+GameFileError load_game_file();
 void free_do_once_tokens();
 // Free all the memory associated with the game
 void unload_game_file();
@@ -144,8 +145,14 @@ void stop_fast_forwarding();
 
 int __GetLocationType(int xxx,int yyy, int allowHotspot0);
 
+// Called whenever game looses input focus
 void display_switch_out();
+// Called whenever game gets input focus
 void display_switch_in();
+// Called when the game looses input focus and must suspend
+void display_switch_out_suspend();
+// Called when the game gets input focus and should resume
+void display_switch_in_resume();
 
 void replace_tokens(char*srcmes,char*destm, int maxlen = 99999);
 char *get_global_message (int msnum);

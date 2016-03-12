@@ -22,23 +22,19 @@
 #include "ac/wordsdictionary.h"  // WordsDictionary
 #include "ac/gamestructdefines.h"
 #include "script/cc_script.h"           // ccScript
-#include "util/file.h"
-#include "util/wgt2allg.h"
+#include "util/wgt2allg.h" // color (allegro RGB)
 
 // Forward declaration
 namespace AGS { namespace Common { class Stream; } }
 using namespace AGS; // FIXME later
 
-// This struct is written directly to the disk file // [IKM] not really anymore
-// The GameSetupStruct subclass parts are written individually
-//
-// [IKM] Do not change the order of variables in this struct!
-// Until the serialization and script referencing methods are improved
-// game execution will depend on actual object addresses in memory
-//
 struct GameSetupStructBase {
-    char              gamename[50];
-    int32             options[100];
+    static const int  GAME_NAME_LENGTH = 50;
+    static const int  MAX_OPTIONS = 100;
+    static const int  NUM_INTS_RESERVED = 17;
+
+    char              gamename[GAME_NAME_LENGTH];
+    int32             options[MAX_OPTIONS];
     unsigned char     paluses[256];
     color             defpal[256];
     int32             numviews;
@@ -55,25 +51,33 @@ struct GameSetupStructBase {
     int32             uniqueid;    // random key identifying the game
     int32             numgui;
     int32             numcursors;
-    int32             default_resolution; // 0=undefined, 1=320x200, 2=320x240, 3=640x400 etc
+    GameResolutionType default_resolution;
     int32             default_lipsync_frame; // used for unknown chars
     int32             invhotdotsprite;
-    int32             reserved[17];
+    int32             reserved[NUM_INTS_RESERVED];
     char             *messages[MAXGLOBALMES];
     WordsDictionary  *dict;
     char             *globalscript;
     CharacterInfo    *chars;
     ccScript         *compiled_script;
+
+    int32_t          *load_messages;
+    bool             load_dictionary;
+    bool             load_compiled_script;
     // [IKM] 2013-03-30
     // NOTE: it looks like nor 'globalscript', not 'compiled_script' are used
     // to store actual script data anytime; 'ccScript* gamescript' global
     // pointer is used for that instead.
-    // 'compiled_script' member is used once as a flag, to indicate that there's
-    // a global script data to be loaded; 'globalscript' is not used anywhere
-    // for anything useful.
 
+    GameSetupStructBase();
+    virtual ~GameSetupStructBase();
     void ReadFromFile(Common::Stream *in);
     void WriteToFile(Common::Stream *out);
+
+    inline bool IsHiRes() const
+    {
+        return ::IsHiRes(default_resolution);
+    }
 };
 
 #endif // __AGS_CN_AC__GAMESETUPSTRUCTBASE_H

@@ -25,7 +25,7 @@ namespace Engine
 {
 
 
-class PSPMutex : BaseMutex
+class PSPMutex : public BaseMutex
 {
 public:
   PSPMutex()
@@ -35,7 +35,6 @@ public:
 
   ~PSPMutex()
   {
-    Unlock();
     sceKernelDeleteSema(_mutex);
   }
 

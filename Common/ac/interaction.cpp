@@ -18,6 +18,7 @@
 #include "ac/common.h"
 #include "util/string_utils.h"      // fputstring, etc
 #include "util/alignedstream.h"
+#include "util/string.h"
 
 using AGS::Common::AlignedStream;
 using AGS::Common::Stream;
@@ -176,7 +177,7 @@ void NewInteraction::copy_timesrun_from (NewInteraction *nifrom) {
     memcpy (&timesRun[0], &nifrom->timesRun[0], sizeof(int) * MAX_NEWINTERACTION_EVENTS);
 }
 void NewInteraction::reset() {
-    for (int i = 0; i < numEvents; i++) {
+    for (int i = 0; i < MAX_NEWINTERACTION_EVENTS; i++) {
         if (response[i] != NULL) {
             response[i]->reset();
             delete response[i];
@@ -194,11 +195,20 @@ void NewInteraction::ReadFromFile(Stream *in)
     // it's all ints! <- JJS: No, it's not! There are pointer too.
 
   numEvents = in->ReadInt32();
+  if (numEvents > MAX_NEWINTERACTION_EVENTS)
+      quit("Can't deserialize interaction: too many events");
   in->ReadArray(&eventTypes, sizeof(*eventTypes), MAX_NEWINTERACTION_EVENTS);
   in->ReadArray(&timesRun, sizeof(*timesRun), MAX_NEWINTERACTION_EVENTS);
 
+  // This function is called only when reading RoomStatus from savedgame,
+  // and the following response pointer values are never really used anywhere
+  // (and apparently are always NULL). The real full item deserialization is
+  // made by calling deserialize_new_interaction().
+  memset(response, 0, sizeof(response));
   for (int i = 0; i < MAX_NEWINTERACTION_EVENTS; i++)
-    response[i] = (NewInteractionCommandList*)in->ReadInt32();
+  {
+    in->ReadInt32(); // response[i] 32-bit pointer;
+  }
 
 //    in->ReadArray(&numEvents, sizeof(int), sizeof(NewInteraction)/sizeof(int));
 }
@@ -217,10 +227,11 @@ void NewInteraction::WriteToFile(Stream *out)
 
 InteractionScripts::InteractionScripts() {
     numEvents = 0;
+    memset(scriptFuncNames, 0, sizeof(scriptFuncNames));
 }
 
 InteractionScripts::~InteractionScripts() {
-    for (int i = 0; i < numEvents; i++)
+    for (int i = 0; i < MAX_NEWINTERACTION_EVENTS; i++)
         delete[] scriptFuncNames[i];
 }
 
@@ -280,18 +291,18 @@ NewInteraction *deserialize_new_interaction (Stream *in) {
   nitemp = new NewInteraction;
   nitemp->numEvents = in->ReadInt32();
   if (nitemp->numEvents > MAX_NEWINTERACTION_EVENTS) {
-    quit("Error: this interaction was saved with a newer version of AGS");
+    quit("Can't deserialize interaction: too many events");
     return NULL;
   }
   in->ReadArrayOfInt32 (&nitemp->eventTypes[0], nitemp->numEvents);
-  //in->ReadArray (&nitemp->response[0], sizeof(void*), nitemp->numEvents);
 
-  // 64 bit: The pointer is only checked against NULL to determine whether the event exists
+  bool load_response[MAX_NEWINTERACTION_EVENTS];
   for (a = 0; a < nitemp->numEvents; a++)
-    nitemp->response[a] = (NewInteractionCommandList*)in->ReadInt32();
+    load_response[a] = in->ReadInt32() != 0;
 
+  memset(nitemp->response, 0, sizeof(nitemp->response));
   for (a = 0; a < nitemp->numEvents; a++) {
-    if (nitemp->response[a] != NULL)
+    if (load_response[a])
       nitemp->response[a] = deserialize_command_list (in);
     nitemp->timesRun[a] = 0;
   }
@@ -302,7 +313,7 @@ void deserialize_interaction_scripts(Stream *in, InteractionScripts *scripts)
 {
   int numEvents = in->ReadInt32();
   if (numEvents > MAX_NEWINTERACTION_EVENTS)
-    quit("Too many interaction script events");
+    quit("Can't deserialize interaction scripts: too many events");
   scripts->numEvents = numEvents;
 
   String buffer;

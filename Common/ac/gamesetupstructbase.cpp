@@ -12,16 +12,32 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "ac/gamesetupstructbase.h"
 #include "util/stream.h"
 
 using AGS::Common::Stream;
 
+GameSetupStructBase::GameSetupStructBase()
+    : dict(NULL)
+    , globalscript(NULL)
+    , chars(NULL)
+    , compiled_script(NULL)
+    , load_messages(NULL)
+    , load_dictionary(false)
+    , load_compiled_script(false)
+{
+    memset(messages, 0, sizeof(messages));
+}
+
+GameSetupStructBase::~GameSetupStructBase()
+{
+    delete [] load_messages;
+}
+
 void GameSetupStructBase::ReadFromFile(Stream *in)
 {
-    in->Read(&gamename[0], 50);
-    in->ReadArrayOfInt32(options, 100);
+    in->Read(&gamename[0], GAME_NAME_LENGTH);
+    in->ReadArrayOfInt32(options, MAX_OPTIONS);
     in->Read(&paluses[0], 256);
     // colors are an array of chars
     in->Read(&defpal[0], sizeof(color)*256);
@@ -41,28 +57,19 @@ void GameSetupStructBase::ReadFromFile(Stream *in)
     uniqueid = in->ReadInt32();
     numgui = in->ReadInt32();
     numcursors = in->ReadInt32();
-    default_resolution = in->ReadInt32();
+    default_resolution = (GameResolutionType)in->ReadInt32();
     default_lipsync_frame = in->ReadInt32();
     invhotdotsprite = in->ReadInt32();
-    in->ReadArrayOfInt32(reserved, 17);
-    // read the final ptrs so we know to load dictionary, scripts etc
-    // 64 bit: Read 4 byte values into array of 8 byte
-    in->ReadArrayOfIntPtr32((intptr_t*)messages, MAXGLOBALMES);
-    //int i;
-    //for (i = 0; i < MAXGLOBALMES; i++)
-    //  messages[i] = (char*)in->ReadInt32();
+    in->ReadArrayOfInt32(reserved, NUM_INTS_RESERVED);
+    load_messages = new int32_t[MAXGLOBALMES];
+    in->ReadArrayOfInt32(load_messages, MAXGLOBALMES);
 
-    // The following pointers are used as flags at one point
-    // during game loading, therefore they are initialized with
-    // some values here. These values are never treated as
-    // actual addresses, only as boolean values.
-    // See:
-    // - GameSetupStruct::read_words_dictionary(), dict
-    // - load_game_file(), compiled_script
-    dict = (WordsDictionary *) in->ReadInt32();
+    // - GameSetupStruct::read_words_dictionary() checks load_dictionary
+    // - load_game_file() checks load_compiled_script
+    load_dictionary = in->ReadInt32() != 0;
     in->ReadInt32(); // globalscript
     in->ReadInt32(); // chars
-    compiled_script = (ccScript *) in->ReadInt32();
+    load_compiled_script = in->ReadInt32() != 0;
 }
 
 void GameSetupStructBase::WriteToFile(Stream *out)
@@ -92,10 +99,33 @@ void GameSetupStructBase::WriteToFile(Stream *out)
     out->WriteInt32(default_lipsync_frame);
     out->WriteInt32(invhotdotsprite);
     out->WriteArrayOfInt32(reserved, 17);
-    // write the final ptrs so we know to load dictionary, scripts etc
-    out->WriteArrayOfIntPtr32((intptr_t*)messages, MAXGLOBALMES);
+    for (int i = 0; i < MAXGLOBALMES; ++i)
+    {
+        out->WriteInt32(messages[i] ? 1 : 0);
+    }
     out->WriteInt32(dict ? 1 : 0);
     out->WriteInt32(0); // globalscript
     out->WriteInt32(0); // chars
     out->WriteInt32(compiled_script ? 1 : 0);
+}
+
+Size ResolutionTypeToSize(GameResolutionType resolution, bool letterbox)
+{
+    switch (resolution)
+    {
+    case kGameResolution_Default:
+    case kGameResolution_320x200:
+        return letterbox ? Size(320, 240) : Size(320, 200);
+    case kGameResolution_320x240:
+        return Size(320, 240);
+    case kGameResolution_640x400:
+        return letterbox ? Size(640, 480) : Size(640, 400);
+    case kGameResolution_640x480:
+        return Size(640, 480);
+    case kGameResolution_800x600:
+        return Size(800, 600);
+    case kGameResolution_1024x768:
+        return Size(1024, 768);
+    }
+    return Size();
 }

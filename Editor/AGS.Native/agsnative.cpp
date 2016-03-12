@@ -21,6 +21,7 @@ int mousex, mousey;
 #include "ac/view.h"
 #include "ac/dialogtopic.h"
 #include "ac/gamesetupstruct.h"
+#include "font/fonts.h"
 #include "gui/guimain.h"
 #include "gui/guiinv.h"
 #include "gui/guibutton.h"
@@ -30,10 +31,12 @@ int mousex, mousey;
 #include "gui/guislider.h"
 #include "util/compress.h"
 #include "util/string_utils.h"    // fputstring, etc
+#include "util/alignedstream.h"
 #include "util/filestream.h"
 #include "gfx/bitmap.h"
 #include "core/assetmanager.h"
 
+using AGS::Common::AlignedStream;
 using AGS::Common::Stream;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
 
@@ -57,11 +60,11 @@ void serialize_room_interactions(Stream *);
 
 inline void Cstretch_blit(Common::Bitmap *src, Common::Bitmap *dst, int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh)
 {
-	Cstretch_blit((BITMAP*)src->GetBitmapObject(), (BITMAP*)dst->GetBitmapObject(), sx, sy, sw, sh, dx, dy, dw, dh);
+	Cstretch_blit(src->GetAllegroBitmap(), dst->GetAllegroBitmap(), sx, sy, sw, sh, dx, dy, dw, dh);
 }
 inline void Cstretch_sprite(Common::Bitmap *dst, Common::Bitmap *src, int x, int y, int w, int h)
 {
-	Cstretch_sprite((BITMAP*)dst->GetBitmapObject(), (BITMAP*)src->GetBitmapObject(), x, y, w, h);
+	Cstretch_sprite(dst->GetAllegroBitmap(), src->GetAllegroBitmap(), x, y, w, h);
 }
 
 
@@ -74,7 +77,6 @@ GameSetupStruct thisgame;
 SpriteCache spriteset(MAX_SPRITES + 2);
 GUIMain tempgui;
 const char*sprsetname = "acsprset.spr";
-const char*clibendsig = "CLIB\x1\x2\x3\x4SIGE";
 const char *old_editor_data_file = "editor.dat";
 const char *new_editor_data_file = "game.agf";
 const char *old_editor_main_game_file = "ac2game.dta";
@@ -88,6 +90,8 @@ Common::Bitmap *drawBuffer = NULL;
 Common::Bitmap *undoBuffer = NULL;
 int loaded_room_number = -1;
 
+GameDataVersion loaded_game_file_version = kGameVersion_Current;
+
 // stuff for importing old games
 int numScriptModules;
 ScriptModule* scModules = NULL;
@@ -98,15 +102,19 @@ ViewStruct272 *oldViews;
 ViewStruct *newViews;
 int numNewViews = 0;
 
+// A reference color depth, for correct color selection;
+// originally was defined by 'abuf' bitmap.
+int BaseColorDepth;
+
 
 bool reload_font(int curFont);
 void drawBlockScaledAt(int hdc, Common::Bitmap *todraw ,int x, int y, int scaleFactor);
 // this is to shut up the linker, it's used by CSRUN.CPP
 void write_log(char *) { }
 
-void GUIInv::Draw() {
-  wsetcolor(15);
-  abuf->DrawRect(Rect(x,y,x+wid,y+hit), currentcolor);
+void GUIInv::Draw(Common::Bitmap *ds) {
+  color_t draw_color = ds->GetCompatibleColor(15);
+  ds->DrawRect(Rect(x,y,x+wid,y+hit), draw_color);
 }
 
 int multiply_up_coordinate(int coord)
@@ -177,13 +185,13 @@ void deleteSprite (int sprslot) {
 
 void SetNewSpriteFromHBitmap(int slot, int hBmp) {
   // FIXME later
-  Common::Bitmap *tempsprite = Common::BitmapHelper::CreateRawObjectOwner(convert_hbitmap_to_bitmap((HBITMAP)hBmp));
+  Common::Bitmap *tempsprite = Common::BitmapHelper::CreateRawBitmapOwner(convert_hbitmap_to_bitmap((HBITMAP)hBmp));
   SetNewSprite(slot, tempsprite);
 }
 
 int GetSpriteAsHBitmap(int slot) {
   // FIXME later
-  return (int)convert_bitmap_to_hbitmap((BITMAP*)get_sprite(slot)->GetBitmapObject());
+  return (int)convert_bitmap_to_hbitmap(get_sprite(slot)->GetAllegroBitmap());
 }
 
 bool DoesSpriteExist(int slot) {
@@ -601,10 +609,9 @@ void drawBlockDoubleAt (int hdc, Common::Bitmap *todraw ,int x, int y) {
   drawBlockScaledAt (hdc, todraw, x, y, 2);
 }
 
-void wputblock_stretch(int xpt,int ypt,Common::Bitmap *tblock,int nsx,int nsy) {
-  if (bmp_bpp(tblock) != thisgame.color_depth) {
-    Common::Bitmap *tempst=Common::BitmapHelper::CreateBitmap(tblock->GetWidth(),tblock->GetHeight(),thisgame.color_depth*8);
-    tempst->Blit(tblock,0,0,0,0,tblock->GetWidth(),tblock->GetHeight());
+void wputblock_stretch(Common::Bitmap *g, int xpt,int ypt,Common::Bitmap *tblock,int nsx,int nsy) {
+  if (tblock->GetBPP() != thisgame.color_depth) {
+    Common::Bitmap *tempst=Common::BitmapHelper::CreateBitmapCopy(tblock, thisgame.color_depth*8);
     int ww,vv;
     for (ww=0;ww<tblock->GetWidth();ww++) {
       for (vv=0;vv<tblock->GetHeight();vv++) {
@@ -612,18 +619,18 @@ void wputblock_stretch(int xpt,int ypt,Common::Bitmap *tblock,int nsx,int nsy) {
           tempst->PutPixel(ww,vv,tempst->GetMaskColor());
       }
     }
-    abuf->StretchBlt(tempst,RectWH(xpt,ypt,nsx,nsy), Common::kBitmap_Transparency);
+    g->StretchBlt(tempst,RectWH(xpt,ypt,nsx,nsy), Common::kBitmap_Transparency);
     delete tempst;
   }
-  else abuf->StretchBlt(tblock,RectWH(xpt,ypt,nsx,nsy), Common::kBitmap_Transparency);
+  else g->StretchBlt(tblock,RectWH(xpt,ypt,nsx,nsy), Common::kBitmap_Transparency);
 }
 
-void draw_sprite_compensate(int sprnum, int atxp, int atyp, int seethru) {
+void draw_gui_sprite(Common::Bitmap *g, int sprnum, int atxp, int atyp, bool use_alpha) {
   Common::Bitmap *blptr = get_sprite(sprnum);
   Common::Bitmap *towrite=blptr;
   int needtofree=0, main_color_depth = thisgame.color_depth * 8;
 
-  if ((bmp_bpp(blptr) > 1) & (main_color_depth==8)) {
+  if ((blptr->GetBPP() > 1) & (main_color_depth==8)) {
 
     towrite=Common::BitmapHelper::CreateBitmap(blptr->GetWidth(),blptr->GetHeight(), 8);
     needtofree=1;
@@ -650,14 +657,14 @@ void draw_sprite_compensate(int sprnum, int atxp, int atyp, int seethru) {
     nwid *= 2;
     nhit *= 2;
   }
-  wputblock_stretch(atxp,atyp,towrite,nwid,nhit);
+  wputblock_stretch(g, atxp,atyp,towrite,nwid,nhit);
   if (needtofree) delete towrite;
 }
 
 void drawBlock (HDC hdc, Common::Bitmap *todraw, int x, int y) {
   set_palette_to_hdc (hdc, palette);
   // FIXME later
-  blit_to_hdc ((BITMAP*)todraw->GetBitmapObject(), hdc, 0,0,x,y,todraw->GetWidth(),todraw->GetHeight());
+  blit_to_hdc (todraw->GetAllegroBitmap(), hdc, 0,0,x,y,todraw->GetWidth(),todraw->GetHeight());
 }
 
 
@@ -717,13 +724,13 @@ void draw_line_onto_mask(void *roomptr, int maskType, int x1, int y1, int x2, in
 void draw_filled_rect_onto_mask(void *roomptr, int maskType, int x1, int y1, int x2, int y2, int color)
 {
 	Common::Bitmap *mask = get_bitmap_for_mask((roomstruct*)roomptr, (RoomAreaMask)maskType);
-	mask->FillRect(Rect(x1, y1, x2, y2), color);
+    mask->FillRect(Rect(x1, y1, x2, y2), color);
 }
 
 void draw_fill_onto_mask(void *roomptr, int maskType, int x1, int y1, int color)
 {
 	Common::Bitmap *mask = get_bitmap_for_mask((roomstruct*)roomptr, (RoomAreaMask)maskType);
-	mask->FloodFill(x1, y1, color);
+    mask->FloodFill(x1, y1, color);
 }
 
 void create_undo_buffer(void *roomptr, int maskType) 
@@ -814,19 +821,22 @@ Common::Bitmap *recycle_bitmap(Common::Bitmap* check, int colDepth, int w, int h
 
 Common::Bitmap *stretchedSprite = NULL, *srcAtRightColDep = NULL;
 
-void draw_area_mask(roomstruct *roomptr, Common::Bitmap *destination, RoomAreaMask maskType, int selectedArea, int transparency) 
+void draw_area_mask(roomstruct *roomptr, Common::Bitmap *ds, RoomAreaMask maskType, int selectedArea, int transparency) 
 {
 	Common::Bitmap *source = get_bitmap_for_mask(roomptr, maskType);
 
 	if (source == NULL) return;
+
+    int dest_width = ds->GetWidth();
+    int dest_height = ds->GetHeight();
+    int dest_depth =  ds->GetColorDepth();
 	
-	if (source->GetColorDepth() != destination->GetColorDepth()) 
+	if (source->GetColorDepth() != dest_depth) 
 	{
     Common::Bitmap *sourceSprite = source;
-
-    if ((source->GetWidth() != destination->GetWidth()) || (source->GetHeight() != destination->GetHeight()))
+    if ((source->GetWidth() != dest_width) || (source->GetHeight() != dest_height))
     {
-		  stretchedSprite = recycle_bitmap(stretchedSprite, source->GetColorDepth(), destination->GetWidth(), destination->GetHeight());
+		  stretchedSprite = recycle_bitmap(stretchedSprite, source->GetColorDepth(), dest_width, dest_height);
 		  stretchedSprite->StretchBlt(source, RectWH(0, 0, source->GetWidth(), source->GetHeight()),
 			  RectWH(0, 0, stretchedSprite->GetWidth(), stretchedSprite->GetHeight()));
       sourceSprite = stretchedSprite;
@@ -839,27 +849,26 @@ void draw_area_mask(roomstruct *roomptr, Common::Bitmap *destination, RoomAreaMa
 
     if (transparency > 0)
     {
-      srcAtRightColDep = recycle_bitmap(srcAtRightColDep, destination->GetColorDepth(), destination->GetWidth(), destination->GetHeight());
+      srcAtRightColDep = recycle_bitmap(srcAtRightColDep, dest_depth, dest_width, dest_height);
       
       int oldColorConv = get_color_conversion();
       set_color_conversion(oldColorConv | COLORCONV_KEEP_TRANS);
 
       srcAtRightColDep->Blit(sourceSprite, 0, 0, 0, 0, sourceSprite->GetWidth(), sourceSprite->GetHeight());
       set_trans_blender(0, 0, 0, (100 - transparency) + 155);
-      destination->TransBlendBlt(srcAtRightColDep, 0, 0);
-
+      ds->TransBlendBlt(srcAtRightColDep, 0, 0);
       set_color_conversion(oldColorConv);
     }
     else
     {
-		destination->Blit(sourceSprite, 0, 0, Common::kBitmap_Transparency);
+        ds->Blit(sourceSprite, 0, 0, Common::kBitmap_Transparency);
     }
 
     set_palette(palette);
 	}
 	else
 	{
-		Cstretch_sprite(destination, source, 0, 0, destination->GetWidth(), destination->GetHeight());
+		Cstretch_sprite(ds, source, 0, 0, dest_width, dest_height);
 	}
 }
 
@@ -882,14 +891,14 @@ void draw_room_background(void *roomvoidptr, int hdc, int x, int y, int bgnum, f
       select_palette(roomptr->bpalettes[bgnum]);
     }
 
-		depthConverted->Blit(srcBlock, 0, 0, 0, 0, srcBlock->GetWidth(), srcBlock->GetHeight());
+    depthConverted->Blit(srcBlock, 0, 0, 0, 0, srcBlock->GetWidth(), srcBlock->GetHeight());
 
     if (srcBlock->GetColorDepth() == 8)
     {
       unselect_palette();
     }
 
-		draw_area_mask(roomptr, depthConverted, (RoomAreaMask)maskType, selectedArea, maskTransparency);
+	draw_area_mask(roomptr, depthConverted, (RoomAreaMask)maskType, selectedArea, maskTransparency);
 
     int srcX = 0, srcY = 0;
     int srcWidth = srcBlock->GetWidth();
@@ -931,7 +940,7 @@ void update_font_sizes() {
   // scale up fonts if necessary
   wtext_multiply = 1;
   if ((thisgame.options[OPT_NOSCALEFNT] == 0) &&
-      (thisgame.default_resolution >= 3)) {
+      thisgame.IsHiRes()) {
     wtext_multiply = 2;
   }
 
@@ -941,7 +950,7 @@ void update_font_sizes() {
       reload_font (bb);
   }
 
-  if (thisgame.default_resolution >= 3) {
+  if (thisgame.IsHiRes()) {
     sxmult = 2;
     symult = 2;
   }
@@ -1028,20 +1037,20 @@ void drawFontAt (int hdc, int fontnum, int x,int y) {
 
   update_font_sizes();
 
-  int doubleSize = (thisgame.default_resolution < 3) ? 2 : 1;
-  int blockSize = (thisgame.default_resolution < 3) ? 1 : 2;
+  int doubleSize = (!thisgame.IsHiRes()) ? 2 : 1;
+  int blockSize = (!thisgame.IsHiRes()) ? 1 : 2;
   antiAliasFonts = thisgame.options[OPT_ANTIALIASFONTS];
 
   // we can't antialias font because changing col dep to 16 here causes
   // it to crash ... why?
   Common::Bitmap *tempblock = Common::BitmapHelper::CreateBitmap(FONTGRIDSIZE*10, FONTGRIDSIZE*10, 8);
-  tempblock->Clear(0);
-  Common::Bitmap *abufwas = abuf;
-  abuf = tempblock;
-  wtextcolor(15);
+  tempblock->Fill(0);
+  //Common::Bitmap *abufwas = abuf;
+  //abuf = tempblock;
+  color_t text_color = tempblock->GetCompatibleColor(15);
   for (int aa=0;aa<96;aa++)
-    wgtprintf(5+(aa%10)*FONTGRIDSIZE,5+(aa/10)*FONTGRIDSIZE, fontnum, "%c",aa+32);
-  abuf = abufwas;
+    wgtprintf(tempblock, 5+(aa%10)*FONTGRIDSIZE,5+(aa/10)*FONTGRIDSIZE, fontnum, text_color, "%c",aa+32);
+  //abuf = abufwas;
 
   if (doubleSize > 1) 
     drawBlockDoubleAt(hdc, tempblock, x, y);
@@ -1164,7 +1173,7 @@ int get_adjusted_spriteheight(int spr) {
 
 void drawBlockOfColour(int hdc, int x,int y, int width, int height, int colNum)
 {
-	__my_setcolor(&colNum, colNum);
+	__my_setcolor(&colNum, colNum, BaseColorDepth);
   /*if (thisgame.color_depth > 2) {
     // convert to 24-bit colour
     int red = ((colNum >> 11) & 0x1f) * 8;
@@ -1201,7 +1210,8 @@ bool initialize_native()
 	//set_gdi_color_format();
 	palette = &thisgame.defpal[0];
 	thisgame.color_depth = 2;
-	abuf = Common::BitmapHelper::CreateBitmap(10, 10, 32);
+	//abuf = Common::BitmapHelper::CreateBitmap(10, 10, 32);
+    BaseColorDepth = 32;
 	thisgame.numfonts = 0;
 	new_font();
 
@@ -1230,7 +1240,7 @@ void drawBlockScaledAt (int hdc, Common::Bitmap *todraw ,int x, int y, int scale
     set_palette_to_hdc ((HDC)hdc, palette);
 
   // FIXME later
-  stretch_blit_to_hdc ((BITMAP*)todraw->GetBitmapObject(), (HDC)hdc, 0,0,todraw->GetWidth(),todraw->GetHeight(),
+  stretch_blit_to_hdc (todraw->GetAllegroBitmap(), (HDC)hdc, 0,0,todraw->GetWidth(),todraw->GetHeight(),
     x,y,todraw->GetWidth() * scaleFactor, todraw->GetHeight() * scaleFactor);
 }
 
@@ -1243,7 +1253,7 @@ void drawSprite(int hdc, int x, int y, int spriteNum, bool flipImage) {
 
 	if (flipImage) {
 		Common::Bitmap *flipped = Common::BitmapHelper::CreateBitmap (theSprite->GetWidth(), theSprite->GetHeight(), theSprite->GetColorDepth());
-		flipped->Clear (flipped->GetMaskColor ());
+		flipped->FillTransparent();
 		flipped->FlipBlt(theSprite, 0, 0, Common::kBitmap_HFlip);
 		drawBlockScaledAt(hdc, flipped, x, y, scaleFactor);
 		delete flipped;
@@ -1264,13 +1274,12 @@ void drawSpriteStretch(int hdc, int x, int y, int width, int height, int spriteN
   int hdcBpp = GetDeviceCaps((HDC)hdc, BITSPIXEL);
   if (hdcBpp != todraw->GetColorDepth())
   {
-	  tempBlock = Common::BitmapHelper::CreateBitmap(todraw->GetWidth(), todraw->GetHeight(), hdcBpp);
-	  tempBlock->Blit(todraw, 0, 0, 0, 0, todraw->GetWidth(), todraw->GetHeight());
+	  tempBlock = Common::BitmapHelper::CreateBitmapCopy(todraw, hdcBpp);
 	  todraw = tempBlock;
   }
 
   // FIXME later
-  stretch_blit_to_hdc ((BITMAP*)todraw->GetBitmapObject(), (HDC)hdc, 0,0,todraw->GetWidth(),todraw->GetHeight(), x,y, width, height);
+  stretch_blit_to_hdc (todraw->GetAllegroBitmap(), (HDC)hdc, 0,0,todraw->GetWidth(),todraw->GetHeight(), x,y, width, height);
 
   delete tempBlock;
 }
@@ -1288,17 +1297,17 @@ void drawGUIAt (int hdc, int x,int y,int x1,int y1,int x2,int y2, int scaleFacto
 
   Common::Bitmap *tempblock = Common::BitmapHelper::CreateBitmap(tempgui.wid, tempgui.hit, thisgame.color_depth*8);
   tempblock->Clear(tempblock->GetMaskColor ());
-  Common::Bitmap *abufWas = abuf;
-  abuf = tempblock;
+  //Common::Bitmap *abufWas = abuf;
+  //abuf = tempblock;
 
-  tempgui.draw_at (0, 0);
+  tempgui.draw_at (tempblock, 0, 0);
 
   dsc_want_hires = 0;
 
   if (x1 >= 0) {
-    abuf->DrawRect(Rect (x1, y1, x2, y2), 14);
+    tempblock->DrawRect(Rect (x1, y1, x2, y2), 14);
   }
-  abuf = abufWas;
+  //abuf = abufWas;
 
   drawBlockScaledAt (hdc, tempblock, x, y, scaleFactor);
   //drawBlockDoubleAt (hdc, tempblock, x, y);
@@ -1319,7 +1328,7 @@ void sort_out_transparency(Common::Bitmap *toimp, int sprite_import_method, colo
     return;
 
   int uu,tt;
-  wsetpalette(0,255,palette);
+  set_palette_range(palette, 0, 255, 0);
   int transcol=toimp->GetMaskColor();
   // NOTE: This takes the pixel from the corner of the overall import
   // graphic, NOT just the image to be imported
@@ -1387,7 +1396,7 @@ void sort_out_transparency(Common::Bitmap *toimp, int sprite_import_method, colo
         oldpale[uu]=palette[uu];
     }
     wremap(itspal,toimp,oldpale); 
-    wsetpalette(0,255,palette);
+    set_palette_range(palette, 0, 255, 0);
   }
   else if (toimp->GetColorDepth() == 8) {  // hi-colour game
     set_palette(itspal);
@@ -1395,8 +1404,9 @@ void sort_out_transparency(Common::Bitmap *toimp, int sprite_import_method, colo
 }
 
 void update_abuf_coldepth() {
-  delete abuf;
-  abuf = Common::BitmapHelper::CreateBitmap(10, 10, thisgame.color_depth * 8);
+//  delete abuf;
+//  abuf = Common::BitmapHelper::CreateBitmap(10, 10, thisgame.color_depth * 8);
+    BaseColorDepth = thisgame.color_depth * 8;
 }
 
 bool reload_font(int curFont)
@@ -1406,10 +1416,10 @@ bool reload_font(int curFont)
   int fsize = thisgame.fontflags[curFont] & FFLG_SIZEMASK;
   // if the font is designed for 640x400, half it
   if (thisgame.options[OPT_NOSCALEFNT]) {
-    if (thisgame.default_resolution <= 2)
+    if (!thisgame.IsHiRes())
       fsize /= 2;
   }
-  else if (thisgame.default_resolution >= 3) {
+  else if (thisgame.IsHiRes()) {
     // designed for 320x200, double it up
     fsize *= 2;
   }
@@ -1537,6 +1547,13 @@ void allocate_memory_for_views(int viewCount)
   }
 }
 
+void ReadGameSetupStructBase_Aligned(Stream *in)
+{
+    GameSetupStructBase *gameBase = (GameSetupStructBase *)&thisgame;
+    AlignedStream align_s(in, Common::kAligned_Read);
+    gameBase->ReadFromFile(&align_s);
+}
+
 const char *load_dta_file_into_thisgame(const char *fileName)
 {
   int bb;
@@ -1558,11 +1575,14 @@ const char *load_dta_file_into_thisgame(const char *fileName)
 	  return "This game was saved by an old version of AGS. This version of the editor can only import games saved with AGS 2.72.";
   }
 
+  loaded_game_file_version = (GameDataVersion)filever;
+
   // skip required engine version
   int stlen = iii->ReadInt32();
   iii->Seek(Common::kSeekCurrent, stlen);
 
-  iii->ReadArray(&thisgame, sizeof (GameSetupStructBase), 1);
+  ReadGameSetupStructBase_Aligned(iii);
+
   iii->Read(&thisgame.fontflags[0], thisgame.numfonts);
   iii->Read(&thisgame.fontoutline[0], thisgame.numfonts);
 
@@ -1584,14 +1604,14 @@ const char *load_dta_file_into_thisgame(const char *fileName)
   numGlobalVars = iii->ReadInt32();
   iii->ReadArray (&globalvars[0], sizeof (InteractionVariable), numGlobalVars);
 
-  if (thisgame.dict != NULL) {
+  if (thisgame.load_dictionary) {
     thisgame.dict = (WordsDictionary*)malloc(sizeof(WordsDictionary));
     read_dictionary (thisgame.dict, iii);
   }
 
   thisgame.globalscript = NULL;
 
-  if (thisgame.compiled_script != NULL)
+  if (thisgame.load_compiled_script)
     thisgame.compiled_script = ccScript::CreateFromStream(iii);
 
   load_script_modules_compiled(iii);
@@ -1605,10 +1625,12 @@ const char *load_dta_file_into_thisgame(const char *fileName)
   iii->ReadArray (&thisgame.lipSyncFrameLetters[0][0], 20, 50);
 
   for (bb=0;bb<MAXGLOBALMES;bb++) {
-    if (thisgame.messages[bb]==NULL) continue;
+    if (!thisgame.load_messages[bb]) continue;
     thisgame.messages[bb]=(char*)malloc(500);
     read_string_decrypt(iii, thisgame.messages[bb]);
   }
+  delete [] thisgame.load_messages;
+  thisgame.load_messages = NULL;
 
   read_dialogs(iii, filever, true);
   read_gui(iii,&guis[0],&thisgame, &guis);
@@ -1655,7 +1677,7 @@ const char *load_dta_file_into_thisgame(const char *fileName)
   palette[0].r = 0;
   palette[0].g = 0;
   palette[0].b = 0;
-  wsetpalette(0,255,palette);
+  set_palette_range(palette, 0, 255, 0);
 
   if (!reset_sprite_file())
     return "The sprite file could not be loaded. Ensure that all your game files are intact and not corrupt. The game may require a newer version of AGS.";
@@ -1877,7 +1899,7 @@ void copy_global_palette_to_room_palette()
 
 const char* load_room_file(const char*rtlo) {
 
-  load_room((char*)rtlo, &thisroom, (thisgame.default_resolution > 2));
+  load_room((char*)rtlo, &thisroom, thisgame.IsHiRes());
 
   if (thisroom.wasversion < kRoomVersion_250b) 
   {
@@ -1913,13 +1935,13 @@ const char* load_room_file(const char*rtlo) {
     // resize it up to 640x400-res
     int oldw = thisroom.object->GetWidth(), oldh=thisroom.object->GetHeight();
     Common::Bitmap *tempb = Common::BitmapHelper::CreateBitmap(thisroom.width, thisroom.height, thisroom.object->GetColorDepth());
-    tempb->Clear();
+    tempb->Fill(0);
     tempb->StretchBlt(thisroom.object,RectWH(0,0,oldw,oldh),RectWH(0,0,tempb->GetWidth(),tempb->GetHeight()));
     delete thisroom.object; 
     thisroom.object = tempb;
   }
 
-  wsetpalette(0,255,palette);
+  set_palette_range(palette, 0, 255, 0);
   
   if ((thisroom.ebscene[0]->GetColorDepth () > 8) &&
       (thisgame.color_depth == 1))
@@ -2222,7 +2244,7 @@ void save_room_file(const char*rtsa)
 
   calculate_walkable_areas();
 
-  thisroom.bytes_per_pixel = bmp_bpp(thisroom.ebscene[0]);
+  thisroom.bytes_per_pixel = thisroom.ebscene[0]->GetBPP();
   int ww;
   // Fix hi-color screens
   for (ww = 0; ww < thisroom.num_bscenes; ww++)
@@ -2239,6 +2261,9 @@ void save_room_file(const char*rtsa)
 
 
 // ****** CLIB MAKER **** //
+#include "util/multifilelib.h"
+
+namespace MFLUtil = AGS::Common::MFLUtil;
 
 #define MAX_FILES 10000
 #define MAXMULTIFILES 25
@@ -2258,45 +2283,43 @@ MultiFileLibNew ourlib;
 //static const char *tempSetting = "My\x1\xde\x4Jibzle";  // clib password
 //extern void init_pseudo_rand_gen(int seed);
 //extern int get_pseudo_rand();
-const int RAND_SEED_SALT = 9338638;  // must update clib32.cpp if this changes
 
-void fwrite_data_enc(const void *data, int dataSize, int dataCount, Stream *ooo)
+void fwrite_data_enc(const void *data, int dataSize, int dataCount, Stream *ooo, int &rand_val)
 {
   const unsigned char *dataChar = (const unsigned char*)data;
   for (int i = 0; i < dataSize * dataCount; i++)
   {
-    ooo->WriteByte(dataChar[i] + Common::AssetManager::GetNextPseudoRand());
+    ooo->WriteByte(dataChar[i] + MFLUtil::GetNextPseudoRand(rand_val));
   }
 }
 
-void fputstring_enc(const char *sss, Stream *ooo) 
+void fputstring_enc(const char *sss, Stream *ooo, int &rand_val) 
 {
-  fwrite_data_enc(sss, 1, strlen(sss) + 1, ooo);
+  fwrite_data_enc(sss, 1, strlen(sss) + 1, ooo, rand_val);
 }
 
-void putw_enc(int numberToWrite, Stream *ooo)
+void putw_enc(int numberToWrite, Stream *ooo, int &rand_val)
 {
-  fwrite_data_enc(&numberToWrite, 4, 1, ooo);
+  fwrite_data_enc(&numberToWrite, 4, 1, ooo, rand_val);
 }
 
 void write_clib_header(Stream*wout) {
   int ff;
   int randSeed = (int)time(NULL);
-  wout->WriteInt32(randSeed - RAND_SEED_SALT);
-  Common::AssetManager::InitPseudoRand(randSeed);
-  putw_enc(ourlib.num_data_files, wout);
+  wout->WriteInt32(randSeed - MFLUtil::EncryptionRandSeed);
+  putw_enc(ourlib.num_data_files, wout, randSeed);
   for (ff = 0; ff < ourlib.num_data_files; ff++)
   {
-    fputstring_enc(ourlib.data_filenames[ff], wout);
+    fputstring_enc(ourlib.data_filenames[ff], wout, randSeed);
   }
-  putw_enc(ourlib.num_files, wout);
+  putw_enc(ourlib.num_files, wout, randSeed);
   for (ff = 0; ff < ourlib.num_files; ff++) 
   {
-    fputstring_enc(ourlib.filenames[ff], wout);
+    fputstring_enc(ourlib.filenames[ff], wout, randSeed);
   }
-  fwrite_data_enc(&ourlib.offset[0],4,ourlib.num_files, wout);
-  fwrite_data_enc(&ourlib.length[0],4,ourlib.num_files, wout);
-  fwrite_data_enc(&ourlib.file_datafile[0],1,ourlib.num_files, wout);
+  fwrite_data_enc(&ourlib.offset[0],4,ourlib.num_files, wout, randSeed);
+  fwrite_data_enc(&ourlib.length[0],4,ourlib.num_files, wout, randSeed);
+  fwrite_data_enc(&ourlib.file_datafile[0],1,ourlib.num_files, wout, randSeed);
 }
 
 
@@ -2362,7 +2385,7 @@ const char* make_old_style_data_file(const char* dataFileName, int numfile, char
   }
   // write the header
   Stream*wout=Common::File::CreateFile(dataFileName);
-  wout->Write("CLIB\x1a",5);
+  wout->Write(MFLUtil::HeadSig, MFLUtil::HeadSig.GetLength());
   wout->WriteByte(6);  // version
   wout->WriteByte(passwmod);  // password modifier
   wout->WriteByte(0);  // reserved
@@ -2549,7 +2572,7 @@ const char* make_data_file(int numFiles, char * const*fileNames, long splitSize,
 	  }
 
 	  startOffset = wout->GetLength();
-    wout->Write("CLIB\x1a",5);
+    wout->Write(MFLUtil::HeadSig, MFLUtil::HeadSig.GetLength());
     wout->WriteByte(21);  // version
     wout->WriteByte(a);   // file number
 
@@ -2583,7 +2606,7 @@ const char* make_data_file(int numFiles, char * const*fileNames, long splitSize,
 	if (startOffset > 0)
 	{
 		wout->WriteInt32(startOffset);
-		wout->Write(clibendsig, 12);
+        wout->Write(MFLUtil::TailSig, MFLUtil::TailSig.GetLength());
 	}
     delete wout;
   }
@@ -2616,6 +2639,7 @@ public:
 
 void ConvertStringToCharArray(System::String^ clrString, char *textBuffer);
 void ConvertStringToCharArray(System::String^ clrString, char *textBuffer, int maxLength);
+void ConvertStringToNativeString(System::String^ clrString, Common::String &destStr);
 
 void ThrowManagedException(const char *message) 
 {
@@ -2643,7 +2667,7 @@ void DrawSpriteToBuffer(int sprNum, int x, int y, int scaleFactor) {
 	  todraw = spriteset[0];
 
 	if (((thisgame.spriteflags[sprNum] & SPF_640x400) == 0) &&
-		(thisgame.default_resolution > 2))
+		thisgame.IsHiRes())
 	{
 		scaleFactor *= 2;
 	}
@@ -2654,8 +2678,7 @@ void DrawSpriteToBuffer(int sprNum, int x, int y, int scaleFactor) {
 	{
 		int oldColorConv = get_color_conversion();
 		set_color_conversion(oldColorConv | COLORCONV_KEEP_TRANS);
-		Common::Bitmap *depthConverted = Common::BitmapHelper::CreateBitmap(todraw->GetWidth(), todraw->GetHeight(), drawBuffer->GetColorDepth());
-		depthConverted->Blit(todraw, 0, 0, 0, 0, todraw->GetWidth(), todraw->GetHeight());
+		Common::Bitmap *depthConverted = Common::BitmapHelper::CreateBitmapCopy(todraw, drawBuffer->GetColorDepth());
 		set_color_conversion(oldColorConv);
 
 		imageToDraw = depthConverted;
@@ -2689,7 +2712,7 @@ void DrawSpriteToBuffer(int sprNum, int x, int y, int scaleFactor) {
 
 void RenderBufferToHDC(int hdc) 
 {
-	blit_to_hdc((BITMAP*)drawBuffer->GetBitmapObject(), (HDC)hdc, 0, 0, 0, 0, drawBuffer->GetWidth(), drawBuffer->GetHeight());
+	blit_to_hdc(drawBuffer->GetAllegroBitmap(), (HDC)hdc, 0, 0, 0, 0, drawBuffer->GetWidth(), drawBuffer->GetHeight());
 	delete drawBuffer;
 	drawBuffer = NULL;
 }
@@ -2713,15 +2736,16 @@ void UpdateSpriteFlags(SpriteFolder ^folder)
 
 void GameUpdated(Game ^game) {
   thisgame.color_depth = (int)game->Settings->ColorDepth;
-  thisgame.default_resolution = (int)game->Settings->Resolution;
+  thisgame.default_resolution = (GameResolutionType)game->Settings->Resolution;
 
   thisgame.options[OPT_NOSCALEFNT] = game->Settings->FontsForHiRes;
   thisgame.options[OPT_ANTIALIASFONTS] = game->Settings->AntiAliasFonts;
   antiAliasFonts = thisgame.options[OPT_ANTIALIASFONTS];
   update_font_sizes();
 
-  delete abuf;
-  abuf = Common::BitmapHelper::CreateBitmap(32, 32, thisgame.color_depth * 8);
+  //delete abuf;
+  //abuf = Common::BitmapHelper::CreateBitmap(32, 32, thisgame.color_depth * 8);
+  BaseColorDepth = thisgame.color_depth * 8;
 
   // ensure that the sprite import knows about pal slots 
   for (int i = 0; i < 256; i++) {
@@ -3047,7 +3071,7 @@ int SetNewSpriteFromBitmap(int slot, System::Drawing::Bitmap^ bmp, int spriteImp
 	}
 
 	thisgame.spriteflags[slot] = 0;
-	if (thisgame.default_resolution > 2)
+	if (thisgame.IsHiRes())
 	{
 		thisgame.spriteflags[slot] |= SPF_640x400;
 	}
@@ -3067,7 +3091,7 @@ int SetNewSpriteFromBitmap(int slot, System::Drawing::Bitmap^ bmp, int spriteImp
 
 	SetNewSprite(slot, tempsprite);
 
-	return (thisgame.default_resolution > 2) ? 1 : 0;
+	return thisgame.IsHiRes() ? 1 : 0;
 }
 
 void SetBitmapPaletteFromGlobalPalette(System::Drawing::Bitmap ^bmp)
@@ -3701,6 +3725,7 @@ void ConvertInteractions(AGS::Types::Interactions ^interactions, ::NewInteractio
 Game^ load_old_game_dta_file(const char *fileName)
 {
 	const char *errorMsg = load_dta_file_into_thisgame(fileName);
+    loaded_game_file_version = kGameVersion_Current;
 	if (errorMsg != NULL)
 	{
 		throw gcnew AGS::Types::AGSEditorException(gcnew String(errorMsg));
@@ -3726,14 +3751,16 @@ Game^ load_old_game_dta_file(const char *fileName)
 	game->Settings->EnforceObjectBasedScript = (thisgame.options[OPT_STRICTSCRIPTING] != 0);
 	game->Settings->FontsForHiRes = (thisgame.options[OPT_NOSCALEFNT] != 0);
 	game->Settings->GameName = gcnew String(thisgame.gamename);
+	game->Settings->UseGlobalSpeechAnimationDelay = true; // this was always on in pre-3.0 games
 	game->Settings->GUIAlphaStyle = GUIAlphaStyle::Classic;
+    game->Settings->SpriteAlphaStyle = SpriteAlphaStyle::Classic;
 	game->Settings->HandleInvClicksInScript = (thisgame.options[OPT_HANDLEINVCLICKS] != 0);
 	game->Settings->InventoryCursors = !thisgame.options[OPT_FIXEDINVCURSOR];
 	game->Settings->LeftToRightPrecedence = (thisgame.options[OPT_LEFTTORIGHTEVAL] != 0);
 	game->Settings->LetterboxMode = (thisgame.options[OPT_LETTERBOX] != 0);
 	game->Settings->MaximumScore = thisgame.totalscore;
 	game->Settings->MouseWheelEnabled = (thisgame.options[OPT_MOUSEWHEEL] != 0);
-	game->Settings->NumberDialogOptions = (thisgame.options[OPT_DIALOGNUMBERED] != 0);
+    game->Settings->NumberDialogOptions = (thisgame.options[OPT_DIALOGNUMBERED] != 0) ? DialogOptionsNumbering::Normal : DialogOptionsNumbering::KeyShortcutsOnly;
 	game->Settings->PixelPerfect = (thisgame.options[OPT_PIXPERFECT] != 0);
 	game->Settings->PlaySoundOnScore = thisgame.options[OPT_SCORESOUND];
 	game->Settings->Resolution = (GameResolutions)thisgame.default_resolution;
@@ -4040,7 +4067,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 		newGui->BackgroundColor = guis[i].bgcol;
 		newGui->BackgroundImage = guis[i].bgpic;
 		newGui->ID = i;
-		newGui->Name = gcnew String(guis[i].get_objscript_name(guis[i].name));
+		newGui->Name = gcnew String(guis[i].name);
 
 		for (int j = 0; j < guis[i].numobjs; j++)
 		{
@@ -4238,7 +4265,7 @@ AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
 	room->Script = roomToLoad->Script;
 	room->BottomEdgeY = thisroom.bottom;
 	room->LeftEdgeX = thisroom.left;
-	room->MusicVolumeAdjustment = (RoomVolumeAdjustment)thisroom.options[ST_VOLUME];
+    room->MusicVolumeAdjustment = (AGS::Types::RoomVolumeAdjustment)thisroom.options[ST_VOLUME];
 	room->PlayerCharacterView = thisroom.options[ST_MANVIEW];
 	room->PlayMusicOnRoomLoad = thisroom.options[ST_TUNE];
 	room->RightEdgeX = thisroom.right;
@@ -4419,6 +4446,9 @@ AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
 
 void save_crm_file(Room ^room)
 {
+    thisroom.freemessage();
+    thisroom.freescripts();
+
 	thisroom.gameId = room->GameID;
 	thisroom.bottom = room->BottomEdgeY;
 	thisroom.left = room->LeftEdgeX;
@@ -4435,13 +4465,8 @@ void save_crm_file(Room ^room)
 	thisroom.bscene_anim_speed = room->BackgroundAnimationDelay;
 	thisroom.num_bscenes = room->BackgroundCount;
 
-	int i;
-	for (i = 0; i < thisroom.nummes; i++) 
-	{
-		free(thisroom.message[i]);
-	}
 	thisroom.nummes = room->Messages->Count;
-	for (i = 0; i < thisroom.nummes; i++) 
+	for (int i = 0; i < thisroom.nummes; i++) 
 	{
 		RoomMessage ^newMessage = room->Messages[i];
 		thisroom.message[i] = (char*)malloc(newMessage->Text->Length + 1);
@@ -4460,7 +4485,7 @@ void save_crm_file(Room ^room)
 	}
 
 	thisroom.numsprs = room->Objects->Count;
-	for (i = 0; i < thisroom.numsprs; i++) 
+	for (int i = 0; i < thisroom.numsprs; i++) 
 	{
 		RoomObject ^obj = room->Objects[i];
 		ConvertStringToCharArray(obj->Name, thisroom.objectscriptnames[i]);
@@ -4478,9 +4503,13 @@ void save_crm_file(Room ^room)
 	}
 
 	thisroom.numhotspots = room->Hotspots->Count;
-	for (i = 0; i < thisroom.numhotspots; i++) 
+	for (int i = 0; i < thisroom.numhotspots; i++) 
 	{
 		RoomHotspot ^hotspot = room->Hotspots[i];
+        if (thisroom.hotspotnames[i])
+        {
+            free(thisroom.hotspotnames[i]);
+        }
 		thisroom.hotspotnames[i] = (char*)malloc(hotspot->Description->Length + 1);
 		ConvertStringToCharArray(hotspot->Description, thisroom.hotspotnames[i]);
 		ConvertStringToCharArray(hotspot->Name, thisroom.hotspotScriptNames[i], 20);
@@ -4489,7 +4518,7 @@ void save_crm_file(Room ^room)
 		CompileCustomProperties(hotspot->Properties, &thisroom.hsProps[i]);
 	}
 
-	for (i = 0; i <= MAX_WALK_AREAS; i++) 
+	for (int i = 0; i <= MAX_WALK_AREAS; i++) 
 	{
 		RoomWalkableArea ^area = room->WalkableAreas[i];
 		thisroom.shadinginfo[i] = area->AreaSpecificView;
@@ -4506,13 +4535,13 @@ void save_crm_file(Room ^room)
 		}
 	}
 
-	for (i = 0; i < MAX_OBJ; i++) 
+	for (int i = 0; i < MAX_OBJ; i++) 
 	{
 		RoomWalkBehind ^area = room->WalkBehinds[i];
 		thisroom.objyval[i] = area->Baseline;
 	}
 
-	for (i = 0; i < MAX_REGIONS; i++) 
+	for (int i = 0; i < MAX_REGIONS; i++) 
 	{
 		RoomRegion ^area = room->Regions[i];
 		thisroom.regionTintLevel[i] = 0;
@@ -4543,48 +4572,18 @@ void save_crm_file(Room ^room)
 
 	TempDataStorage::RoomBeingSaved = nullptr;
 
-	for (i = 0; i < thisroom.numhotspots; i++) 
+	for (int i = 0; i < thisroom.numhotspots; i++) 
 	{
 		free(thisroom.hotspotnames[i]);
 		thisroom.hotspotnames[i] = NULL;
 	}
 }
 
-// [IKM] 2012-11-13: code moved to AGS.Types.FolderHelper
-/*
-static int CountViews(ViewFolder ^folder) 
-{
-	int highestViewNumber = 0;
-	for each (ViewFolder ^subFolder in folder->SubFolders)
-	{
-		int folderView = CountViews(subFolder);
-		if (folderView > highestViewNumber) 
-		{
-			highestViewNumber = folderView;
-		}
-	}
-	for each (View ^view in folder->Views)
-	{
-		if (view->ID > highestViewNumber)
-		{
-			highestViewNumber = view->ID;
-		}
-	}
-	return highestViewNumber;
-}
-*/
-
 ref class ManagedViewProcessing
 {
 public:
     static void ConvertViewsToDTAFormat(IViewFolder ^folder, Game ^game) 
     {
-        /*
-	    for each (ViewFolder ^subFolder in folder->SubFolders)
-	    {
-		    ConvertViewsToDTAFormat(subFolder, game);
-	    }
-        */
         AGS::Types::FolderHelper::ViewFolderProcessing ^del = 
             gcnew AGS::Types::FolderHelper::ViewFolderProcessing(ConvertViewsToDTAFormat);
         AGS::Types::FolderHelper::ForEachViewFolder(folder, game, del);
@@ -4667,9 +4666,18 @@ void serialize_room_interactions(Stream *ooo)
 	}
 }
 
+void WriteGameSetupStructBase_Aligned(Stream *out)
+{
+    GameSetupStructBase *gameBase = (GameSetupStructBase *)&thisgame;
+    AlignedStream align_s(out, Common::kAligned_Write);
+    gameBase->WriteToFile(&align_s);
+}
+
 void save_thisgame_to_file(const char *fileName, Game ^game)
 {
-	const char *AGS_VERSION = "3.3.0";
+    Common::String ags_version;
+    ConvertStringToNativeString(AGS::Types::Version::AGS_EDITOR_VERSION, ags_version);
+
   char textBuffer[500];
 	int bb;
 
@@ -4680,11 +4688,11 @@ void save_thisgame_to_file(const char *fileName, Game ^game)
 	}
 
   ooo->Write(game_file_sig,30);
-  ooo->WriteInt32(42);
-  ooo->WriteInt32(strlen(AGS_VERSION));
-  ooo->Write(AGS_VERSION, strlen(AGS_VERSION));
+  ooo->WriteInt32(kGameVersion_Current);
+  ooo->WriteInt32(ags_version.GetLength());
+  ooo->Write(ags_version, ags_version.GetLength());
 
-  ooo->WriteArray(&thisgame, sizeof (GameSetupStructBase), 1);
+  WriteGameSetupStructBase_Aligned(ooo);
   ooo->Write(&thisgame.guid[0], MAX_GUID_LENGTH);
   ooo->Write(&thisgame.saveGameFileExtension[0], MAX_SG_EXT_LENGTH);
   ooo->Write(&thisgame.saveGameFolderName[0], MAX_SG_FOLDER_LEN);
@@ -4714,13 +4722,16 @@ void save_thisgame_to_file(const char *fileName, Game ^game)
   // Extract all the scripts we want to persist (all the non-headers, except
   // the global script which was already written)
   List<AGS::Types::Script^>^ scriptsToWrite = gcnew List<AGS::Types::Script^>();
-  for each (Script ^script in game->ScriptsToCompile)
+  for each (ScriptAndHeader ^scriptAndHeader in game->ScriptsToCompile)
   {
-	  if ((!script->IsHeader) && 
-      (!script->FileName->Equals(Script::GLOBAL_SCRIPT_FILE_NAME)) &&
-      (!script->FileName->Equals(Script::DIALOG_SCRIPTS_FILE_NAME)))
+	  AGS::Types::Script^ script = scriptAndHeader->Script;
+	  if (script != nullptr)
 	  {
-		  scriptsToWrite->Add(script);
+		  if ((!script->FileName->Equals(Script::GLOBAL_SCRIPT_FILE_NAME)) &&
+			 (!script->FileName->Equals(Script::DIALOG_SCRIPTS_FILE_NAME)))
+		  {
+			  scriptsToWrite->Add(script);
+		  }
 	  }
   }
 
@@ -4852,17 +4863,19 @@ void save_game_to_dta_file(Game^ game, const char *fileName)
 	thisgame.options[OPT_NOSCALEFNT] = game->Settings->FontsForHiRes;
 	ConvertStringToCharArray(game->Settings->GameName, thisgame.gamename, 50);
 	thisgame.options[OPT_NEWGUIALPHA] = (int)game->Settings->GUIAlphaStyle;
+    thisgame.options[OPT_SPRITEALPHA] = (int)game->Settings->SpriteAlphaStyle;
 	thisgame.options[OPT_HANDLEINVCLICKS] = game->Settings->HandleInvClicksInScript;
 	thisgame.options[OPT_FIXEDINVCURSOR] = !game->Settings->InventoryCursors;
-  thisgame.options[OPT_OLDTALKANIMSPD] = game->Settings->LegacySpeechAnimationSpeed;
+	thisgame.options[OPT_GLOBALTALKANIMSPD] = game->Settings->UseGlobalSpeechAnimationDelay ?
+        game->Settings->GlobalSpeechAnimationDelay : (-game->Settings->GlobalSpeechAnimationDelay - 1);
 	thisgame.options[OPT_LEFTTORIGHTEVAL] = game->Settings->LeftToRightPrecedence;
 	thisgame.options[OPT_LETTERBOX] = game->Settings->LetterboxMode;
   thisgame.totalscore = game->Settings->MaximumScore;
 	thisgame.options[OPT_MOUSEWHEEL] = game->Settings->MouseWheelEnabled;
-	thisgame.options[OPT_DIALOGNUMBERED] = game->Settings->NumberDialogOptions;
+	thisgame.options[OPT_DIALOGNUMBERED] = (int)game->Settings->NumberDialogOptions;
 	thisgame.options[OPT_PIXPERFECT] = game->Settings->PixelPerfect;
 	thisgame.options[OPT_SCORESOUND] = 0; // saved elsewhere now to make it 32-bit
-	thisgame.default_resolution = (int)game->Settings->Resolution;
+	thisgame.default_resolution = (GameResolutionType)game->Settings->Resolution;
 	thisgame.options[OPT_FADETYPE] = (int)game->Settings->RoomTransition;
 	thisgame.options[OPT_RUNGAMEDLGOPTS] = game->Settings->RunGameLoopsWhileDialogOptionsDisplayed;
 	thisgame.options[OPT_SAVESCREENSHOT] = game->Settings->SaveScreenshots;
@@ -4877,6 +4890,7 @@ void save_game_to_dta_file(Game^ game, const char *fileName)
 	thisgame.options[OPT_NATIVECOORDINATES] = !game->Settings->UseLowResCoordinatesInScript;
 	thisgame.options[OPT_WALKONLOOK] = game->Settings->WalkInLookMode;
 	thisgame.options[OPT_DISABLEOFF] = (int)game->Settings->WhenInterfaceDisabled;
+    thisgame.options[OPT_SAFEFILEPATHS] = 1; // always use safe file paths in new games
 	thisgame.uniqueid = game->Settings->UniqueID;
   ConvertStringToCharArray(game->Settings->GUIDAsString, thisgame.guid, MAX_GUID_LENGTH);
   ConvertStringToCharArray(game->Settings->SaveGameFolderName, thisgame.saveGameFolderName, MAX_SG_FOLDER_LEN);
@@ -5254,9 +5268,3 @@ void update_polled_stuff_if_runtime()
 {
 	// do nothing
 }
-
-// [IKM] 2012-06-07
-// Had to copy this variable definition from Engine/ac.cpp, since it is required in acgui.cpp // GUIInv::CalculateNumCells()
-// due JJS's compatiblity fix for 2.70.
-// This *must* be not less than 31 (v270), otherwise function will work in backward-compatibility mode.
-GameDataVersion loaded_game_file_version = kGameVersion_270;

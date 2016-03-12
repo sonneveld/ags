@@ -5,11 +5,28 @@
 #pragma unmanaged
 
 #include "font/fonts.h"
+#include "gui/guimain.h"
 #include "gui/guibutton.h"
 #include "gui/guilabel.h"
 #include "gui/guilistbox.h"
 #include "gui/guitextbox.h"
 #include "util/string_utils.h"
+
+bool GUIMain::is_alpha() 
+{
+    if (this->bgpic > 0)
+    {
+        // alpha state depends on background image
+        return is_sprite_alpha(this->bgpic);
+    }
+    if (this->bgcol > 0)
+    {
+        // not alpha transparent if there is a background color
+        return false;
+    }
+    // transparent background, enable alpha blending
+    return final_col_dep >= 24;
+}
 
 //=============================================================================
 // AGS.Native-specific implementation split out of acgui.h
@@ -21,9 +38,9 @@ int GUIObject::IsClickable()
   return 1;
 }
 
-void wouttext_outline(int xxp, int yyp, int usingfont, char *texx)
+void wouttext_outline(Common::Bitmap *ds, int xxp, int yyp, int usingfont, color_t text_color, const char *texx)
 {
-  wouttextxy(xxp, yyp, usingfont, texx);
+  wouttextxy(ds, xxp, yyp, usingfont, text_color, texx);
 }
 
 //=============================================================================
@@ -65,10 +82,10 @@ void GUILabel::Draw_split_lines(char *teptr, int wid, int font, int &numlines)
   split_lines_leftright(teptr, wid, font);
 }
 
-void GUITextBox::Draw_text_box_contents()
+void GUITextBox::Draw_text_box_contents(Common::Bitmap *ds, color_t text_color)
 {
   // print something fake so we can see what it looks like
-  wouttext_outline(x + 2, y + 2, font, "Text Box Contents");
+  wouttext_outline(ds, x + 2, y + 2, font, text_color, "Text Box Contents");
 }
 
 void GUIListBox::Draw_items_fix()

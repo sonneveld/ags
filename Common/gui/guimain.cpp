@@ -16,7 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "util/wgt2allg.h"
 #include "util/string_utils.h" //strlwr()
 #include "gui/guimain.h"
 #include "ac/common.h"	// quit()
@@ -31,10 +30,9 @@
 #include "ac/spritecache.h"
 #include "util/stream.h"
 #include "gfx/bitmap.h"
+#include "debug/out.h"
 
-using AGS::Common::Stream;
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
 
 char GUIMain::oNameBuffer[20];
 
@@ -103,11 +101,8 @@ void GUIMain::ReadFromFile(Stream *in, GuiVersion gui_version)
   in->Read(vtext, 40);
   in->ReadArrayOfInt32(&x, 27);
 
-  // 64 bit fix: Read 4 byte int values into array of 8 byte long ints
-  in->ReadArrayOfIntPtr32((intptr_t*)objs, MAX_OBJS_ON_GUI);
-  //int i;
-  //for (i = 0; i < MAX_OBJS_ON_GUI; i++)
-  //  objs[i] = (GUIObject*)in->ReadInt32();
+  // array of 32-bit pointers; these values are unused
+  in->Seek(AGS::Common::kSeekCurrent, MAX_OBJS_ON_GUI * sizeof(int32_t));
 
   in->ReadArrayOfInt32(objrefptr, MAX_OBJS_ON_GUI);
 }
@@ -117,30 +112,11 @@ void GUIMain::WriteToFile(Stream *out)
   out->Write(vtext, 40);
   out->WriteArrayOfInt32(&x, 27);
 
-  // 64 bit fix: Write 4 byte int values from array of 8 byte long ints
-  out->WriteArrayOfIntPtr32((intptr_t*)objs, MAX_OBJS_ON_GUI);
-  //int i;
-  //for (i = 0; i < MAX_OBJS_ON_GUI; i++)
-  //  out->WriteArray(&objs[i], 4, 1);
+  // array of dummy 32-bit pointers
+  int32_t dummy_arr[MAX_OBJS_ON_GUI];
+  out->WriteArrayOfInt32(dummy_arr, MAX_OBJS_ON_GUI);
 
   out->WriteArrayOfInt32((int32_t*)&objrefptr, MAX_OBJS_ON_GUI);
-}
-
-const char* GUIMain::get_objscript_name(const char *basedOn) {
-  if (basedOn == NULL)
-    basedOn = name;
-
-  if (basedOn[0] == 0) {
-    oNameBuffer[0] = 0;
-  }
-  else {
-    if (strlen(basedOn) > 18)
-      return "";
-    sprintf(oNameBuffer, "g%s", basedOn);
-    strlwr(oNameBuffer);
-    oNameBuffer[1] = toupper(oNameBuffer[1]);
-  }
-  return &oNameBuffer[0];
 }
 
 int GUIMain::is_textwindow() {
@@ -156,22 +132,6 @@ extern "C" int compare_guicontrolzorder(const void *elem1, const void *elem2) {
 
   // returns >0 if e1 is lower down, <0 if higher, =0 if the same
   return e1->zorder - e2->zorder;
-}
-
-bool GUIMain::is_alpha() 
-{
-  if (this->bgpic > 0)
-  {
-    // alpha state depends on background image
-    return is_sprite_alpha(this->bgpic);
-  }
-  if (this->bgcol > 0)
-  {
-    // not alpha transparent if there is a background color
-    return false;
-  }
-  // transparent background, enable alpha blending
-  return (final_col_dep >= 24);
 }
 
 void GUIMain::resort_zorder()
@@ -280,46 +240,46 @@ int GUIMain::is_mouse_on_gui()
   return 0;
 }
 
-void GUIMain::draw_blob(int xp, int yp)
+void GUIMain::draw_blob(Common::Bitmap *ds, int xp, int yp, color_t draw_color)
 {
-  abuf->FillRect(Rect(xp, yp, xp + get_fixed_pixel_size(1), yp + get_fixed_pixel_size(1)), currentcolor);
+  ds->FillRect(Rect(xp, yp, xp + get_fixed_pixel_size(1), yp + get_fixed_pixel_size(1)), draw_color);
 }
 
-void GUIMain::draw_at(int xx, int yy)
+void GUIMain::draw_at(Common::Bitmap *ds, int xx, int yy)
 {
   int aa;
 
   SET_EIP(375)
 
-  wtexttransparent(TEXTFG);
-
   if ((wid < 1) || (hit < 1))
     return;
 
-  Bitmap *abufwas = abuf;
-  Bitmap *subbmp = BitmapHelper::CreateSubBitmap(abuf, RectWH(xx, yy, wid, hit));
+  //Bitmap *abufwas = g;
+  Bitmap *subbmp = BitmapHelper::CreateSubBitmap(ds, RectWH(xx, yy, wid, hit));
 
   SET_EIP(376)
   // stop border being transparent, if the whole GUI isn't
   if ((fgcol == 0) && (bgcol != 0))
     fgcol = 16;
 
-  abuf = subbmp;
+  //g = subbmp;
   if (bgcol != 0)
-    abuf->Clear(get_col8_lookup(bgcol));
+    subbmp->Fill(subbmp->GetCompatibleColor(bgcol));
 
   SET_EIP(377)
 
+  color_t draw_color;
   if (fgcol != bgcol) {
-    abuf->DrawRect(Rect(0, 0, abuf->GetWidth() - 1, abuf->GetHeight() - 1), get_col8_lookup(fgcol));
+    draw_color = subbmp->GetCompatibleColor(fgcol);
+    subbmp->DrawRect(Rect(0, 0, subbmp->GetWidth() - 1, subbmp->GetHeight() - 1), draw_color);
     if (get_fixed_pixel_size(1) > 1)
-      abuf->DrawRect(Rect(1, 1, abuf->GetWidth() - 2, abuf->GetHeight() - 2), get_col8_lookup(fgcol));
+      subbmp->DrawRect(Rect(1, 1, subbmp->GetWidth() - 2, subbmp->GetHeight() - 2), draw_color);
   }
 
   SET_EIP(378)
 
   if ((bgpic > 0) && (spriteset[bgpic] != NULL))
-    draw_sprite_compensate(bgpic, 0, 0, 0);
+    draw_gui_sprite(subbmp, bgpic, 0, 0, false);
 
   SET_EIP(379)
 
@@ -334,42 +294,42 @@ void GUIMain::draw_at(int xx, int yy)
     if (!objToDraw->IsVisible())
       continue;
 
-    objToDraw->Draw();
+    objToDraw->Draw(subbmp);
 
     int selectedColour = 14;
 
     if (highlightobj == drawOrder[aa]) {
       if (outlineGuiObjects)
         selectedColour = 13;
-      wsetcolor(selectedColour);
-      draw_blob(objToDraw->x + objToDraw->wid - get_fixed_pixel_size(1) - 1, objToDraw->y);
-      draw_blob(objToDraw->x, objToDraw->y + objToDraw->hit - get_fixed_pixel_size(1) - 1);
-      draw_blob(objToDraw->x, objToDraw->y);
-      draw_blob(objToDraw->x + objToDraw->wid - get_fixed_pixel_size(1) - 1, 
-                objToDraw->y + objToDraw->hit - get_fixed_pixel_size(1) - 1);
+      draw_color = subbmp->GetCompatibleColor(selectedColour);
+      draw_blob(subbmp, objToDraw->x + objToDraw->wid - get_fixed_pixel_size(1) - 1, objToDraw->y, draw_color);
+      draw_blob(subbmp, objToDraw->x, objToDraw->y + objToDraw->hit - get_fixed_pixel_size(1) - 1, draw_color);
+      draw_blob(subbmp, objToDraw->x, objToDraw->y, draw_color);
+      draw_blob(subbmp, objToDraw->x + objToDraw->wid - get_fixed_pixel_size(1) - 1, 
+                objToDraw->y + objToDraw->hit - get_fixed_pixel_size(1) - 1, draw_color);
     }
     if (outlineGuiObjects) {
       int oo;  // draw a dotted outline round all objects
-      wsetcolor(selectedColour);
+      draw_color = subbmp->GetCompatibleColor(selectedColour);
       for (oo = 0; oo < objToDraw->wid; oo+=2) {
-        abuf->PutPixel(oo + objToDraw->x, objToDraw->y, currentcolor);
-        abuf->PutPixel(oo + objToDraw->x, objToDraw->y + objToDraw->hit - 1, currentcolor);
+        subbmp->PutPixel(oo + objToDraw->x, objToDraw->y, draw_color);
+        subbmp->PutPixel(oo + objToDraw->x, objToDraw->y + objToDraw->hit - 1, draw_color);
       }
       for (oo = 0; oo < objToDraw->hit; oo+=2) {
-        abuf->PutPixel(objToDraw->x, oo + objToDraw->y, currentcolor);
-        abuf->PutPixel(objToDraw->x + objToDraw->wid - 1, oo + objToDraw->y, currentcolor);
+        subbmp->PutPixel(objToDraw->x, oo + objToDraw->y, draw_color);
+        subbmp->PutPixel(objToDraw->x + objToDraw->wid - 1, oo + objToDraw->y, draw_color);
       }      
     }
   }
 
   SET_EIP(380)
-  delete abuf;
-  abuf = abufwas;
+  delete subbmp;
+//  sub_graphics.GetBitmap() = abufwas;
 }
 
-void GUIMain::draw()
+void GUIMain::draw(Common::Bitmap *ds)
 {
-  draw_at(x, y);
+  draw_at(ds, x, y);
 }
 
 int GUIMain::find_object_under_mouse(int extrawid, bool mustBeClickable)
@@ -507,6 +467,7 @@ void read_gui(Stream *in, GUIMain * guiread, GameSetupStruct * gss, GUIMain** al
     quit("read_gui: file is corrupt");
 
   GameGuiVersion = (GuiVersion)in->ReadInt32();
+  Out::FPrint("Game GUI version: %d", GameGuiVersion);
   if (GameGuiVersion < kGuiVersion_214) {
     gss->numgui = (int)GameGuiVersion;
     GameGuiVersion = kGuiVersion_Initial;
@@ -622,9 +583,9 @@ void write_gui(Stream *out, GUIMain * guiwrite, GameSetupStruct * gss, bool save
 
   out->WriteInt32(GUIMAGIC);
 
-  if (savedgame && GameGuiVersion >= kGuiVersion_ForwardCompatible)
+  if (savedgame)
   {
-    out->WriteInt32(GameGuiVersion);
+    out->WriteInt32(GameGuiVersion > kGuiVersion_ForwardCompatible ? GameGuiVersion : kGuiVersion_ForwardCompatible);
   }
   else
   {

@@ -23,7 +23,7 @@ namespace Engine
 {
 
 
-class PThreadMutex : BaseMutex
+class PThreadMutex : public BaseMutex
 {
 public:
   inline PThreadMutex()
@@ -33,7 +33,6 @@ public:
 
   inline ~PThreadMutex()
   {
-    Unlock();
     pthread_mutex_destroy(&_mutex);
   }
 

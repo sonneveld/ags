@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\Common&quot;;&quot;$(SolutionDir)\..\Common\libinclude&quot;;&quot;$(SolutionDir)\..\Engine&quot;;&quot;$(SolutionDir)\..\Plugins&quot;;&quot;$(SolutionDir)\..\Windows\include&quot;"
+				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Engine;..\..\Plugins;..\..\Windows\include;$(OPENGL_INCLUDE_DIR);$(DIRECTX_SDK_INCLUDE_DIR)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;ALLEGRO_NO_ASM;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;AGS_HAS_CD_AUDIO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -120,8 +120,91 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\Common&quot;;&quot;$(SolutionDir)\..\Common\libinclude&quot;;&quot;$(SolutionDir)\..\Engine&quot;;&quot;$(SolutionDir)\..\Plugins&quot;;&quot;$(SolutionDir)\..\Windows\include&quot;"
+				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Engine;..\..\Plugins;..\..\Windows\include;$(OPENGL_INCLUDE_DIR);$(DIRECTX_SDK_INCLUDE_DIR)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;ALLEGRO_NO_ASM;AGS_HAS_CD_AUDIO"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="Common.lib odbc32.lib odbccp32.lib libcmt.lib libcpmt.lib d3d9.lib quartz.lib strmiids.lib winmm.lib shlwapi.lib amstrmid.lib opengl32.lib"
+				OutputFile="$(OutDir)\acwin.exe"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="$(SolutionDir)\.lib\$(ConfigurationName)"
+				IgnoreDefaultLibraryNames="LIBC,LIBCD,msvcrt"
+				GenerateDebugInformation="true"
+				GenerateMapFile="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="0"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_NoMP3|Win32"
+			OutputDirectory="$(SolutionDir)\.build\$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="2"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Engine;..\..\Plugins;..\..\Windows\include;$(OPENGL_INCLUDE_DIR);$(DIRECTX_SDK_INCLUDE_DIR)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;ALLEGRO_NO_ASM;AGS_HAS_CD_AUDIO;NO_MP3_PLAYER"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -541,6 +624,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Engine\ac\speech.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Engine\ac\sprite.cpp"
 					>
 				</File>
@@ -721,6 +808,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Engine\gfx\gfx_util.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Engine\gfx\gfxfilter.cpp"
 					>
 				</File>
@@ -750,10 +841,6 @@
 				</File>
 				<File
 					RelativePath="..\..\Engine\gfx\gfxfilter_scalingallegro.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\Engine\gfx\gfxfilterdefines.h"
 					>
 				</File>
 			</Filter>
@@ -933,11 +1020,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\Engine\platform\windows\debug\namedpipesagsdebugger.cpp"
+					RelativePath="..\..\Engine\debug\logfile.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\Engine\debug\rawfileoutputtarget.cpp"
+					RelativePath="..\..\Engine\platform\windows\debug\namedpipesagsdebugger.cpp"
 					>
 				</File>
 			</Filter>
@@ -1050,6 +1137,14 @@
 				</File>
 				<File
 					RelativePath="..\..\Engine\test\test_file.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Engine\test\test_gfx.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Engine\test\test_inifile.cpp"
 					>
 				</File>
 				<File
@@ -1415,6 +1510,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Engine\ac\speech.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Engine\ac\sprite.h"
 					>
 				</File>
@@ -1651,6 +1750,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Engine\gfx\gfx_util.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Engine\gfx\gfxfilter.h"
 					>
 				</File>
@@ -1683,7 +1786,15 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Engine\gfx\gfxfilterdefines.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Engine\gfx\gfxfilterhelpers.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Engine\gfx\gfxmodelist.h"
 					>
 				</File>
 				<File
@@ -1863,11 +1974,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\Engine\platform\windows\debug\namedpipesagsdebugger.h"
+					RelativePath="..\..\Engine\debug\logfile.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\Engine\debug\rawfileoutputtarget.h"
+					RelativePath="..\..\Engine\platform\windows\debug\namedpipesagsdebugger.h"
 					>
 				</File>
 			</Filter>
@@ -1900,6 +2011,10 @@
 				</File>
 				<File
 					RelativePath="..\..\Engine\main\main.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Engine\main\main_allegro.h"
 					>
 				</File>
 				<File
@@ -2007,6 +2122,14 @@
 				Name="util"
 				>
 				<File
+					RelativePath="..\..\Engine\util\library.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Engine\util\library_windows.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Engine\util\mutex.h"
 					>
 				</File>
@@ -2059,6 +2182,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Engine\resource\game-1.ico"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Engine\resource\resource.h"
 				>
 			</File>
 			<File

@@ -123,3 +123,5 @@ OSX/xcode/golden_wakegame_files no steam.zip
 OSX/xcode/legacy/Legacy.xcodeproj/xcuserdata/janetcampbell68.xcuserdatad/xcschemes/xcschememanagement.plist
 
 OSX/xcode/legacy/Legacy.xcodeproj/xcuserdata/janetcampbell68.xcuserdatad/xcschemes/Legacy.xcscheme
+
+*.exe

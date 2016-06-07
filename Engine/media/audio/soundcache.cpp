@@ -18,6 +18,7 @@
 #include "media/audio/soundcache.h"
 #include "media/audio/audiointernaldefs.h"
 #include "util/mutex.h"
+#include "util/mutex_lock.h"
 
 sound_cache_entry_t* sound_cache_entries = NULL;
 unsigned int sound_cache_counter = 0;
@@ -27,7 +28,7 @@ AGS::Engine::Mutex _sound_cache_mutex;
 
 void clear_sound_cache()
 {
-    _sound_cache_mutex.Lock();
+    AGS::Engine::MutexLock _lock(_sound_cache_mutex);
 
     if (sound_cache_entries)
     {
@@ -49,15 +50,14 @@ void clear_sound_cache()
         sound_cache_entries = (sound_cache_entry_t*)malloc(psp_audio_cachesize * sizeof(sound_cache_entry_t));
         memset(sound_cache_entries, 0, psp_audio_cachesize * sizeof(sound_cache_entry_t));
     }
-    _sound_cache_mutex.Unlock();
 }
 
 void sound_cache_free(char* buffer, bool is_wave)
 {
-    _sound_cache_mutex.Lock();
+    AGS::Engine::MutexLock _lock(_sound_cache_mutex);
 
 #ifdef SOUND_CACHE_DEBUG
-    printf("sound_cache_free(%d %d)\n", (unsigned int)buffer, (unsigned int)is_wave);
+    Out::FPrint("sound_cache_free(%d %d)\n", (unsigned int)buffer, (unsigned int)is_wave);
 #endif
     int i;
     for (i = 0; i < psp_audio_cachesize; i++)
@@ -68,15 +68,14 @@ void sound_cache_free(char* buffer, bool is_wave)
                 sound_cache_entries[i].reference--;
 
 #ifdef SOUND_CACHE_DEBUG
-            printf("..decreased reference count of slot %d to %d\n", i, sound_cache_entries[i].reference);
+            Out::FPrint("..decreased reference count of slot %d to %d\n", i, sound_cache_entries[i].reference);
 #endif
-            _sound_cache_mutex.Unlock();
             return;
         }
     }
 
 #ifdef SOUND_CACHE_DEBUG
-    printf("..freeing uncached sound\n");
+    Out::FPrint("..freeing uncached sound\n");
 #endif
 
     // Sound is uncached
@@ -87,16 +86,15 @@ void sound_cache_free(char* buffer, bool is_wave)
         else
             free(buffer);
     }
-    _sound_cache_mutex.Unlock();
 }
 
 
 char* get_cached_sound(const char* filename, bool is_wave, long* size)
 {
-    _sound_cache_mutex.Lock();
+	AGS::Engine::MutexLock _lock(_sound_cache_mutex);
 
 #ifdef SOUND_CACHE_DEBUG
-    printf("get_cached_sound(%s %d)\n", filename, (unsigned int)is_wave);
+    Out::FPrint("get_cached_sound(%s %d)\n", filename, (unsigned int)is_wave);
 #endif
 
     *size = 0;
@@ -110,13 +108,12 @@ char* get_cached_sound(const char* filename, bool is_wave, long* size)
         if (strcmp(filename, sound_cache_entries[i].file_name) == 0)
         {
 #ifdef SOUND_CACHE_DEBUG
-            printf("..found in slot %d\n", i);
+            Out::FPrint("..found in slot %d\n", i);
 #endif
             sound_cache_entries[i].reference++;
             sound_cache_entries[i].last_used = sound_cache_counter++;
             *size = sound_cache_entries[i].size;
 
-            _sound_cache_mutex.Unlock();
             return sound_cache_entries[i].data;
         }
     }
@@ -139,7 +136,6 @@ char* get_cached_sound(const char* filename, bool is_wave, long* size)
         mp3in = pack_fopen(filename, "rb");
         if (mp3in == NULL)
         {
-            _sound_cache_mutex.Unlock();
             return NULL;
         }
     }
@@ -188,7 +184,6 @@ char* get_cached_sound(const char* filename, bool is_wave, long* size)
         if (newdata == NULL)
         {
             pack_fclose(mp3in);
-            _sound_cache_mutex.Unlock();
             return NULL;
         }
 
@@ -200,16 +195,15 @@ char* get_cached_sound(const char* filename, bool is_wave, long* size)
     {
         // No cache slot empty, return uncached data
 #ifdef SOUND_CACHE_DEBUG
-        printf("..loading uncached\n");
+        Out::FPrint("..loading uncached\n");
 #endif
-        _sound_cache_mutex.Unlock();
         return newdata;  
     }
     else
     {
         // Add to cache, free old sound first
 #ifdef SOUND_CACHE_DEBUG
-        printf("..loading cached in slot %d\n", i);
+        Out::FPrint("..loading cached in slot %d\n", i);
 #endif	
 
         if (sound_cache_entries[i].data) {
@@ -230,9 +224,7 @@ char* get_cached_sound(const char* filename, bool is_wave, long* size)
         sound_cache_entries[i].last_used = sound_cache_counter++;
         sound_cache_entries[i].is_wave = is_wave;
 
-        _sound_cache_mutex.Unlock();
         return sound_cache_entries[i].data;	
     }
 
-    _sound_cache_mutex.Unlock();
 }

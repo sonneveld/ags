@@ -16,13 +16,13 @@
 // Game loop
 //
 
-#include "util/wgt2allg.h"
 #include "ac/common.h"
 #include "ac/characterextras.h"
 #include "ac/characterinfo.h"
 #include "ac/draw.h"
 #include "ac/event.h"
 #include "ac/game.h"
+#include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/global_character.h"
 #include "ac/global_debug.h"
@@ -33,6 +33,7 @@
 #include "ac/global_region.h"
 #include "ac/gui.h"
 #include "ac/hotspot.h"
+#include "ac/keycode.h"
 #include "ac/invwindow.h"
 #include "ac/mouse.h"
 #include "ac/overlay.h"
@@ -49,6 +50,7 @@
 #include "main/mainheader.h"
 #include "main/game_run.h"
 #include "main/update.h"
+#include "media/audio/soundclip.h"
 #include "plugin/agsplugin.h"
 #include "script/script.h"
 #include "ac/spritecache.h"
@@ -148,6 +150,15 @@ void game_loop_check_new_room()
     check_new_room ();
 }
 
+void game_loop_do_late_update()
+{
+    if (in_new_room == 0)
+    {
+        // Run the room and game script late_repeatedly_execute
+        run_function_on_non_blocking_thread(&lateRepExecAlways);
+    }
+}
+
 int game_loop_check_ground_level_interactions()
 {
     if ((play.ground_level_areas_disabled & GLED_INTERACTION) == 0) {
@@ -193,6 +204,23 @@ int game_loop_check_ground_level_interactions()
     } // end if checking ground level interactions
 
     return RETURN_CONTINUE;
+}
+
+void lock_mouse_on_click()
+{
+    if (usetup.mouse_auto_lock && usetup.windowed)
+        Mouse::TryLockToWindow();
+}
+
+void toggle_mouse_lock()
+{
+    if (usetup.windowed)
+    {
+        if (Mouse::IsLockedToWindow())
+            Mouse::UnlockFromWindow();
+        else
+            Mouse::TryLockToWindow();
+    }
 }
 
 // check_controls: checks mouse & keyboard interface
@@ -292,6 +320,8 @@ void check_controls() {
 
     aa=mgetbutton();
     if (aa>NONE) {
+        lock_mouse_on_click();
+
         if ((play.in_cutscene == 3) || (play.in_cutscene == 4))
             start_skipping_cutscene();
         if ((play.in_cutscene == 5) && (aa == RIGHT))
@@ -326,18 +356,21 @@ void check_controls() {
         //    else RunTextScriptIParam(gameinst,"on_mouse_click",aa+1);
     }
     aa = check_mouse_wheel();
+    if (aa !=0)
+        lock_mouse_on_click();
     if (aa < 0)
         setevent (EV_TEXTSCRIPT, TS_MCLICK, 9);
     else if (aa > 0)
         setevent (EV_TEXTSCRIPT, TS_MCLICK, 8);
 
     // check keypresses
+    static int old_key_shifts = 0;
     if (kbhit()) {
         // in case they press the finish-recording button, make sure we know
         int was_playing = play.playback;
 
         int kgn = getch();
-        if (kgn==0) kgn=getch()+300;
+        if (kgn==0) kgn=getch()+AGS_EXT_KEY_SHIFT;
         //    if (kgn==367) restart_game();
         //    if (kgn==2) Display("numover: %d character movesped: %d, animspd: %d",numscreenover,playerchar->walkspeed,playerchar->animspeed);
         //    if (kgn==2) CreateTextOverlay(50,60,170,FONT_SPEECH,14,"This is a test screen overlay which shouldn't disappear");
@@ -441,7 +474,9 @@ void check_controls() {
         script_debug(5,0);
         play.debug_mode--;
         }*/
-        else if ((kgn == 22) && (play.wait_counter < 1) && (is_text_overlay == 0) && (restrict_until == 0)) {
+        else if ((kgn == 22 + AGS_EXT_KEY_SHIFT && (key[KEY_LCONTROL] || key[KEY_RCONTROL]) ) &&
+            (play.wait_counter < 1) && (is_text_overlay == 0) && (restrict_until == 0))
+        {
             // make sure we can't interrupt a Wait()
             // and desync the music to cutscene
             play.debug_mode++;
@@ -486,6 +521,17 @@ void check_controls() {
             }
         }
         //    RunTextScriptIParam(gameinst,"on_key_press",kgn);
+    }
+    // check extended keys
+    else
+    {
+        // Toggle mouse lock on Ctrl + Alt release
+        if (!key[KEY_ALT] && !(key[KEY_LCONTROL] || key[KEY_RCONTROL]) &&
+            old_key_shifts == (KB_ALT_FLAG | KB_CTRL_FLAG))
+        {
+            toggle_mouse_lock();
+        }
+        old_key_shifts = key_shifts & ~(KB_SCROLOCK_FLAG | KB_NUMLOCK_FLAG | KB_CAPSLOCK_FLAG);
     }
 
     if ((IsInterfaceEnabled()) && (IsGamePaused() == 0) &&
@@ -673,7 +719,7 @@ void mainloop(bool checkControls, IDriverDependantBitmap *extraBitmap, int extra
     
     int res;
 
-    UPDATE_MP3
+    update_mp3();
 
     numEventsAtStartOfFunction = numevents;
 
@@ -712,7 +758,9 @@ void mainloop(bool checkControls, IDriverDependantBitmap *extraBitmap, int extra
 
     game_loop_update_animated_buttons();
 
-    update_polled_stuff_and_crossfade();
+    game_loop_do_late_update();
+
+    update_polled_audio_and_crossfade();
 
     game_loop_do_render_and_check_mouse(extraBitmap, extraX, extraY);
     
@@ -892,4 +940,18 @@ void do_main_cycle(int untilwhat,long daaa) {
 // for external modules to call
 void next_iteration() {
     NEXT_ITERATION();
+}
+
+void update_polled_stuff_if_runtime()
+{
+    if (want_exit) {
+        want_exit = 0;
+        quit("||exit!");
+    }
+
+    if (!psp_audio_multithreaded)
+        update_polled_mp3();
+
+    if (editor_debugging_initialized)
+        check_for_messages_from_editor();
 }

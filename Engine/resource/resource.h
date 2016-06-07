@@ -23,13 +23,18 @@
 #define IDC_SPEECHPACK                  1016
 #define IDC_REFRESH                     1017
 #define IDC_LETTERBOX                   1019
-#define IDC_REPLAYBOX                   1020
 #define IDC_ANTIALIAS                   1021
 #define IDC_REDUCESPR                   1022
 #define IDC_GFXFILTER                   1023
 #define IDC_GFXDRIVER                   1024
 #define IDC_RESOLUTION                  1025
 #define IDC_SIDEBORDERS                 1026
+#define IDC_MOUSESPEED                  1028
+#define IDC_MOUSESPEED_TEXT             1032
+#define IDC_MOUSE_AUTOLOCK              1033
+#define IDC_CUSTOMSAVEDIRCHECK          1035
+#define IDC_CUSTOMSAVEDIR               1036
+#define IDC_CUSTOMSAVEDIRBTN            1037
 
 // Next default values for new objects
 // 
@@ -37,7 +42,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        108
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

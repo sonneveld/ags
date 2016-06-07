@@ -14,7 +14,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "util/wgt2allg.h" // few allegro-specific types
 #include "ac/common.h"
 #include "ac/event.h"
 #include "ac/mouse.h"
@@ -610,6 +609,9 @@ int ccInstance::Run(int32_t curpc)
             registers[arg1.IValue >= 0 && arg1.IValue < CC_NUM_REGISTERS ? arg1.IValue : 0];
         RuntimeScriptValue &reg2 = 
             registers[arg2.IValue >= 0 && arg2.IValue < CC_NUM_REGISTERS ? arg2.IValue : 0];
+
+        const char *direct_ptr1;
+        const char *direct_ptr2;
 
         if (write_debug_dump)
         {
@@ -1209,23 +1211,30 @@ int ccInstance::Run(int32_t curpc)
               cc_error("!Null pointer referenced");
               return -1;
           }
-          if (reg1.Type == kScValDynamicObject || reg1.Type == kScValPluginObject ||
-              // This might be an object of USER-DEFINED type, calling its MEMBER-FUNCTION.
-              // Note, that this is the only case known when such object is written into reg[SREG_OP];
-              // in any other case that would count as error.
-              reg1.Type == kScValGlobalVar || reg1.Type == kScValStackPtr
-              )
+          switch (reg1.Type)
           {
+          // This might be a static object, passed to the user-defined extender function
+          case kScValStaticObject:
+          case kScValDynamicObject:
+          case kScValPluginObject:
+          case kScValPluginArg:
+          // This might be an object of USER-DEFINED type, calling its MEMBER-FUNCTION.
+          // Note, that this is the only case known when such object is written into reg[SREG_OP];
+          // in any other case that would count as error. 
+          case kScValGlobalVar:
+          case kScValStackPtr:
               registers[SREG_OP] = reg1;
-          }
-          else if (reg1.Type == kScValStaticArray && reg1.StcArr->GetDynamicManager())
-          {
-              registers[SREG_OP].SetDynamicObject(
-                  (char*)reg1.StcArr->GetElementPtr(reg1.Ptr, reg1.IValue),
-                  reg1.StcArr->GetDynamicManager());
-          }
-          else
-          {
+              break;
+          case kScValStaticArray:
+              if (reg1.StcArr->GetDynamicManager())
+              {
+                  registers[SREG_OP].SetDynamicObject(
+                      (char*)reg1.StcArr->GetElementPtr(reg1.Ptr, reg1.IValue),
+                      reg1.StcArr->GetDynamicManager());
+                  break;
+              }
+              // fall-through intended
+          default:
               cc_error("internal error: SCMD_CALLOBJ argument is not an object of built-in or user-defined type");
               return -1;
           }
@@ -1316,10 +1325,9 @@ int ccInstance::Run(int32_t curpc)
               cc_error("No string class implementation set, but opcode was used");
               return -1;
           }
-          // TODO: test reg1 type;
-          // Might be local, global memory, and dynamic object too?
+          direct_ptr1 = (const char*)reg1.GetDirectPtr();
           reg1.SetDynamicObject(
-              (void*)stringClassImpl->CreateString((const char *)(reg1.GetPtrWithOffset())),
+              (void*)stringClassImpl->CreateString(direct_ptr1),
               &myScriptStringImpl);
           break;
       case SCMD_STRINGSEQUAL:
@@ -1327,8 +1335,9 @@ int ccInstance::Run(int32_t curpc)
               cc_error("!Null pointer referenced");
               return -1;
           }
-          reg1.SetInt32AsBool(
-            strcmp((const char*)reg1.GetPtrWithOffset(), (const char*)reg2.GetPtrWithOffset()) == 0 );
+          direct_ptr1 = (const char*)reg1.GetDirectPtr();
+          direct_ptr2 = (const char*)reg2.GetDirectPtr();
+          reg1.SetInt32AsBool(strcmp(direct_ptr1, direct_ptr2) == 0);
           
           break;
       case SCMD_STRINGSNOTEQ:
@@ -1336,8 +1345,9 @@ int ccInstance::Run(int32_t curpc)
               cc_error("!Null pointer referenced");
               return -1;
           }
-          reg1.SetInt32AsBool(
-              strcmp((const char*)reg1.GetPtrWithOffset(), (const char*)reg2.GetPtrWithOffset()) != 0 );
+          direct_ptr1 = (const char*)reg1.GetDirectPtr();
+          direct_ptr2 = (const char*)reg2.GetDirectPtr();
+          reg1.SetInt32AsBool(strcmp(direct_ptr1, direct_ptr2) != 0 );
           break;
       case SCMD_LOOPCHECKOFF:
           if (loopIterationCheckDisabled == 0)
@@ -1500,6 +1510,12 @@ void ccInstance::GetScriptName(char *curScrName) {
         sprintf (curScrName, "Room %d script", displayed_room);
     else
         strcpy (curScrName, "Unknown script");
+}
+
+void ccInstance::GetScriptPosition(ScriptPosition &script_pos)
+{
+    script_pos.Section = runningInst->instanceof->GetSectionName(pc);
+    script_pos.Line    = line_number;
 }
 
 // get a pointer to a variable or function exported by the script

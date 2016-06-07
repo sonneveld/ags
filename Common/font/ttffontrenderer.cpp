@@ -16,13 +16,14 @@
 #define USE_ALFONT
 #endif
 
-#include "util/wgt2allg.h"
+#include <stdio.h>
 #include "alfont.h"
 #include "ac/gamestructdefines.h" //FONT_OUTLINE_AUTO
 #include "font/ttffontrenderer.h"
 #include "util/stream.h"
 #include "gfx/bitmap.h"
 #include "core/assetmanager.h"
+#include "util/wgt2allg.h"
 
 using AGS::Common::Bitmap;
 using AGS::Common::Stream;
@@ -41,6 +42,7 @@ off_t _filelength(int fd) {
 #endif
 
 // Defined in the engine or editor (currently needed only for non-windows versions)
+extern int  get_font_outline(int font_number);
 extern void set_font_outline(int font_number, int outline_type);
 
 TTFFontRenderer ttfRenderer;
@@ -86,10 +88,10 @@ void TTFFontRenderer::RenderText(const char *text, int fontNumber, BITMAP *desti
 
   ALFONT_FONT *alfpt = get_ttf_block(fonts[fontNumber]);
   // Y - 1 because it seems to get drawn down a bit
-  if ((ShouldAntiAliasText()) && (abuf->GetColorDepth() > 8))
-    alfont_textout_aa((BITMAP*)abuf->GetBitmapObject(), alfpt, text, x, y - 1, colour);
+  if ((ShouldAntiAliasText()) && (bitmap_color_depth(destination) > 8))
+    alfont_textout_aa(destination, alfpt, text, x, y - 1, colour);
   else
-    alfont_textout((BITMAP*)abuf->GetBitmapObject(), alfpt, text, x, y - 1, colour);
+    alfont_textout(destination, alfpt, text, x, y - 1, colour);
 }
 
 bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
@@ -123,12 +125,17 @@ bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
     return false;
 
 #if !defined(WINDOWS_VERSION)
+  // FIXME: (!!!) this fix should be done differently:
+  // 1. Find out which OUTLINE font was causing troubles;
+  // 2. Replace outline method ONLY if that troublesome font is used as outline.
+  // 3. Move this fix somewhere else!! (right after game load routine?)
+  //
   // Check for the LucasFan font since it comes with an outline font that
   // is drawn incorrectly with Freetype versions > 2.1.3.
   // A simple workaround is to disable outline fonts for it and use
   // automatic outline drawing.
-  if (strcmp(alfont_get_name(alfptr), "LucasFan-Font") == 0)
-      //game.fontoutline[fontNumber] = FONT_OUTLINE_AUTO;
+  if (get_font_outline(fontNumber) >=0 &&
+      strcmp(alfont_get_name(alfptr), "LucasFan-Font") == 0)
       set_font_outline(fontNumber, FONT_OUTLINE_AUTO);
 #endif
 

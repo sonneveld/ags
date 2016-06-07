@@ -52,6 +52,11 @@ namespace AGS.Editor.Components
         {
             if (controlID == COMMAND_NEW_ITEM)
             {
+                if (_agsEditor.CurrentGame.Dialogs.Count == Game.MAX_DIALOGS)
+                {
+                    Factory.GUIController.ShowMessage("You already have the maximum number of dialogs in your game, and cannot add any more.", MessageBoxIcon.Warning);
+                    return;
+                }
                 Dialog newItem = new Dialog();
                 newItem.ID = _agsEditor.CurrentGame.RootDialogFolder.GetAllItemsCount();
                 newItem.Name = _agsEditor.GetFirstAvailableScriptName("dDialog");
@@ -141,9 +146,14 @@ namespace AGS.Editor.Components
             }
         }
 
-        protected override void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
+        protected override void AddNewItemCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
         {
             menu.Add(new MenuCommand(COMMAND_NEW_ITEM, "New Dialog", null));
+        }
+
+        protected override void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
+        {
+            // No more commands in this menu
         }
 
         public override IList<MenuCommand> GetContextMenu(string controlID)
@@ -187,6 +197,8 @@ namespace AGS.Editor.Components
                 || document.Control.IsDisposed)
             {
                 DialogEditor dialogEditor = new DialogEditor(chosenItem, _agsEditor);
+                dialogEditor.DockingContainer = new DockingContainer(dialogEditor);
+                dialogEditor.OnFirstInit();
                 document = new ContentDocument(dialogEditor, chosenItem.WindowTitle,
                     this, ICON_KEY, ConstructPropertyObjectList(chosenItem));
                 _documents[chosenItem] = document;

@@ -12,6 +12,7 @@
 //
 //=============================================================================
 
+#include <stdio.h>
 #include "util/wgt2allg.h"
 #include "media/audio/audio.h"
 #include "ac/gamesetupstruct.h"
@@ -45,8 +46,10 @@ extern CharacterInfo*playerchar;
 
 extern int psp_is_old_datafile;
 
+extern volatile int switching_away_from_game;
+
 #if !defined(IOS_VERSION) && !defined(PSP_VERSION) && !defined(ANDROID_VERSION)
-volatile int psp_audio_multithreaded = 1;
+volatile int psp_audio_multithreaded = 0;
 #endif
 
 ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
@@ -114,7 +117,7 @@ void move_track_to_crossfade_channel(int currentChannel, int crossfadeSpeed, int
 
     play.crossfading_out_channel = SPECIAL_CROSSFADE_CHANNEL;
     play.crossfade_step = 0;
-    play.crossfade_initial_volume_out = channels[SPECIAL_CROSSFADE_CHANNEL]->volAsPercentage;
+    play.crossfade_initial_volume_out = channels[SPECIAL_CROSSFADE_CHANNEL]->get_volume();
     play.crossfade_out_volume_per_step = crossfadeSpeed;
 
     play.crossfading_in_channel = fadeInChannel;
@@ -220,10 +223,16 @@ int find_free_audio_channel(ScriptAudioClip *clip, int priority, bool interruptE
     return channelToUse;
 }
 
+bool is_audiotype_allowed_to_play(AudioFileType type)
+{
+    return type == eAudioFileMIDI && usetup.midicard != MIDI_NONE ||
+           type != eAudioFileMIDI && usetup.digicard != DIGI_NONE;
+}
+
 SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
 {
     const char *clipFileName = get_audio_clip_file_name(audioClip);
-    if ((clipFileName == NULL) || (usetup.digicard == DIGI_NONE))
+    if ((clipFileName == NULL) || !is_audiotype_allowed_to_play((AudioFileType)audioClip->fileType))
     {
         return NULL;
     }
@@ -258,9 +267,7 @@ SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
     }
     if (soundClip != NULL)
     {
-        soundClip->volAsPercentage = audioClip->defaultVolume;
-        soundClip->originalVolAsPercentage = soundClip->volAsPercentage;
-        soundClip->set_volume((audioClip->defaultVolume * 255) / 100);
+        soundClip->set_volume_origin(audioClip->defaultVolume);
         soundClip->soundType = audioClip->type;
         soundClip->sourceClip = audioClip;
     }
@@ -284,7 +291,7 @@ void audio_update_polled_stuff()
         if (channels[play.crossfading_out_channel] == NULL)
             quitprintf("Crossfade out channel is %d but channel has gone", play.crossfading_out_channel);
 
-        int newVolume = channels[play.crossfading_out_channel]->volAsPercentage - play.crossfade_out_volume_per_step;
+        int newVolume = channels[play.crossfading_out_channel]->get_volume() - play.crossfade_out_volume_per_step;
         if (newVolume > 0)
         {
             AudioChannel_SetVolume(&scrAudioChannel[play.crossfading_out_channel], newVolume);
@@ -298,7 +305,7 @@ void audio_update_polled_stuff()
 
     if (play.crossfading_in_channel > 0)
     {
-        int newVolume = channels[play.crossfading_in_channel]->volAsPercentage + play.crossfade_in_volume_per_step;
+        int newVolume = channels[play.crossfading_in_channel]->get_volume() + play.crossfade_in_volume_per_step;
         if (newVolume > play.crossfade_final_volume_in)
         {
             newVolume = play.crossfade_final_volume_in;
@@ -353,7 +360,7 @@ void queue_audio_clip_to_play(ScriptAudioClip *clip, int priority, int repeat)
     }
     
     if (!psp_audio_multithreaded)
-      update_polled_stuff(false);
+      update_polled_mp3();
 }
 
 ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *clip, int priority, int repeat, int fromOffset, SOUNDCLIP *soundfx)
@@ -375,15 +382,21 @@ ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *cli
 
     if (play.crossfading_in_channel == channel)
     {
-        soundfx->set_volume(0);
-        soundfx->volAsPercentage = 0;
+        soundfx->set_volume_origin(0);
     }
 
+    // Mute the audio clip if fast-forwarding the cutscene
     if (play.fast_forward) 
     {
-        soundfx->set_volume(0);
-        soundfx->volAsPercentage = 0;
+        soundfx->set_volume_override(0);
 
+        // CHECKME!!
+        // [IKM] According to the 3.2.1 logic the clip will restore
+        // its value after cutscene, but only if originalVolAsPercentage
+        // is not zeroed. Something I am not sure about: why does it
+        // disable the clip under condition that there's more than one
+        // channel for this audio type? It does not even check if
+        // anything of this type is currently playing.
         if (game.audioClipTypes[clip->type].reservedChannels != 1)
             soundfx->originalVolAsPercentage = 0;
     }
@@ -654,9 +667,9 @@ void update_ambient_sound_vol () {
     }
 }
 
-SOUNDCLIP *load_sound_from_path(int soundNumber, int volume, bool repeat) 
+SOUNDCLIP *load_sound_and_play(ScriptAudioClip *aclip, bool repeat)
 {
-    SOUNDCLIP *soundfx = load_sound_clip_from_old_style_number(false, soundNumber, repeat);
+    SOUNDCLIP *soundfx = load_sound_clip(aclip, repeat);
 
     if (soundfx != NULL) {
         if (soundfx->play() == 0)
@@ -827,7 +840,7 @@ void play_next_queued() {
 
 int calculate_max_volume() {
     // quieter so that sounds can be heard better
-    int newvol=play.music_master_volume + ((int)thisroom.options[ST_VOLUME]) * 30;
+    int newvol=play.music_master_volume + ((int)thisroom.options[ST_VOLUME]) * LegacyRoomVolumeFactor;
     if (newvol>255) newvol=255;
     if (newvol<0) newvol=0;
 
@@ -835,12 +848,6 @@ int calculate_max_volume() {
         newvol = 0;
 
     return newvol;
-}
-
-void update_polled_stuff_if_runtime()
-{
-    if (!psp_audio_multithreaded)
-      update_polled_stuff(true);
 }
 
 // add/remove the volume drop to the audio channels while speech is playing
@@ -853,12 +860,10 @@ void apply_volume_drop_modifier(bool applyModifier)
             if (applyModifier)
             {
                 int audioType = ((ScriptAudioClip*)channels[i]->sourceClip)->type;
-                channels[i]->volModifier = -(game.audioClipTypes[audioType].volume_reduction_while_speech_playing * 255 / 100);
+                channels[i]->apply_volume_modifier(-(game.audioClipTypes[audioType].volume_reduction_while_speech_playing * 255 / 100));
             }
             else
-                channels[i]->volModifier = 0;
-
-            channels[i]->set_volume(channels[i]->vol);
+                channels[i]->apply_volume_modifier(0);
         }
     }
 }
@@ -866,14 +871,25 @@ void apply_volume_drop_modifier(bool applyModifier)
 extern volatile char want_exit;
 extern int frames_per_second;
 
-void update_polled_stuff(bool checkForDebugMessages) {
-    UPDATE_MP3
-/*
-        if (want_exit) {
-            want_exit = 0;
-            quit("||exit!");
-        }
-*/
+void update_mp3_thread()
+{
+	while (switching_away_from_game) { }
+	AGS::Engine::MutexLock _lock(_audio_mutex);
+	for (musicPollIterator = 0; musicPollIterator <= MAX_SOUND_CHANNELS; ++musicPollIterator)
+	{
+		if ((channels[musicPollIterator] != NULL) && (channels[musicPollIterator]->done == 0))
+			channels[musicPollIterator]->poll();
+	}
+}
+
+void update_mp3()
+{
+	if (!psp_audio_multithreaded) update_mp3_thread();
+}
+
+void update_polled_mp3() {
+    update_mp3();
+
         if (mvolcounter > update_music_at) {
             update_music_volume();
             apply_volume_drop_modifier(false);
@@ -881,18 +897,15 @@ void update_polled_stuff(bool checkForDebugMessages) {
             mvolcounter = 0;
             update_ambient_sound_vol();
         }
-
-        if ((editor_debugging_initialized) && (checkForDebugMessages))
-            check_for_messages_from_editor();
 }
 
 // Update the music, and advance the crossfade on a step
 // (this should only be called once per game loop)
-void update_polled_stuff_and_crossfade () {
-   
-  update_polled_stuff_if_runtime ();
+void update_polled_audio_and_crossfade ()
+{
+	update_polled_stuff_if_runtime ();
 
-    _audio_mutex.Lock();
+	AGS::Engine::MutexLock _lock(_audio_mutex);
 
     _audio_doing_crossfade = true;
 
@@ -928,7 +941,6 @@ void update_polled_stuff_and_crossfade () {
 
     _audio_doing_crossfade = false;
 
-    _audio_mutex.Unlock();
 }
 
 
@@ -1073,6 +1085,13 @@ int prepare_for_new_music () {
     return useChannel;
 }
 
+ScriptAudioClip *get_audio_clip_for_music(int mnum)
+{
+    if (mnum >= QUEUED_MUSIC_REPEAT)
+        mnum -= QUEUED_MUSIC_REPEAT;
+    return get_audio_clip_for_old_style_number(true, mnum);
+}
+
 SOUNDCLIP *load_music_from_disk(int mnum, bool doRepeat) {
 
     if (mnum >= QUEUED_MUSIC_REPEAT) {
@@ -1095,13 +1114,15 @@ SOUNDCLIP *load_music_from_disk(int mnum, bool doRepeat) {
 void play_new_music(int mnum, SOUNDCLIP *music) {
     if (debug_flags & DBG_NOMUSIC)
         return;
-    if (usetup.midicard == MIDI_NONE)
-        return;
 
     if ((play.cur_music_number == mnum) && (music == NULL)) {
         DEBUG_CONSOLE("PlayMusic %d but already playing", mnum);
         return;  // don't play the music if it's already playing
     }
+
+    ScriptAudioClip *aclip = get_audio_clip_for_music(mnum);
+    if (aclip && !is_audiotype_allowed_to_play((AudioFileType)aclip->fileType))
+        return;
 
     int useChannel = SCHAN_MUSIC;
     DEBUG_CONSOLE("Playing music %d", mnum);

@@ -18,8 +18,8 @@
 
 // Headers, as they are in acgui.cpp
 #pragma unmanaged
-#include "util/wgt2allg.h"
-//#include "acruntim.h"
+#include "ac/game_version.h"
+#include "font/fonts.h"
 #include "gui/guimain.h"
 #include "gui/guibutton.h"
 #include "gui/guilabel.h"
@@ -31,6 +31,7 @@
 #include "ac/string.h"
 #include "ac/spritecache.h"
 #include "gfx/bitmap.h"
+#include "gfx/blender.h"
 
 using AGS::Common::Bitmap;
 
@@ -44,6 +45,26 @@ extern void ensure_text_valid_for_font(char *, int);
 
 extern SpriteCache spriteset; // in ac_runningame
 extern GameSetupStruct game;
+
+bool GUIMain::is_alpha() 
+{
+    if (this->bgpic > 0)
+    {
+        // alpha state depends on background image
+        return is_sprite_alpha(this->bgpic);
+    }
+    if (this->bgcol > 0)
+    {
+        // not alpha transparent if there is a background color
+        return false;
+    }
+    // transparent background, enable alpha blending
+    return final_col_dep >= 24 &&
+        // transparent background have alpha channel only since 3.2.0;
+        // "classic" gui rendering mode historically had non-alpha transparent backgrounds
+        // (3.2.0 broke the compatibility, now we restore it)
+        loaded_game_file_version >= kGameVersion_320 && game.options[OPT_NEWGUIALPHA] != kGuiAlphaRender_Classic;
+}
 
 //=============================================================================
 // Engine-specific implementation split out of acgui.h
@@ -65,12 +86,12 @@ void check_font(int *fontnum)
 
 int get_adjusted_spritewidth(int spr)
 {
-  return wgetblockwidth(spriteset[spr]);
+  return spriteset[spr]->GetWidth();
 }
 
 int get_adjusted_spriteheight(int spr)
 {
-  return wgetblockheight(spriteset[spr]);
+  return spriteset[spr]->GetHeight();
 }
 
 bool is_sprite_alpha(int spr)
@@ -106,17 +127,17 @@ void GUILabel::Draw_split_lines(char *teptr, int wid, int font, int &numlines)
   // [IKM] numlines not used in engine's implementation
 }
 
-void GUITextBox::Draw_text_box_contents()
+void GUITextBox::Draw_text_box_contents(Bitmap *ds, color_t text_color)
 {
   int startx, starty;
 
-  wouttext_outline(x + 1 + get_fixed_pixel_size(1), y + 1 + get_fixed_pixel_size(1), font, text);
+  wouttext_outline(ds, x + 1 + get_fixed_pixel_size(1), y + 1 + get_fixed_pixel_size(1), font, text_color, text);
   
   if (!IsDisabled()) {
     // draw a cursor
     startx = wgettextwidth(text, font) + x + 3;
     starty = y + 1 + wgettextheight("BigyjTEXT", font);
-    abuf->DrawRect(Rect(startx, starty, startx + get_fixed_pixel_size(5), starty + (get_fixed_pixel_size(1) - 1)), currentcolor);
+    ds->DrawRect(Rect(startx, starty, startx + get_fixed_pixel_size(5), starty + (get_fixed_pixel_size(1) - 1)), text_color);
   }
 }
 

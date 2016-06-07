@@ -17,6 +17,7 @@ namespace AGS.Types
         where TFolderItem : IToXml
         where TFolder : BaseFolderCollection<TFolderItem, TFolder>
     {
+        public event FolderChangeEventHandler<TFolderItem> OnFolderChange;
         public abstract TFolder CreateChildFolder(string name);
         protected abstract TFolder CreateFolder(XmlNode node);
         protected abstract TFolderItem CreateItem(XmlNode node);
@@ -25,8 +26,10 @@ namespace AGS.Types
         protected delegate bool EqualsDelegate<TId>(TFolderItem folderItem, TId id);        
 
         private string _name;
-        protected List<TFolder> _subFolders;
-        protected List<TFolderItem> _items;
+        protected BindingListWithRemoving<TFolder> _subFolders;
+        protected BindingListWithRemoving<TFolderItem> _items;
+
+        private readonly string _xmlItemListNodeName = typeof(TFolderItem).Name + "s";
 
         public BaseFolderCollection(string name)
         {
@@ -61,6 +64,10 @@ namespace AGS.Types
             get { return _items; }
         }
 
+        [AGSNoSerialize]
+        [Browsable(false)]
+        public bool ShouldSkipChangeNotifications { get; set; }
+
         protected virtual string RootNodeName { get { return null; } }
 
         public IEnumerable<TFolderItem> AllItemsFlat
@@ -82,14 +89,31 @@ namespace AGS.Types
             }
         }
 
+        public bool Remove(TFolderItem item)
+        {
+            if (_items.Remove(item)) return true;
+
+            foreach (TFolder subFolder in this.SubFolders)
+            {
+                if (subFolder.Remove(item)) return true;
+            }
+
+            return false;
+        }
+
         private string XmlFolderNodeName
         { 
             get { return typeof(TFolder).Name; } 
         }
-
+        
         private string XmlItemListNodeName
         {
-            get { return typeof(TFolderItem).Name + "s"; }
+            get { return OverrideXmlItemListNodeName() ?? _xmlItemListNodeName; }
+        }
+
+        protected virtual string OverrideXmlItemListNodeName()
+        {
+            return null;
         }
 
         public BaseFolderCollection(XmlNode node)
@@ -121,6 +145,72 @@ namespace AGS.Types
         {
             _name = name;
             Clear();
+            _items.BeforeChanging += _items_BeforeChanging;
+            _items.BeforeClearing += _items_BeforeClearing;
+            _subFolders.BeforeChanging += _subFolders_BeforeChanging;
+            _subFolders.BeforeClearing += _subFolders_BeforeClearing;
+        }
+
+        private void FireFolderChange(object sender, FolderChangeEventArgs<TFolderItem> e)
+        {
+            if (ShouldSkipChangeNotifications) return;
+
+            if (OnFolderChange != null)
+            {
+                OnFolderChange(sender, e);
+            }
+        }
+
+        void folder_OnFolderChange(object sender, FolderChangeEventArgs<TFolderItem> e)
+        {
+            FireFolderChange(sender, e);
+        }
+
+        void _subFolders_BeforeClearing(object sender, EventArgs e)
+        {
+            foreach (TFolder folder in _subFolders)
+            {
+                folder.BeforeRemoving();
+            }
+        }
+
+        void _subFolders_BeforeChanging(object sender, FolderChangeEventArgs<TFolder> e)
+        {
+            TFolder folder = e.FolderItem;
+            switch (e.FolderChange)
+            {
+                case FolderChange.ItemRemoved:                    
+                    folder.BeforeRemoving();
+                    folder.OnFolderChange -= folder_OnFolderChange;
+                    break;
+                case FolderChange.ItemAdded:                    
+                    folder.OnFolderChange += folder_OnFolderChange;
+                    break;
+            }
+        }
+
+        private void BeforeRemoving()
+        {
+            _items_BeforeClearing(this, null);
+
+            _items.BeforeChanging -= _items_BeforeChanging;
+            _items.BeforeClearing -= _items_BeforeClearing;
+            _subFolders.BeforeChanging -= _subFolders_BeforeChanging;
+            _subFolders.BeforeClearing -= _subFolders_BeforeClearing;
+        }
+
+        private void _items_BeforeClearing(object sender, EventArgs e)
+        {
+            foreach (TFolderItem folderItem in _items)
+            {
+                FireFolderChange(this, new FolderChangeEventArgs<TFolderItem>(folderItem,
+                    FolderChange.ItemRemoved));                    
+            }
+        }
+
+        private void _items_BeforeChanging(object sender, FolderChangeEventArgs<TFolderItem> e)
+        {
+            FireFolderChange(this, e);            
         }
 
         private void FromXml(XmlNode node)
@@ -140,41 +230,65 @@ namespace AGS.Types
 
         public void Clear()
         {
-            _items = new List<TFolderItem>();
-            _subFolders = new List<TFolder>();
+            _items = new BindingListWithRemoving<TFolderItem>();
+            _subFolders = new BindingListWithRemoving<TFolder>();
         }
 
         public bool MoveFolderUp(TFolder folder)
         {
+            bool skipNotification = ShouldSkipChangeNotifications;
+            ShouldSkipChangeNotifications = true;
             int folderIndex = _subFolders.IndexOf(folder);
             if (folderIndex == -1)
             {
                 foreach (TFolder subFolder in _subFolders)
                 {
-                    if (subFolder.MoveFolderUp(folder)) return true;
+                    if (subFolder.MoveFolderUp(folder))
+                    {
+                        ShouldSkipChangeNotifications = skipNotification;
+                        return true;
+                    }
                 }
+                ShouldSkipChangeNotifications = skipNotification;
                 return false;
             }
-            if (folderIndex == 0) return true;
+            if (folderIndex == 0)
+            {
+                ShouldSkipChangeNotifications = skipNotification;
+                return true;
+            }
             _subFolders.RemoveAt(folderIndex);
             _subFolders.Insert(folderIndex - 1, folder);
+            ShouldSkipChangeNotifications = skipNotification;
             return true;
         }
 
         public bool MoveFolderDown(TFolder folder)
         {
+            bool skipNotification = ShouldSkipChangeNotifications;
+            ShouldSkipChangeNotifications = true;
             int folderIndex = _subFolders.IndexOf(folder);
             if (folderIndex == -1)
             {
                 foreach (TFolder subFolder in _subFolders)
                 {
-                    if (subFolder.MoveFolderDown(folder)) return true;
+                    if (subFolder.MoveFolderDown(folder))
+                    {
+                        ShouldSkipChangeNotifications = skipNotification;
+                        return true;
+                    }
                 }
+                ShouldSkipChangeNotifications = skipNotification;
                 return false;
             }
-            if (folderIndex == _subFolders.Count - 1) return true;
+            if (folderIndex == _subFolders.Count - 1)
+            {
+                ShouldSkipChangeNotifications = skipNotification;
+                return true;
+            }
             _subFolders.RemoveAt(folderIndex);
             _subFolders.Insert(folderIndex + 1, folder);
+            ShouldSkipChangeNotifications = skipNotification;
             return true;
         }
 
@@ -214,7 +328,21 @@ namespace AGS.Types
 
         public void Sort(bool recursive)
         {
-            _items.Sort();
+            List<TFolderItem> tmpItems = new List<TFolderItem>(_items.Count); //Hack because binding list doesn't have Sort
+            foreach (TFolderItem item in _items)
+            {
+                tmpItems.Add(item);
+            }
+            tmpItems.Sort();
+            bool raiseEvents = _items.RaiseListChangedEvents;
+            _items.RaiseListChangedEvents = false;
+            _items.Clear();
+            foreach (TFolderItem item in tmpItems)
+            {
+                _items.Add(item);
+            }
+            _items.RaiseListChangedEvents = raiseEvents;
+
             if (recursive)
             {
                 foreach (TFolder subFolder in _subFolders)

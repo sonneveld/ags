@@ -19,8 +19,11 @@
 #include "ac/dynobj/scriptaudioclip.h"
 #include "ac/dynobj/scriptaudiochannel.h"
 #include "media/audio/ambientsound.h"
-#include "media/audio/soundclip.h"
+#include "util/mutex.h"
+#include "util/mutex_lock.h"
 #include "util/thread.h"
+
+struct SOUNDCLIP;
 
 void        calculate_reserved_channel_count();
 void        register_audio_script_objects();
@@ -56,7 +59,11 @@ void        force_audiostream_include();
 int         get_volume_adjusted_for_distance(int volume, int sndX, int sndY, int sndMaxDist);
 void        update_directional_sound_vol();
 void        update_ambient_sound_vol ();
-SOUNDCLIP *load_sound_from_path(int soundNumber, int volume, bool repeat);
+// Tells if the audio type is allowed to play with regards to current sound config
+bool        is_audiotype_allowed_to_play(AudioFileType type);
+// Loads sound data referenced by audio clip item, and starts playback;
+// returns NULL on failure
+SOUNDCLIP * load_sound_and_play(ScriptAudioClip *aclip, bool repeat);
 void        stop_all_sound_and_music();
 void        shutdown_sound();
 int         play_sound_priority (int val1, int priority);
@@ -69,17 +76,18 @@ extern int current_music_type;
 void        clear_music_cache();
 void        play_next_queued();
 int         calculate_max_volume();
-void        update_polled_stuff_if_runtime();
 // add/remove the volume drop to the audio channels while speech is playing
 void        apply_volume_drop_modifier(bool applyModifier);
-void        update_polled_stuff(bool checkForDebugMessages);
+void        update_polled_mp3();
 // Update the music, and advance the crossfade on a step
 // (this should only be called once per game loop);
-void        update_polled_stuff_and_crossfade ();
+void        update_polled_audio_and_crossfade ();
 void        stopmusic();
 void        update_music_volume();
 void        post_new_music_check (int newchannel);
 int         prepare_for_new_music ();
+// Gets audio clip from legacy music number, which also may contain queue flag
+ScriptAudioClip *get_audio_clip_for_music(int mnum);
 SOUNDCLIP * load_music_from_disk(int mnum, bool doRepeat);
 void        play_new_music(int mnum, SOUNDCLIP *music);
 void        newmusic(int mnum);
@@ -87,26 +95,11 @@ void        newmusic(int mnum);
 extern AGS::Engine::Thread audioThread;
 extern AGS::Engine::Mutex _audio_mutex;
 extern volatile bool _audio_doing_crossfade;
-extern volatile int psp_audio_multithreaded;    // needed for UPDATE_MP3 macro
+extern SOUNDCLIP *channels[MAX_SOUND_CHANNELS+1]; // needed for update_mp3_thread
+extern volatile int psp_audio_multithreaded;
 
-#define UPDATE_MP3 \
-    if (!psp_audio_multithreaded) \
-{ UPDATE_MP3_THREAD }
-
-//#define UPDATE_MP3 update_polled_stuff_if_runtime();
-
-// PSP: Update in thread if wanted.
-extern int musicPollIterator; // long name so it doesn't interfere with anything else
-extern SOUNDCLIP *channels[MAX_SOUND_CHANNELS+1]; // needed for UPDATE_MP3_THREAD macro
-extern volatile int switching_away_from_game;
-#define UPDATE_MP3_THREAD \
-    while (switching_away_from_game) { } \
-    _audio_mutex.Lock(); \
-    for (musicPollIterator = 0; musicPollIterator <= MAX_SOUND_CHANNELS; musicPollIterator++) { \
-    if ((channels[musicPollIterator] != NULL) && (channels[musicPollIterator]->done == 0)) \
-    channels[musicPollIterator]->poll(); \
-    } \
-    _audio_mutex.Unlock();
+void update_mp3();
+void update_mp3_thread();
 
 extern volatile int mvolcounter;
 extern int update_music_at;

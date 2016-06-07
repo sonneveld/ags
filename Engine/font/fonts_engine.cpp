@@ -21,7 +21,6 @@
 #ifndef USE_ALFONT
 #define USE_ALFONT
 #endif
-#include "util/wgt2allg.h"
 #include "ac/gamesetupstruct.h"
 
 #ifdef USE_ALFONT
@@ -62,6 +61,11 @@ int flength_shared(Stream *ffi)
 {
   // Common::AssetManager::OpenAsset will have set Common::AssetManager::GetLastAssetSize()
   return Common::AssetManager::GetLastAssetSize();
+}
+
+int get_font_outline(int font_number)
+{
+    return game.fontoutline[font_number];
 }
 
 void set_font_outline(int font_number, int outline_type)

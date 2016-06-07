@@ -39,6 +39,11 @@ namespace AGS.Editor.Components
         {
             if (controlID == COMMAND_NEW_ITEM)
             {
+                if (_agsEditor.CurrentGame.InventoryItems.Count == Game.MAX_INV_ITEMS)
+                {
+                    Factory.GUIController.ShowMessage("You already have the maximum number of inventory items in your game, and cannot add any more.", MessageBoxIcon.Warning);
+                    return;
+                }
                 InventoryItem newItem = new InventoryItem();
                 newItem.ID = _agsEditor.CurrentGame.RootInventoryItemFolder.GetAllItemsCount() + 1;
                 newItem.Name = _agsEditor.GetFirstAvailableScriptName("iInvItem");
@@ -131,9 +136,14 @@ namespace AGS.Editor.Components
             }
         }
 
-        protected override void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
+        protected override void AddNewItemCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
         {
             menu.Add(new MenuCommand(COMMAND_NEW_ITEM, "New Inventory Item", null));
+        }
+
+        protected override void AddExtraCommandsToFolderContextMenu(string controlID, IList<MenuCommand> menu)
+        {
+            // No more commands in this menu
         }
 
         public override IList<MenuCommand> GetContextMenu(string controlID)

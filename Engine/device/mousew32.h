@@ -21,15 +21,21 @@
 //
 //=============================================================================
 
+#include "util/geometry.h"
+
 #define MAXCURSORS 20
 
+namespace AGS { namespace Common { class Bitmap; } }
+using namespace AGS; // FIXME later
+
+struct IMouseGetPosCallback;
 
 void msetgraphpos(int,int);
 void msetcallback(IMouseGetPosCallback *gpCallback);
 void mgraphconfine(int x1, int y1, int x2, int y2);
 void mgetgraphpos();
 void msetcursorlimit(int x1, int y1, int x2, int y2);
-void drawCursor();
+void drawCursor(Common::Bitmap *ds);
 void domouse(int str);
 int ismouseinbox(int lf, int tp, int rt, int bt);
 void mfreemem();
@@ -41,6 +47,30 @@ void msetgraphpos(int xa, int ya);
 void msethotspot(int xx, int yy);
 int minstalled();
 
+namespace Mouse
+{
+    // Get if mouse is locked to the game window
+    bool IsLockedToWindow();
+    // Try locking mouse to the game window
+    bool TryLockToWindow();
+    // Unlock mouse from the game window
+    void UnlockFromWindow();
+
+    // Enable mouse movement control
+    void EnableControl(bool confine);
+    // Disable mouse movement control
+    void DisableControl();
+    // Tell if the mouse movement control is enabled
+    bool IsControlEnabled();
+    // Set base speed factor, which would serve as a mouse speed unit
+    void SetSpeedUnit(float f);
+    // Get base speed factor
+    float GetSpeedUnit();
+    // Set speed factors
+    void SetSpeed(float speed);
+    // Get speed factor
+    float GetSpeed();
+}
 
 extern int mousex, mousey;
 extern int hotx, hoty;

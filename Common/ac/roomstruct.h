@@ -22,6 +22,7 @@
 #include "ac/animationstruct.h"
 #include "ac/point.h"
 #include "script/cc_script.h"       // ccScript
+#include "util/wgt2allg.h" // color (allegro RGB)
 
 namespace AGS { namespace Common { class Stream; } }
 namespace AGS { namespace Common { class Bitmap; }}
@@ -90,6 +91,23 @@ enum RoomFileVersion
 //                 [4] = music volume (0=normal, <0 quiter, >0 louder)
 
 const int ST_TUNE = 0, ST_SAVELOAD = 1, ST_MANDISABLED = 2, ST_MANVIEW = 3, ST_VOLUME = 4;
+
+enum RoomVolumeAdjustment
+{
+    kRoomVolumeQuietest = -3,
+    kRoomVolumeQuieter  = -2,
+    kRoomVolumeQuiet    = -1,
+    kRoomVolumeNormal   =  0,
+    kRoomVolumeLoud     =  1,
+    kRoomVolumeLouder   =  2,
+    kRoomVolumeLoudest  =  3,
+    // These two options are only settable at runtime by SetMusicVolume()
+    kRoomVolumeExtra1   =  4,
+    kRoomVolumeExtra2   =  5,
+
+    kRoomVolumeMin      = kRoomVolumeQuietest,
+    kRoomVolumeMax      = kRoomVolumeExtra2,
+};
 
 #pragma pack(1)
 struct sprstruc {
@@ -174,14 +192,10 @@ struct roomstruct {
     CustomProperties roomProps;
     CustomProperties hsProps[MAX_HOTSPOTS];
     int           gameId;
-    int           lastLoadNumHotspots; // Janet: Apparently unused
-    int           lastLoadNumObjects; // Janet: Apparently unused
-    int           lastLoadNumRegions; // Janet: Apparently unused
 
     roomstruct();
-    //void allocall();
-    //void freeall();
     void freemessage();
+    void freescripts();
 };
 
 #define BLOCKTYPE_MAIN        1

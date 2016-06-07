@@ -16,20 +16,22 @@
 
 #include <stdio.h>
 #include <allegro.h>
+#include "gfx/ali3d.h"
+#include "gfx/bitmap.h"
+#include "gfx/ddb.h"
+#include "gfx/graphicsdriver.h"
+#include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
+#include "util/string.h"
+
+using AGS::Common::Bitmap;
+using AGS::Common::String;
+namespace BitmapHelper = AGS::Common::BitmapHelper;
 
 #if defined(WINDOWS_VERSION)
 #include <winalleg.h>
 #include <allegro/platform/aintwin.h>
-#include "gfx/ali3d.h"
 #include <GL/gl.h>
-#include "gfx/bitmap.h"
-#include "gfx/ddb.h"
-#include "gfx/graphicsdriver.h"
-
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-using namespace AGS; // FIXME later
 
 // Allegro and glext.h define these
 #undef int32_t
@@ -63,15 +65,7 @@ PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = 0;
 PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT = 0;
 
 #elif defined(ANDROID_VERSION)
-#include "gfx/ali3d.h"
 #include <GLES/gl.h>
-#include "gfx/bitmap.h"
-#include "gfx/ddb.h"
-#include "gfx/graphicsdriver.h"
-
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-using namespace AGS; // FIXME later
 
 #ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
@@ -135,15 +129,7 @@ const char* fbo_extension_string = "GL_OES_framebuffer_object";
 #define GL_COLOR_ATTACHMENT0_EXT GL_COLOR_ATTACHMENT0_OES
 
 #elif defined(IOS_VERSION)
-#include "gfx/ali3d.h"
 #include <OpenGLES/ES1/gl.h>
-#include "gfx/bitmap.h"
-#include "gfx/ddb.h"
-#include "gfx/graphicsdriver.h"
-
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-using namespace AGS; // FIXME later
 
 #ifndef GL_GLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
@@ -398,10 +384,12 @@ class OGLGraphicsDriver : public IGraphicsDriver
 public:
   virtual const char*GetDriverName() { return "OpenGL"; }
   virtual const char*GetDriverID() { return "OGL"; }
+  virtual void SetGraphicsFilter(GFXFilter *filter);
   virtual void SetTintMethod(TintMethod method);
   virtual bool Init(int width, int height, int colourDepth, bool windowed, volatile int *loopTimer);
   virtual bool Init(int virtualWidth, int virtualHeight, int realWidth, int realHeight, int colourDepth, bool windowed, volatile int *loopTimer);
-  virtual int  FindSupportedResolutionWidth(int idealWidth, int height, int colDepth, int widthRangeAllowed);
+  virtual IGfxModeList *GetSupportedModeList(int color_depth);
+  virtual DisplayResolution GetResolution();
   virtual void SetCallbackForPolling(GFXDRV_CLIENTCALLBACK callback) { _pollingCallback = callback; }
   virtual void SetCallbackToDrawScreen(GFXDRV_CLIENTCALLBACK callback) { _drawScreenCallback = callback; }
   virtual void SetCallbackOnInit(GFXDRV_CLIENTCALLBACKINITGFX callback) { _initGfxCallback = callback; }
@@ -462,7 +450,7 @@ private:
   GFXDRV_CLIENTCALLBACKINITGFX _initGfxCallback;
   int _tint_red, _tint_green, _tint_blue;
   OGLCUSTOMVERTEX defaultVertices[4];
-  char previousError[ALLEGRO_ERROR_SIZE];
+  String previousError;
   bool _smoothScaling;
   bool _legacyPixelShader;
   float _pixelRenderOffset;
@@ -535,7 +523,6 @@ OGLGraphicsDriver::OGLGraphicsDriver(D3DGFXFilter *filter)
   _screenTintSprite.skip = true;
   _screenTintSprite.x = 0;
   _screenTintSprite.y = 0;
-  previousError[0] = 0;
   _legacyPixelShader = false;
   _scale_width = 1.0f;
   _scale_height = 1.0f;
@@ -577,11 +564,6 @@ bool OGLGraphicsDriver::IsModeSupported(int width, int height, int colDepth)
   return true;
 }
 
-int OGLGraphicsDriver::FindSupportedResolutionWidth(int idealWidth, int height, int colDepth, int widthRangeAllowed)
-{
-  return idealWidth;
-}
-
 bool OGLGraphicsDriver::SupportsGammaControl() 
 {
   return false;
@@ -598,6 +580,11 @@ void OGLGraphicsDriver::SetRenderOffset(int x, int y)
 {
   _global_x_offset = x;
   _global_y_offset = y;
+}
+
+void OGLGraphicsDriver::SetGraphicsFilter(GFXFilter *filter)
+{
+  _filter = (D3DGFXFilter*)filter;
 }
 
 void OGLGraphicsDriver::SetTintMethod(TintMethod method) 
@@ -837,7 +824,7 @@ bool OGLGraphicsDriver::Init(int virtualWidth, int virtualHeight, int realWidth,
 
   if (colourDepth < 15)
   {
-    ustrzcpy(allegro_error, ALLEGRO_ERROR_SIZE, get_config_text("OpenGL driver does not support 256-colour games"));
+    set_allegro_error("OpenGL driver does not support 256-colour games");
     return false;
   }
 
@@ -860,8 +847,6 @@ bool OGLGraphicsDriver::Init(int virtualWidth, int virtualHeight, int realWidth,
     _super_sampling = 1;
     _render_to_texture = false;
   }
-
-  _filter->GetRealResolution(&_newmode_screen_width, &_newmode_screen_height);
 
   try
   {
@@ -886,7 +871,7 @@ bool OGLGraphicsDriver::Init(int virtualWidth, int virtualHeight, int realWidth,
     {
       if (adjust_window(device_screen_physical_width, device_screen_physical_height) != 0) 
       {
-        ustrzcpy(allegro_error, ALLEGRO_ERROR_SIZE, get_config_text("Window size not supported"));
+        set_allegro_error("Window size not supported");
         return -1;
       }
     }
@@ -939,14 +924,25 @@ bool OGLGraphicsDriver::Init(int virtualWidth, int virtualHeight, int realWidth,
   }
   catch (Ali3DException exception)
   {
-    if (exception._message != allegro_error)
-      ustrzcpy(allegro_error, ALLEGRO_ERROR_SIZE, get_config_text(exception._message));
+    if (exception._message != get_allegro_error())
+      set_allegro_error(exception._message);
     return false;
   }
   // create dummy screen bitmap
   BitmapHelper::SetScreenBitmap( ConvertBitmapToSupportedColourDepth(BitmapHelper::CreateBitmap(virtualWidth, virtualHeight, colourDepth)) );
 
   return true;
+}
+
+IGfxModeList *OGLGraphicsDriver::GetSupportedModeList(int color_depth)
+{
+    // TODO!!
+    return NULL;
+}
+
+DisplayResolution OGLGraphicsDriver::GetResolution()
+{
+    return DisplayResolution(_newmode_screen_width, _newmode_screen_height, _newmode_depth);
 }
 
 void OGLGraphicsDriver::UnInit() 
@@ -1358,6 +1354,9 @@ void OGLGraphicsDriver::UpdateTextureRegion(TextureTile *tile, Bitmap *bitmap, O
     }
 
     lastPixelWasTransparent = false;
+    const uint8_t *scanline_before = bitmap->GetScanLine(y + tile->y - 1);
+    const uint8_t *scanline_at     = bitmap->GetScanLine(y + tile->y);
+    const uint8_t *scanline_after  = bitmap->GetScanLine(y + tile->y + 1);
     for (int x = 0; x < tileWidth; x++)
     {
 
@@ -1414,7 +1413,7 @@ void OGLGraphicsDriver::UpdateTextureRegion(TextureTile *tile, Bitmap *bitmap, O
           continue;
         }
 
-        unsigned int* srcData = (unsigned int*)&bitmap->GetScanLine(y + tile->y)[(x + tile->x) * 4];
+        unsigned int* srcData = (unsigned int*)&scanline_at[(x + tile->x) << 2];
         if (*srcData == MASK_COLOR_32)
         {
           if (target->_opaque)  // set to black if opaque
@@ -1431,9 +1430,9 @@ void OGLGraphicsDriver::UpdateTextureRegion(TextureTile *tile, Bitmap *bitmap, O
             if (x < tile->width - 1)
               get_pixel_if_not_transparent32(&srcData[1], &red, &green, &blue, &divisor);
             if (y > 0)
-              get_pixel_if_not_transparent32((unsigned int*)&bitmap->GetScanLine(y + tile->y - 1)[(x + tile->x) * 4], &red, &green, &blue, &divisor);
+              get_pixel_if_not_transparent32((unsigned int*)&scanline_before[(x + tile->x) << 2], &red, &green, &blue, &divisor);
             if (y < tile->height - 1)
-              get_pixel_if_not_transparent32((unsigned int*)&bitmap->GetScanLine(y + tile->y + 1)[(x + tile->x) * 4], &red, &green, &blue, &divisor);
+              get_pixel_if_not_transparent32((unsigned int*)&scanline_after[(x + tile->x) << 2], &red, &green, &blue, &divisor);
             if (divisor > 0)
               memPtrLong[x] = ((red / divisor) << 16) | ((green / divisor) << 8) | (blue / divisor);
             else
@@ -1480,8 +1479,7 @@ void OGLGraphicsDriver::UpdateDDBFromBitmap(IDriverDependantBitmap* bitmapToUpda
     if (bitmap->GetColorDepth() != target->_colDepth)
     {
       //throw Ali3DException("Mismatched colour depths");
-      source = BitmapHelper::CreateBitmap(bitmap->GetWidth(), bitmap->GetHeight(), 32);
-      source->Blit(bitmap, 0, 0, 0, 0, source->GetWidth(), source->GetHeight());
+      source = BitmapHelper::CreateBitmapCopy(bitmap, 32);
     }
 
     target->_hasAlpha = hasAlpha;
@@ -1514,8 +1512,7 @@ Bitmap *OGLGraphicsDriver::ConvertBitmapToSupportedColourDepth(Bitmap *bitmap)
 */   if (colourDepth != 32)
    {
      // we need 32-bit colour
-     Bitmap *tempBmp = BitmapHelper::CreateBitmap(bitmap->GetWidth(), bitmap->GetHeight(), 32);
-     tempBmp->Blit(bitmap, 0, 0, 0, 0, tempBmp->GetWidth(), tempBmp->GetHeight());
+     Bitmap *tempBmp = BitmapHelper::CreateBitmapCopy(bitmap, 32);
      delete bitmap;
      set_color_conversion(colorConv);
      return tempBmp;
@@ -1569,8 +1566,7 @@ IDriverDependantBitmap* OGLGraphicsDriver::CreateDDBFromBitmap(Bitmap *bitmap, b
 */  if (colourDepth != 32)
   {
     // we need 32-bit colour
-	tempBmp = BitmapHelper::CreateBitmap(bitmap->GetWidth(), bitmap->GetHeight(), 32);
-    tempBmp->Blit(bitmap, 0, 0, 0, 0, tempBmp->GetWidth(), tempBmp->GetHeight());
+	tempBmp = BitmapHelper::CreateBitmapCopy(bitmap, 32);
     bitmap = tempBmp;
     colourDepth = 32;
   }

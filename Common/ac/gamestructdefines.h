@@ -18,20 +18,13 @@
 #ifndef __AGS_CN_AC__GAMESTRUCTDEFINES_H
 #define __AGS_CN_AC__GAMESTRUCTDEFINES_H
 
-#if defined (WINDOWS_VERSION)
-// These are also defined in wingdi.h
-#undef VTA_LEFT
-#undef VTA_RIGHT
-#endif
+#include "util/geometry.h"
 
 #define POPUP_NONE      0
 #define POPUP_MOUSEY    1
 #define POPUP_SCRIPT    2
 #define POPUP_NOAUTOREM 3  // don't remove automatically during cutscene
 #define POPUP_NONEINITIALLYOFF 4   // normal GUI, initially off
-#define VTA_LEFT        0
-#define VTA_RIGHT       1
-#define VTA_CENTRE      2
 #define IFLG_TEXTWINDOW 1
 
 #define PAL_GAMEWIDE        0
@@ -39,7 +32,7 @@
 #define PAL_BACKGROUND      2
 #define MAXGLOBALMES        500
 #define MAXLANGUAGE         5
-#define MAX_FONTS           15
+#define MAX_FONTS           30
 #define OPT_DEBUGMODE       0
 #define OPT_SCORESOUND      1
 #define OPT_WALKONLOOK      2
@@ -79,8 +72,13 @@
 #define OPT_NEWGUIALPHA     36
 #define OPT_RUNGAMEDLGOPTS  37
 #define OPT_NATIVECOORDINATES 38
-#define OPT_OLDTALKANIMSPD  39
-#define OPT_HIGHESTOPTION   39
+#define OPT_GLOBALTALKANIMSPD 39
+#define OPT_HIGHESTOPTION_321 39
+#define OPT_SPRITEALPHA     40
+#define OPT_HIGHESTOPTION_330 OPT_SPRITEALPHA
+#define OPT_SAFEFILEPATHS   41
+#define OPT_HIGHESTOPTION_335 OPT_SAFEFILEPATHS
+#define OPT_HIGHESTOPTION   OPT_HIGHESTOPTION_335
 #define OPT_NOMODMUSIC      98
 #define OPT_LIPSYNCTEXT     99
 #define PORTRAIT_LEFT       0
@@ -111,5 +109,37 @@
 #define MAX_SG_FOLDER_LEN 50
 
 #define MAX_DIALOG        500
+
+enum GameResolutionType
+{
+    kGameResolution_Undefined   = -1,
+    // definition of 320x200 in very old versions of the engine (somewhere pre-2.56)
+    kGameResolution_Default     = 0,
+    kGameResolution_320x200     = 1,
+    kGameResolution_320x240     = 2,
+    kGameResolution_640x400     = 3,
+    kGameResolution_640x480     = 4,
+    kGameResolution_800x600     = 5,
+    kGameResolution_1024x768    = 6,
+    kNumGameResolutions,
+
+    kGameResolution_LastLoRes   = kGameResolution_320x240,
+    kGameResolution_FirstHiRes  = kGameResolution_640x400
+};
+
+inline bool IsHiRes(GameResolutionType resolution)
+{
+    return resolution > kGameResolution_LastLoRes;
+}
+
+Size ResolutionTypeToSize(GameResolutionType resolution, bool letterbox = false);
+
+// Automatic numbering of dialog options (OPT_DIALOGNUMBERED)
+enum DialogOptionNumbering
+{
+    kDlgOptNoNumbering = -1,
+    kDlgOptKeysOnly    =  0, // implicit key shortcuts
+    kDlgOptNumbering   =  1  // draw option indices and use key shortcuts
+};
 
 #endif // __AGS_CN_AC__GAMESTRUCTDEFINES_H

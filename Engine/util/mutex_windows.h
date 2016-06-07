@@ -29,7 +29,7 @@ namespace Engine
 {
 
 
-class WindowsMutex : BaseMutex
+class WindowsMutex : public BaseMutex
 {
 public:
   WindowsMutex()
@@ -41,8 +41,6 @@ public:
 
   ~WindowsMutex()
   {
-    Unlock();
-
     _ASSERT(_mutex != NULL);
 
     CloseHandle(_mutex);

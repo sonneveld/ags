@@ -12,7 +12,6 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "ac/dynobj/scriptdialogoptionsrendering.h"
 
 // return the type name of the object
@@ -36,6 +35,7 @@ void ScriptDialogOptionsRendering::Reset()
     y = 0;
     width = 0;
     height = 0;
+    hasAlphaChannel = false;
     parserTextboxX = 0;
     parserTextboxY = 0;
     parserTextboxWidth = 0;

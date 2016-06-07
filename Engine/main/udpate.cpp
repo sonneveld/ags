@@ -16,10 +16,10 @@
 // Game update procedure
 //
 
-#include "util/wgt2allg.h"
 #include "ac/common.h"
 #include "ac/character.h"
 #include "ac/characterextras.h"
+#include "ac/draw.h"
 #include "ac/gamestate.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/global_character.h"
@@ -34,10 +34,12 @@
 #include "ac/screenoverlay.h"
 #include "ac/viewframe.h"
 #include "ac/walkablearea.h"
-#include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
+#include "gfx/graphicsdriver.h"
+#include "media/audio/soundclip.h"
 
 using AGS::Common::Bitmap;
+using AGS::Common::Graphics;
 
 extern MoveList *mls;
 extern RoomStatus*croom;
@@ -54,14 +56,16 @@ extern CharacterInfo *facetalkchar;
 extern int face_talking,facetalkview,facetalkwait,facetalkframe;
 extern int facetalkloop, facetalkrepeat, facetalkAllowBlink;
 extern int facetalkBlinkLoop;
+extern bool facetalk_qfg4_override_placement_x, facetalk_qfg4_override_placement_y;
 extern volatile unsigned long globalTimerCounter;
 extern int time_between_timers;
 extern SpeechLipSyncLine *splipsync;
-extern int numLipLines, curLipLine, curLipLinePhenome;
+extern int numLipLines, curLipLine, curLipLinePhoneme;
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];
 extern int numscreenover;
 extern int is_text_overlay;
 extern IGraphicsDriver *gfxDriver;
+extern int frames_per_second;
 
 
 int do_movelist_move(short*mlnum,int*xx,int*yy) {
@@ -246,11 +250,13 @@ void update_overlay_timers()
 
 void update_speech_and_messages()
 {
-	// determine if speech text should be removed
+  const bool is_voice = channels[SCHAN_SPEECH] != NULL;
+
+  // determine if speech text should be removed
   if (play.messagetime>=0) {
     play.messagetime--;
     // extend life of text if the voice hasn't finished yet
-    if (channels[SCHAN_SPEECH] != NULL) {
+    if (is_voice && !play.speech_in_post_state) {
       if ((!rec_isSpeechFinished()) && (play.fast_forward == 0)) {
       //if ((!channels[SCHAN_SPEECH]->done) && (play.fast_forward == 0)) {
         if (play.messagetime <= 1)
@@ -258,6 +264,16 @@ void update_speech_and_messages()
       }
       else  // if the voice has finished, remove the speech
         play.messagetime = 0;
+    }
+
+    if (play.messagetime < 1 && play.speech_display_post_time_ms > 0 &&
+        play.fast_forward == 0)
+    {
+        if (!play.speech_in_post_state)
+        {
+            play.messagetime = play.speech_display_post_time_ms * frames_per_second / 1000;
+        }
+        play.speech_in_post_state = !play.speech_in_post_state;
     }
 
     if (play.messagetime < 1) 
@@ -277,6 +293,7 @@ void update_speech_and_messages()
 
 void update_sierra_speech()
 {
+  const bool is_voice = channels[SCHAN_SPEECH] != NULL;
 	// update sierra-style speech
   if ((face_talking >= 0) && (play.fast_forward == 0)) 
   {
@@ -314,19 +331,19 @@ void update_sierra_speech()
     if (curLipLine >= 0) {
       // check voice lip sync
       int spchOffs = channels[SCHAN_SPEECH]->get_pos_ms ();
-      if (curLipLinePhenome >= splipsync[curLipLine].numPhenomes) {
+      if (curLipLinePhoneme >= splipsync[curLipLine].numPhonemes) {
         // the lip-sync has finished, so just stay idle
       }
       else 
       {
-        while ((curLipLinePhenome < splipsync[curLipLine].numPhenomes) &&
-          ((curLipLinePhenome < 0) || (spchOffs >= splipsync[curLipLine].endtimeoffs[curLipLinePhenome])))
+        while ((curLipLinePhoneme < splipsync[curLipLine].numPhonemes) &&
+          ((curLipLinePhoneme < 0) || (spchOffs >= splipsync[curLipLine].endtimeoffs[curLipLinePhoneme])))
         {
-          curLipLinePhenome ++;
-          if (curLipLinePhenome >= splipsync[curLipLine].numPhenomes)
+          curLipLinePhoneme ++;
+          if (curLipLinePhoneme >= splipsync[curLipLine].numPhonemes)
             facetalkframe = game.default_lipsync_frame;
           else
-            facetalkframe = splipsync[curLipLine].frame[curLipLinePhenome];
+            facetalkframe = splipsync[curLipLine].frame[curLipLinePhoneme];
 
           if (facetalkframe >= views[facetalkview].loops[facetalkloop].numFrames)
             facetalkframe = 0;
@@ -337,11 +354,18 @@ void update_sierra_speech()
     }
     else if (facetalkwait>0) facetalkwait--;
     // don't animate if the speech has finished
-    else if ((play.messagetime < 1) && (facetalkframe == 0) && (play.close_mouth_speech_time > 0))
+    else if ((play.messagetime < 1) && (facetalkframe == 0) &&
+             // if play.close_mouth_speech_time = 0, this means animation should play till
+             // the speech ends; but this should not work in voice mode, and also if the
+             // speech is in the "post" state
+             (is_voice || play.speech_in_post_state || play.close_mouth_speech_time > 0))
       ;
     else {
-      // Close mouth at end of sentence
-      if ((play.messagetime < play.close_mouth_speech_time) &&
+      // Close mouth at end of sentence: if speech has entered the "post" state,
+      // or if this is a text only mode and close_mouth_speech_time is set
+      if (play.speech_in_post_state ||
+          !is_voice &&
+          (play.messagetime < play.close_mouth_speech_time) &&
           (play.close_mouth_speech_time > 0)) {
         facetalkframe = 0;
         facetalkwait = play.messagetime;
@@ -357,7 +381,7 @@ void update_sierra_speech()
         // normal non-lip-sync
         facetalkframe++;
         if ((facetalkframe >= views[facetalkview].loops[facetalkloop].numFrames) ||
-            ((play.messagetime < 1) && (play.close_mouth_speech_time > 0))) {
+            (!is_voice && (play.messagetime < 1) && (play.close_mouth_speech_time > 0))) {
 
           if ((facetalkframe >= views[facetalkview].loops[facetalkloop].numFrames) &&
               (views[facetalkview].loops[facetalkloop].RunNextLoop())) 
@@ -386,33 +410,43 @@ void update_sierra_speech()
       if (updatedFrame & 2)
         CheckViewFrame (facetalkchar->blinkview, facetalkBlinkLoop, facetalkchar->blinkframe);
 
-      int yPos = 0;
-      int thisPic = views[facetalkview].loops[facetalkloop].frames[facetalkframe].pic;
-      
+      int thisPic = views[facetalkview].loops[facetalkloop].frames[facetalkframe].pic;      
+      int view_frame_x = 0;
+      int view_frame_y = 0;
+
       if (game.options[OPT_SPEECHTYPE] == 3) {
         // QFG4-style fullscreen dialog
-        yPos = (screenover[face_talking].pic->GetHeight() / 2) - (spriteheight[thisPic] / 2);
+        if (facetalk_qfg4_override_placement_x)
+        {
+          view_frame_x = play.speech_portrait_x;
+        }
+        if (facetalk_qfg4_override_placement_y)
+        {
+          view_frame_y = play.speech_portrait_y;
+        }
+        else
+        {
+          view_frame_y = (screenover[face_talking].pic->GetHeight() / 2) - (spriteheight[thisPic] / 2);
+        }
         screenover[face_talking].pic->Clear(0);
       }
       else {
-        screenover[face_talking].pic->Clear(screenover[face_talking].pic->GetMaskColor());
+        screenover[face_talking].pic->ClearTransparent();
       }
 
-      DrawViewFrame(screenover[face_talking].pic, &views[facetalkview].loops[facetalkloop].frames[facetalkframe], 0, yPos);
-//      ->Blit(screenover[face_talking].pic, spriteset[thisPic], 0, yPos);
+      Bitmap *frame_pic = screenover[face_talking].pic;
+      const ViewFrame *face_vf = &views[facetalkview].loops[facetalkloop].frames[facetalkframe];
+      bool face_has_alpha = (game.spriteflags[face_vf->pic] & SPF_ALPHACHANNEL) != 0;
+      DrawViewFrame(frame_pic, face_vf, view_frame_x, view_frame_y);
 
       if ((facetalkchar->blinkview > 0) && (facetalkchar->blinktimer < 0)) {
+        ViewFrame *blink_vf = &views[facetalkchar->blinkview].loops[facetalkBlinkLoop].frames[facetalkchar->blinkframe];
+        face_has_alpha |= (game.spriteflags[blink_vf->pic] & SPF_ALPHACHANNEL) != 0;
         // draw the blinking sprite on top
-        DrawViewFrame(screenover[face_talking].pic,
-            &views[facetalkchar->blinkview].loops[facetalkBlinkLoop].frames[facetalkchar->blinkframe],
-            0, yPos);
-
-/*        ->Blit(screenover[face_talking].pic,
-          spriteset[views[facetalkchar->blinkview].frames[facetalkloop][facetalkchar->blinkframe].pic],
-          0, yPos);*/
+        DrawViewFrame(frame_pic, blink_vf, view_frame_x, view_frame_y, face_has_alpha);
       }
 
-      gfxDriver->UpdateDDBFromBitmap(screenover[face_talking].bmp, screenover[face_talking].pic, false);
+      gfxDriver->UpdateDDBFromBitmap(screenover[face_talking].bmp, screenover[face_talking].pic, face_has_alpha);
     }  // end if updatedFrame
   }
 }

@@ -15,10 +15,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "util/wgt2allg.h"
+#include "ac/game_version.h"
+#include "font/fonts.h"
 #include "gui/guilabel.h"
 #include "gui/guimain.h"
 #include "util/stream.h"
+#include "util/wgt2allg.h"
 
 using AGS::Common::Stream;
 
@@ -84,7 +86,7 @@ const char *GUILabel::GetText() {
   return text;
 }
 
-void GUILabel::printtext_align(int yy, char *teptr)
+void GUILabel::printtext_align(Common::Bitmap *ds, int yy, color_t text_color, char *teptr)
 {
   int outxp = x;
   if (align == GALIGN_CENTRE)
@@ -92,10 +94,10 @@ void GUILabel::printtext_align(int yy, char *teptr)
   else if (align == GALIGN_RIGHT)
     outxp += wid - wgettextwidth(teptr, font);
 
-  wouttext_outline(outxp, yy, font, teptr);
+  wouttext_outline(ds, outxp, yy, font, text_color, teptr);
 }
 
-void GUILabel::Draw()
+void GUILabel::Draw(Common::Bitmap *ds)
 {
   int cyp = y, TEXT_HT;
   char oritext[MAX_GUILABEL_TEXT_LEN], *teptr;
@@ -107,14 +109,16 @@ void GUILabel::Draw()
   teptr = &oritext[0];
   TEXT_HT = wgettextheight("ZhypjIHQFb", font) + 1;
 
-  wtextcolor(textcol);
+  color_t text_color = ds->GetCompatibleColor(textcol);
 
   Draw_split_lines(teptr, wid, font, numlines);
 
+  // < 2.72 labels did not limit vertical size of text
+  const bool limit_by_label_frame = loaded_game_file_version >= kGameVersion_272;
   for (int aa = 0; aa < numlines; aa++) {
-    printtext_align(cyp, lines[aa]);
+    printtext_align(ds, cyp, text_color, lines[aa]);
     cyp += TEXT_HT;
-    if (cyp > y + hit)
+    if (limit_by_label_frame && cyp > y + hit)
       break;
   }
 

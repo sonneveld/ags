@@ -16,7 +16,6 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "ac/character.h"
 #include "ac/common.h"
 #include "ac/gamesetupstruct.h"
@@ -53,14 +52,15 @@
 #include "util/string_utils.h"
 #include <math.h>
 #include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
 #include "platform/base/override_defines.h"
 #include "script/runtimescriptvalue.h"
 #include "ac/dynobj/cc_character.h"
 #include "ac/dynobj/cc_inventory.h"
 #include "script/script_runtime.h"
+#include "gfx/gfx_util.h"
 
 using AGS::Common::Bitmap;
+using AGS::Common::Graphics;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
 
 extern GameSetupStruct game;
@@ -96,13 +96,6 @@ extern CCInventory ccDynamicInv;
 
 //--------------------------------
 
-#define CHECK_DIAGONAL(maindir,othdir,codea,codeb) \
-    if (no_diagonal) ;\
-  else if (abs(maindir) > abs(othdir) / 2) {\
-  if (maindir < 0) useloop=codea;\
-    else useloop=codeb;\
-}
-
 
 CharacterExtras *charextra;
 CharacterInfo*playerchar;
@@ -114,12 +107,16 @@ int face_talking=-1,facetalkview=0,facetalkwait=0,facetalkframe=0;
 int facetalkloop=0, facetalkrepeat = 0, facetalkAllowBlink = 1;
 int facetalkBlinkLoop = 0;
 CharacterInfo *facetalkchar = NULL;
+// Do override default portrait position during QFG4-style speech overlay update
+bool facetalk_qfg4_override_placement_x = false;
+bool facetalk_qfg4_override_placement_y = false;
 
 // lip-sync speech settings
 int loops_per_character, text_lips_offset, char_speaking = -1;
-char *text_lips_text = NULL;
+int char_thinking = -1;
+const char *text_lips_text = NULL;
 SpeechLipSyncLine *splipsync = NULL;
-int numLipLines = 0, curLipLine = -1, curLipLinePhenome = 0;
+int numLipLines = 0, curLipLine = -1, curLipLinePhoneme = 0;
 
 // **** CHARACTER: FUNCTIONS ****
 
@@ -312,80 +309,93 @@ void Character_FaceCharacter(CharacterInfo *char1, CharacterInfo *char2, int blo
     Character_FaceLocation(char1, char2->x, char2->y, blockingStyle);
 }
 
+enum DirectionalLoop
+{
+    kDirLoop_Down      = 0,
+    kDirLoop_Left      = 1,
+    kDirLoop_Right     = 2,
+    kDirLoop_Up        = 3,
+    kDirLoop_DownRight = 4,
+    kDirLoop_UpRight   = 5,
+    kDirLoop_DownLeft  = 6,
+    kDirLoop_UpLeft    = 7,
+
+    kDirLoop_Default       = kDirLoop_Down,
+    kDirLoop_LastOrtogonal = kDirLoop_Up,
+    kDirLoop_Last          = kDirLoop_UpLeft,
+};
+
+DirectionalLoop GetDirectionalLoop(CharacterInfo *chinfo, int x_diff, int y_diff)
+{
+    DirectionalLoop next_loop = kDirLoop_Left; // NOTE: default loop was Left for some reason
+
+    const ViewStruct &chview  = views[chinfo->view];
+    const bool new_version    = loaded_game_file_version > kGameVersion_272;
+    const bool has_down_loop  = ((chview.numLoops > kDirLoop_Down)  && (chview.loops[kDirLoop_Down].numFrames > 0));
+    const bool has_up_loop    = ((chview.numLoops > kDirLoop_Up)    && (chview.loops[kDirLoop_Up].numFrames > 0));
+    // NOTE: 3.+ games required left & right loops to be present at all times
+    const bool has_left_loop  = new_version ||
+                                ((chview.numLoops > kDirLoop_Left)  && (chview.loops[kDirLoop_Left].numFrames > 0));
+    const bool has_right_loop = new_version ||
+                                ((chview.numLoops > kDirLoop_Right) && (chview.loops[kDirLoop_Right].numFrames > 0));
+    const bool has_diagonal_loops = useDiagonal(chinfo) == 0; // NOTE: useDiagonal returns 0 for "true"
+
+    const bool want_horizontal = (abs(y_diff) < abs(x_diff)) ||
+        new_version && (!has_down_loop || !has_up_loop) ||
+        // NOTE: <= 2.72 games switch to horizontal loops only if both vertical ones are missing
+        !new_version && (!has_down_loop && !has_up_loop);
+    if (want_horizontal)
+    {
+        const bool want_diagonal = has_diagonal_loops && (abs(y_diff) > abs(x_diff) / 2);
+        if (!has_left_loop && !has_right_loop)
+        {
+            next_loop = kDirLoop_Down;
+        }
+        else if (has_right_loop && (x_diff > 0))
+        {
+            next_loop = want_diagonal ? (y_diff < 0 ? kDirLoop_UpRight : kDirLoop_DownRight) :
+                kDirLoop_Right;
+        }
+        else if (has_left_loop && (x_diff <= 0))
+        {
+            next_loop = want_diagonal ? (y_diff < 0 ? kDirLoop_UpLeft : kDirLoop_DownLeft) :
+                kDirLoop_Left;
+        }
+    }
+    else
+    {
+        const bool want_diagonal = has_diagonal_loops && (abs(x_diff) > abs(y_diff) / 2);
+        if (y_diff > 0 || !has_up_loop)
+        {
+            next_loop = want_diagonal ? (x_diff < 0 ? kDirLoop_DownLeft : kDirLoop_DownRight) :
+                kDirLoop_Down;
+        }
+        else
+        {
+            next_loop = want_diagonal ? (x_diff < 0 ? kDirLoop_UpLeft : kDirLoop_UpRight) :
+                kDirLoop_Up;
+        }
+    }
+    return next_loop;
+}
+
 void Character_FaceLocation(CharacterInfo *char1, int xx, int yy, int blockingStyle) {
     DEBUG_CONSOLE("%s: Face location %d,%d", char1->scrname, xx, yy);
 
-    int diffrx = xx - char1->x;
-    int diffry = yy - char1->y;
-    int useloop = 1, wanthoriz=0, no_diagonal = 0;
-    int highestLoopForTurning = 3;
+    const int diffrx = xx - char1->x;
+    const int diffry = yy - char1->y;
 
     if ((diffrx == 0) && (diffry == 0)) {
         // FaceLocation called on their current position - do nothing
         return;
     }
 
-    no_diagonal = useDiagonal (char1);
+    const int useloop = GetDirectionalLoop(char1, diffrx, diffry);
 
+    int highestLoopForTurning = kDirLoop_LastOrtogonal;
+    const int no_diagonal = useDiagonal (char1);
     if (no_diagonal != 1) {
-        highestLoopForTurning = 7;
-    }
-
-    // Use a different logic on 2.x. This fixes some edge cases where
-    // FaceLocation() is used to select a specific loop.
-    if (loaded_game_file_version <= kGameVersion_272)
-    {
-        bool can_right = ((views[char1->view].numLoops >= 3) && (views[char1->view].loops[2].numFrames > 0));
-        bool can_left = ((views[char1->view].numLoops >= 2) && (views[char1->view].loops[1].numFrames > 0));
-
-        if (abs(diffry) < abs(diffrx))
-        {
-            if (!can_left && !can_right)
-                useloop = 0;
-            else if (can_right && (diffrx >= 0)) {
-                useloop=2;
-                CHECK_DIAGONAL(diffry, diffrx, 5, 4)
-            }
-            else if (can_left && (diffrx < 0)) {
-                useloop=1;
-                CHECK_DIAGONAL(diffry, diffrx,7,6)
-            }
-        }
-        else
-        {
-            if (diffry>=0) {
-                useloop=0;
-                CHECK_DIAGONAL(diffrx ,diffry ,6,4)
-            }
-            else if (diffry<0) {
-                useloop=3;
-                CHECK_DIAGONAL(diffrx, diffry,7,5)
-            }
-        }
-    }
-    else
-    {
-        if (hasUpDownLoops(char1) == 0)
-            wanthoriz = 1;
-        else if (abs(diffry) < abs(diffrx))
-            wanthoriz = 1;
-
-        if ((wanthoriz==1) && (diffrx > 0)) {
-            useloop=2;
-            CHECK_DIAGONAL(diffry, diffrx, 5, 4)
-        }
-        else if ((wanthoriz==1) && (diffrx <= 0)) {
-            useloop=1;
-            CHECK_DIAGONAL(diffry, diffrx,7,6)
-        }
-        else if (diffry>0) {
-            useloop=0;
-            CHECK_DIAGONAL(diffrx ,diffry ,6,4)
-        }
-        else if (diffry<0) {
-            useloop=3;
-            CHECK_DIAGONAL(diffrx, diffry,7,5)
-        }
+        highestLoopForTurning = kDirLoop_Last;
     }
 
     if ((game.options[OPT_TURNTOFACELOC] != 0) &&
@@ -606,12 +616,12 @@ void Character_LockViewFrame(CharacterInfo *chaa, int view, int loop, int frame)
 void Character_LockViewOffset(CharacterInfo *chap, int vii, int xoffs, int yoffs) {
     Character_LockView(chap, vii);
 
-    if ((current_screen_resolution_multiplier == 1) && (game.default_resolution >= 3)) {
+    if ((current_screen_resolution_multiplier == 1) && (game.IsHiRes())) {
         // running a 640x400 game at 320x200, adjust
         xoffs /= 2;
         yoffs /= 2;
     }
-    else if ((current_screen_resolution_multiplier > 1) && (game.default_resolution <= 2)) {
+    else if ((current_screen_resolution_multiplier > 1) && (!game.IsHiRes())) {
         // running a 320x200 game at 640x400, adjust
         xoffs *= 2;
         yoffs *= 2;
@@ -683,16 +693,8 @@ int Character_GetHasExplicitTint(CharacterInfo *chaa) {
     return 0;
 }
 
-void Character_Say(CharacterInfo *chaa, const char *texx, ...) {
-
-    char displbuf[STD_BUFFER_SIZE];
-    va_list ap;
-    va_start(ap,texx);
-    vsprintf(displbuf, get_translation(texx), ap);
-    va_end(ap);
-
-    _DisplaySpeechCore(chaa->index_id, displbuf);
-
+void Character_Say(CharacterInfo *chaa, const char *text) {
+    _DisplaySpeechCore(chaa->index_id, text);
 }
 
 void Character_SayAt(CharacterInfo *chaa, int x, int y, int width, const char *texx) {
@@ -879,15 +881,8 @@ void Character_Tint(CharacterInfo *chaa, int red, int green, int blue, int opaci
     chaa->flags |= CHF_HASTINT;
 }
 
-void Character_Think(CharacterInfo *chaa, const char *texx, ...) {
-
-    char displbuf[STD_BUFFER_SIZE];
-    va_list ap;
-    va_start(ap,texx);
-    vsprintf(displbuf, get_translation(texx), ap);
-    va_end(ap);
-
-    _DisplayThoughtCore(chaa->index_id, displbuf);
+void Character_Think(CharacterInfo *chaa, const char *text) {
+    _DisplayThoughtCore(chaa->index_id, text);
 }
 
 void Character_UnlockView(CharacterInfo *chaa) {
@@ -1362,8 +1357,8 @@ void Character_SetSpeechColor(CharacterInfo *chaa, int ncol) {
 
 void Character_SetSpeechAnimationDelay(CharacterInfo *chaa, int newDelay)
 {
-    if (game.options[OPT_OLDTALKANIMSPD])
-        quit("!Character.SpeechAnimationDelay cannot be set when legacy speech animation speed is enabled");
+	if (game.options[OPT_GLOBALTALKANIMSPD] != 0)
+        quit("!Character.SpeechAnimationDelay cannot be set when global speech animation speed is enabled");
 
     chaa->speech_anim_speed = newDelay;
 }
@@ -1385,6 +1380,20 @@ void Character_SetSpeechView(CharacterInfo *chaa, int vii) {
     chaa->talkview = vii - 1;
 }
 
+bool Character_GetThinking(CharacterInfo *chaa)
+{
+    return char_thinking == chaa->index_id;
+}
+
+int Character_GetThinkingFrame(CharacterInfo *chaa)
+{
+    if (char_thinking == chaa->index_id)
+        return chaa->thinkview > 0 ? chaa->frame : -1;
+
+    quit("!Character.ThinkingFrame: character is not currently thinking");
+    return -1;
+}
+
 int Character_GetThinkView(CharacterInfo *chaa) {
 
     return chaa->thinkview + 1;
@@ -1399,12 +1408,7 @@ void Character_SetThinkView(CharacterInfo *chaa, int vii) {
 
 int Character_GetTransparency(CharacterInfo *chaa) {
 
-    if (chaa->transparency == 0)
-        return 0;
-    if (chaa->transparency == 255)
-        return 100;
-
-    return 100 - ((chaa->transparency * 10) / 25);
+    return GfxUtil::LegacyTrans255ToTrans100(chaa->transparency);
 }
 
 void Character_SetTransparency(CharacterInfo *chaa, int trans) {
@@ -1412,12 +1416,7 @@ void Character_SetTransparency(CharacterInfo *chaa, int trans) {
     if ((trans < 0) || (trans > 100))
         quit("!SetCharTransparent: transparency value must be between 0 and 100");
 
-    if (trans == 0)
-        chaa->transparency=0;
-    else if (trans == 100)
-        chaa->transparency = 255;
-    else
-        chaa->transparency = ((100-trans) * 25) / 10;
+    chaa->transparency = GfxUtil::Trans100ToLegacyTrans255(trans);
 }
 
 int Character_GetTurnBeforeWalking(CharacterInfo *chaa) {
@@ -1564,7 +1563,7 @@ void walk_character(int chac,int tox,int toy,int ignwal, bool autoWalkAnims) {
         mls[mslot].direct = ignwal;
 
         if ((game.options[OPT_NATIVECOORDINATES] != 0) &&
-            (game.default_resolution > 2))
+            game.IsHiRes())
         {
             convert_move_path_to_high_res(&mls[mslot]);
         }
@@ -1661,91 +1660,21 @@ void start_character_turning (CharacterInfo *chinf, int useloop, int no_diagonal
 
 }
 
-
-
-// loops: 0=down, 1=left, 2=right, 3=up, 4=down-right, 5=up-right,
-// 6=down-left, 7=up-left
 void fix_player_sprite(MoveList*cmls,CharacterInfo*chinf) {
-    int view_num=chinf->view;
-    int want_horiz=1,useloop = 1,no_diagonal=0;
-    fixed xpmove = cmls->xpermove[cmls->onstage];
-    fixed ypmove = cmls->ypermove[cmls->onstage];
+    const fixed xpmove = cmls->xpermove[cmls->onstage];
+    const fixed ypmove = cmls->ypermove[cmls->onstage];
 
     // if not moving, do nothing
     if ((xpmove == 0) && (ypmove == 0))
         return;
 
-    no_diagonal = useDiagonal (chinf);
-
-    // Different logic for 2.x.
-    if (loaded_game_file_version <= kGameVersion_272)
-    {
-        bool can_right = ((views[chinf->view].numLoops >= 3) && (views[chinf->view].loops[2].numFrames > 0));
-        bool can_left = ((views[chinf->view].numLoops >= 2) && (views[chinf->view].loops[1].numFrames > 0));
-
-        if (abs(ypmove) < abs(xpmove))
-        {
-            if (!can_left && !can_right)
-                useloop = 0;
-            else if (can_right && (xpmove >= 0)) {
-                useloop=2;
-                CHECK_DIAGONAL(ypmove, xpmove, 5, 4)
-            }
-            else if (can_left && (xpmove < 0)) {
-                useloop=1;
-                CHECK_DIAGONAL(ypmove, xpmove,7,6)
-            }
-        }
-        else
-        {
-            if (ypmove>=0) {
-                useloop=0;
-                CHECK_DIAGONAL(xpmove ,ypmove ,6,4)
-            }
-            else if (ypmove<0) {
-                useloop=3;
-                CHECK_DIAGONAL(xpmove, ypmove,7,5)
-            }
-        }
-    }
-    else
-    {
-        if (hasUpDownLoops(chinf) == 0)
-            want_horiz = 1;
-        else if (abs(ypmove) > abs(xpmove))
-            want_horiz = 0;
-
-        if ((want_horiz==1) && (xpmove > 0)) {
-            // right
-            useloop=2;
-            // diagonal up-right/down-right
-            CHECK_DIAGONAL(ypmove,xpmove,5,4)
-        }
-        else if ((want_horiz==1) && (xpmove <= 0)) {
-            // left
-            useloop=1;
-            // diagonal up-left/down-left
-            CHECK_DIAGONAL(ypmove,xpmove,7,6)
-        }
-        else if (ypmove < 0) {
-            // up
-            useloop=3;
-            // diagonal up-left/up-right
-            CHECK_DIAGONAL(xpmove,ypmove,7,5)
-        }
-        else {
-            // down
-            useloop=0;
-            // diagonal down-left/down-right
-            CHECK_DIAGONAL(xpmove,ypmove,6,4)
-        }
-    }
+    const int useloop = GetDirectionalLoop(chinf, xpmove, ypmove);
 
     if ((game.options[OPT_ROTATECHARS] == 0) || ((chinf->flags & CHF_NOTURNING) != 0)) {
         chinf->loop = useloop;
         return;
     }
-    if ((chinf->loop > 3) && ((chinf->flags & CHF_NODIAGONAL)!=0)) {
+    if ((chinf->loop > kDirLoop_LastOrtogonal) && ((chinf->flags & CHF_NODIAGONAL)!=0)) {
         // They've just been playing an animation with an extended loop number,
         // so don't try and rotate using it
         chinf->loop = useloop;
@@ -1759,6 +1688,7 @@ void fix_player_sprite(MoveList*cmls,CharacterInfo*chinf) {
             chinf->loop = useloop;
             return;
     }
+    const int no_diagonal = useDiagonal (chinf);
     start_character_turning (chinf, useloop, no_diagonal);
 }
 
@@ -1903,7 +1833,7 @@ void find_nearest_walkable_area (int *xx, int *yy) {
 void FindReasonableLoopForCharacter(CharacterInfo *chap) {
 
     if (chap->loop >= views[chap->view].numLoops)
-        chap->loop=0;
+        chap->loop=kDirLoop_Default;
     if (views[chap->view].numLoops < 1)
         quitprintf("!View %d does not have any loops", chap->view + 1);
 
@@ -1983,7 +1913,13 @@ int wantMoveNow (CharacterInfo *chi, CharacterExtras *chex) {
     // scaling 60-80%, move 75% speed
     if (chex->zoom >= 60) {
         if ((chi->walkwaitcounter % 4) >= 1)
-            return 1;
+            return -1;
+        else if (chex->xwas != INVALID_X) {
+            // move the second half of the movement to make it smoother
+            chi->x = chex->xwas;
+            chi->y = chex->ywas;
+            chex->xwas = INVALID_X;
+        }
     }
     // scaling 30-60%, move 50% speed
     else if (chex->zoom >= 30) {
@@ -2203,7 +2139,7 @@ int my_getpixel(Bitmap *blk, int x, int y) {
 
     // strip the alpha channel
 	// TODO: is there a way to do this vtable thing with Bitmap?
-	BITMAP *al_bmp = (BITMAP*)blk->GetBitmapObject();
+	BITMAP *al_bmp = (BITMAP*)blk->GetAllegroBitmap();
     return al_bmp->vtable->getpixel(al_bmp, x, y) & 0x00ffffff;
 }
 
@@ -2216,7 +2152,7 @@ int check_click_on_character(int xx,int yy,int mood) {
     return 0;
 }
 
-void _DisplaySpeechCore(int chid, char *displbuf) {
+void _DisplaySpeechCore(int chid, const char *displbuf) {
     if (displbuf[0] == 0) {
         // no text, just update the current character who's speaking
         // this allows the portrait side to be switched with an empty
@@ -2255,30 +2191,7 @@ void _DisplayThoughtCore(int chid, const char *displbuf) {
     _displayspeech ((char*)displbuf, chid, xpp, ypp, width, 1);
 }
 
-int user_to_internal_skip_speech(int userval) {
-    // 0 = click mouse or key to skip
-    if (userval == 0)
-        return SKIP_AUTOTIMER | SKIP_KEYPRESS | SKIP_MOUSECLICK;
-    // 1 = key only
-    else if (userval == 1)
-        return SKIP_AUTOTIMER | SKIP_KEYPRESS;
-    // 2 = can't skip at all
-    else if (userval == 2)
-        return SKIP_AUTOTIMER;
-    // 3 = only on keypress, no auto timer
-    else if (userval == 3)
-        return SKIP_KEYPRESS | SKIP_MOUSECLICK;
-    // 4 = mouse only
-    else if (userval == 4)
-        return SKIP_AUTOTIMER | SKIP_MOUSECLICK;
-    else
-        quit("user_to_internal_skip_speech: unknown userval");
-
-    return 0;
-}
-
-
-void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThought) {
+void _displayspeech(const char*texx, int aschar, int xx, int yy, int widd, int isThought) {
     if (!is_valid_character(aschar))
         quit("!DisplaySpeech: invalid character");
 
@@ -2319,6 +2232,7 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
     }
 
     play.messagetime = GetTextDisplayTime(texx);
+    play.speech_in_post_state = false;
 
     if (isPause) {
         if (update_music_at > 0)
@@ -2532,12 +2446,30 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
                 bwidth = widd - bigx;
 
             our_eip=153;
-            int draw_yp = 0, ovr_yp = get_fixed_pixel_size(20);
+            int ovr_yp = get_fixed_pixel_size(20);
+            int view_frame_x = 0;
+            int view_frame_y = 0;
+            facetalk_qfg4_override_placement_x = false;
+            facetalk_qfg4_override_placement_y = false;
+
             if (game.options[OPT_SPEECHTYPE] == 3) {
                 // QFG4-style whole screen picture
                 closeupface = BitmapHelper::CreateBitmap(scrnwid, scrnhit, spriteset[viptr->loops[0].frames[0].pic]->GetColorDepth());
                 closeupface->Clear(0);
-                draw_yp = scrnhit/2 - spriteheight[viptr->loops[0].frames[0].pic]/2;
+                if (xx < 0 && play.speech_portrait_placement)
+                {
+                    facetalk_qfg4_override_placement_x = true;
+                    view_frame_x = play.speech_portrait_x;
+                }
+                if (yy < 0 && play.speech_portrait_placement)
+                {
+                    facetalk_qfg4_override_placement_y = true;
+                    view_frame_y = play.speech_portrait_y;
+                }
+                else
+                {
+                    view_frame_y = scrnhit/2 - spriteheight[viptr->loops[0].frames[0].pic]/2;
+                }
                 bigx = scrnwid/2 - get_fixed_pixel_size(20);
                 ovr_type = OVER_COMPLETE;
                 ovr_yp = 0;
@@ -2545,25 +2477,37 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
             }
             else {
                 // KQ6-style close-up face picture
-                if (yy < 0)
+                if (yy < 0 && play.speech_portrait_placement)
+                {
+                    ovr_yp = play.speech_portrait_y;
+                }
+                else if (yy < 0)
                     ovr_yp = adjust_y_for_guis (ovr_yp);
                 else
                     ovr_yp = yy;
 
-                closeupface = BitmapHelper::CreateBitmap(bigx+1,bigy+1,spriteset[viptr->loops[0].frames[0].pic]->GetColorDepth());
-                closeupface->Clear(closeupface->GetMaskColor());
+                closeupface = BitmapHelper::CreateTransparentBitmap(bigx+1,bigy+1,spriteset[viptr->loops[0].frames[0].pic]->GetColorDepth());
                 ovr_type = OVER_PICTURE;
 
                 if (yy < 0)
                     tdyp = ovr_yp + get_textwindow_top_border_height(play.speech_textwindow_gui);
             }
-            //->Blit(closeupface,spriteset[viptr->frames[0][0].pic],0,draw_yp);
-            DrawViewFrame(closeupface, &viptr->loops[0].frames[0], 0, draw_yp);
+            const ViewFrame *vf = &viptr->loops[0].frames[0];
+            const bool closeupface_has_alpha = (game.spriteflags[vf->pic] & SPF_ALPHACHANNEL) != 0;
+            DrawViewFrame(closeupface, vf, view_frame_x, view_frame_y);
 
             int overlay_x = get_fixed_pixel_size(10);
-
             if (xx < 0) {
-                tdxp = get_fixed_pixel_size(16) + bigx + get_textwindow_border_width(play.speech_textwindow_gui) / 2;
+                tdxp = bigx + get_textwindow_border_width(play.speech_textwindow_gui) / 2;
+                if (play.speech_portrait_placement)
+                {
+                    overlay_x = play.speech_portrait_x;
+                    tdxp += overlay_x + get_fixed_pixel_size(6);
+                }
+                else
+                {
+                    tdxp += get_fixed_pixel_size(16);
+                }
 
                 int maxWidth = (scrnwid - tdxp) - get_fixed_pixel_size(5) - 
                     get_textwindow_border_width (play.speech_textwindow_gui) / 2;
@@ -2582,8 +2526,19 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
             // if the portrait's on the right, swap it round
             if (portrait_on_right) {
                 if ((xx < 0) || (widd < 0)) {
-                    overlay_x = (scrnwid - bigx) - get_fixed_pixel_size(5);
                     tdxp = get_fixed_pixel_size(9);
+                    if (play.speech_portrait_placement)
+                    {
+                        overlay_x = (scrnwid - bigx) - play.speech_portrait_x;
+                        int maxWidth = overlay_x - tdxp - get_fixed_pixel_size(9) - 
+                            get_textwindow_border_width (play.speech_textwindow_gui) / 2;
+                        if (bwidth > maxWidth)
+                            bwidth = maxWidth;
+                    }
+                    else
+                    {
+                        overlay_x = (scrnwid - bigx) - get_fixed_pixel_size(5);
+                    }
                 }
                 else {
                     overlay_x = (xx + widd - bigx) - get_fixed_pixel_size(5);
@@ -2594,7 +2549,7 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
             }
             if (game.options[OPT_SPEECHTYPE] == 3)
                 overlay_x = 0;
-            face_talking=add_screen_overlay(overlay_x,ovr_yp,ovr_type,closeupface);
+            face_talking=add_screen_overlay(overlay_x,ovr_yp,ovr_type,closeupface, closeupface_has_alpha);
             facetalkframe = 0;
             facetalkwait = viptr->loops[0].frames[0].speed + GetCharacterSpeechAnimationDelay(speakingChar);
             facetalkloop = 0;
@@ -2669,6 +2624,9 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
     if ((widd > 0) && (isThought == 0))
         allowShrink = 0;
 
+    if (isThought)
+        char_thinking = aschar;
+
     our_eip=155;
     _display_at(tdxp,tdyp,bwidth,texx,0,textcol, isThought, allowShrink, overlayPositionFixed);
     our_eip=156;
@@ -2698,6 +2656,7 @@ void _displayspeech(char*texx, int aschar, int xx, int yy, int widd, int isThoug
         charextra[aschar].process_idle_this_time = 1;
     }
     char_speaking = -1;
+    char_thinking = -1;
     stop_speech();
 }
 
@@ -2710,13 +2669,13 @@ int get_character_currently_talking() {
     return -1;
 }
 
-void DisplaySpeech(char*texx, int aschar) {
+void DisplaySpeech(const char*texx, int aschar) {
     _displayspeech (texx, aschar, -1, -1, -1, 0);
 }
 
 // Calculate which frame of the loop to use for this character of
 // speech
-int GetLipSyncFrame (char *curtex, int *stroffs) {
+int GetLipSyncFrame (const char *curtex, int *stroffs) {
     /*char *frameletters[MAXLIPSYNCFRAMES] =
     {"./,/ ", "A", "O", "F/V", "D/N/G/L/R", "B/P/M",
     "Y/H/K/Q/C", "I/T/E/X/th", "U/W", "S/Z/J/ch", NULL,
@@ -2751,7 +2710,7 @@ int update_lip_sync(int talkview, int talkloop, int *talkframeptr) {
     int talkwait = 0;
 
     // lip-sync speech
-    char *nowsaying = &text_lips_text[text_lips_offset];
+    const char *nowsaying = &text_lips_text[text_lips_offset];
     // if it's an apostraphe, skip it (we'll, I'll, etc)
     if (nowsaying[0] == '\'') {
         text_lips_offset++;
@@ -2939,7 +2898,7 @@ RuntimeScriptValue Sc_Character_RunInteraction(void *self, const RuntimeScriptVa
 RuntimeScriptValue Sc_Character_Say(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
     API_OBJCALL_SCRIPT_SPRINTF(Character_Say, 1);
-    Character_Say((CharacterInfo*)self, "%s", scsf_buffer);
+    Character_Say((CharacterInfo*)self, scsf_buffer);
     return RuntimeScriptValue();
 }
 
@@ -2989,7 +2948,7 @@ RuntimeScriptValue Sc_Character_StopMoving(void *self, const RuntimeScriptValue 
 RuntimeScriptValue Sc_Character_Think(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
     API_OBJCALL_SCRIPT_SPRINTF(Character_Think, 1);
-    Character_Think((CharacterInfo*)self, "%s", scsf_buffer);
+    Character_Think((CharacterInfo*)self, scsf_buffer);
     return RuntimeScriptValue();
 }
 
@@ -3389,6 +3348,16 @@ RuntimeScriptValue Sc_Character_SetSpeechView(void *self, const RuntimeScriptVal
     API_OBJCALL_VOID_PINT(CharacterInfo, Character_SetSpeechView);
 }
 
+RuntimeScriptValue Sc_Character_GetThinking(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL(CharacterInfo, Character_GetThinking);
+}
+
+RuntimeScriptValue Sc_Character_GetThinkingFrame(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(CharacterInfo, Character_GetThinkingFrame);
+}
+
 // int (CharacterInfo *chaa)
 RuntimeScriptValue Sc_Character_GetThinkView(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
@@ -3488,21 +3457,15 @@ RuntimeScriptValue Sc_Character_SetZ(void *self, const RuntimeScriptValue *param
 // void (CharacterInfo *chaa, const char *texx, ...)
 void ScPl_Character_Say(CharacterInfo *chaa, const char *texx, ...)
 {
-    va_list arg_ptr;
-    va_start(arg_ptr, texx);
-    const char *scsf_buffer = ScriptVSprintf(ScSfBuffer, 3000, get_translation(texx), arg_ptr);
-    va_end(arg_ptr);
-    Character_Say(chaa, "%s", scsf_buffer);
+    API_PLUGIN_SCRIPT_SPRINTF(texx);
+    Character_Say(chaa, scsf_buffer);
 }
 
 // void (CharacterInfo *chaa, const char *texx, ...)
 void ScPl_Character_Think(CharacterInfo *chaa, const char *texx, ...)
 {
-    va_list arg_ptr;
-    va_start(arg_ptr, texx);
-    const char *scsf_buffer = ScriptVSprintf(ScSfBuffer, 3000, get_translation(texx), arg_ptr);
-    va_end(arg_ptr);
-    Character_Think(chaa, "%s", scsf_buffer);
+    API_PLUGIN_SCRIPT_SPRINTF(texx);
+    Character_Think(chaa, scsf_buffer);
 }
 
 void RegisterCharacterAPI()
@@ -3610,6 +3573,8 @@ void RegisterCharacterAPI()
 	ccAddExternalObjectFunction("Character::set_SpeechColor",           Sc_Character_SetSpeechColor);
 	ccAddExternalObjectFunction("Character::get_SpeechView",            Sc_Character_GetSpeechView);
 	ccAddExternalObjectFunction("Character::set_SpeechView",            Sc_Character_SetSpeechView);
+    ccAddExternalObjectFunction("Character::get_Thinking",              Sc_Character_GetThinking);
+    ccAddExternalObjectFunction("Character::get_ThinkingFrame",         Sc_Character_GetThinkingFrame);
 	ccAddExternalObjectFunction("Character::get_ThinkView",             Sc_Character_GetThinkView);
 	ccAddExternalObjectFunction("Character::set_ThinkView",             Sc_Character_SetThinkView);
 	ccAddExternalObjectFunction("Character::get_Transparency",          Sc_Character_GetTransparency);

@@ -22,10 +22,10 @@
 // What about other platforms?
 //
 
-#include "util/wgt2allg.h"
 #include "ac/common.h"
 #include "ac/gamesetup.h"
 #include "ac/gamestate.h"
+#include "core/def_version.h"
 #include "debug/agseditordebugger.h"
 #include "debug/debug_log.h"
 #include "debug/out.h"
@@ -35,12 +35,16 @@
 #include "platform/base/agsplatformdriver.h"
 #include "ac/route_finder.h"
 #include "core/assetmanager.h"
+#include "util/directory.h"
+#include "util/path.h"
 
 #ifdef _DEBUG
 #include "test/test_all.h"
 #endif
 
-namespace Out = Common::Out;
+namespace Directory = AGS::Common::Directory;
+namespace Out       = AGS::Common::Out;
+namespace Path      = AGS::Common::Path;
 
 char appDirectory[512]; // Needed for library loading
 
@@ -59,9 +63,8 @@ LPWSTR *wArgv;
 
 #endif
 
-#ifndef WINDOWS_VERSION
-char **global_argv = 0;
-#endif
+char **global_argv = NULL;
+int    global_argc = 0;
 
 
 extern GameSetup usetup;
@@ -69,7 +72,6 @@ extern GameState play;
 extern int our_eip;
 extern AGSPlatformDriver *platform;
 extern int debug_flags;
-extern int force_letterbox;
 extern int debug_15bit_mode, debug_24bit_mode;
 extern int convert_16bit_bgr;
 extern int display_fps;
@@ -82,6 +84,9 @@ extern char editor_debugger_instance_token[100];
 char force_gfxfilter[50];
 int datafile_argv=0, change_to_game_dir = 0, force_window = 0;
 int override_start_room = 0, force_16bit = 0;
+bool justDisplayHelp = false;
+bool justDisplayVersion = false;
+bool justRunSetup = false;
 bool justRegisterGame = false;
 bool justUnRegisterGame = false;
 const char *loadSaveGameOnStartup = NULL;
@@ -115,17 +120,6 @@ void main_create_platform_driver()
     platform = AGSPlatformDriver::GetDriver();
 }
 
-// Version and build numbers
-#define ACI_VERSION_MAJOR               3
-#define ACI_VERSION_MINOR               3
-#define ACI_VERSION_RELEASE             0
-#define ACI_VERSION_REVISION            1132
-#ifdef NO_MP3_PLAYER
-#define SPECIAL_VERSION "NMP"
-#else
-#define SPECIAL_VERSION ""
-#endif
-
 // this needs to be updated if the "play" struct changes
 #define SVG_VERSION_BWCOMPAT_MAJOR      3
 #define SVG_VERSION_BWCOMPAT_MINOR      2
@@ -147,10 +141,9 @@ AGS::Engine::Version SavedgameLowestForwardCompatVersion;
 
 void main_init()
 {
+    EngineVersion = Version(ACI_VERSION_STR " " SPECIAL_VERSION);
 #if defined (BUILD_STR)
-    EngineVersion = Version(ACI_VERSION_MAJOR, ACI_VERSION_MINOR, ACI_VERSION_RELEASE, ACI_VERSION_REVISION, SPECIAL_VERSION, BUILD_STR);
-#else
-    EngineVersion = Version(ACI_VERSION_MAJOR, ACI_VERSION_MINOR, ACI_VERSION_RELEASE, ACI_VERSION_REVISION, SPECIAL_VERSION);
+    EngineVersion.BuildInfo = BUILD_STR;
 #endif
     SavedgameLowestBackwardCompatVersion = Version(SVG_VERSION_BWCOMPAT_MAJOR, SVG_VERSION_BWCOMPAT_MINOR, SVG_VERSION_BWCOMPAT_RELEASE, SVG_VERSION_BWCOMPAT_REVISION);
     SavedgameLowestForwardCompatVersion = Version(SVG_VERSION_FWCOMPAT_MAJOR, SVG_VERSION_FWCOMPAT_MINOR, SVG_VERSION_FWCOMPAT_RELEASE, SVG_VERSION_FWCOMPAT_REVISION);
@@ -158,6 +151,18 @@ void main_init()
     Common::AssetManager::CreateInstance();
     main_pre_init();
     main_create_platform_driver();
+}
+
+String get_engine_string()
+{
+    return String::FromFormat("Adventure Game Studio v%s Interpreter\n"
+        "Copyright (c) 1999-2011 Chris Jones and " ACI_COPYRIGHT_YEARS " others\n"
+#ifdef BUILD_STR
+        "ACI version %s (Build: %s)\n",
+        EngineVersion.ShortString.GetCStr(), EngineVersion.LongString.GetCStr(), EngineVersion.BuildInfo.GetCStr());
+#else
+        "ACI version %s\n", EngineVersion.ShortString.GetCStr(), EngineVersion.LongString.GetCStr());
+#endif
 }
 
 int main_preprocess_cmdline(int argc,char*argv[])
@@ -169,9 +174,9 @@ int main_preprocess_cmdline(int argc,char*argv[])
         platform->DisplayAlert("CommandLineToArgvW failed, unable to start the game.");
         return 9;
     }
-#else
-    global_argv = argv;
 #endif
+    global_argv = argv;
+    global_argc = argc;
     return RETURN_CONTINUE;
 }
 
@@ -179,15 +184,25 @@ extern char return_to_roomedit[30];
 extern char return_to_room[150];
 
 void main_print_help() {
-    printf("\nUsage: ags [<options>] [<gamefile or directory>]\n\n"
+    platform->WriteStdOut(
+           "Usage: ags [OPTIONS] [GAMEFILE or DIRECTORY]\n\n"
            "Options:\n"
-           "-windowed            Set display mode to windowed\n"
-           "-fullscreen          Set display mode to fullscreen\n"
-           "-hicolor             Enable 16bit colors\n"
-           "-letterbox           Enable letterbox mode\n"
-           "-gfxfilter <filter>  Enable graphics filter, where <filter> can be\n"
-           "                     StdScale2, StdScale3, StdScale4, Hq2x or Hq3x\n"
-           "--help               Print this help message\n");
+           "  --windowed                   Force display mode to windowed\n"
+           "  --fullscreen                 Force display mode to fullscreen\n"
+           "  --hicolor                    Downmix 32bit colors to 16bit\n"
+           "  --letterbox                  Enable letterbox mode\n"
+           "  --gfxfilter <filter>         Enable graphics filter. Available options:\n"
+           "                                 StdScale2, StdScale3, StdScale4, Hq2x or Hq3x\n"
+           "  --log                        Enable program output to the log file\n"
+           "  --no-log                     Disable program output to the log file,\n"
+           "                                 overriding configuration file setting\n"
+           "  --help                       Print this help message\n"
+           "\n"
+           "Gamefile options:\n"
+           "  /dir/path/game/              Launch the game in specified directory\n"
+           "  /dir/path/game/penguin.exe   Launch penguin.exe\n"
+           "  [nothing]                    Launch the game in the current directory\n"
+    );
 }
 
 int main_process_cmdline(int argc,char*argv[])
@@ -195,26 +210,30 @@ int main_process_cmdline(int argc,char*argv[])
     force_gfxfilter[0] = '\0';
 
     for (int ee=1;ee<argc;ee++) {
-        if (stricmp(argv[ee],"--help") == 0 || argv[ee][1]=='?') {
-            return 0;
+        if (stricmp(argv[ee],"--help") == 0 || stricmp(argv[ee],"/?") == 0 || stricmp(argv[ee],"-?") == 0)
+        {
+            justDisplayHelp = true;
+            return RETURN_CONTINUE;
         }
-        if (stricmp(argv[ee],"-shelllaunch") == 0)
+        if (stricmp(argv[ee],"-v") == 0 || stricmp(argv[ee],"--version") == 0)
+            justDisplayVersion = true;
+        else if (stricmp(argv[ee],"-shelllaunch") == 0)
             change_to_game_dir = 1;
         else if (stricmp(argv[ee],"-updatereg") == 0)
             debug_flags |= DBG_REGONLY;
-        else if (stricmp(argv[ee],"-windowed") == 0)
+        else if (stricmp(argv[ee],"-windowed") == 0 || stricmp(argv[ee],"--windowed") == 0)
             force_window = 1;
-        else if (stricmp(argv[ee],"-fullscreen") == 0)
+        else if (stricmp(argv[ee],"-fullscreen") == 0 || stricmp(argv[ee],"--fullscreen") == 0)
             force_window = 2;
-        else if (stricmp(argv[ee],"-hicolor") == 0)
+        else if (stricmp(argv[ee],"-hicolor") == 0 || stricmp(argv[ee],"--hicolor") == 0)
             force_16bit = 1;
-        else if (stricmp(argv[ee],"-letterbox") == 0)
-            force_letterbox = 1;
+        else if (stricmp(argv[ee],"-letterbox") == 0 || stricmp(argv[ee],"--letterbox") == 0)
+            usetup.prefer_letterbox = 1;
         else if (stricmp(argv[ee],"-record") == 0)
             play.recording = 1;
         else if (stricmp(argv[ee],"-playback") == 0)
             play.playback = 1;
-        else if ((stricmp(argv[ee],"-gfxfilter") == 0) && (argc > ee + 1))
+        else if ((stricmp(argv[ee],"-gfxfilter") == 0 || stricmp(argv[ee],"--gfxfilter") == 0) && (argc > ee + 1))
         {
             strncpy(force_gfxfilter, argv[ee + 1], 49);
             ee++;
@@ -242,8 +261,12 @@ int main_process_cmdline(int argc,char*argv[])
         else if (stricmp(argv[ee],"-nomusic")==0) debug_flags|=DBG_NOMUSIC;
         else if (stricmp(argv[ee],"-noscript")==0) debug_flags|=DBG_NOSCRIPT;
         else if (stricmp(argv[ee],"-novideo")==0) debug_flags|=DBG_NOVIDEO;
-        else if (stricmp(argv[ee],"-noexceptionhandler")==0) usetup.disable_exception_handling = 1;
+        else if (stricmp(argv[ee],"-noexceptionhandler")==0) usetup.disable_exception_handling = true;
         else if (stricmp(argv[ee],"-dbgscript")==0) debug_flags|=DBG_DBGSCRIPT;
+        else if (stricmp(argv[ee], "--setup") == 0)
+        {
+            justRunSetup = true;
+        }
         else if (stricmp(argv[ee],"-registergame") == 0)
         {
             justRegisterGame = true;
@@ -271,6 +294,14 @@ int main_process_cmdline(int argc,char*argv[])
             strncpy (play.takeover_from, argv[ee + 2], 49);
             play.takeover_from[49] = 0;
             ee += 2;
+        }
+        else if (stricmp(argv[ee], "--log") == 0)
+        {
+            enable_log_file = true;
+        }
+        else if (stricmp(argv[ee], "--no-log") == 0)
+        {
+            disable_log_file = true;
         }
         else if (argv[ee][0]!='-') datafile_argv=ee;
     }
@@ -305,23 +336,20 @@ void main_init_crt_report()
 #endif
 }
 
-void change_to_directory_of_file(LPCWSTR fileName)
+void change_to_directory_of_file(String path)
 {
-    WCHAR wcbuffer[MAX_PATH];
-    StrCpyW(wcbuffer, fileName);
-
-#if defined (WINDOWS_VERSION)
-    LPWSTR backSlashAt = StrRChrW(wcbuffer, NULL, L'\\');
-    if (backSlashAt != NULL) {
-        wcbuffer[wcslen(wcbuffer) - wcslen(backSlashAt)] = L'\0';
-        SetCurrentDirectoryW(wcbuffer);
+    if (Path::IsFile(path))
+    {
+        int slash_at = path.FindCharReverse('/');
+        if (slash_at > 0)
+        {
+            path.ClipMid(slash_at);
+        }
     }
-#else
-    if (strrchr(wcbuffer, '/') != NULL) {
-        strrchr(wcbuffer, '/')[0] = 0;
-        chdir(wcbuffer);
+    if (Path::IsDirectory(path))
+    {
+        Directory::SetCurrentDirectory(path);
     }
-#endif
 }
 
 void main_set_gamedir(int argc,char*argv[])
@@ -330,7 +358,7 @@ void main_set_gamedir(int argc,char*argv[])
     {
         // When launched by double-clicking a save game file, the curdir will
         // be the save game folder unless we correct it
-        change_to_directory_of_file(wArgv[0]);
+        change_to_directory_of_file(GetPathFromCmdArg(0));
     }
 
     getcwd(appDirectory, 512);
@@ -339,15 +367,66 @@ void main_set_gamedir(int argc,char*argv[])
     if (datafile_argv > 0) {
         // If launched by double-clicking .AGS file, change to that
         // folder; else change to this exe's folder
-        change_to_directory_of_file(wArgv[datafile_argv]);
+        change_to_directory_of_file(GetPathFromCmdArg(datafile_argv));
     }
+}
+
+String GetPathFromCmdArg(int arg_index)
+{
+    if (arg_index < 0 || arg_index >= global_argc)
+    {
+        return "";
+    }
+
+    String path;
+#if defined (WINDOWS_VERSION)
+    // Hack for Windows in case there are unicode chars in the path.
+    // The normal argv[] array has ????? instead of the unicode chars
+    // and fails, so instead we manually get the short file name, which
+    // is always using ANSI chars.
+    WCHAR short_path[MAX_PATH];
+    char ansi_buffer[MAX_PATH];
+    LPCWSTR arg_path = wArgv[arg_index];
+    if (GetShortPathNameW(arg_path, short_path, MAX_PATH) == 0)
+    {
+        Out::FPrint("Unable to determine path: GetShortPathNameW failed.\nCommand line argument %i: %s", arg_index, global_argv[arg_index]);
+        return "";
+    }
+    WideCharToMultiByte(CP_ACP, 0, short_path, -1, ansi_buffer, MAX_PATH, NULL, NULL);
+    path = ansi_buffer;
+#else
+    path = global_argv[arg_index];
+#endif
+    return Path::MakeAbsolutePath(path);
+}
+
+const char *get_allegro_error()
+{
+    return allegro_error;
+}
+
+const char *set_allegro_error(const char *format, ...)
+{
+    va_list argptr;
+    va_start(argptr, format);
+    uvszprintf(allegro_error, ALLEGRO_ERROR_SIZE, get_config_text(format), argptr);
+    va_end(argptr);
+    return allegro_error;
 }
 
 #if defined(WINDOWS_VERSION)
 #include <new.h>
+
+#ifndef _DEBUG
+extern void CreateMiniDump( EXCEPTION_POINTERS* pep );
+#endif
+
 char tempmsg[100];
 char*printfworkingspace;
 int malloc_fail_handler(size_t amountwanted) {
+#ifndef _DEBUG
+  CreateMiniDump(NULL);
+#endif
   free(printfworkingspace);
   sprintf(tempmsg,"Out of memory: failed to allocate %ld bytes (at PP=%d)",amountwanted, our_eip);
   quit(tempmsg);
@@ -369,24 +448,6 @@ int main(int argc,char*argv[]) {
         return res;
     }
 
-    initialize_debug_system();
-
-    Out::FPrint("Adventure Game Studio v%s Interpreter\n"
-           "Copyright (c) 1999-2011 Chris Jones and 2011-20xx others\n"
-#ifdef BUILD_STR
-           "ACI version %s (Build: %s)\n",
-           EngineVersion.ShortString.GetCStr(), EngineVersion.LongString.GetCStr(), EngineVersion.BuildInfo.GetCStr());
-#else
-           "ACI version %s\n", EngineVersion.ShortString.GetCStr(), EngineVersion.LongString.GetCStr());
-#endif
-
-    if ((argc>1) && (stricmp(argv[1],"--help") == 0 || argv[1][1]=='?')) {
-        main_print_help();
-        return 0;
-    }
-
-    Out::FPrint("***** ENGINE STARTUP");
-
 #if defined(WINDOWS_VERSION)
     _set_new_handler(malloc_fail_handler);
     _set_new_mode(1);
@@ -399,6 +460,21 @@ int main(int argc,char*argv[]) {
         return res;
     }
 
+    if (justDisplayVersion)
+    {
+        platform->WriteStdOut(get_engine_string());
+        return 0;
+    }
+
+    if (justDisplayHelp)
+    {
+        main_print_help();
+        return 0;
+    }
+
+    initialize_debug_system();
+    Out::FPrint(get_engine_string());
+
     main_init_crt_report();
 
     main_set_gamedir(argc, argv);    
@@ -408,12 +484,14 @@ int main(int argc,char*argv[]) {
         exit(0);
 
 #ifndef USE_CUSTOM_EXCEPTION_HANDLER
-    usetup.disable_exception_handling = 1;
+    usetup.disable_exception_handling = true;
 #endif
 
     if (usetup.disable_exception_handling)
     {
         int result = initialize_engine(argc, argv);
+        // TODO: refactor engine shutdown routine (must shutdown and delete everything started and created)
+        allegro_exit();
         platform->PostAllegroExit();
         return result;
     }

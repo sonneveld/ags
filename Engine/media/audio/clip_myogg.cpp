@@ -16,6 +16,7 @@
 #include "media/audio/clip_myogg.h"
 #include "media/audio/audiointernaldefs.h"
 #include "ac/common.h"               // quit()
+#include "util/mutex_lock.h"
 
 #include "platform/base/agsplatformdriver.h"
 
@@ -29,7 +30,7 @@ extern "C" {
 
 int MYOGG::poll()
 {
-    _mutex.Lock();
+    AGS::Engine::MutexLock _lock(_mutex);
 
     if (!done && _destroyThis)
     {
@@ -39,12 +40,10 @@ int MYOGG::poll()
 
     if (done)
     {
-        _mutex.Unlock();
         return done;
     }
     if (paused)
     {
-        _mutex.Unlock();
         return 0;
     }
 
@@ -55,7 +54,7 @@ int MYOGG::poll()
         if (tempbuf != NULL)
         {
             int free_val = -1;
-            if (chunksize > in->todo)
+            if (chunksize >= in->todo)
             {
                 chunksize = in->todo;
                 free_val = chunksize;
@@ -64,15 +63,16 @@ int MYOGG::poll()
             alogg_free_oggstream_buffer(stream, free_val);
         }
     }
-    if (alogg_poll_oggstream(stream) == ALOGG_POLL_PLAYJUSTFINISHED) {
+
+    int ret = alogg_poll_oggstream(stream);
+    if (ret == ALOGG_OK || ret == ALOGG_POLL_BUFFERUNDERRUN)
+        get_pos_ms();  // call this to keep the last_but_one stuff up to date
+    else {
+        // finished playing or error
         done = 1;
         if (psp_audio_multithreaded)
             internal_destroy();
     }
-    else get_pos_ms();  // call this to keep the last_but_one stuff up to date
-
-    _mutex.Unlock();
-
     return done;
 }
 
@@ -106,14 +106,14 @@ void MYOGG::internal_destroy()
 
 void MYOGG::destroy()
 {
-    _mutex.Lock();
+	AGS::Engine::MutexLock _lock(_mutex);
 
     if (psp_audio_multithreaded && _playing && !_audio_doing_crossfade)
       _destroyThis = true;
     else
       internal_destroy();
 
-    _mutex.Unlock();
+	_lock.Release();
 
     while (!done)
       AGSPlatformDriver::GetDriver()->YieldCPU();

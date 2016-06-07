@@ -14,15 +14,20 @@
 
 #ifdef _DEBUG
 
+#include "test/test_all.h"
 #include "test/test_string.h"
 #include "test/test_file.h"
 
 void Test_DoAllTests()
 {
+    Test_Path();
     Test_ScriptSprintf();
     Test_String();
     Test_Version();
     Test_File();
+    Test_IniFile();
+
+    Test_Gfx();
 }
 
 #endif // _DEBUG

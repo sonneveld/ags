@@ -337,11 +337,11 @@ namespace AGS.Editor
             {
                 GetNextWord(ref script);
                 string structName = GetNextWord(ref script);
-                while ((script[0] != ',') && (script[0] != ')') && (script.Length > 1))
+                while ((script.Length > 0) && (script[0] != ',') && (script[0] != ')'))
                 {
                     script = script.Substring(1);
                 }
-                if (script[0] == ',')
+                if ((script.Length > 0) && script[0] == ',')
                 {
                     script = script.Substring(1);
                 }
@@ -390,7 +390,7 @@ namespace AGS.Editor
             if (preProcessorDirective == "define")
             {
                 string macroName = GetNextWord(ref script);
-                if ((Char.IsLetter(macroName[0])) &&
+                if (!string.IsNullOrEmpty(macroName) && (Char.IsLetter(macroName[0])) &&
                     (!DoesCurrentLineHaveToken(script, AUTO_COMPLETE_IGNORE)))
                 {
                     defines.Add(new ScriptDefine(macroName, state.InsideIfDefBlock, state.InsideIfNDefBlock));

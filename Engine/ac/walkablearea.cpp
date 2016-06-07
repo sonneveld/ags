@@ -12,7 +12,6 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
 #include "ac/common.h"
 #include "ac/object.h"
 #include "ac/roomstruct.h"
@@ -49,10 +48,11 @@ void redo_walkable_areas() {
 
     int hh,ww;
     for (hh=0;hh<walkareabackup->GetHeight();hh++) {
+        uint8_t *walls_scanline = thisroom.walls->GetScanLineForWriting(hh);
         for (ww=0;ww<walkareabackup->GetWidth();ww++) {
             //      if (play.walkable_areas_on[_getpixel(thisroom.walls,ww,hh)]==0)
-            if (play.walkable_areas_on[thisroom.walls->GetScanLine(hh)[ww]]==0)
-                thisroom.walls->PutPixel(ww,hh,0);
+            if (play.walkable_areas_on[walls_scanline[ww]]==0)
+                walls_scanline[ww] = 0;
         }
     }
 
@@ -82,10 +82,17 @@ int get_area_scaling (int onarea, int xx, int yy) {
             // Work it all out without having to use floats
             // Percent = ((y - top) * 100) / (areabottom - areatop)
             // Zoom level = ((max - min) * Percent) / 100
-            int percent = ((yy - thisroom.walk_area_top[onarea]) * 100)
-                / (thisroom.walk_area_bottom[onarea] - thisroom.walk_area_top[onarea]);
-
-            zoom_level = ((thisroom.walk_area_zoom2[onarea] - thisroom.walk_area_zoom[onarea]) * (percent)) / 100 + thisroom.walk_area_zoom[onarea];
+            if (thisroom.walk_area_bottom[onarea] != thisroom.walk_area_top[onarea])
+            {
+                int percent = ((yy - thisroom.walk_area_top[onarea]) * 100)
+                    / (thisroom.walk_area_bottom[onarea] - thisroom.walk_area_top[onarea]);
+                zoom_level = ((thisroom.walk_area_zoom2[onarea] - thisroom.walk_area_zoom[onarea]) * (percent)) / 100 + thisroom.walk_area_zoom[onarea];
+            }
+            else
+            {
+                // Special case for 1px tall walkable area: take bottom line scaling
+                zoom_level = thisroom.walk_area_zoom2[onarea];
+            }
             zoom_level += 100;
     }
     else if ((onarea >= 0) & (onarea <= MAX_WALK_AREAS))

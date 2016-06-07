@@ -6,6 +6,10 @@
 #define FontType int
 #define AudioType int
 #define MAX_INV 301
+#define MAX_ROOM_OBJECTS    40
+#define MAX_LEGACY_GLOBAL_VARS  50
+#define MAX_LISTBOX_SAVED_GAMES 50
+#define PALETTE_SIZE       256
 #define FOLLOW_EXACTLY 32766
 #define NARRATOR -1
 #define OPT_WALKONLOOK       2
@@ -158,6 +162,7 @@ enum VideoSkipStyle
 
 enum eKeyCode
 {
+  eKeyNone  = 0,
   eKeyCtrlA = 1,
   eKeyCtrlB = 2,
   eKeyCtrlC = 3,
@@ -641,8 +646,12 @@ struct Mouse {
   import static void UseDefaultGraphic();
   /// Changes the mouse cursor to use the graphic for a different non-active cursor mode.
   import static void UseModeGraphic(CursorMode);
+  /// Gets/sets whether the user-defined factors are applied to mouse movement
+  readonly import static attribute bool ControlEnabled;
   /// Gets/sets the current mouse cursor mode.
   import static attribute CursorMode Mode;
+  /// Gets/sets the mouse speed
+  import static attribute float Speed;
   /// Gets/sets whether the mouse cursor is visible.
   import static attribute bool Visible;
   /// Gets the current mouse position.
@@ -942,12 +951,16 @@ import void UpdateInventory();
 import void StopDialog();
 /// Determines whether two objects or characters are overlapping each other.
 import int  AreThingsOverlapping(int thing1, int thing2);
+
+#ifndef STRICT
 /// Sets whether voice and/or text are used in the game.
 import void SetVoiceMode(eVoiceMode);
 /// Sets how the player can skip speech lines.
 import void SetSkipSpeech(int skipFlag);
 /// Changes the style in which speech is displayed.
 import void SetSpeechStyle(eSpeechStyle);
+#endif
+
 /// Starts a timer, which will expire after the specified number of game loops.
 import void SetTimer(int timerID, int timeout);
 /// Returns true the first time this is called after the timer expires.
@@ -1584,6 +1597,8 @@ managed struct Dialog {
   import String GetOptionText(int option);
   /// Checks whether the player has chosen this option before.
   import bool HasOptionBeenChosen(int option);
+  /// Manually marks whether the option was chosen before or not.
+  import void SetHasOptionBeenChosen(int option, bool chosen);
   /// Sets the enabled state of the specified option in this dialog.
   import void SetOptionState(int option, DialogOptionState);
   /// Runs the dialog interactively.
@@ -1680,6 +1695,8 @@ managed struct DialogOptionsRenderingInfo {
   import attribute int X;
   /// The Y co-ordinate of the top-left corner of the dialog options
   import attribute int Y;
+  /// Should the drawing surface have alpha channel
+  import attribute bool HasAlphaChannel;
 };
 
 managed struct AudioChannel {
@@ -1746,6 +1763,8 @@ struct System {
   import static attribute int  Gamma;
   /// Gets whether the game is running with 3D Hardware Acceleration.
   readonly import static attribute bool HardwareAcceleration;
+  /// Gets whether the game window has input focus
+  readonly import static attribute bool HasInputFocus;
   /// Gets whether Num Lock is currently on.
   readonly import static attribute bool NumLock;
   /// Gets which operating system the game is running on.
@@ -2003,12 +2022,16 @@ managed struct Character {
   readonly import attribute bool Speaking;
   /// Gets the current frame of the character's speaking animation (only valid when Speaking is true)
   readonly import attribute int SpeakingFrame;
-  /// Gets/sets the character's speech animation delay.
+  /// Gets/sets the character's speech animation delay (only if not using global setting).
   import attribute int  SpeechAnimationDelay;
   /// Gets/sets the character's speech text colour.
   import attribute int  SpeechColor;
   /// Gets/sets the character's speech view.
   import attribute int  SpeechView;
+  /// Gets whether the character is currently in the middle of a Think command.
+  readonly import attribute bool Thinking;
+  /// Gets the current frame of the character's thinking animation (only valid when Thinking is true)
+  readonly import attribute int ThinkingFrame;
   /// Gets/sets the character's thinking view.
   import attribute int  ThinkView;
   /// Gets/sets the character's current transparency level.
@@ -2070,7 +2093,7 @@ struct GameState {
   int  disabled_user_interface;
   int  gscript_timer;
   int  debug_mode;
-  int  globalvars[50];
+  int  globalvars[MAX_LEGACY_GLOBAL_VARS];
   int  messagetime;   // for auto-remove messages
   int  usedinv;
 #ifdef STRICT
@@ -2117,7 +2140,12 @@ struct GameState {
   int  narrator_speech;
   int  ambient_sounds_persist;
   int  lipsync_speed;
+#ifdef STRICT
+  int  reserved__4;   // $AUTOCOMPLETEIGNORE$
+#endif
+#ifndef STRICT
   int  close_mouth_end_speech_time;
+#endif
   int  disable_antialiasing;
   int  text_speed_modifier;
   int  text_align;
@@ -2133,10 +2161,20 @@ struct GameState {
   int  screenshot_width;
   int  screenshot_height;
   int  top_bar_font;
+#ifdef STRICT
+  int  reserved__2;   // $AUTOCOMPLETEIGNORE$
+#endif
+#ifndef STRICT
   int  speech_text_align;
+#endif
   int  auto_use_walkto_points;
   int  inventory_greys_out;
+#ifdef STRICT
+  int  reserved__3;   // $AUTOCOMPLETEIGNORE$
+#endif
+#ifndef STRICT
   int  skip_speech_specific_key;
+#endif
   int  abort_key;
   readonly int fade_color_red;
   readonly int fade_color_green;
@@ -2146,15 +2184,53 @@ struct GameState {
   int  read_dialog_option_color;
   int  stop_dialog_at_end;   // $AUTOCOMPLETEIGNORE$
   };
+  
+enum SkipSpeechStyle {
+  eSkipKeyMouseTime = 0,
+  eSkipKeyTime      = 1,
+  eSkipTime         = 2,
+  eSkipKeyMouse     = 3,
+  eSkipMouseTime    = 4,
+  eSkipKey          = 5,
+  eSkipMouse        = 6
+};
+  
+managed struct Speech {
+  /// Stop speech animation this number of game loops before speech ends (text mode only).
+  import static attribute int             AnimationStopTimeMargin;
+  /// Enables/disables the custom speech portrait placement.
+  import static attribute bool            CustomPortraitPlacement;
+  /// Gets/sets extra time the speech will always stay on screen after its common time runs out.
+  import static attribute int             DisplayPostTimeMs;
+  /// Gets/sets global speech animation delay (if using global setting).
+  import static attribute int             GlobalSpeechAnimationDelay;
+  /// Gets/sets speech portrait x offset relative to screen side.
+  import static attribute int             PortraitXOffset;
+  /// Gets/sets speech portrait y position.
+  import static attribute int             PortraitY;
+  /// Gets/sets specific key which can skip speech text.
+  import static attribute eKeyCode        SkipKey;
+  /// Gets/sets how the player can skip speech lines.
+  import static attribute SkipSpeechStyle SkipStyle;
+  /// Gets/sets the style in which speech is displayed.
+  import static attribute eSpeechStyle    Style;
+  /// Gets/sets how text in message boxes and Sierra-style speech is aligned.
+  import static attribute Alignment       TextAlignment;
+  /// Gets/sets whether speech animation delay should use global setting (or Character setting).
+  import static attribute bool            UseGlobalSpeechAnimationDelay;
+  /// Gets/sets whether voice and/or text are used in the game.
+  import static attribute eVoiceMode      VoiceMode;
+};
+
 
 import readonly Character *player;
-import Object object[40];
+import Object object[MAX_ROOM_OBJECTS];
 import Mouse mouse;
 import System system;
 import GameState  game;
-import int   gs_globals[50];
-import short savegameindex[20];
-import ColorType palette[256];
+import int   gs_globals[MAX_LEGACY_GLOBAL_VARS];
+import short savegameindex[MAX_LISTBOX_SAVED_GAMES];
+import ColorType palette[PALETTE_SIZE];
 
 #undef CursorMode
 #undef FontType

@@ -340,6 +340,20 @@
 		11CB49EE19F57B670015C412 /* ac2game.dat in Resources */ = {isa = PBXBuildFile; fileRef = 11617E8A19C20D6700F5A88A /* ac2game.dat */; };
 		11CB49F019F57B7B0015C412 /* steam_appid.txt in Resources */ = {isa = PBXBuildFile; fileRef = 11FD018019DC862800C4A61D /* steam_appid.txt */; };
 		11FD017D19DC85CE00C4A61D /* ac2game.dat in Resources */ = {isa = PBXBuildFile; fileRef = 11FD017C19DC85CE00C4A61D /* ac2game.dat */; };
+		144D76C21D073E7A0074DF1B /* speech.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76C01D073E7A0074DF1B /* speech.cpp */; };
+		144D76C31D073E7A0074DF1B /* speech.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76C01D073E7A0074DF1B /* speech.cpp */; };
+		144D76C61D0741190074DF1B /* asset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76C41D0741190074DF1B /* asset.cpp */; };
+		144D76C71D0741190074DF1B /* asset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76C41D0741190074DF1B /* asset.cpp */; };
+		144D76CA1D0741FF0074DF1B /* ini_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76C81D0741FF0074DF1B /* ini_util.cpp */; };
+		144D76CB1D0741FF0074DF1B /* ini_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76C81D0741FF0074DF1B /* ini_util.cpp */; };
+		144D76CE1D0742380074DF1B /* inifile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76CC1D0742380074DF1B /* inifile.cpp */; };
+		144D76CF1D0742380074DF1B /* inifile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76CC1D0742380074DF1B /* inifile.cpp */; };
+		144D76D21D0742680074DF1B /* mutifilelib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76D11D0742680074DF1B /* mutifilelib.cpp */; };
+		144D76D31D0742680074DF1B /* mutifilelib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76D11D0742680074DF1B /* mutifilelib.cpp */; };
+		144D76D61D07493C0074DF1B /* logfile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76D41D07493C0074DF1B /* logfile.cpp */; };
+		144D76D71D07493C0074DF1B /* logfile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76D41D07493C0074DF1B /* logfile.cpp */; };
+		144D76DA1D074A3D0074DF1B /* gfx_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76D81D074A3D0074DF1B /* gfx_util.cpp */; };
+		144D76DB1D074A3D0074DF1B /* gfx_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 144D76D81D074A3D0074DF1B /* gfx_util.cpp */; };
 		28FD15000DC6FC520079059D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGL.framework */; };
 		6007696216E9F56E00DCE88E /* test_version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6007696116E9F56E00DCE88E /* test_version.cpp */; };
 		6007696416E9F57A00DCE88E /* test_sprintf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6007696316E9F57A00DCE88E /* test_sprintf.cpp */; };
@@ -721,6 +735,20 @@
 		11CB49EC19F575520015C412 /* Primordia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Primordia.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		11FD017C19DC85CE00C4A61D /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/ac2game.dat; sourceTree = "<group>"; };
 		11FD018019DC862800C4A61D /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/steam/steam_appid.txt; sourceTree = "<group>"; };
+		144D76C01D073E7A0074DF1B /* speech.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = speech.cpp; sourceTree = "<group>"; };
+		144D76C11D073E7A0074DF1B /* speech.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = speech.h; sourceTree = "<group>"; };
+		144D76C41D0741190074DF1B /* asset.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = asset.cpp; sourceTree = "<group>"; };
+		144D76C51D0741190074DF1B /* asset.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = asset.h; sourceTree = "<group>"; };
+		144D76C81D0741FF0074DF1B /* ini_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ini_util.cpp; sourceTree = "<group>"; };
+		144D76C91D0741FF0074DF1B /* ini_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ini_util.h; sourceTree = "<group>"; };
+		144D76CC1D0742380074DF1B /* inifile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inifile.cpp; sourceTree = "<group>"; };
+		144D76CD1D0742380074DF1B /* inifile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = inifile.h; sourceTree = "<group>"; };
+		144D76D01D0742680074DF1B /* multifilelib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multifilelib.h; sourceTree = "<group>"; };
+		144D76D11D0742680074DF1B /* mutifilelib.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mutifilelib.cpp; sourceTree = "<group>"; };
+		144D76D41D07493C0074DF1B /* logfile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logfile.cpp; sourceTree = "<group>"; };
+		144D76D51D07493C0074DF1B /* logfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logfile.h; sourceTree = "<group>"; };
+		144D76D81D074A3D0074DF1B /* gfx_util.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gfx_util.cpp; sourceTree = "<group>"; };
+		144D76D91D074A3D0074DF1B /* gfx_util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gfx_util.h; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* Primordia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Primordia.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		28FD14FF0DC6FC520079059D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		32CA4F630368D1EE00C91783 /* Primordia_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Primordia_Prefix.pch; sourceTree = "<group>"; };
@@ -1715,6 +1743,8 @@
 		60CA39D0160713D200CFB3BD /* core */ = {
 			isa = PBXGroup;
 			children = (
+				144D76C41D0741190074DF1B /* asset.cpp */,
+				144D76C51D0741190074DF1B /* asset.h */,
 				6080428D1614DE8F00D33732 /* assetmanager.cpp */,
 				6080428C1614DE8900D33732 /* assetmanager.h */,
 				60CA39D1160713D200CFB3BD /* types.h */,
@@ -1895,6 +1925,12 @@
 		60CA3A46160713D300CFB3BD /* util */ = {
 			isa = PBXGroup;
 			children = (
+				144D76D01D0742680074DF1B /* multifilelib.h */,
+				144D76D11D0742680074DF1B /* mutifilelib.cpp */,
+				144D76CC1D0742380074DF1B /* inifile.cpp */,
+				144D76CD1D0742380074DF1B /* inifile.h */,
+				144D76C81D0741FF0074DF1B /* ini_util.cpp */,
+				144D76C91D0741FF0074DF1B /* ini_util.h */,
 				600C369016C454C400D0CC4F /* stream.cpp */,
 				600C369116C454C400D0CC4F /* proxystream.h */,
 				600C369216C454C400D0CC4F /* proxystream.cpp */,
@@ -1961,6 +1997,8 @@
 		60CA3AA8160713FD00CFB3BD /* ac */ = {
 			isa = PBXGroup;
 			children = (
+				144D76C01D073E7A0074DF1B /* speech.cpp */,
+				144D76C11D073E7A0074DF1B /* speech.h */,
 				608781941695922900AC84FE /* global_api.cpp */,
 				60DC155016675BBE002D0474 /* statobj */,
 				60DC154916675B70002D0474 /* richgamemedia.cpp */,
@@ -2231,6 +2269,8 @@
 		60CA3BAB160713FE00CFB3BD /* debug */ = {
 			isa = PBXGroup;
 			children = (
+				144D76D41D07493C0074DF1B /* logfile.cpp */,
+				144D76D51D07493C0074DF1B /* logfile.h */,
 				60CA3BAC160713FE00CFB3BD /* agseditordebugger.h */,
 				60CA3BAD160713FE00CFB3BD /* consoleoutputtarget.cpp */,
 				60CA3BAE160713FE00CFB3BD /* consoleoutputtarget.h */,
@@ -2264,6 +2304,8 @@
 		60CA3BBD160713FE00CFB3BD /* gfx */ = {
 			isa = PBXGroup;
 			children = (
+				144D76D81D074A3D0074DF1B /* gfx_util.cpp */,
+				144D76D91D074A3D0074DF1B /* gfx_util.h */,
 				60898DCB160785DD009E152F /* gfxfilter_hq3x.cpp */,
 				60898DC9160785CB009E152F /* gfxfilter_hq2x.cpp */,
 				60CA3BBE160713FE00CFB3BD /* ali3d.h */,
@@ -2774,6 +2816,7 @@
 				11CB48AD19F575520015C412 /* point.cpp in Sources */,
 				11CB48AE19F575520015C412 /* roomstruct.cpp in Sources */,
 				11CB48AF19F575520015C412 /* spritecache.cpp in Sources */,
+				144D76CF1D0742380074DF1B /* inifile.cpp in Sources */,
 				11CB48B019F575520015C412 /* view.cpp in Sources */,
 				11CB48B119F575520015C412 /* wordsdictionary.cpp in Sources */,
 				11CB48B219F575520015C412 /* out.cpp in Sources */,
@@ -2838,6 +2881,7 @@
 				11CB48ED19F575520015C412 /* cc_guiobject.cpp in Sources */,
 				11CB48EE19F575520015C412 /* cc_hotspot.cpp in Sources */,
 				11CB48EF19F575520015C412 /* cc_inventory.cpp in Sources */,
+				144D76C71D0741190074DF1B /* asset.cpp in Sources */,
 				11CB48F019F575520015C412 /* cc_object.cpp in Sources */,
 				11CB48F119F575520015C412 /* cc_region.cpp in Sources */,
 				11CB48F219F575520015C412 /* cc_serializer.cpp in Sources */,
@@ -2852,6 +2896,7 @@
 				11CB48FB19F575520015C412 /* scriptviewframe.cpp in Sources */,
 				11CB48FC19F575520015C412 /* event.cpp in Sources */,
 				11CB48FD19F575520015C412 /* file.cpp in Sources */,
+				144D76DB1D074A3D0074DF1B /* gfx_util.cpp in Sources */,
 				11CB48FE19F575520015C412 /* game.cpp in Sources */,
 				11CB48FF19F575520015C412 /* gamesetup.cpp in Sources */,
 				11CB490019F575520015C412 /* gamestate.cpp in Sources */,
@@ -2934,6 +2979,7 @@
 				11CB494D19F575520015C412 /* viewport.cpp in Sources */,
 				11CB494E19F575520015C412 /* walkablearea.cpp in Sources */,
 				11CB494F19F575520015C412 /* walkbehind.cpp in Sources */,
+				144D76D31D0742680074DF1B /* mutifilelib.cpp in Sources */,
 				11CB495019F575520015C412 /* consoleoutputtarget.cpp in Sources */,
 				11CB495119F575520015C412 /* debug.cpp in Sources */,
 				11CB495219F575520015C412 /* filebasedagsdebugger.cpp in Sources */,
@@ -3019,6 +3065,7 @@
 				11CB49A319F575520015C412 /* agsplugin.cpp in Sources */,
 				11CB49A419F575520015C412 /* global_plugin.cpp in Sources */,
 				11CB49A519F575520015C412 /* pluginobjectreader.cpp in Sources */,
+				144D76C31D073E7A0074DF1B /* speech.cpp in Sources */,
 				11CB49A619F575520015C412 /* executingscript.cpp in Sources */,
 				11CB49A719F575520015C412 /* exports.cpp in Sources */,
 				11CB49A819F575520015C412 /* script.cpp in Sources */,
@@ -3034,6 +3081,7 @@
 				11CB49B219F575520015C412 /* AGSSpriteFont.cpp in Sources */,
 				11CB49B319F575520015C412 /* CharacterEntry.cpp in Sources */,
 				11CB49B419F575520015C412 /* color.cpp in Sources */,
+				144D76CB1D0741FF0074DF1B /* ini_util.cpp in Sources */,
 				11CB49B519F575520015C412 /* SpriteFont.cpp in Sources */,
 				11CB49B619F575520015C412 /* SpriteFontRenderer.cpp in Sources */,
 				11CB49B719F575520015C412 /* VariableWidthFont.cpp in Sources */,
@@ -3043,6 +3091,7 @@
 				11CB49BB19F575520015C412 /* aaudio.c in Sources */,
 				11CB49BC19F575520015C412 /* gfxfilter_hq2x.cpp in Sources */,
 				11CB49BD19F575520015C412 /* gfxfilter_hq3x.cpp in Sources */,
+				144D76D71D07493C0074DF1B /* logfile.cpp in Sources */,
 				11CB49BE19F575520015C412 /* hq2x3x.cpp in Sources */,
 				11CB49BF19F575520015C412 /* assetmanager.cpp in Sources */,
 				11CB49C019F575520015C412 /* libc.c in Sources */,
@@ -3081,6 +3130,7 @@
 				60CA3A6F160713D300CFB3BD /* point.cpp in Sources */,
 				60CA3A70160713D300CFB3BD /* roomstruct.cpp in Sources */,
 				60CA3A71160713D300CFB3BD /* spritecache.cpp in Sources */,
+				144D76CE1D0742380074DF1B /* inifile.cpp in Sources */,
 				60CA3A72160713D300CFB3BD /* view.cpp in Sources */,
 				60CA3A73160713D300CFB3BD /* wordsdictionary.cpp in Sources */,
 				60CA3A74160713D300CFB3BD /* out.cpp in Sources */,
@@ -3145,6 +3195,7 @@
 				60CA3D45160713FF00CFB3BD /* cc_guiobject.cpp in Sources */,
 				60CA3D46160713FF00CFB3BD /* cc_hotspot.cpp in Sources */,
 				60CA3D47160713FF00CFB3BD /* cc_inventory.cpp in Sources */,
+				144D76C61D0741190074DF1B /* asset.cpp in Sources */,
 				60CA3D48160713FF00CFB3BD /* cc_object.cpp in Sources */,
 				60CA3D49160713FF00CFB3BD /* cc_region.cpp in Sources */,
 				60CA3D4A160713FF00CFB3BD /* cc_serializer.cpp in Sources */,
@@ -3159,6 +3210,7 @@
 				60CA3D53160713FF00CFB3BD /* scriptviewframe.cpp in Sources */,
 				60CA3D54160713FF00CFB3BD /* event.cpp in Sources */,
 				60CA3D55160713FF00CFB3BD /* file.cpp in Sources */,
+				144D76DA1D074A3D0074DF1B /* gfx_util.cpp in Sources */,
 				60CA3D56160713FF00CFB3BD /* game.cpp in Sources */,
 				60CA3D57160713FF00CFB3BD /* gamesetup.cpp in Sources */,
 				60CA3D58160713FF00CFB3BD /* gamestate.cpp in Sources */,
@@ -3241,6 +3293,7 @@
 				60CA3DA3160713FF00CFB3BD /* viewport.cpp in Sources */,
 				60CA3DA4160713FF00CFB3BD /* walkablearea.cpp in Sources */,
 				60CA3DA5160713FF00CFB3BD /* walkbehind.cpp in Sources */,
+				144D76D21D0742680074DF1B /* mutifilelib.cpp in Sources */,
 				60CA3DAB160713FF00CFB3BD /* consoleoutputtarget.cpp in Sources */,
 				60CA3DAC160713FF00CFB3BD /* debug.cpp in Sources */,
 				60CA3DAD160713FF00CFB3BD /* filebasedagsdebugger.cpp in Sources */,
@@ -3326,6 +3379,7 @@
 				60CA3E74160713FF00CFB3BD /* agsplugin.cpp in Sources */,
 				60CA3E75160713FF00CFB3BD /* global_plugin.cpp in Sources */,
 				60CA3E76160713FF00CFB3BD /* pluginobjectreader.cpp in Sources */,
+				144D76C21D073E7A0074DF1B /* speech.cpp in Sources */,
 				60CA3E7F160713FF00CFB3BD /* executingscript.cpp in Sources */,
 				60CA3E80160713FF00CFB3BD /* exports.cpp in Sources */,
 				60CA3E9F160713FF00CFB3BD /* script.cpp in Sources */,
@@ -3341,6 +3395,7 @@
 				60898D79160779DB009E152F /* AGSSpriteFont.cpp in Sources */,
 				60898D7C160779DB009E152F /* CharacterEntry.cpp in Sources */,
 				60898D7E160779DB009E152F /* color.cpp in Sources */,
+				144D76CA1D0741FF0074DF1B /* ini_util.cpp in Sources */,
 				60898D80160779DB009E152F /* SpriteFont.cpp in Sources */,
 				60898D82160779DB009E152F /* SpriteFontRenderer.cpp in Sources */,
 				60898D84160779DB009E152F /* VariableWidthFont.cpp in Sources */,
@@ -3350,6 +3405,7 @@
 				60898DC416078501009E152F /* aaudio.c in Sources */,
 				60898DCA160785CB009E152F /* gfxfilter_hq2x.cpp in Sources */,
 				60898DCC160785DD009E152F /* gfxfilter_hq3x.cpp in Sources */,
+				144D76D61D07493C0074DF1B /* logfile.cpp in Sources */,
 				60898DD6160787FF009E152F /* hq2x3x.cpp in Sources */,
 				6080428E1614DE8F00D33732 /* assetmanager.cpp in Sources */,
 				608B4E57163BF27B00547FAA /* libc.c in Sources */,

@@ -3514,6 +3514,7 @@
 		C01FCF4F08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				ENABLE_TESTABILITY = YES;
 				FRAMEWORK_SEARCH_PATHS = "${SOURCE_ROOT}/../../lib";
 				GCC_C_LANGUAGE_STANDARD = c99;
@@ -3537,19 +3538,22 @@
 				);
 				LIBRARY_SEARCH_PATHS = "${SOURCE_ROOT}/../../lib";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CPLUSPLUSFLAGS = (
 					"-fpermissive",
 					"$(OTHER_CFLAGS)",
 				);
 				SCAN_ALL_SOURCE_FILES_FOR_INCLUDES = NO;
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "${SOURCE_ROOT}/../include ${SOURCE_ROOT}/../../Plugins ${SOURCE_ROOT}/../../Common ${SOURCE_ROOT}/../../Common/libinclude ${SOURCE_ROOT}/../../Engine";
+				VALID_ARCHS = i386;
 			};
 			name = Debug;
 		};
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				FRAMEWORK_SEARCH_PATHS = "${SOURCE_ROOT}/../../lib";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -3570,13 +3574,16 @@
 				);
 				LIBRARY_SEARCH_PATHS = "${SOURCE_ROOT}/../../lib";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				OTHER_CPLUSPLUSFLAGS = (
 					"-fpermissive",
 					"$(OTHER_CFLAGS)",
 				);
 				SCAN_ALL_SOURCE_FILES_FOR_INCLUDES = NO;
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "${SOURCE_ROOT}/../include ${SOURCE_ROOT}/../../Plugins ${SOURCE_ROOT}/../../Common ${SOURCE_ROOT}/../../Common/libinclude ${SOURCE_ROOT}/../../Engine";
+				VALID_ARCHS = i386;
 			};
 			name = Release;
 		};

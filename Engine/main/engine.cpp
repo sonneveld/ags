@@ -178,10 +178,16 @@ bool engine_check_run_setup(ConfigTree &cfg, int argc,char*argv[])
     {
             Out::FPrint("Running Setup");
 
-            SetupReturnValue res = platform->RunSetup(cfg);
+            // Add information about game resolution and let setup application
+            // display some properties to the user
+            INIwriteint(cfg, "misc", "defaultres", game.default_resolution);
+            INIwriteint(cfg, "misc", "letterbox", game.options[OPT_LETTERBOX]);
+
+            ConfigTree cfg_out;
+            SetupReturnValue res = platform->RunSetup(cfg, cfg_out);
             if (res != kSetup_Cancel)
             {
-                if (!IniUtil::Merge(ac_config_file, cfg))
+                if (!IniUtil::Merge(ac_config_file, cfg_out))
                 {
                     platform->DisplayAlert("Unable to write to the configuration file (error code 0x%08X).\n%s",
                         platform->GetLastSystemError(), platform->GetFileWriteTroubleshootingText());
@@ -198,7 +204,6 @@ bool engine_check_run_setup(ConfigTree &cfg, int argc,char*argv[])
             char quotedpath[255];
             sprintf (quotedpath, "\"%s\"", argv[0]);
             _spawnl (_P_OVERLAY, argv[0], quotedpath, NULL);
-            //read_config_file(argv[0]);
     }
 #endif
 
@@ -308,9 +313,25 @@ void initialise_game_file_name()
         }
     }
     // 2. From setup
+    // 2.1. Use the provided data dir and filename
     else if (!usetup.main_data_filename.IsEmpty())
     {
-        game_file_name = usetup.main_data_filename;
+        if (!usetup.data_files_dir.IsEmpty() && is_relative_filename(usetup.main_data_filename))
+        {
+            game_file_name = usetup.data_files_dir;
+            if (game_file_name.GetLast() != '/' && game_file_name.GetLast() != '\\')
+                game_file_name.AppendChar('/');
+            game_file_name.Append(usetup.main_data_filename);
+        }
+        else
+        {
+            game_file_name = usetup.main_data_filename;
+        }
+    }
+    // 2.2. Search in the provided data dir
+    else if (!usetup.data_files_dir.IsEmpty())
+    {
+        game_file_name = find_game_data_in_directory(usetup.data_files_dir);
     }
     // 3. Look in known locations
     else
@@ -391,7 +412,7 @@ bool engine_init_game_data()
     usetup.main_data_filename = get_filename(game_file_name);
     // There is a path in the game file name (and the user/ has not specified
     // another one) save the path, so that it can load the VOX files, etc
-    if (usetup.data_files_dir.Compare(".") == 0)
+    if (usetup.data_files_dir.IsEmpty())
     {
         int ichar = game_file_name.FindCharReverse('/');
         if (ichar >= 0)
@@ -1333,6 +1354,7 @@ bool engine_read_config(ConfigTree &cfg, int argc,char*argv[])
     // Read default configuration file
     our_eip = -200;
     load_default_config_file(cfg, argv[0]);
+    read_game_data_location(cfg);
     // Deduce the game data file location
     if (!engine_init_game_data())
         return false;

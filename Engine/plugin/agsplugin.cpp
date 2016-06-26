@@ -12,6 +12,8 @@
 //
 //=============================================================================
 
+#include <vector>
+
 #include "util/wgt2allg.h"
 #include "plugin/agsplugin.h"
 #include "gfx/ali3d.h"
@@ -66,7 +68,6 @@ namespace BitmapHelper = AGS::Common::BitmapHelper;
 #include "../Plugins/agsblend/agsblend.h"
 #include "../Plugins/ags_snowrain/ags_snowrain.h"
 #include "../Plugins/ags_parallax/ags_parallax.h"
-#include "../Plugins/agswadjetutil/agswadjetutil.h"
 #if defined(IOS_VERSION)
 #include "../Plugins/agstouch/agstouch.h"
 #endif // IOS_VERSION
@@ -158,6 +159,8 @@ struct EnginePlugin {
 EnginePlugin plugins[MAXPLUGINS];
 int numPlugins = 0;
 int pluginsWantingDebugHooks = 0;
+
+std::vector<InbuiltPluginDetails> _registered_builtin_plugins;
 
 void IAGSEngine::AbortGame (const char *reason) {
     quit ((char*)reason);
@@ -860,6 +863,11 @@ void pl_run_plugin_init_gfx_hooks (const char *driverName, void *data) {
     }
 }
 
+int pl_register_builtin_plugin(InbuiltPluginDetails details) {
+    _registered_builtin_plugins.push_back(details);
+    return 0;
+}
+
 bool pl_use_builtin_plugin(EnginePlugin* apl)
 {
 #if defined(BUILTIN_PLUGINS)
@@ -907,17 +915,6 @@ bool pl_use_builtin_plugin(EnginePlugin* apl)
         apl->builtin = true;
         return true;
     }
-  else if (strncmp(apl->filename, "agswadjetutil", strlen("agswadjetutil")) == 0)
-  {
-    apl->engineStartup = agswadjetutil::AGS_EngineStartup;
-    apl->engineShutdown = agswadjetutil::AGS_EngineShutdown;
-    apl->onEvent = agswadjetutil::AGS_EngineOnEvent;
-    apl->debugHook = agswadjetutil::AGS_EngineDebugHook;
-    apl->initGfxHook = agswadjetutil::AGS_EngineInitGfx;
-    apl->available = true;
-    apl->builtin = true;
-    return true;
-  }
 #if defined(IOS_VERSION)
     else if (strncmp(apl->filename, "agstouch", strlen("agstouch")) == 0)
     {
@@ -933,14 +930,28 @@ bool pl_use_builtin_plugin(EnginePlugin* apl)
 #endif // IOS_VERSION
 #endif // BUILTIN_PLUGINS
 
+    for(std::vector<InbuiltPluginDetails>::iterator it = _registered_builtin_plugins.begin(); it != _registered_builtin_plugins.end(); ++it) {
+        if (strncmp(apl->filename, it->filename, strlen(it->filename)) == 0) {
+            apl->engineStartup = it->engineStartup;
+            apl->engineShutdown = it->engineShutdown;
+            apl->onEvent = it->onEvent;
+            apl->debugHook = it->debugHook;
+            apl->initGfxHook = it->initGfxHook;
+            apl->available = true;
+            apl->builtin = true;
+            return true;
+        }
+    }
+    
     AGS::Common::Out::FPrint("No built-in plugin found. Plugin loading failed!");
     return false;
 }
 
 void pl_read_plugins_from_disk (Stream *in) {
+    
     if (in->ReadInt32() != 1)
         quit("ERROR: unable to load game, invalid version of plugin data");
-
+    
     int a, datasize;
     char buffer[200];
     numPlugins = in->ReadInt32();

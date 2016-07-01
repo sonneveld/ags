@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 245be10..51b6503 100644
+index 245be10..105c923 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -65,7 +65,7 @@ if(WIN32)
@@ -11,6 +11,15 @@ index 245be10..51b6503 100644
  string(REGEX MATCH "^[0-9]+[.][0-9]+" ALLEGRO_SOVERSION ${ALLEGRO_VERSION})
  
  # Mac OS X -compatibility_version.
+@@ -95,7 +95,7 @@ include(Common)
+ # Build options
+ #
+ 
+-option(SHARED "Build shared library for main Allegro library" on)
++option(SHARED "Build shared library for main Allegro library and addons" on)
+ set(BUILD_SHARED_LIBS ${SHARED})    # actual CMake variable
+ 
+ # On some 64-bit platforms, libraries should be installed into `lib64'
 @@ -107,6 +107,7 @@ option(MAGIC_MAIN "Enable magic main (Unix)" off)
  option(WANT_FRAMEWORKS "Want frameworks on Mac OS X" off)
  option(WANT_EMBED
@@ -93,6 +102,25 @@ index 245be10..51b6503 100644
  	)
  endif(ALLEGRO_MACOSX)
  
+@@ -907,12 +937,17 @@ option(WANT_LOADPNG "Enable loadpng" on)
+ option(WANT_LOGG "Enable logg" on)
+ option(WANT_JPGALLEG "Enable JPGAlleg" on)
+ 
+-if(WANT_FRAMEWORKS)
++if (BUILD_SHARED_LIBS)
+     set(ADDON_LINKAGE SHARED)
+ else()
+     set(ADDON_LINKAGE STATIC)
+ endif()
+ 
++if(WANT_FRAMEWORKS)
++    set(ADDON_LINKAGE SHARED)
++endif()
++
++
+ if(WANT_ALLEGROGL)
+     add_subdirectory(addons/allegrogl)
+ endif()
 diff --git a/addons/allegrogl/src/fontconv.c b/addons/allegrogl/src/fontconv.c
 index a660d30..ee363ff 100644
 --- a/addons/allegrogl/src/fontconv.c
@@ -1259,7 +1287,7 @@ index 0000000..4d18946
 +#endif
 +
 diff --git a/include/allegro/platform/aintosx.h b/include/allegro/platform/aintosx.h
-index dcd21b2..579971f 100644
+index dcd21b2..9c9a408 100644
 --- a/include/allegro/platform/aintosx.h
 +++ b/include/allegro/platform/aintosx.h
 @@ -42,6 +42,7 @@
@@ -1292,7 +1320,7 @@ index dcd21b2..579971f 100644
  @end
  
  
-@@ -81,11 +86,16 @@
+@@ -81,11 +86,15 @@
  - (void)windowDidDeminiaturize: (NSNotification *)aNotification;
  @end
  
@@ -1303,14 +1331,21 @@ index dcd21b2..579971f 100644
  @end
 +#endif
  
-+@interface AllegroCocoaGLView: NSOpenGLView
-+- (void)resetCursorRects;
-+- (id) initWithFrame: (NSRect) frame windowed:(BOOL)windowed;
-+@end
++// @interface AllegroCocoaGLView: NSOpenGLView
++// - (id) initWithFrame: (NSRect) frame windowed:(BOOL)windowed;
++// @end
  
  typedef void RETSIGTYPE;
  
-@@ -160,6 +170,7 @@ void osx_mouse_move(int x, int y);
+@@ -129,7 +138,6 @@ typedef struct
+ 
+ 
+ void osx_event_handler(void);
+-int osx_bootstrap_ok(void);
+ 
+ void setup_direct_shifts(void);
+ void osx_init_fade_system(void);
+@@ -160,6 +168,7 @@ void osx_mouse_move(int x, int y);
  HID_DEVICE_COLLECTION *osx_hid_scan(int type, HID_DEVICE_COLLECTION*);
  void osx_hid_free(HID_DEVICE_COLLECTION *);
  
@@ -1318,7 +1353,7 @@ index dcd21b2..579971f 100644
  
  AL_VAR(NSBundle *, osx_bundle);
  AL_VAR(void *, osx_event_mutex);
-@@ -173,7 +184,9 @@ AL_ARRAY(char, osx_window_title);
+@@ -173,7 +182,9 @@ AL_ARRAY(char, osx_window_title);
  AL_VAR(int, osx_window_first_expose);
  AL_VAR(int, osx_skip_events_processing);
  AL_VAR(void *, osx_skip_events_processing_mutex);
@@ -1624,7 +1659,7 @@ index 894bacb..df56485 100644
        return 1;
     }
 diff --git a/src/config.c b/src/config.c
-index 7824a09..1083fcc 100644
+index 7824a09..c49d424 100644
 --- a/src/config.c
 +++ b/src/config.c
 @@ -1,6 +1,6 @@
@@ -1739,7 +1774,7 @@ index 7824a09..1083fcc 100644
  void free_config_entries(AL_CONST char ***names)
  {
 -    _AL_FREE(*names);
-+    _AL_FREE((void *)*names);
++    _AL_FREE(*((char***)(names)));
      *names = NULL;
  }
 diff --git a/src/digmid.c b/src/digmid.c
@@ -4125,10 +4160,20 @@ index 56f60da..c433268 100644
   */
  void remove_keyboard(void)
 diff --git a/src/linux/ljoy.c b/src/linux/ljoy.c
-index 283b809..12e2306 100644
+index 283b809..75c49bb 100644
 --- a/src/linux/ljoy.c
 +++ b/src/linux/ljoy.c
-@@ -93,7 +93,7 @@ static int joy_init(void)
+@@ -53,9 +53,6 @@ static int joy_init(void)
+    AL_CONST char *device_name = NULL;
+    char tmp[128], tmp1[128], tmp2[128];
+    unsigned int raw_version;
+-   struct {
+-      unsigned char build, minor, major;
+-   } version;
+    char num_axes, num_buttons;
+    int throttle;
+    int i, s, a, b;
+@@ -93,14 +90,10 @@ static int joy_init(void)
  
        if (ioctl(joy_fd[i], JSIOCGVERSION, &raw_version) < 0) {
           /* NOTE: IOCTL fails if the joystick API is version 0.x */
@@ -4137,6 +4182,13 @@ index 283b809..12e2306 100644
           return -1; 
        }
        
+-      version.major = (raw_version & 0xFF0000) >> 16;
+-      version.minor = (raw_version & 0xFF00) >> 8;
+-      version.build = (raw_version & 0xFF);
+-      
+       ioctl(joy_fd[i], JSIOCGAXES, &num_axes);
+       ioctl(joy_fd[i], JSIOCGBUTTONS, &num_buttons);
+ 
 diff --git a/src/linux/lmsedrv.c b/src/linux/lmsedrv.c
 index ce2bfbf..0cc7bb8 100644
 --- a/src/linux/lmsedrv.c
@@ -4329,10 +4381,10 @@ index 0000000..35b7631
 +#endif
 diff --git a/src/macosx/cocoagl.m b/src/macosx/cocoagl.m
 new file mode 100644
-index 0000000..a933d84
+index 0000000..db8ff61
 --- /dev/null
 +++ b/src/macosx/cocoagl.m
-@@ -0,0 +1,493 @@
+@@ -0,0 +1,574 @@
 +/*         ______   ___    ___ 
 + *        /\  _  \ /\_ \  /\_ \ 
 + *        \ \ \L\ \\//\ \ \//\ \      __     __   _ __   ___ 
@@ -4364,6 +4416,8 @@ index 0000000..a933d84
 +#define PREFIX_I "al-osxgl INFO: "
 +#define PREFIX_W "al-osxgl WARNING: "
 +
++@class AllegroCocoaGLView;
++
 +static BITMAP *osx_gl_window_init(int, int, int, int, int);
 +static void osx_gl_window_exit(BITMAP *);
 +
@@ -4371,29 +4425,6 @@ index 0000000..a933d84
 +static void osx_gl_full_exit(BITMAP *);
 +
 +static void gfx_cocoa_enable_acceleration(GFX_VTABLE *vtable);
-+
-+
-+// private bitmap that is actually rendered to
-+static BITMAP *displayed_video_bitmap;
-+
-+//other vars
-+static AllegroWindowDelegate *osx_window_delegate = NULL;
-+static AllegroCocoaGLView *osx_gl_view = NULL;
-+static NSOpenGLContext *osx_gl_context;
-+
-+static NSOpenGLPixelFormat *init_pixel_format(int windowed);
-+static void osx_gl_setup(GFX_DRIVER*);
-+static void osx_gl_destroy();
-+static void osx_gl_create_screen_texture(int width, int height, int color_depth);
-+static void osx_gl_setup_arrays(int width, int height);
-+static void osx_gl_render();
-+
-+static GLuint osx_screen_texture = 0;
-+static int osx_screen_color_depth = 0;
-+static GLuint osx_texture_format = GL_RGBA;
-+static GLenum osx_texture_storage = GL_UNSIGNED_BYTE;
-+
-+static CVDisplayLinkRef displayLink;
 +
 +GFX_DRIVER gfx_cocoagl_window =
 +{
@@ -4472,11 +4503,6 @@ index 0000000..a933d84
 +};
 +
 +
-+static CVReturn display_link_render_callback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* displayLinkContext)
-+{
-+    osx_gl_render();
-+    return kCVReturnSuccess;
-+}
 +
 +static BITMAP *osx_gl_real_init(int w, int h, int v_w, int v_h, int color_depth, GFX_DRIVER * driver)
 +{
@@ -4487,8 +4513,7 @@ index 0000000..a933d84
 +    if (color_depth != 32 && color_depth != 16)
 +        ustrzcpy(allegro_error, ALLEGRO_ERROR_SIZE, get_config_text("Unsupported color depth"));
 +
-+    displayed_video_bitmap = create_bitmap_ex(color_depth, w, h);
-+    osx_screen_color_depth = color_depth;
++    BITMAP *displayed_video_bitmap = create_bitmap_ex(color_depth, w, h);
 +
 +    driver->w = w;
 +    driver->h = h;
@@ -4501,11 +4526,11 @@ index 0000000..a933d84
 +
 +    // setup REAL window
 +    NSRect rect = NSMakeRect(0, 0, w, h);
-+    NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask;
-+    if (is_fullscreen) {
-+        rect = [[NSScreen mainScreen] frame];
-+        styleMask = NSBorderlessWindowMask;
-+    }
++    NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask;
++    //if (is_fullscreen) {
++      //  rect = [[NSScreen mainScreen] frame];
++      //  styleMask = NSBorderlessWindowMask;
++    //}
 +
 +    osx_window = [[AllegroWindow alloc] initWithContentRect: rect
 +                                                  styleMask: styleMask
@@ -4513,70 +4538,36 @@ index 0000000..a933d84
 +                                                      defer: NO
 +                                                     screen:[NSScreen mainScreen]];
 +
-+    osx_window_delegate = [[AllegroWindowDelegate alloc] init] ;
++    AllegroWindowDelegate *osx_window_delegate = [[AllegroWindowDelegate alloc] init];
 +    [osx_window setDelegate: (id<NSWindowDelegate>)osx_window_delegate];
 +    [osx_window setOneShot: YES];
 +    [osx_window setAcceptsMouseMovedEvents: YES];
 +    [osx_window setViewsNeedDisplay: NO];
++    [osx_window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
++
++    [osx_window center];
 +    if (is_fullscreen) {
-+        [osx_window setLevel:NSMainMenuWindowLevel+1];
-+        // [osx_window setLevel:CGShieldingWindowLevel()];
-+        [osx_window setOpaque:YES];
-+        [osx_window setHidesOnDeactivate:YES];
-+    } else {
-+        [osx_window center];
++        [osx_window  toggleFullScreen:nil];
++//        [osx_window setLevel:NSMainMenuWindowLevel+1];
++//        [osx_window setOpaque:YES];
++//        [osx_window setHidesOnDeactivate:YES];
 +    }
 +
 +    set_window_title(osx_window_title);
 +
-+    osx_gl_view = [[AllegroCocoaGLView alloc] initWithFrame: rect windowed:driver->windowed];
++    AllegroCocoaGLView *osx_gl_view = [[[AllegroCocoaGLView alloc] initWithFrame: rect windowed:driver->windowed backing: displayed_video_bitmap] autorelease];
 +    [osx_window setContentView: osx_gl_view];
 +
 +    [osx_window makeKeyAndOrderFront: nil];
 +
-+    osx_gl_context = [[osx_gl_view openGLContext] retain];
-+
-+    /* Print out OpenGL version info */
-+    TRACE(PREFIX_I "OpenGL Version: %s\n",
-+          (AL_CONST char*)glGetString(GL_VERSION));
-+    TRACE(PREFIX_I "Vendor: %s\n",
-+          (AL_CONST char*)glGetString(GL_VENDOR));
-+    TRACE(PREFIX_I "Renderer: %s\n",
-+          (AL_CONST char*)glGetString(GL_RENDERER));
-+
-+    // enable vsync
-+    GLint swapInt = 1;
-+    [osx_gl_context setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
++    });
 +
 +    osx_keyboard_focused(FALSE, 0);
 +    clear_keybuf();
 +
-+    osx_gl_setup(driver);
-+
-+    [osx_gl_context flushBuffer];
-+
-+    if (!is_fullscreen) {
-+        osx_mouse_tracking_rect = [osx_gl_view addTrackingRect: rect
-+                                                         owner: NSApp
-+                                                      userData: nil
-+                                                  assumeInside: YES];
-+    }
-+
-+    CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
-+
-+    CVDisplayLinkSetOutputCallback(displayLink, &display_link_render_callback, nil);
-+
-+    CGLContextObj cglContext = [osx_gl_context CGLContextObj];
-+    CGLPixelFormatObj cglPixelFormat = [[osx_gl_view pixelFormat] CGLPixelFormatObj];
-+    CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, cglContext, cglPixelFormat);
-+
-+    CVDisplayLinkStart(displayLink);
-+
-+    });
-+
-+    osx_gfx_mode = OSX_GFX_GL;
 +    osx_skip_mouse_move = TRUE;
 +    osx_window_first_expose = TRUE;
++    osx_gfx_mode = OSX_GFX_GL;
 +
 +    return displayed_video_bitmap;
 +}
@@ -4602,27 +4593,15 @@ index 0000000..a933d84
 +static void osx_gl_window_exit(BITMAP *bmp)
 +{
 +    runOnMainQueueWithoutDeadlocking(^{
-+
-+    if (osx_window) {
-+        CVDisplayLinkRelease(displayLink);
-+        displayLink = nil;
-+
-+        osx_gl_destroy();
-+
-+        [osx_gl_context release];
-+        osx_gl_context = nil;
-+
-+        [osx_gl_view release];
-+        osx_gl_view = nil;
-+
-+        [osx_window close];
-+        osx_window = nil;
-+    }
-+//    destroy_bitmap(displayed_video_bitmap);
-+    displayed_video_bitmap = NULL;
-+    osx_gfx_mode = OSX_GFX_NONE;
-+
++        if (osx_window) {
++            [[osx_window contentView] stopRendering];
++            
++            [osx_window close];
++            osx_window = nil;
++        }
 +    });
++
++    osx_gfx_mode = OSX_GFX_NONE;
 +}
 +
 +
@@ -4640,134 +4619,6 @@ index 0000000..a933d84
 +    gfx_capabilities |= (GFX_HW_VRAM_BLIT | GFX_HW_MEM_BLIT);
 +}
 +
-+struct MyVertex {
-+    GLfloat x;
-+    GLfloat y;
-+};
-+static struct MyVertex gl_VertexCoords[4];
-+static struct MyVertex gl_TextureCoords[4];
-+
-+static void osx_gl_setup(GFX_DRIVER * driver)
-+{
-+    glEnable(GL_CULL_FACE);
-+    glEnable(GL_TEXTURE_RECTANGLE_ARB);
-+   // glEnable(GL_TEXTURE_2D);
-+   // glDisable(GL_DEPTH_TEST);
-+   // glDisable(GL_LIGHTING);
-+   // glDisable(GL_BLEND);
-+   // glDisable(GL_SCISSOR_TEST);
-+    glShadeModel(GL_FLAT);
-+
-+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-+
-+    glViewport(0, 0, driver->w, driver->h);
-+    glScissor(0, 0, driver->w, driver->h);
-+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-+    glClear(GL_COLOR_BUFFER_BIT);
-+
-+    glEnableClientState(GL_VERTEX_ARRAY);
-+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
-+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-+    glVertexPointer(2, GL_FLOAT, sizeof(struct MyVertex), (const GLvoid*)&gl_VertexCoords[0]);
-+    glTexCoordPointer(2, GL_FLOAT, sizeof(struct MyVertex), (const GLvoid*)&gl_TextureCoords[0]);
-+
-+   glActiveTexture(GL_TEXTURE0);
-+
-+    osx_gl_create_screen_texture(driver->w, driver->h, osx_screen_color_depth);
-+    osx_gl_setup_arrays(driver->w, driver->h);
-+
-+    glMatrixMode(GL_PROJECTION);
-+    glLoadIdentity();
-+
-+    glOrtho(0, driver->w - 1, 0, driver->h - 1, 0, 1);
-+
-+    glMatrixMode(GL_MODELVIEW);
-+    glLoadIdentity();
-+}
-+
-+static void osx_gl_destroy()
-+{
-+    if (osx_screen_texture != 0)
-+    {
-+        glDeleteTextures(1, &osx_screen_texture);
-+        osx_screen_texture = 0;
-+    }
-+}
-+
-+static void osx_gl_create_screen_texture(int width, int height, int color_depth)
-+{
-+    if (osx_screen_texture != 0)
-+    {
-+        glDeleteTextures(1, &osx_screen_texture);
-+        osx_screen_texture = 0;
-+    }
-+
-+    switch (color_depth) {
-+        case 16:
-+            osx_texture_format = GL_RGB;
-+            osx_texture_storage = GL_UNSIGNED_SHORT_5_6_5;
-+            break;
-+        case 32:
-+            osx_texture_format = GL_RGBA;
-+            osx_texture_storage = GL_UNSIGNED_BYTE;
-+            break;
-+        default:
-+            TRACE(PREFIX_I "unsupported color depth\n");
-+            return;
-+    }
-+
-+    glGenTextures(1, &osx_screen_texture);
-+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, osx_screen_texture);
-+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-+    glTexImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, GL_RGB, width, height, 0, osx_texture_format, osx_texture_storage, NULL);
-+}
-+
-+static void osx_gl_setup_arrays(int width, int height)
-+{
-+    gl_VertexCoords[0].x = 0;
-+    gl_VertexCoords[0].y = 0;
-+    gl_TextureCoords[0].x = 0;
-+    gl_TextureCoords[0].y = height;
-+
-+    gl_VertexCoords[1].x = width;
-+    gl_VertexCoords[1].y = 0;
-+    gl_TextureCoords[1].x = width;
-+    gl_TextureCoords[1].y = height;
-+
-+    gl_VertexCoords[2].x = 0;
-+    gl_VertexCoords[2].y = height;
-+    gl_TextureCoords[2].x = 0;
-+    gl_TextureCoords[2].y = 0;
-+
-+    gl_VertexCoords[3].x = width;
-+    gl_VertexCoords[3].y = height;
-+    gl_TextureCoords[3].x = width;
-+    gl_TextureCoords[3].y = 0;
-+}
-+
-+static void osx_gl_render()
-+{
-+    if (!gfx_driver) return;
-+
-+    if (gfx_driver->id != GFX_COCOAGL_WINDOW && gfx_driver->id != GFX_COCOAGL_FULLSCREEN) return;
-+
-+    if (osx_gl_context) {
-+        [osx_gl_context makeCurrentContext];
-+        glTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
-+                        0, 0, gfx_driver->w, gfx_driver->h,
-+                        osx_texture_format, osx_texture_storage, displayed_video_bitmap->line[0]);
-+
-+        glClear(GL_COLOR_BUFFER_BIT);
-+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-+
-+        glFinish();
-+        [osx_gl_context flushBuffer];
-+        [NSOpenGLContext clearCurrentContext];
-+    }
-+}
 +
 +/* NSOpenGLPixelFormat *init_pixel_format(int windowed)
 + *
@@ -4787,16 +4638,50 @@ index 0000000..a933d84
 +    *attrib++ = NSOpenGLPFAColorSize;
 +    *attrib++ = 16;
 +
-+   if (!windowed) {
-+      *attrib++ = NSOpenGLPFAScreenMask;
-+      *attrib++ = CGDisplayIDToOpenGLDisplayMask(kCGDirectMainDisplay);
-+   }
++//   if (!windowed) {
++//      *attrib++ = NSOpenGLPFAScreenMask;
++//      *attrib++ = CGDisplayIDToOpenGLDisplayMask(kCGDirectMainDisplay);
++//   }
 +   *attrib = 0;
 +
 +   NSOpenGLPixelFormat *pf = [[NSOpenGLPixelFormat alloc] initWithAttributes: attribs];
 +
 +   return pf;
 +}
++
++static CVReturn display_link_render_callback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* displayLinkContext)
++{
++    @autoreleasepool {
++        [((AllegroCocoaGLView *)displayLinkContext) render];
++    }
++    return kCVReturnSuccess;
++}
++
++struct MyVertex {
++    GLfloat x;
++    GLfloat y;
++};
++
++@interface AllegroCocoaGLView: NSOpenGLView {
++
++    BITMAP *_displayed_video_bitmap;
++
++    int _gameWidth;
++    int _gameHeight;
++    int _colourDepth;
++
++    GLuint _osx_screen_texture;
++    int _osx_screen_color_depth;
++    GLuint _osx_texture_format;
++    GLenum _osx_texture_storage;
++
++    CVDisplayLinkRef _displayLink;
++
++    struct MyVertex _gl_VertexCoords[4];
++    struct MyVertex _gl_TextureCoords[4];
++}
++
++@end
 +
 +@implementation AllegroCocoaGLView
 +
@@ -4810,8 +4695,13 @@ index 0000000..a933d84
 +}
 +
 +/* Custom view: when created, select a suitable pixel format */
-+- (id) initWithFrame: (NSRect) frame windowed:(BOOL)windowed
++- (id) initWithFrame: (NSRect) frame windowed:(BOOL)windowed backing: (BITMAP *) bmp
 +{
++    _displayed_video_bitmap = bmp;
++    _gameWidth = bmp->w;
++    _gameHeight = bmp->h;
++    _colourDepth = bmp->vtable->color_depth;
++
 +   NSOpenGLPixelFormat* pf = init_pixel_format(windowed);
 +   if (pf) {
 +        self = [super initWithFrame:frame pixelFormat: pf];
@@ -4822,7 +4712,250 @@ index 0000000..a933d84
 +   {
 +        TRACE(PREFIX_W "Unable to find suitable pixel format\n");
 +   }
++
 +   return nil;
++}
++
++- (void)renewGState
++{   
++    // Called whenever graphics state updated (such as window resize)
++    
++    // OpenGL rendering is not synchronous with other rendering on the OSX.
++    // Therefore, call disableScreenUpdatesUntilFlush so the window server
++    // doesn't render non-OpenGL content in the window asynchronously from
++    // OpenGL content, which could cause flickering.  (non-OpenGL content
++    // includes the title bar and drawing done by the app with other APIs)
++    [[self window] disableScreenUpdatesUntilFlush];
++
++    [super renewGState];
++}
++
++- (void)stopRendering
++{
++    CVDisplayLinkStop(_displayLink);
++
++    CVDisplayLinkRelease(_displayLink);
++    _displayLink = nil;
++    
++    CGLLockContext([[self openGLContext] CGLContextObj]);
++    @try {
++        [[self openGLContext] makeCurrentContext];
++        
++        _displayed_video_bitmap = nil;
++        
++        [self delete_osx_screen_texture];
++        
++        [NSOpenGLContext clearCurrentContext];
++    } @finally {
++        CGLUnlockContext([[self openGLContext] CGLContextObj]);
++    }
++
++    if (osx_mouse_tracking_rect != -1) {
++      [self removeTrackingRect: osx_mouse_tracking_rect];
++    }
++}
++
++- (void)dealloc
++{
++    [self stopRendering];
++
++    [super dealloc];
++
++}
++
++- (void)delete_osx_screen_texture
++{
++    if (_osx_screen_texture != 0)
++    {
++        glDeleteTextures(1, &_osx_screen_texture);
++        _osx_screen_texture = 0;
++    }  
++}
++
++- (void) prepareOpenGL 
++{
++    [super prepareOpenGL];
++    
++    /* Print out OpenGL version info */
++    TRACE(PREFIX_I "OpenGL Version: %s\n", (AL_CONST char*)glGetString(GL_VERSION));
++    TRACE(PREFIX_I "Vendor: %s\n", (AL_CONST char*)glGetString(GL_VENDOR));
++    TRACE(PREFIX_I "Renderer: %s\n", (AL_CONST char*)glGetString(GL_RENDERER));
++
++    // enable vsync
++    GLint swapInt = 1;
++    [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
++
++    [self osx_gl_setup];
++
++    [[self openGLContext] flushBuffer];
++
++    CVDisplayLinkCreateWithActiveCGDisplays(&_displayLink);
++
++    CVDisplayLinkSetOutputCallback(_displayLink, &display_link_render_callback, self);
++
++    // Select the display link most optimal for the current renderer of an OpenGL context
++    CGLContextObj cglContext = [[self openGLContext] CGLContextObj];
++    CGLPixelFormatObj cglPixelFormat = [[self pixelFormat] CGLPixelFormatObj];
++    CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(_displayLink, cglContext, cglPixelFormat);
++
++    CVDisplayLinkStart(_displayLink);
++}
++
++- (void) osx_gl_setup
++{
++    [self osx_gl_setup_arrays];
++
++    glDisable(GL_DITHER);
++    glDisable(GL_ALPHA_TEST);
++    glDisable(GL_BLEND);
++    glDisable(GL_STENCIL_TEST);
++    glDisable(GL_FOG);
++    glDisable(GL_TEXTURE_2D);
++    glDisable(GL_DEPTH_TEST);
++    glPixelZoom(1.0,1.0);
++
++    glShadeModel(GL_FLAT);
++    glEnable(GL_TEXTURE_RECTANGLE_ARB);
++
++    [self reshape];
++
++    glEnableClientState(GL_VERTEX_ARRAY);
++    glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
++    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
++    glVertexPointer(2, GL_FLOAT, sizeof(struct MyVertex), (const GLvoid*)&_gl_VertexCoords[0]);
++    glTexCoordPointer(2, GL_FLOAT, sizeof(struct MyVertex), (const GLvoid*)&_gl_TextureCoords[0]);
++
++    glActiveTexture(GL_TEXTURE0);
++    [self osx_gl_create_screen_texture];
++}
++
++- (void) osx_gl_create_screen_texture
++{
++    [self delete_osx_screen_texture];
++
++    switch (_colourDepth) {
++        case 16:
++            _osx_texture_format = GL_RGB;
++            _osx_texture_storage = GL_UNSIGNED_SHORT_5_6_5;
++            break;
++        case 32:
++            _osx_texture_format = GL_RGBA;
++            _osx_texture_storage = GL_UNSIGNED_BYTE;
++            break;
++        default:
++            TRACE(PREFIX_I "unsupported color depth\n");
++            return;
++    }
++
++    glGenTextures(1, &_osx_screen_texture);
++    glBindTexture(GL_TEXTURE_RECTANGLE_ARB, _osx_screen_texture);
++    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++    glTexImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, GL_RGB, _gameWidth, _gameHeight, 0, _osx_texture_format, _osx_texture_storage, NULL);
++}
++
++- (void) osx_gl_setup_arrays
++{
++    _gl_VertexCoords[0].x = 0;
++    _gl_VertexCoords[0].y = 0;
++    _gl_TextureCoords[0].x = 0;
++    _gl_TextureCoords[0].y = _gameHeight;
++
++    _gl_VertexCoords[1].x = _gameWidth;
++    _gl_VertexCoords[1].y = 0;
++    _gl_TextureCoords[1].x = _gameWidth;
++    _gl_TextureCoords[1].y = _gameHeight;
++
++    _gl_VertexCoords[2].x = 0;
++    _gl_VertexCoords[2].y = _gameHeight;
++    _gl_TextureCoords[2].x = 0;
++    _gl_TextureCoords[2].y = 0;
++
++    _gl_VertexCoords[3].x = _gameWidth;
++    _gl_VertexCoords[3].y = _gameHeight;
++    _gl_TextureCoords[3].x = _gameWidth;
++    _gl_TextureCoords[3].y = 0;
++}
++
++- (void) drawRect: (NSRect) theRect
++{
++    [self render];
++}
++
++
++- (void) render
++{
++    [[self openGLContext] makeCurrentContext];
++    
++    CGLLockContext([[self openGLContext] CGLContextObj]);
++    @try {
++ 
++        if (!_displayed_video_bitmap) { return; }
++        
++        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++
++        glTexSubImage2D(GL_TEXTURE_RECTANGLE_EXT, 0,
++                        0, 0, _gameWidth, _gameHeight,
++                        _osx_texture_format, _osx_texture_storage, _displayed_video_bitmap->line[0]);
++
++        glClear(GL_COLOR_BUFFER_BIT);
++        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++
++        CGLFlushDrawable([[self openGLContext] CGLContextObj]);
++    } @finally {
++        CGLUnlockContext([[self openGLContext] CGLContextObj]);
++    }
++}
++
++
++- (void) reshape
++{
++    [super reshape];
++
++    if (osx_mouse_tracking_rect != -1) {
++      [self removeTrackingRect: osx_mouse_tracking_rect];
++    }
++
++    osx_mouse_tracking_rect = [self addTrackingRect: self.frame
++                                                     owner: NSApp
++                                                  userData: nil
++                                              assumeInside: YES];
++
++    CGLLockContext([[self openGLContext] CGLContextObj]);
++    @try {
++        [[self openGLContext] makeCurrentContext];
++
++        NSSize myNSWindowSize = [ self frame ].size;
++
++        float aspect = ((float)_gameHeight) /  _gameWidth;
++
++        /* if 320x200 or 640x400 - non square pixels */
++        if ( (_gameWidth == 320) && (_gameHeight == 200) ||
++            (_gameWidth == 640) && (_gameHeight == 400) ) {
++            aspect = 1.333333333333;
++        }
++
++        
++        NSRect viewport = NSMakeRect((myNSWindowSize.width - myNSWindowSize.height * aspect)/2, 0, myNSWindowSize.height * aspect, myNSWindowSize.height);
++        glViewport(viewport.origin.x, viewport.origin.y, viewport.size.width, viewport.size.height);
++        glScissor(viewport.origin.x, viewport.origin.y, viewport.size.width, viewport.size.height);
++        
++        glMatrixMode(GL_PROJECTION);
++        glLoadIdentity();
++        glOrtho(0, _gameWidth - 1, 0, _gameHeight - 1, 0, 1);
++
++        glMatrixMode(GL_MODELVIEW);
++        glLoadIdentity();
++
++        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++    } @finally {
++        CGLUnlockContext([[self openGLContext] CGLContextObj]);
++    }
++
 +}
 +
 +@end
@@ -4986,10 +5119,14 @@ index 9284d67..8f28f7f 100644
  
  
 diff --git a/src/macosx/main.m b/src/macosx/main.m
-index 33f60fa..3b988b4 100644
+index 33f60fa..602a3b9 100644
 --- a/src/macosx/main.m
 +++ b/src/macosx/main.m
-@@ -38,6 +38,8 @@ static int refresh_rate = 70;
+@@ -34,10 +34,11 @@ extern char **__crt0_argv;
+ extern void *_mangled_main_address;
+ 
+ static char *arg0, *arg1 = NULL;
+-static int refresh_rate = 70;
  
  static volatile BOOL ready_to_terminate = NO;
  
@@ -4998,7 +5135,7 @@ index 33f60fa..3b988b4 100644
  static BOOL in_bundle(void)
  {
     /* This comes from the ADC tips & tricks section: how to detect if the app
-@@ -48,12 +50,15 @@ static BOOL in_bundle(void)
+@@ -48,12 +49,15 @@ static BOOL in_bundle(void)
     FSCatalogInfo processInfo;
     GetProcessBundleLocation(&psn, &processRef);
     FSGetCatalogInfo(&processRef, kFSCatInfoNodeFlags, &processInfo, NULL, NULL, NULL);
@@ -5015,7 +5152,7 @@ index 33f60fa..3b988b4 100644
  @implementation AllegroAppDelegate
  
  - (BOOL)application: (NSApplication *)theApplication openFile: (NSString *)filename
-@@ -63,14 +68,13 @@ static BOOL in_bundle(void)
+@@ -63,14 +67,13 @@ static BOOL in_bundle(void)
  }
  
  
@@ -5031,7 +5168,7 @@ index 33f60fa..3b988b4 100644
     CFDictionaryRef mode;
     NSString* exename, *resdir;
     NSFileManager* fm;
-@@ -79,9 +83,8 @@ static BOOL in_bundle(void)
+@@ -79,9 +82,8 @@ static BOOL in_bundle(void)
     /* create mutex */
     osx_event_mutex = _unix_create_mutex();
     osx_skip_events_processing_mutex = _unix_create_mutex();
@@ -5043,7 +5180,7 @@ index 33f60fa..3b988b4 100644
     {
        /* In a bundle, so chdir to the containing directory,
         * or to the 'magic' resource directory if it exists.
-@@ -92,7 +95,7 @@ static BOOL in_bundle(void)
+@@ -92,7 +94,7 @@ static BOOL in_bundle(void)
        resdir = [[osx_bundle resourcePath] stringByAppendingPathComponent: exename];
        fm = [NSFileManager defaultManager];
        if ([fm fileExistsAtPath: resdir isDirectory: &isDir] && isDir) {
@@ -5052,7 +5189,7 @@ index 33f60fa..3b988b4 100644
            [fm changeCurrentDirectoryPath: resdir];
        }
        else {
-@@ -106,10 +109,10 @@ static BOOL in_bundle(void)
+@@ -106,10 +108,10 @@ static BOOL in_bundle(void)
        arg0 = strdup([[osx_bundle bundlePath] fileSystemRepresentation]);
        if (arg1) {
           static char *args[2];
@@ -5067,7 +5204,7 @@ index 33f60fa..3b988b4 100644
        }
        else {
           __crt0_argv = &arg0;
-@@ -117,39 +120,19 @@ static BOOL in_bundle(void)
+@@ -117,57 +119,19 @@ static BOOL in_bundle(void)
        }
     }
     /* else: not in a bundle so don't chdir */
@@ -5077,11 +5214,6 @@ index 33f60fa..3b988b4 100644
 -   if (refresh_rate <= 0)
 -      refresh_rate = 70;
 -   
-+
-+    mode = CGDisplayCurrentMode(kCGDirectMainDisplay);
-+    CFNumberGetValue(CFDictionaryGetValue(mode, kCGDisplayRefreshRate), kCFNumberSInt32Type, &refresh_rate);
-+    if (refresh_rate <= 0)
-+       refresh_rate = 70;
 +
 +    osx_add_event_monitor();
 +
@@ -5115,20 +5247,25 @@ index 33f60fa..3b988b4 100644
  /* applicationDidChangeScreenParameters:
   *  Invoked when the screen did change resolution/color depth.
   */
-@@ -157,12 +140,6 @@ static BOOL in_bundle(void)
+ - (void)applicationDidChangeScreenParameters: (NSNotification *)aNotification
  {
-    CFDictionaryRef mode;
-    int new_refresh_rate;
+-   CFDictionaryRef mode;
+-   int new_refresh_rate;
 -   
 -   if ((osx_window) && (osx_gfx_mode == OSX_GFX_WINDOW)) 
 -   {
 -      osx_setup_colorconv_blitter();
 -      [osx_window display];
 -   }
-    mode = CGDisplayCurrentMode(kCGDirectMainDisplay);
-    CFNumberGetValue(CFDictionaryGetValue(mode, kCGDisplayRefreshRate), kCFNumberSInt32Type, &new_refresh_rate);
-    if (new_refresh_rate <= 0)
-@@ -179,22 +156,22 @@ static void call_user_main(void)
+-   mode = CGDisplayCurrentMode(kCGDirectMainDisplay);
+-   CFNumberGetValue(CFDictionaryGetValue(mode, kCGDisplayRefreshRate), kCFNumberSInt32Type, &new_refresh_rate);
+-   if (new_refresh_rate <= 0)
+-      new_refresh_rate = 70;
+-   refresh_rate = new_refresh_rate;
+ }
+ 
+ 
+@@ -179,22 +143,22 @@ static void call_user_main(void)
     real_main(__crt0_argc, __crt0_argv);
     allegro_exit();
     ready_to_terminate = YES;
@@ -5157,7 +5294,7 @@ index 33f60fa..3b988b4 100644
  /* applicationShouldTerminate:
   *  Called upon Command-Q or "Quit" menu item selection.
   *  If the window close callback is set, calls it, otherwise does
-@@ -242,37 +219,23 @@ static void call_user_main(void)
+@@ -242,37 +206,23 @@ static void call_user_main(void)
  
  
  
@@ -5202,7 +5339,7 @@ index 33f60fa..3b988b4 100644
  
     /* Load the main menu nib if possible */
     if ((!in_bundle()) || ([NSBundle loadNibNamed: @"MainMenu"
-@@ -281,39 +244,40 @@ int main(int argc, char *argv[])
+@@ -281,39 +231,40 @@ int main(int argc, char *argv[])
         /* Didn't load the nib; create a default menu programmatically */
         NSString* title = nil;
         NSDictionary* app_dictionary = [[NSBundle mainBundle] infoDictionary];
@@ -5560,10 +5697,19 @@ index 8e4a606..e62e6ae 100644
  /* c-basic-offset: 3      */
  /* indent-tabs-mode: nil  */
 diff --git a/src/macosx/system.m b/src/macosx/system.m
-index 1b01839..70e6547 100644
+index 1b01839..3ff7bdf 100644
 --- a/src/macosx/system.m
 +++ b/src/macosx/system.m
-@@ -137,26 +137,31 @@ SYSTEM_DRIVER system_macosx =
+@@ -26,8 +26,6 @@
+ 
+ #ifndef SCAN_DEPEND
+ #include <CoreFoundation/CoreFoundation.h>
+-#include <mach/mach_port.h>
+-#include <servers/bootstrap.h>
+ #endif
+ 
+ 
+@@ -137,26 +135,31 @@ SYSTEM_DRIVER system_macosx =
  static RETSIGTYPE osx_signal_handler(int num)
  {
     _unix_unlock_mutex(osx_event_mutex);
@@ -5607,7 +5753,7 @@ index 1b01839..70e6547 100644
     NSDate *distant_past = [NSDate distantPast];
     NSPoint point;
     NSRect frame, view;
-@@ -166,251 +171,171 @@ void osx_event_handler()
+@@ -166,251 +169,171 @@ void osx_event_handler()
     static int buttons = 0;
     int event_type;
     BOOL gotmouseevent = NO;
@@ -6008,7 +6154,7 @@ index 1b01839..70e6547 100644
  
     /* Install emergency-exit signal handlers */
     old_sig_abrt = signal(SIGABRT, osx_signal_handler);
-@@ -420,21 +345,15 @@ static int osx_sys_init(void)
+@@ -420,21 +343,15 @@ static int osx_sys_init(void)
     old_sig_term = signal(SIGTERM, osx_signal_handler);
     old_sig_int  = signal(SIGINT,  osx_signal_handler);
     old_sig_quit = signal(SIGQUIT, osx_signal_handler);
@@ -6032,7 +6178,7 @@ index 1b01839..70e6547 100644
     /* Setup a blank cursor */
     cursor_data = calloc(1, 16 * 16 * 4);
     cursor_rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes: &cursor_data
-@@ -595,10 +514,17 @@ static int osx_sys_set_display_switch_mode(int mode)
+@@ -595,10 +512,17 @@ static int osx_sys_set_display_switch_mode(int mode)
   */
  static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
  {
@@ -6050,7 +6196,7 @@ index 1b01839..70e6547 100644
  }
  
  
-@@ -608,13 +534,10 @@ static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
+@@ -608,13 +532,10 @@ static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
   */
  static int osx_sys_desktop_color_depth(void)
  {
@@ -6066,7 +6212,7 @@ index 1b01839..70e6547 100644
     
     return color_depth == 16 ? 15 : color_depth;
  }
-@@ -625,13 +548,9 @@ static int osx_sys_desktop_color_depth(void)
+@@ -625,13 +546,9 @@ static int osx_sys_desktop_color_depth(void)
   */
  static int osx_sys_get_desktop_resolution(int *width, int *height)
  {
@@ -6136,6 +6282,36 @@ index c39e7f3..d221046 100644
  
        /* note: this depends on a dodgy assumption about parameter passing 
         * conventions. I assume that the point coordinates are all on the 
+diff --git a/src/tga.c b/src/tga.c
+index d40762e..2340fbb 100644
+--- a/src/tga.c
++++ b/src/tga.c
+@@ -280,8 +280,8 @@ BITMAP *load_tga_pf(PACKFILE *f, RGB *pal)
+    unsigned char image_id[256], image_palette[256][3];
+    unsigned char id_length, palette_type, image_type, palette_entry_size;
+    unsigned char bpp, descriptor_bits;
+-   short unsigned int first_color, palette_colors;
+-   short unsigned int left, top, image_width, image_height;
++   short unsigned int palette_colors;
++   short unsigned int image_width, image_height;
+    unsigned int c, i, y, yc;
+    int dest_depth;
+    int compressed;
+@@ -299,11 +299,11 @@ BITMAP *load_tga_pf(PACKFILE *f, RGB *pal)
+    id_length = pack_getc(f);
+    palette_type = pack_getc(f);
+    image_type = pack_getc(f);
+-   first_color = pack_igetw(f);
++   /* first_color */ pack_igetw(f);
+    palette_colors  = pack_igetw(f);
+    palette_entry_size = pack_getc(f);
+-   left = pack_igetw(f);
+-   top = pack_igetw(f);
++   /* left */ pack_igetw(f);
++   /* top  */ pack_igetw(f);
+    image_width = pack_igetw(f);
+    image_height = pack_igetw(f);
+    bpp = pack_getc(f);
 diff --git a/src/unix/sdl2digi.c b/src/unix/sdl2digi.c
 new file mode 100644
 index 0000000..68ef461
@@ -6436,8 +6612,64 @@ index d6b986b..59ecf65 100644
        END
     END
  
+diff --git a/src/win/wddbmpl.c b/src/win/wddbmpl.c
+index c65a5ec..9b5b57e 100644
+--- a/src/win/wddbmpl.c
++++ b/src/win/wddbmpl.c
+@@ -113,11 +113,13 @@ void unregister_all_ddraw_surfaces(void)
+  */
+ int restore_all_ddraw_surfaces(void)
+ {
+-   DDRAW_SURFACE *item = ddraw_surface_list;
++   DDRAW_SURFACE *item;
+    HRESULT hr;
+ 
+    _enter_gfx_critical();
+ 
++   item = ddraw_surface_list;
++
+    while (item) {
+       hr = IDirectDrawSurface2_Restore(item->id);
+       if (FAILED(hr)) {
+diff --git a/src/win/wddovl.c b/src/win/wddovl.c
+index 02de59c..72fca29 100644
+--- a/src/win/wddovl.c
++++ b/src/win/wddovl.c
+@@ -320,7 +320,7 @@ static struct BITMAP *init_directx_ovl(int w, int h, int v_w, int v_h, int color
+ 
+    /* Paint window background with overlay color key. */
+    overlay_brush = CreateSolidBrush(MASK_COLOR_32);
+-   SetClassLong(allegro_wnd, GCL_HBRBACKGROUND, (LONG) overlay_brush);
++   SetClassLongPtr(allegro_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)overlay_brush);
+ 
+    if (adjust_window(w, h) != 0) {
+       _TRACE(PREFIX_E "window size not supported.\n");
+@@ -445,7 +445,7 @@ static void gfx_directx_ovl_exit(struct BITMAP *bmp)
+    /* destroy the overlay surface */
+    if (overlay_surface) {
+       hide_overlay();
+-      SetClassLong(allegro_wnd, GCL_HBRBACKGROUND, (LONG) NULL);
++      SetClassLongPtr(allegro_wnd, GCLP_HBRBACKGROUND, (LONG_PTR)NULL);
+       DeleteObject(overlay_brush);
+       gfx_directx_destroy_surface(overlay_surface);
+       overlay_surface = NULL;
+diff --git a/src/win/wdispsw.c b/src/win/wdispsw.c
+index 258565f..8707ea1 100644
+--- a/src/win/wdispsw.c
++++ b/src/win/wdispsw.c
+@@ -165,8 +165,8 @@ void _win_switch_out(void)
+ 
+       /* if the thread doesn't stop, lower its priority only if another window is active */ 
+       allegro_thread_priority = GetThreadPriority(allegro_thread); 
+-      if ((HINSTANCE)GetWindowLong(GetForegroundWindow(), GWL_HINSTANCE) != allegro_inst)
+-	 SetThreadPriority(allegro_thread, THREAD_PRIORITY_LOWEST); 
++      if ((HINSTANCE)GetWindowLongPtr(GetForegroundWindow(), GWLP_HINSTANCE) != allegro_inst)
++         SetThreadPriority(allegro_thread, THREAD_PRIORITY_LOWEST);
+    }
+ 
+    _switch_out();
 diff --git a/src/win/winput.c b/src/win/winput.c
-index 3d8a095..41a8e0a 100644
+index 3d8a095..9bad0b1 100644
 --- a/src/win/winput.c
 +++ b/src/win/winput.c
 @@ -1,6 +1,6 @@
@@ -6450,15 +6682,37 @@ index 3d8a095..41a8e0a 100644
   *         \ \  __ \ \ \ \  \ \ \   /'__`\ /'_ `\/\`'__\/ __`\
   *          \ \ \/\ \ \_\ \_ \_\ \_/\  __//\ \L\ \ \ \//\ \L\ \
   *           \ \_\ \_\/\____\/\____\ \____\ \____ \ \_\\ \____/
+@@ -59,7 +59,7 @@ static HANDLE input_thread = NULL;
+  */
+ static void input_thread_proc(LPVOID unused)
+ {
+-   int result;
++   DWORD result;
+ 
+    _win_thread_init();
+    _TRACE(PREFIX_I "input thread starts\n");
 @@ -69,7 +69,7 @@ static void input_thread_proc(LPVOID unused)
        result = WaitForMultipleObjects(_win_input_events, _win_input_event_id, FALSE, INFINITE);
        if (result == WAIT_OBJECT_0 + 2)
           break;  /* thread suicide */
 -      else if ((result >= WAIT_OBJECT_0) && (result < WAIT_OBJECT_0 + _win_input_events))
-+      else if ((result >= WAIT_OBJECT_0) && (result < (int)(WAIT_OBJECT_0 + _win_input_events)))
++      else if (result < (DWORD)(WAIT_OBJECT_0 + _win_input_events))
           (*_win_input_event_handler[result - WAIT_OBJECT_0])();
     }
  
+@@ -187,6 +187,12 @@ void _win_input_unregister_event(HANDLE event_id)
+  */
+ void _win_input_init(int need_thread)
+ {
++   int i;
++   for (i = 0; i < MAX_EVENTS; ++i) {
++      _win_input_event_id[i]      = 0;
++      _win_input_event_handler[i] = NULL;
++   }
++
+    _win_input_event_id[0] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    _win_input_event_handler[0] = register_pending_event;
+    _win_input_event_id[1] = CreateEvent(NULL, FALSE, FALSE, NULL);
 diff --git a/src/win/wjoydx.c b/src/win/wjoydx.c
 index 655cb21..61abf3a 100644
 --- a/src/win/wjoydx.c
@@ -6524,7 +6778,7 @@ index 655cb21..61abf3a 100644
        return -1;
  
 diff --git a/src/win/wkeybd.c b/src/win/wkeybd.c
-index d85f079..dcd7bb7 100644
+index d85f079..429b23d 100644
 --- a/src/win/wkeybd.c
 +++ b/src/win/wkeybd.c
 @@ -676,7 +676,7 @@ static int key_dinput_init(void)
@@ -6536,8 +6790,17 @@ index d85f079..dcd7bb7 100644
     if (FAILED(hr))
        goto Error;
  
+@@ -685,7 +685,7 @@ static int key_dinput_init(void)
+       goto Error;
+ 
+    /* Create the keyboard device */
+-   hr = IDirectInput_CreateDevice(key_dinput, &GUID_SysKeyboard, &key_dinput_device, NULL);
++   hr = IDirectInput_CreateDevice(key_dinput, &GUID_SysKeyboardEm2, &key_dinput_device, NULL);
+    if (FAILED(hr))
+       goto Error;
+ 
 diff --git a/src/win/wmouse.c b/src/win/wmouse.c
-index ff85b73..e556310 100644
+index ff85b73..e8fed7e 100644
 --- a/src/win/wmouse.c
 +++ b/src/win/wmouse.c
 @@ -1,6 +1,6 @@
@@ -6577,6 +6840,15 @@ index ff85b73..e556310 100644
     if (FAILED(hr))
        goto Error;
  
+@@ -615,7 +615,7 @@ static int mouse_dinput_init(void)
+       goto Error;
+ 
+    /* Create the mouse device */
+-   hr = IDirectInput_CreateDevice(mouse_dinput, &GUID_SysMouse, &mouse_dinput_device, NULL);
++   hr = IDirectInput_CreateDevice(mouse_dinput, &GUID_SysMouseEm2, &mouse_dinput_device, NULL);
+    if (FAILED(hr))
+       goto Error;
+ 
 @@ -628,7 +628,7 @@ static int mouse_dinput_init(void)
        goto Error;
  
@@ -6610,8 +6882,30 @@ index ff85b73..e556310 100644
 +
     return cursor;
  }
+diff --git a/src/win/wsystem.c b/src/win/wsystem.c
+index 45008c4..7a34080 100644
+--- a/src/win/wsystem.c
++++ b/src/win/wsystem.c
+@@ -31,7 +31,7 @@
+ #endif
+ 
+ /* DMC requires a DllMain() function, or else the DLL hangs. */
+-#ifndef ALLEGRO_STATICLINK
++#if !defined(ALLEGRO_STATICLINK) && defined(ALLEGRO_DMC)
+ BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason, LPVOID lpReserved)
+ {
+    return TRUE;
+@@ -491,7 +491,7 @@ int _WinMain(void *_main, void *hInst, void *hPrev, char *Cmd, int nShow)
+ 
+    /* can't use parameter because it doesn't include the executable name */
+    cmdline = GetCommandLine();
+-   i = strlen(cmdline) + 1;
++   i = (int)strlen(cmdline) + 1;
+    argbuf = _AL_MALLOC(i);
+    memcpy(argbuf, cmdline, i);
+ 
 diff --git a/src/win/wwnd.c b/src/win/wwnd.c
-index fc19076..c1069d3 100644
+index fc19076..f5eccaa 100644
 --- a/src/win/wwnd.c
 +++ b/src/win/wwnd.c
 @@ -1,6 +1,6 @@
@@ -6624,6 +6918,42 @@ index fc19076..c1069d3 100644
   *         \ \  __ \ \ \ \  \ \ \   /'__`\ /'_ `\/\`'__\/ __`\
   *          \ \ \/\ \ \_\ \_ \_\ \_/\  __//\ \L\ \ \ \//\ \L\ \
   *           \ \_\ \_\/\____\/\____\ \____\ \____ \ \_\\ \____/
+@@ -189,7 +189,7 @@ static void exit_window_modules(struct WINDOW_MODULES *wm)
+  */
+ int wnd_call_proc(int (*proc) (void))
+ {
+-   return SendMessage(allegro_wnd, msg_call_proc, (DWORD) proc, 0);
++   return SendMessage(allegro_wnd, msg_call_proc, (WPARAM)proc, (LPARAM)0);
+ }
+ 
+ 
+@@ -200,7 +200,7 @@ int wnd_call_proc(int (*proc) (void))
+  */
+ void wnd_schedule_proc(int (*proc) (void))
+ {
+-   PostMessage(allegro_wnd, msg_call_proc, (DWORD) proc, 0);
++   PostMessage(allegro_wnd, msg_call_proc, (WPARAM)proc, (LPARAM)0);
+ }
+ 
+ 
+@@ -213,7 +213,7 @@ static LRESULT CALLBACK directx_wnd_proc(HWND wnd, UINT message, WPARAM wparam,
+    PAINTSTRUCT ps;
+ 
+    if (message == msg_call_proc)
+-      return ((int (*)(void))wparam) ();
++      return ( ( LRESULT(*)( void ) )wparam ) ( );
+ 
+    if (message == msg_suicide) {
+       DestroyWindow(wnd);
+@@ -224,7 +224,7 @@ static LRESULT CALLBACK directx_wnd_proc(HWND wnd, UINT message, WPARAM wparam,
+    if (wnd_msg_pre_proc){
+       int retval = 0;
+       if (wnd_msg_pre_proc(wnd, message, wparam, lparam, &retval) == 0)
+-         return retval;
++         return (LRESULT)retval;
+    }
+ 
+    /* See get_reverse_mapping() in wkeybd.c to see what this is for. */
 @@ -373,7 +373,7 @@ static LRESULT CALLBACK directx_wnd_proc(HWND wnd, UINT message, WPARAM wparam,
  
        case WM_MENUCHAR :
@@ -6633,6 +6963,15 @@ index fc19076..c1069d3 100644
        case WM_CLOSE:
           if (!user_wnd_proc) {
              if (user_close_proc)
+@@ -456,7 +456,7 @@ static HWND create_directx_window(void)
+  */
+ static void wnd_thread_proc(HANDLE setup_event)
+ {
+-   int result;
++   DWORD result;
+    MSG msg;
+ 
+    _win_thread_init();
 @@ -477,7 +477,7 @@ static void wnd_thread_proc(HANDLE setup_event)
     /* message loop */
     while (TRUE) {
@@ -6642,6 +6981,15 @@ index fc19076..c1069d3 100644
           /* one of the registered events is in signaled state */
           (*_win_input_event_handler[result - WAIT_OBJECT_0])();
        }
+@@ -523,7 +523,7 @@ int init_directx_window(void)
+       _win_input_init(TRUE);
+ 
+       /* hook the user window */
+-      user_wnd_proc = (WNDPROC) SetWindowLong(user_wnd, GWL_WNDPROC, (long)directx_wnd_proc);
++      user_wnd_proc = (WNDPROC) SetWindowLongPtr(user_wnd, GWLP_WNDPROC, (LONG_PTR)directx_wnd_proc);
+       if (!user_wnd_proc)
+          return -1;
+ 
 @@ -557,7 +557,7 @@ int init_directx_window(void)
  
  	 default:               /* thread failed to create window */
@@ -6651,6 +6999,15 @@ index fc19076..c1069d3 100644
     }
  
     /* initialize gfx critical section */
+@@ -579,7 +579,7 @@ void exit_directx_window(void)
+ {
+    if (user_wnd) {
+       /* restore old window proc */
+-      SetWindowLong(user_wnd, GWL_WNDPROC, (long)user_wnd_proc);
++      SetWindowLongPtr(user_wnd, GWLP_WNDPROC, (LONG_PTR)user_wnd_proc);
+       user_wnd_proc = NULL;
+       user_wnd = NULL;
+       allegro_wnd = NULL;
 @@ -598,7 +598,7 @@ void exit_directx_window(void)
     DeleteCriticalSection(&gfx_crit_sect);
  

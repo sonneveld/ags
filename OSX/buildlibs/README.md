@@ -10,4 +10,4 @@ Install Xcode and command line tools. Configure xcode select
 
 # Building
 
-    $ ./buildall.sh
+    $ make install

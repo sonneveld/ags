@@ -68,6 +68,7 @@ iOS/nativelibs/arm64
 iOS/nativelibs/i386
 iOS/nativelibs/x86_64
 Solutions/Engine.App/test.ini
+opt/
 
 ## Xcode Build generated
 build/

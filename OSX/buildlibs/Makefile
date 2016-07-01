@@ -1,7 +1,9 @@
 #!/bin/bash
 
 LIBSRCDIR:=$(shell pwd)/../../libsrc
+PATCHESDIR:=$(shell pwd)/../patches
 PREFIX:=$(shell pwd)/opt
+BUILD:=$(shell pwd)/build
 PKG_CONFIG_PATH:=${PREFIX}/lib/pkgconfig
 export PKG_CONFIG_PATH
 PLAT_FLAGS:=-mmacosx-version-min=10.7 -arch i386 -arch x86_64
@@ -19,17 +21,18 @@ prepare:
 	cd $(LIBSRCDIR) && ./download.sh
 	./checkenv.sh
 	mkdir -p $(PREFIX)
+	mkdir -p $(BUILD)
 
 lua: prepare
-	tar xf $(LIBSRCDIR)/lua-5.1.5.tar.gz 
-	cd lua-5.1.5 && \
-		patch -p1 < ../../patches/lua-5.1.5.patch && \
+	tar xf $(LIBSRCDIR)/lua-5.1.5.tar.gz -C $(BUILD)
+	cd $(BUILD)/lua-5.1.5 && \
+		patch -p1 < $(PATCHESDIR)/lua-5.1.5.patch && \
 		make macosx INSTALL_TOP="$(PREFIX)" PLAT_LDFLAGS="$(PLAT_FLAGS)" PLAT_CFLAGS="$(PLAT_FLAGS)" && \
 		make install INSTALL_TOP="$(PREFIX)"
 
 freetype: prepare
-	tar xf $(LIBSRCDIR)/freetype-2.4.12.tar.bz2
-	cd freetype-2.4.12 && \
+	tar xf $(LIBSRCDIR)/freetype-2.4.12.tar.bz2 -C $(BUILD)
+	cd $(BUILD)/freetype-2.4.12 && \
 		./configure CFLAGS="$(PLAT_FLAGS)" LDFLAGS="$(PLAT_FLAGS)" \
 		    --prefix=$(PREFIX) \
 		    --enable-static --disable-shared \
@@ -38,8 +41,8 @@ freetype: prepare
 		make install 
 
 ogg: prepare
-	tar xf $(LIBSRCDIR)/libogg-1.3.2.tar.gz
-	cd libogg-1.3.2 && \
+	tar xf $(LIBSRCDIR)/libogg-1.3.2.tar.gz -C $(BUILD)
+	cd $(BUILD)/libogg-1.3.2 && \
 		./configure CFLAGS="$(PLAT_FLAGS)" LDFLAGS="$(PLAT_FLAGS)" \
 		    --prefix=$(PREFIX) \
 		    --enable-static --disable-shared && \
@@ -47,8 +50,8 @@ ogg: prepare
 		make install 
 
 vorbis: prepare ogg
-	tar xf $(LIBSRCDIR)/libvorbis-1.3.5.tar.gz
-	cd libvorbis-1.3.5 && \
+	tar xf $(LIBSRCDIR)/libvorbis-1.3.5.tar.gz -C $(BUILD)
+	cd $(BUILD)/libvorbis-1.3.5 && \
 		./configure CFLAGS="$(PLAT_FLAGS)" LDFLAGS="$(PLAT_FLAGS)" \
 		    --prefix=$(PREFIX) \
 		    --enable-static --disable-shared \
@@ -57,8 +60,8 @@ vorbis: prepare ogg
 		make install 
 
 theora: prepare ogg vorbis
-	tar xf $(LIBSRCDIR)/libtheora-20160525-g50df933.tar.bz2
-	cd libtheora-20160525-g50df933 && \
+	tar xf $(LIBSRCDIR)/libtheora-20160525-g50df933.tar.bz2 -C $(BUILD)
+	cd $(BUILD)/libtheora-20160525-g50df933 && \
 		./autogen.sh CFLAGS="$(PLAT_FLAGS)" LDFLAGS="$(PLAT_FLAGS)"  \
 		    --prefix=$(PREFIX) \
 		    --enable-static --disable-shared \
@@ -73,9 +76,9 @@ theora: prepare ogg vorbis
 		make install
 
 allegro: prepare
-	tar xf $(LIBSRCDIR)/allegro-4.4.2.tar.gz 
-	cd allegro-4.4.2 && \
-		patch -p1 < ../../patches/allegro-4.4.2.patch && \
+	tar xf $(LIBSRCDIR)/allegro-4.4.2.tar.gz -C $(BUILD)
+	cd $(BUILD)/allegro-4.4.2 && \
+		patch -p1 < $(PATCHESDIR)/allegro-4.4.2.patch && \
 		mkdir -p build && \
 		pushd build && \
 		cmake \
@@ -99,9 +102,9 @@ endef
 export DUMB_CONF
 
 dumb: prepare allegro
-	tar xf $(LIBSRCDIR)/dumb-0.9.3.tar.gz
-	cd dumb-0.9.3 && \
-		patch -p1 < ../../../OSX/patches/dumb-0.9.3.patch && \
+	tar xf $(LIBSRCDIR)/dumb-0.9.3.tar.gz -C $(BUILD)
+	cd $(BUILD)/dumb-0.9.3 && \
+		patch -p1 < $(PATCHESDIR)/dumb-0.9.3.patch && \
 		echo "$$DUMB_CONF" > make/config.txt && \
 		make && \
 		make install

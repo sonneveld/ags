@@ -60,11 +60,7 @@ int mousex = 0, mousey = 0, numcurso = -1, hotx = 0, hoty = 0;
 int real_mouse_x = 0, real_mouse_y = 0;
 int boundx1 = 0, boundx2 = 99999, boundy1 = 0, boundy2 = 99999;
 int disable_mgetgraphpos = 0;
-#if defined(MAC_VERSION)
 char ignore_bounds = 0;
-#else
-char ignore_bounds = 1;
-#endif
 extern char alpha_blend_cursor ;
 Bitmap *savebk = NULL, *mousecurs[MAXCURSORS];
 extern int vesa_xres, vesa_yres;

@@ -70,6 +70,17 @@ iOS/nativelibs/x86_64
 Solutions/Engine.App/test.ini
 opt/
 
+OSX/xcode/agsteam
+OSX/xcode/steamworks_sdk
+OSX/include
+OSX/lib
+libsrc/*.tar*
+libsrc/*.zip
+
+ac2game.dat
+audio.vox
+speech.vox
+
 ## Xcode Build generated
 build/
 DerivedData/

@@ -15,18 +15,17 @@
 		28FD15000DC6FC520079059D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGL.framework */; };
 		52264CBF1D16AB7A00A39A14 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52264CBE1D16AB7A00A39A14 /* Cocoa.framework */; };
 		52264CC11D16AC5000A39A14 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 52264CC01D16AC5000A39A14 /* acsetup.cfg */; };
-		529033141D2510510086361C /* AGSteam.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5290330A1D2510510086361C /* AGSteam.cpp */; };
-		529033161D2510510086361C /* SteamAchievements.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5290330E1D2510510086361C /* SteamAchievements.cpp */; };
-		529033171D2510510086361C /* SteamStats.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529033101D2510510086361C /* SteamStats.cpp */; };
-		529033181D2510510086361C /* win32fillin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 529033121D2510510086361C /* win32fillin.cpp */; };
 		52A7D3511D1E688100D88BEE /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3501D1E688100D88BEE /* AGSKit.framework */; };
 		52A7D3531D1E689C00D88BEE /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3521D1E689C00D88BEE /* libz.1.dylib */; };
 		52A7D3551D1E68A800D88BEE /* libbz2.1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3541D1E68A800D88BEE /* libbz2.1.0.dylib */; };
 		52A7D3B51D1F953600D88BEE /* plugin_registration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52A7D3B31D1F953600D88BEE /* plugin_registration.cpp */; };
 		52A7D3CA1D1F9BFC00D88BEE /* libsteam_api.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3C91D1F9BFC00D88BEE /* libsteam_api.dylib */; };
 		52A7D3D21D1FA9D500D88BEE /* libsteam_api.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = 52A7D3C91D1F9BFC00D88BEE /* libsteam_api.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		52A7D3D51D1FB80400D88BEE /* steam_appid.txt in Resources */ = {isa = PBXBuildFile; fileRef = 52A7D3D41D1FB80400D88BEE /* steam_appid.txt */; };
 		52A7D3DE1D1FBC5B00D88BEE /* steam_appid.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = 52A7D3D41D1FB80400D88BEE /* steam_appid.txt */; };
+		52C5BFA51D277937001E3B10 /* AGSteam.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C5BF9D1D277937001E3B10 /* AGSteam.cpp */; };
+		52C5BFA61D277937001E3B10 /* SteamAchievements.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C5BF9F1D277937001E3B10 /* SteamAchievements.cpp */; };
+		52C5BFA71D277937001E3B10 /* SteamStats.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C5BFA11D277937001E3B10 /* SteamStats.cpp */; };
+		52C5BFA81D277937001E3B10 /* win32fillin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C5BFA31D277937001E3B10 /* win32fillin.cpp */; };
 		52DA54301D194C4C0056FB17 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52DA542F1D194C4C0056FB17 /* CoreVideo.framework */; };
 		52DA54311D1963780056FB17 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB994B2C180ECBCB00835511 /* IOKit.framework */; };
 		52DA54321D1963F40056FB17 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB994B26180ECB9B00835511 /* AppKit.framework */; };
@@ -71,14 +70,6 @@
 		32CA4F630368D1EE00C91783 /* Shivah_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Shivah_Prefix.pch; sourceTree = "<group>"; };
 		52264CBE1D16AB7A00A39A14 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		52264CC01D16AC5000A39A14 /* acsetup.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = acsetup.cfg; path = game_files/acsetup.cfg; sourceTree = "<group>"; };
-		5290330A1D2510510086361C /* AGSteam.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AGSteam.cpp; path = ../../agsteam/AGSteam.cpp; sourceTree = "<group>"; };
-		5290330B1D2510510086361C /* AGSteam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AGSteam.h; path = ../../agsteam/AGSteam.h; sourceTree = "<group>"; };
-		5290330E1D2510510086361C /* SteamAchievements.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SteamAchievements.cpp; path = ../../agsteam/SteamAchievements.cpp; sourceTree = "<group>"; };
-		5290330F1D2510510086361C /* SteamAchievements.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SteamAchievements.h; path = ../../agsteam/SteamAchievements.h; sourceTree = "<group>"; };
-		529033101D2510510086361C /* SteamStats.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SteamStats.cpp; path = ../../agsteam/SteamStats.cpp; sourceTree = "<group>"; };
-		529033111D2510510086361C /* SteamStats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SteamStats.h; path = ../../agsteam/SteamStats.h; sourceTree = "<group>"; };
-		529033121D2510510086361C /* win32fillin.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = win32fillin.cpp; path = ../../agsteam/win32fillin.cpp; sourceTree = "<group>"; };
-		529033131D2510510086361C /* win32fillin.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = win32fillin.hpp; path = ../../agsteam/win32fillin.hpp; sourceTree = "<group>"; };
 		52A7D3501D1E688100D88BEE /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AGSKit.framework; path = "../../../../../Library/Developer/Xcode/DerivedData/Shivah-bvdbjpdvrygocqabamrdlibfocdt/Build/Products/Debug/AGSKit.framework"; sourceTree = "<group>"; };
 		52A7D3521D1E689C00D88BEE /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52A7D3541D1E68A800D88BEE /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
@@ -87,6 +78,14 @@
 		52A7D3B41D1F953600D88BEE /* plugin_registration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = plugin_registration.hpp; sourceTree = "<group>"; };
 		52A7D3C91D1F9BFC00D88BEE /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = ../../../steamworks_sdk_137/redistributable_bin/osx32/libsteam_api.dylib; sourceTree = "<group>"; };
 		52A7D3D41D1FB80400D88BEE /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = steam_appid.txt; sourceTree = "<group>"; };
+		52C5BF9D1D277937001E3B10 /* AGSteam.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AGSteam.cpp; path = ../OSX/xcode/agsteam/AGSteam.cpp; sourceTree = "<group>"; };
+		52C5BF9E1D277937001E3B10 /* AGSteam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AGSteam.h; path = ../OSX/xcode/agsteam/AGSteam.h; sourceTree = "<group>"; };
+		52C5BF9F1D277937001E3B10 /* SteamAchievements.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SteamAchievements.cpp; path = ../OSX/xcode/agsteam/SteamAchievements.cpp; sourceTree = "<group>"; };
+		52C5BFA01D277937001E3B10 /* SteamAchievements.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SteamAchievements.h; path = ../OSX/xcode/agsteam/SteamAchievements.h; sourceTree = "<group>"; };
+		52C5BFA11D277937001E3B10 /* SteamStats.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SteamStats.cpp; path = ../OSX/xcode/agsteam/SteamStats.cpp; sourceTree = "<group>"; };
+		52C5BFA21D277937001E3B10 /* SteamStats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SteamStats.h; path = ../OSX/xcode/agsteam/SteamStats.h; sourceTree = "<group>"; };
+		52C5BFA31D277937001E3B10 /* win32fillin.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = win32fillin.cpp; path = ../OSX/xcode/agsteam/win32fillin.cpp; sourceTree = "<group>"; };
+		52C5BFA41D277937001E3B10 /* win32fillin.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = win32fillin.hpp; path = ../OSX/xcode/agsteam/win32fillin.hpp; sourceTree = "<group>"; };
 		52DA542F1D194C4C0056FB17 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
 		60F49A49155131E500A07887 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		8D1107310486CEB800E47090 /* Shivah-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Shivah-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
@@ -203,26 +202,25 @@
 			path = ../Engine/plugin;
 			sourceTree = "<group>";
 		};
-		52A7D3B71D1F9A1B00D88BEE /* AGSteam */ = {
+		52C5BF9C1D27792E001E3B10 /* AGSteam */ = {
 			isa = PBXGroup;
 			children = (
-				5290330A1D2510510086361C /* AGSteam.cpp */,
-				5290330B1D2510510086361C /* AGSteam.h */,
-				5290330E1D2510510086361C /* SteamAchievements.cpp */,
-				5290330F1D2510510086361C /* SteamAchievements.h */,
-				529033101D2510510086361C /* SteamStats.cpp */,
-				529033111D2510510086361C /* SteamStats.h */,
-				529033121D2510510086361C /* win32fillin.cpp */,
-				529033131D2510510086361C /* win32fillin.hpp */,
+				52C5BF9D1D277937001E3B10 /* AGSteam.cpp */,
+				52C5BF9E1D277937001E3B10 /* AGSteam.h */,
+				52C5BF9F1D277937001E3B10 /* SteamAchievements.cpp */,
+				52C5BFA01D277937001E3B10 /* SteamAchievements.h */,
+				52C5BFA11D277937001E3B10 /* SteamStats.cpp */,
+				52C5BFA21D277937001E3B10 /* SteamStats.h */,
+				52C5BFA31D277937001E3B10 /* win32fillin.cpp */,
+				52C5BFA41D277937001E3B10 /* win32fillin.hpp */,
 			);
 			name = AGSteam;
-			path = AGSteam_plugin;
-			sourceTree = SOURCE_ROOT;
+			sourceTree = "<group>";
 		};
 		60898C2B160779D9009E152F /* Plugins */ = {
 			isa = PBXGroup;
 			children = (
-				52A7D3B71D1F9A1B00D88BEE /* AGSteam */,
+				52C5BF9C1D27792E001E3B10 /* AGSteam */,
 				52A7D3AA1D1F8CFB00D88BEE /* plugin */,
 				1195299918B3EDD300923A50 /* agswadjetutil */,
 			);
@@ -311,7 +309,6 @@
 			files = (
 				110F58A71885B8450061BB0A /* ac2game.dat in Resources */,
 				52264CC11D16AC5000A39A14 /* acsetup.cfg in Resources */,
-				52A7D3D51D1FB80400D88BEE /* steam_appid.txt in Resources */,
 				118F74CE18B52A5200236026 /* Images.xcassets in Resources */,
 				110F58A81885B8450061BB0A /* audio.vox in Resources */,
 				110F58A91885B8450061BB0A /* speech.vox in Resources */,
@@ -325,12 +322,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				529033181D2510510086361C /* win32fillin.cpp in Sources */,
-				529033171D2510510086361C /* SteamStats.cpp in Sources */,
-				529033161D2510510086361C /* SteamAchievements.cpp in Sources */,
+				52C5BFA61D277937001E3B10 /* SteamAchievements.cpp in Sources */,
+				52C5BFA81D277937001E3B10 /* win32fillin.cpp in Sources */,
 				119529A318B3EDD300923A50 /* agswadjetutil.cpp in Sources */,
 				52A7D3B51D1F953600D88BEE /* plugin_registration.cpp in Sources */,
-				529033141D2510510086361C /* AGSteam.cpp in Sources */,
+				52C5BFA71D277937001E3B10 /* SteamStats.cpp in Sources */,
+				52C5BFA51D277937001E3B10 /* AGSteam.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -348,7 +345,6 @@
 				GCC_PREFIX_HEADER = Shivah_Prefix.pch;
 				INFOPLIST_FILE = "Shivah-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "/Users/nick.sonneveld/src/ags-paid/steamworks_sdk_137/redistributable_bin/osx32";
 				PRODUCT_NAME = Shivah;
 			};
 			name = Debug;
@@ -363,7 +359,6 @@
 				GCC_PREFIX_HEADER = Shivah_Prefix.pch;
 				INFOPLIST_FILE = "Shivah-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "/Users/nick.sonneveld/src/ags-paid/steamworks_sdk_137/redistributable_bin/osx32";
 				PRODUCT_NAME = Shivah;
 			};
 			name = Release;
@@ -401,6 +396,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = "/Users/nick.sonneveld/src/ags-paid/steamworks_sdk_137/redistributable_bin/osx32";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -439,6 +435,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = "/Users/nick.sonneveld/src/ags-paid/steamworks_sdk_137/redistributable_bin/osx32";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";

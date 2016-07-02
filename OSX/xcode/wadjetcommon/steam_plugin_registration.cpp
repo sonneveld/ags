@@ -16,7 +16,7 @@ typedef void (*t_engine_pre_init_callback)(void);
 extern void engine_set_pre_init_callback(t_engine_pre_init_callback callback);
 
 static void pl_register_builtin_plugin() {
-
+  
   pl_register_builtin_plugin((InbuiltPluginDetails){
     .filename = "agswadjetutil",
     .engineStartup = agswadjetutil::AGS_EngineStartup,
@@ -32,7 +32,7 @@ static void pl_register_builtin_plugin() {
     .engineShutdown = ags_steam::AGS_EngineShutdown,
     .onEvent = ags_steam::AGS_EngineOnEvent,
   });
-
+  
 }
 
 

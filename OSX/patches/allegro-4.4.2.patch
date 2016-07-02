@@ -4381,10 +4381,10 @@ index 0000000..35b7631
 +#endif
 diff --git a/src/macosx/cocoagl.m b/src/macosx/cocoagl.m
 new file mode 100644
-index 0000000..db8ff61
+index 0000000..556bb4f
 --- /dev/null
 +++ b/src/macosx/cocoagl.m
-@@ -0,0 +1,574 @@
+@@ -0,0 +1,573 @@
 +/*         ______   ___    ___ 
 + *        /\  _  \ /\_ \  /\_ \ 
 + *        \ \ \L\ \\//\ \ \//\ \      __     __   _ __   ___ 
@@ -4930,7 +4930,7 @@ index 0000000..db8ff61
 +
 +        NSSize myNSWindowSize = [ self frame ].size;
 +
-+        float aspect = ((float)_gameHeight) /  _gameWidth;
++        float aspect = ((float)_gameWidth) / _gameHeight;
 +
 +        /* if 320x200 or 640x400 - non square pixels */
 +        if ( (_gameWidth == 320) && (_gameHeight == 200) ||
@@ -4938,7 +4938,6 @@ index 0000000..db8ff61
 +            aspect = 1.333333333333;
 +        }
 +
-+        
 +        NSRect viewport = NSMakeRect((myNSWindowSize.width - myNSWindowSize.height * aspect)/2, 0, myNSWindowSize.height * aspect, myNSWindowSize.height);
 +        glViewport(viewport.origin.x, viewport.origin.y, viewport.size.width, viewport.size.height);
 +        glScissor(viewport.origin.x, viewport.origin.y, viewport.size.width, viewport.size.height);

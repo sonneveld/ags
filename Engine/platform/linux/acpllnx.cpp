@@ -25,19 +25,39 @@
 #include "ac/runtime_defines.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
+#include "media/audio/audio.h"
 #include "util/string.h"
 #include <libcda.h>
 
 #include <pwd.h>
 #include <sys/stat.h>
 
+#include "binreloc.h"
+#include "main/config.h"
+
 using AGS::Common::String;
 
 
 // Replace the default Allegro icon. The original defintion is in the
 // Allegro 4.4 source under "src/x/xwin.c".
+extern "C" {
 #include "icon.xpm"
+}
 void* allegro_icon = icon_xpm;
+
+// PSP variables
+int psp_video_framedrop = 1;
+int psp_audio_enabled = 1;
+int psp_midi_enabled = 1;
+int psp_ignore_acsetup_cfg_file = 0;
+int psp_clear_cache_on_room_change = 0;
+
+int psp_midi_preload_patches = 0;
+int psp_audio_cachesize = 10;
+char psp_game_file_name[256];
+int psp_gfx_smooth_sprites = 1;
+char psp_translation[100];
+
 String LinuxOutputDirectory;
 
 struct AGSLinux : AGSPlatformDriver {
@@ -149,7 +169,7 @@ void AGSLinux::Delay(int millis) {
     usleep(5);
     millis -= 5;
 
-    update_polled_stuff(false);
+    update_polled_stuff_if_runtime();
   }
   if (millis > 0)
     usleep(millis);
@@ -164,8 +184,6 @@ const char* AGSLinux::GetNoMouseErrorString() {
   return "This game requires a mouse. You need to configure and setup your mouse to play this game.\n";
 }
 
-// extern int INIreadint (const char *sectn, const char *item, int errornosect = 1);
-
 bool AGSLinux::IsMouseControlSupported(bool windowed)
 {
   return true; // supported for both fullscreen and windowed modes
@@ -177,12 +195,7 @@ const char* AGSLinux::GetAllegroFailUserHint()
 }
 
 eScriptSystemOSID AGSLinux::GetSystemOSID() {
-  // int fake_win =  INIreadint("misc", "fake_os", 0);
-  // if (fake_win > 0) {
-  //   return (eScriptSystemOSID)fake_win;
-  // } else {
-  //   return eOS_Linux;
-  // }
+  // override performed if `override.os` is set in config.
   return eOS_Linux;
 }
 
@@ -212,6 +225,7 @@ AGSPlatformDriver* AGSPlatformDriver::GetDriver() {
   return instance;
 }
 
+#if 0
 void AGSLinux::ReplaceSpecialPaths(const char *sourcePath, char *destPath) {
   // MYDOCS is what is used in acplwin.cpp
   if(strncasecmp(sourcePath, "$MYDOCS$", 8) == 0) {
@@ -246,6 +260,7 @@ void AGSLinux::ReplaceSpecialPaths(const char *sourcePath, char *destPath) {
     strcpy(destPath, sourcePath);
   }
 }
+#endif
 
 bool AGSLinux::LockMouseToWindow()
 {

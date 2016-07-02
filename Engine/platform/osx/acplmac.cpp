@@ -18,22 +18,22 @@
 
 // ********* MacOS PLACEHOLDER DRIVER *********
 
-#include "util/wgt2allg.h"
-#include "gfx/ali3d.h"
-#include "ac/runtime_defines.h"
-#include "main/config.h"
+//#include "util/wgt2allg.h"
+//#include "gfx/ali3d.h"
+//#include "ac/runtime_defines.h"
+//#include "main/config.h"
+//#include "plugin/agsplugin.h"
+//#include "media/audio/audio.h"
+//#include <libcda.h>
+//#include <pwd.h>
+//#include <sys/stat.h>
 #include "platform/base/agsplatformdriver.h"
-#include "plugin/agsplugin.h"
-#include "media/audio/audio.h"
-#include <libcda.h>
 #include "util/directory.h"
 #include "ac/common.h"
 
-#include <pwd.h>
-#include <sys/stat.h>
-
 void AGSMacInitPaths(char gamename[256], char appdata[PATH_MAX]);
-bool PlayMovie(char const *name, int skipType);
+void AGSMacGetBundleDir(char gamepath[PATH_MAX]);
+//bool PlayMovie(char const *name, int skipType);
 
 // PSP variables
 int psp_ignore_acsetup_cfg_file = 0;
@@ -75,8 +75,6 @@ struct AGSMac : AGSPlatformDriver {
   virtual const char *GetAppOutputDirectory() override;
   virtual const char *GetIllegalFileChars() override;
 };
-
-void AGSMacGetBundleDir(char gamepath[PATH_MAX]);
 
 AGSMac::AGSMac()
 {

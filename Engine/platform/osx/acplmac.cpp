@@ -27,6 +27,7 @@
 #include "media/audio/audio.h"
 #include <libcda.h>
 #include "util/directory.h"
+#include "ac/common.h"
 
 #include <pwd.h>
 #include <sys/stat.h>
@@ -40,7 +41,7 @@ int psp_clear_cache_on_room_change = 0;
 
 char psp_translation[100];
 
-unsigned int psp_audio_samplerate = 44100;
+//unsigned int psp_audio_samplerate = 44100;
 int psp_audio_enabled = 1;
 int psp_audio_cachesize = 10;
 int psp_midi_enabled = 1;
@@ -52,8 +53,6 @@ int psp_gfx_smooth_sprites = 0;
 char psp_game_file_name[256];
 static char libraryApplicationSupport[PATH_MAX];
 static char commonDataPath[PATH_MAX];
-
-ConfigTree *wincfg;
 
 struct AGSMac : AGSPlatformDriver {
   AGSMac();
@@ -106,9 +105,7 @@ void AGSMac::Delay(int millis) {
   while (millis >= 5) {
     usleep(5);
     millis -= 5;
-
-    // EDMUNDO: Disable for now...
-    //update_polled_stuff(false);
+    update_polled_stuff_if_runtime();
   }
   if (millis > 0)
     usleep(millis);
@@ -123,15 +120,10 @@ const char* AGSMac::GetNoMouseErrorString() {
   return "This game requires a mouse. You need to configure and setup your mouse to play this game.\n";
 }
 
+int INIreadint (const char *sectn, const char *item, int errornosect = 1);
+
 eScriptSystemOSID AGSMac::GetSystemOSID() {
-  // TODO: Update the INI file.
-    // TODO
-//  int fake_win =  INIreadint("misc", "fake_os", 0);
-//  if (fake_win > 0) {
-//    return (eScriptSystemOSID)fake_win;
-//  } else {
-//    return eOS_Mac;
-//  }
+  // override performed if `override.os` is set in config.
   return eOS_Mac;
 }
 

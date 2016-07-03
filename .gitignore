@@ -33,7 +33,6 @@ Engine/resource/version.aps
 *.o
 *.d
 common.a
-ags
 Android/launcher_list/.classpath
 Android/launcher_list/.settings/
 Android/launcher_list/bin/

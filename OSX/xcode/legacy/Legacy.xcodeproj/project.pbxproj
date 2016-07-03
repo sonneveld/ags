@@ -99,7 +99,7 @@
 		1D6058910D05DD3D006BFB54 /* Blackwell-Legacy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blackwell-Legacy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		32CA4F630368D1EE00C91783 /* Legacy_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Legacy_Prefix.pch; sourceTree = "<group>"; };
 		52B8A5801D2777F300FA453F /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = ../../../steamworks_sdk_137/redistributable_bin/osx32/libsteam_api.dylib; sourceTree = "<group>"; };
-		52B8A5811D2777F300FA453F /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AGSKit.framework; path = "../../../../../Library/Developer/Xcode/DerivedData/Shivah-bvdbjpdvrygocqabamrdlibfocdt/Build/Products/Debug/AGSKit.framework"; sourceTree = "<group>"; };
+		52B8A5811D2777F300FA453F /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AGSKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		52B8A5821D2777F300FA453F /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52B8A5831D2777F300FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
 		52B8A5841D2777F300FA453F /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
@@ -300,8 +300,8 @@
 				52C5C0161D2784D1001E3B10 /* agswadjetutil */,
 			);
 			name = Plugins;
-			path = "/Users/nick.sonneveld/src/ags-paid/ags/OSX/xcode/unbound/../../../Plugins";
-			sourceTree = "<absolute>";
+			path = ../../../Plugins;
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
@@ -441,7 +441,7 @@
 				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
 				INFOPLIST_FILE = "Legacy_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "/Users/nick.sonneveld/src/ags-paid/steamworks_sdk_137/redistributable_bin/osx32";
+				LIBRARY_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/redistributable_bin/osx32";
 				PRODUCT_NAME = "Blackwell-Legacy";
 				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/public";
 			};
@@ -457,7 +457,7 @@
 				GCC_PREFIX_HEADER = Legacy_Prefix.pch;
 				INFOPLIST_FILE = "Legacy_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "/Users/nick.sonneveld/src/ags-paid/steamworks_sdk_137/redistributable_bin/osx32";
+				LIBRARY_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/redistributable_bin/osx32";
 				PRODUCT_NAME = "Blackwell-Legacy";
 				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/public";
 			};

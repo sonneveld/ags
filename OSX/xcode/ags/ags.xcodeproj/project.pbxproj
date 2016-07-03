@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		52B8A6211D27785A00FA453F /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6131D27785A00FA453F /* AGSKit.framework */; };
+		52ADC0501D28E39400B107D9 /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52ADC04F1D28E39400B107D9 /* AGSKit.framework */; };
 		52B8A6221D27785A00FA453F /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6141D27785A00FA453F /* libz.1.dylib */; };
 		52B8A6231D27785A00FA453F /* libbz2.1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */; };
 		52B8A6241D27785A00FA453F /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6161D27785A00FA453F /* CoreVideo.framework */; };
@@ -42,7 +42,7 @@
 /* Begin PBXFileReference section */
 		1D6058910D05DD3D006BFB54 /* AGS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AGS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		32CA4F630368D1EE00C91783 /* ags_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ags_Prefix.pch; sourceTree = "<group>"; };
-		52B8A6131D27785A00FA453F /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AGSKit.framework; path = "/Users/nick.sonneveld/src/ags-paid/ags/OSX/lib/../../../../../Library/Developer/Xcode/DerivedData/Shivah-bvdbjpdvrygocqabamrdlibfocdt/Build/Products/Debug/AGSKit.framework"; sourceTree = "<absolute>"; };
+		52ADC04F1D28E39400B107D9 /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AGSKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		52B8A6141D27785A00FA453F /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
 		52B8A6161D27785A00FA453F /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
@@ -79,7 +79,7 @@
 				52B8A62A1D27785A00FA453F /* AppKit.framework in Frameworks */,
 				52B8A6251D27785A00FA453F /* Cocoa.framework in Frameworks */,
 				52B8A6221D27785A00FA453F /* libz.1.dylib in Frameworks */,
-				52B8A6211D27785A00FA453F /* AGSKit.framework in Frameworks */,
+				52ADC0501D28E39400B107D9 /* AGSKit.framework in Frameworks */,
 				52B8A6241D27785A00FA453F /* CoreVideo.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -142,7 +142,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				52B8A6131D27785A00FA453F /* AGSKit.framework */,
+				52ADC04F1D28E39400B107D9 /* AGSKit.framework */,
 				52B8A61F1D27785A00FA453F /* System Frameworks */,
 			);
 			name = Frameworks;

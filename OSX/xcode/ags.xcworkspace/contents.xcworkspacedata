@@ -7,22 +7,4 @@
    <FileRef
       location = "group:ags/ags.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:convergence/Convergence.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:golden_wake/GoldenWake.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:legacy/Legacy.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:primordia/Primordia.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:shivah/Shivah.xcodeproj">
-   </FileRef>
-   <FileRef
-      location = "group:unbound/Unbound.xcodeproj">
-   </FileRef>
 </Workspace>

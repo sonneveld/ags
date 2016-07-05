@@ -118,8 +118,6 @@ const char* AGSMac::GetNoMouseErrorString() {
   return "This game requires a mouse. You need to configure and setup your mouse to play this game.\n";
 }
 
-int INIreadint (const char *sectn, const char *item, int errornosect = 1);
-
 eScriptSystemOSID AGSMac::GetSystemOSID() {
   // override performed if `override.os` is set in config.
   return eOS_Mac;

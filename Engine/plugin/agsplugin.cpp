@@ -948,10 +948,9 @@ bool pl_use_builtin_plugin(EnginePlugin* apl)
 }
 
 void pl_read_plugins_from_disk (Stream *in) {
-    
     if (in->ReadInt32() != 1)
         quit("ERROR: unable to load game, invalid version of plugin data");
-    
+
     int a, datasize;
     char buffer[200];
     numPlugins = in->ReadInt32();

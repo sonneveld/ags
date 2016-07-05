@@ -419,8 +419,6 @@ int SetSaveGameDirectoryPath(const char *newFolder, bool allowAbsolute)
     return 1;
 }
 
-
-
 int Game_SetSaveGameDirectory(const char *newFolder)
 {
 	return SetSaveGameDirectoryPath(newFolder, false);
@@ -2529,7 +2527,7 @@ int load_game(const Common::String &path, int slotNumber)
     gameHasBeenRestored++;
 
     SavedGameVersion svg_version;
-    int error_code;
+    int error_code;    
     Stream *in = open_savedgame(path, error_code, &svg_version);
     if (!in)
     {

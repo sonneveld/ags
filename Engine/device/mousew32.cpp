@@ -50,6 +50,7 @@
 
 using namespace AGS::Common;
 
+
 extern char lib_file_name[13];
 
 char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
@@ -129,7 +130,7 @@ void mgetgraphpos()
         // and applying them to saved mouse coordinates.
         int mickey_x, mickey_y;
         get_mouse_mickeys(&mickey_x, &mickey_y);
-
+        
         // Apply mouse speed
         int dx = Mouse::Speed * mickey_x;
         int dy = Mouse::Speed * mickey_y;
@@ -292,7 +293,7 @@ void mloadwcursor(char *namm)
 {
   color dummypal[256];
   if (wloadsprites(&dummypal[0], namm, mousecurs, 0, MAXCURSORS)) {
-    //printf("C_Load_wCursor: Error reading mouse cursor file\n");
+    //printf("C_Load_wCursor: Error reading mouse cursor file\n"); 
     exit(1);
   }
 }
@@ -319,17 +320,11 @@ int mgetbutton()
 #endif
   }
   else if (butis & 2)
-  {
     toret = RIGHT;
-  }
   else if (butis & 4)
-  {
     toret = MIDDLE;
-  }
 
   butwas = butis;
-
-
   return toret;
 }
 

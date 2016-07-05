@@ -505,7 +505,7 @@ int engine_init_speech()
             if (speechsync != NULL) {
                 // this game has voice lip sync
                 if (speechsync->ReadInt32() != 4)
-                {
+                { 
                     // Don't display this warning.
                     // platform->DisplayAlert("Unknown speech lip sync format (might be from older or newer version); lip sync disabled");
                 }
@@ -797,14 +797,14 @@ int engine_load_game_data()
 
 int engine_check_register_game()
 {
-    if (justRegisterGame)
+    if (justRegisterGame) 
     {
         platform->RegisterGameWithGameExplorer();
         proper_exit = 1;
         return EXIT_NORMAL;
     }
 
-    if (justUnRegisterGame)
+    if (justUnRegisterGame) 
     {
         platform->UnRegisterGameWithGameExplorer();
         proper_exit = 1;
@@ -895,7 +895,7 @@ int engine_check_disk_space()
             "network or CD-ROM drive. Also check drive free space (you need 1 Mb free).\n");
 #endif
         proper_exit = 1;
-        return EXIT_NORMAL;
+        return EXIT_NORMAL; 
     }
 
     return RETURN_CONTINUE;
@@ -904,7 +904,7 @@ int engine_check_disk_space()
 // [IKM] I have a feeling this should be merged with engine_init_fonts
 int engine_check_fonts()
 {
-    if (fontRenderers[0] == NULL)
+    if (fontRenderers[0] == NULL) 
     {
         platform->DisplayAlert("No fonts found. If you're trying to run the game from the Debug directory, this is not supported. Use the Build EXE command to create an executable in the Compiled folder.");
         proper_exit = 1;
@@ -976,7 +976,7 @@ int engine_init_sprites()
 {
     Out::FPrint("Initialize sprites");
 
-    if (spriteset.initFile ("acsprset.spr"))
+    if (spriteset.initFile ("acsprset.spr")) 
     {
         platform->FinishedUsingGraphicsMode();
         allegro_exit();
@@ -1015,7 +1015,7 @@ void init_game_settings() {
 
     if (game.options[OPT_NOSCALEFNT]) wtext_multiply=1;
 
-    for (ee = 0; ee < game.numcursors; ee++)
+    for (ee = 0; ee < game.numcursors; ee++) 
     {
         // The cursor graphics are assigned to mousecurs[] and so cannot
         // be removed from memory
@@ -1221,7 +1221,7 @@ void init_game_settings() {
     strcpy(play.game_name, game.gamename);
     play.lastParserEntry[0] = 0;
     play.follow_change_room_timer = 150;
-    for (ee = 0; ee < MAX_BSCENE; ee++)
+    for (ee = 0; ee < MAX_BSCENE; ee++) 
         play.raw_modified[ee] = 0;
     play.game_speed_modifier = 0;
     if (debug_flags & DBG_DEBUGMODE)
@@ -1233,7 +1233,7 @@ void init_game_settings() {
     memset(&play.default_audio_type_volumes[0], -1, MAX_AUDIO_TYPES * sizeof(int));
 
     // reset graphical script vars (they're still used by some games)
-    for (ee = 0; ee < MAXGLOBALVARS; ee++)
+    for (ee = 0; ee < MAXGLOBALVARS; ee++) 
         play.globalvars[ee] = 0;
 
     for (ee = 0; ee < MAXGLOBALSTRINGS; ee++)
@@ -1438,14 +1438,14 @@ int initialize_engine(int argc,char*argv[])
     engine_init_rooms();
 
     our_eip = -186;
-
+    
     res = engine_init_speech();
     if (res != RETURN_CONTINUE) {
         return res;
     }
 
     our_eip = -185;
-
+    
     res = engine_init_music();
     if (res != RETURN_CONTINUE) {
         return res;
@@ -1493,7 +1493,7 @@ int initialize_engine(int argc,char*argv[])
     if (res != RETURN_CONTINUE) {
         return res;
     }
-
+    
     res = engine_check_register_game();
     if (res != RETURN_CONTINUE) {
         return res;
@@ -1576,7 +1576,7 @@ int initialize_engine_with_exception_handling(int argc,char*argv[])
     Out::FPrint("Installing exception handler");
 
 #ifdef USE_CUSTOM_EXCEPTION_HANDLER
-    __try
+    __try 
     {
 #endif
 
@@ -1584,14 +1584,14 @@ int initialize_engine_with_exception_handling(int argc,char*argv[])
 
 #ifdef USE_CUSTOM_EXCEPTION_HANDLER
     }
-    __except (CustomExceptionHandler ( GetExceptionInformation() ))
+    __except (CustomExceptionHandler ( GetExceptionInformation() )) 
     {
         strcpy (tempmsg, "");
         sprintf (printfworkingspace, "An exception 0x%X occurred in ACWIN.EXE at EIP = 0x%08X %s; program pointer is %+d, ACI version %s, gtags (%d,%d)\n\n"
             "AGS cannot continue, this exception was fatal. Please note down the numbers above, remember what you were doing at the time and post the details on the AGS Technical Forum.\n\n%s\n\n"
             "Most versions of Windows allow you to press Ctrl+C now to copy this entire message to the clipboard for easy reporting.\n\n%s (code %d)",
             excinfo.ExceptionCode, excinfo.ExceptionAddress, tempmsg, our_eip, EngineVersion.LongString.GetCStr(), eip_guinum, eip_guiobj, get_cur_script(5),
-            (miniDumpResultCode == 0) ? "An error file CrashInfo.dmp has been created. You may be asked to upload this file when reporting this problem on the AGS Forums." :
+            (miniDumpResultCode == 0) ? "An error file CrashInfo.dmp has been created. You may be asked to upload this file when reporting this problem on the AGS Forums." : 
             "Unable to create an error dump file.", miniDumpResultCode);
         MessageBoxA(allegro_wnd, printfworkingspace, "Illegal exception", MB_ICONSTOP | MB_OK);
         proper_exit = 1;

@@ -205,7 +205,7 @@ PACKFILE *pack_fopen(char *filnam1, char *modd1) {
     // ~ signals load from specific data file, not the main default one
     char gfname[80];
     int ii = 0;
-
+    
     filnam++;
     while (filnam[0]!='~') {
       gfname[ii] = filnam[0];
@@ -222,7 +222,7 @@ PACKFILE *pack_fopen(char *filnam1, char *modd1) {
     sprintf(useloc,"%s\\%s",usetup.data_files_dir,gfname);
 #endif
     Common::AssetManager::SetDataFile(useloc);*/
-
+    
     char *libname = ci_find_file(usetup.data_files_dir, gfname);
     if (Common::AssetManager::SetDataFile(libname) != Common::kAssetNoError)
     {
@@ -232,7 +232,7 @@ PACKFILE *pack_fopen(char *filnam1, char *modd1) {
       Common::AssetManager::SetDataFile(libname);
     }
     free(libname);
-
+    
     needsetback = 1;
   }
 
@@ -259,14 +259,14 @@ PACKFILE *pack_fopen(char *filnam1, char *modd1) {
   if ((Common::AssetManager::GetAssetOffset(filnam)<1) || (file_exists)) {
     if (needsetback) Common::AssetManager::SetDataFile(game_file_name);
     return __old_pack_fopen(filnam, modd);
-  }
+  } 
   else {
     _my_temppack=__old_pack_fopen(Common::AssetManager::GetLibraryForAsset(filnam), modd);
     if (_my_temppack == NULL)
       quitprintf("pack_fopen: unable to change datafile: not found: %s", Common::AssetManager::GetLibraryForAsset(filnam).GetCStr());
 
     pack_fseek(_my_temppack,Common::AssetManager::GetAssetOffset(filnam));
-
+    
 #if ALLEGRO_DATE < 20050101
     _my_temppack->todo=Common::AssetManager::GetAssetSize(filnam);
 #else

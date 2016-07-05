@@ -594,7 +594,6 @@
 		521C56271D1E579300BD619E /* guitextbox.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55651D1E579300BD619E /* guitextbox.h */; };
 		521C56281D1E579300BD619E /* aastr.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55671D1E579300BD619E /* aastr.h */; };
 		521C56291D1E579300BD619E /* aautil.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55681D1E579300BD619E /* aautil.h */; };
-		521C562A1D1E579300BD619E /* aldumb.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55691D1E579300BD619E /* aldumb.h */; };
 		521C562B1D1E579300BD619E /* alfont.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C556A1D1E579300BD619E /* alfont.h */; };
 		521C562C1D1E579300BD619E /* alfontdll.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C556B1D1E579300BD619E /* alfontdll.h */; };
 		521C562D1D1E579300BD619E /* almp3.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C556C1D1E579300BD619E /* almp3.h */; };
@@ -602,9 +601,7 @@
 		521C562F1D1E579300BD619E /* alogg.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C556E1D1E579300BD619E /* alogg.h */; };
 		521C56301D1E579300BD619E /* aloggdll.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C556F1D1E579300BD619E /* aloggdll.h */; };
 		521C56311D1E579300BD619E /* apeg.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55701D1E579300BD619E /* apeg.h */; };
-		521C56321D1E579300BD619E /* bealleg.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55711D1E579300BD619E /* bealleg.h */; };
 		521C56331D1E579300BD619E /* common.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55721D1E579300BD619E /* common.h */; };
-		521C56341D1E579300BD619E /* dumb.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55731D1E579300BD619E /* dumb.h */; };
 		521C56351D1E579300BD619E /* genre.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55741D1E579300BD619E /* genre.h */; };
 		521C56361D1E579300BD619E /* getbits.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55751D1E579300BD619E /* getbits.h */; };
 		521C56371D1E579300BD619E /* getblk.h in Headers */ = {isa = PBXBuildFile; fileRef = 521C55761D1E579300BD619E /* getblk.h */; };
@@ -1294,7 +1291,6 @@
 		521C55651D1E579300BD619E /* guitextbox.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = guitextbox.h; sourceTree = "<group>"; };
 		521C55671D1E579300BD619E /* aastr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = aastr.h; sourceTree = "<group>"; };
 		521C55681D1E579300BD619E /* aautil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = aautil.h; sourceTree = "<group>"; };
-		521C55691D1E579300BD619E /* aldumb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = aldumb.h; sourceTree = "<group>"; };
 		521C556A1D1E579300BD619E /* alfont.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alfont.h; sourceTree = "<group>"; };
 		521C556B1D1E579300BD619E /* alfontdll.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alfontdll.h; sourceTree = "<group>"; };
 		521C556C1D1E579300BD619E /* almp3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = almp3.h; sourceTree = "<group>"; };
@@ -1302,9 +1298,7 @@
 		521C556E1D1E579300BD619E /* alogg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alogg.h; sourceTree = "<group>"; };
 		521C556F1D1E579300BD619E /* aloggdll.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = aloggdll.h; sourceTree = "<group>"; };
 		521C55701D1E579300BD619E /* apeg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apeg.h; sourceTree = "<group>"; };
-		521C55711D1E579300BD619E /* bealleg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bealleg.h; sourceTree = "<group>"; };
 		521C55721D1E579300BD619E /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
-		521C55731D1E579300BD619E /* dumb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dumb.h; sourceTree = "<group>"; };
 		521C55741D1E579300BD619E /* genre.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = genre.h; sourceTree = "<group>"; };
 		521C55751D1E579300BD619E /* getbits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = getbits.h; sourceTree = "<group>"; };
 		521C55761D1E579300BD619E /* getblk.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = getblk.h; sourceTree = "<group>"; };
@@ -2450,7 +2444,6 @@
 			children = (
 				521C55671D1E579300BD619E /* aastr.h */,
 				521C55681D1E579300BD619E /* aautil.h */,
-				521C55691D1E579300BD619E /* aldumb.h */,
 				521C556A1D1E579300BD619E /* alfont.h */,
 				521C556B1D1E579300BD619E /* alfontdll.h */,
 				521C556C1D1E579300BD619E /* almp3.h */,
@@ -2458,9 +2451,7 @@
 				521C556E1D1E579300BD619E /* alogg.h */,
 				521C556F1D1E579300BD619E /* aloggdll.h */,
 				521C55701D1E579300BD619E /* apeg.h */,
-				521C55711D1E579300BD619E /* bealleg.h */,
 				521C55721D1E579300BD619E /* common.h */,
-				521C55731D1E579300BD619E /* dumb.h */,
 				521C55741D1E579300BD619E /* genre.h */,
 				521C55751D1E579300BD619E /* getbits.h */,
 				521C55761D1E579300BD619E /* getblk.h */,
@@ -2867,7 +2858,6 @@
 				521C53501D1E570D00BD619E /* mytextbox.h in Headers */,
 				521C52BB1D1E570D00BD619E /* guicontrol.h in Headers */,
 				521C531B1D1E570D00BD619E /* filebasedagsdebugger.h in Headers */,
-				521C56321D1E579300BD619E /* bealleg.h in Headers */,
 				521C52DC1D1E570D00BD619E /* properties.h in Headers */,
 				521C56851D1E579300BD619E /* string.h in Headers */,
 				521C55D81D1E579300BD619E /* animationstruct.h in Headers */,
@@ -2931,7 +2921,6 @@
 				521C52B71D1E570D00BD619E /* global_walkbehind.h in Headers */,
 				521C52F81D1E570D00BD619E /* spritelistentry.h in Headers */,
 				521C56871D1E579300BD619E /* string_utils.h in Headers */,
-				521C56341D1E579300BD619E /* dumb.h in Headers */,
 				521C531D1D1E570D00BD619E /* logfile.h in Headers */,
 				521C534C1D1E570D00BD619E /* mylistbox.h in Headers */,
 				521C53191D1E570D00BD619E /* dummyagsdebugger.h in Headers */,
@@ -2967,7 +2956,6 @@
 				521C56361D1E579300BD619E /* getbits.h in Headers */,
 				521C52CB1D1E570D00BD619E /* listbox.h in Headers */,
 				521C54001D1E570D00BD619E /* sound.h in Headers */,
-				521C562A1D1E579300BD619E /* aldumb.h in Headers */,
 				521C52571D1E570D00BD619E /* scriptgui.h in Headers */,
 				521C56021D1E579300BD619E /* assetmanager.h in Headers */,
 				521C523E1D1E570D00BD619E /* cc_guiobject.h in Headers */,

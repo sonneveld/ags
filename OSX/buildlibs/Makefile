@@ -13,8 +13,10 @@ PLAT_FLAGS:=-mmacosx-version-min=10.7 -arch i386 -arch x86_64
 libs: lua freetype ogg vorbis theora allegro dumb
 
 install: libs
-	cp $(PREFIX)/lib/*.a ../lib
+	rm -rf ../lib/*.a
 	rm -rf ../include
+	mkdir -p ../lib
+	cp $(PREFIX)/lib/*.a ../lib
 	cp -a $(PREFIX)/include ../include
 
 prepare:
@@ -76,7 +78,7 @@ theora: prepare ogg vorbis
 		make install
 
 # - you can add `-DCMAKE_BUILD_TYPE=Debug` to the cmake options but remember it will produce the file `liballeg-debug.a`
-# - to update patch: git diff 4.4.2 > ../ags/OSX/patches/allegro-4.4.2.patch
+# - to update patch: git diff 4.4.2..osx-update > ../ags/OSX/patches/allegro-4.4.2.patch
 allegro: prepare
 	rm -rf $(BUILD)/allegro-4.4.2
 	tar xf $(LIBSRCDIR)/allegro-4.4.2.tar.gz -C $(BUILD)

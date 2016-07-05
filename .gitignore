@@ -33,6 +33,7 @@ Engine/resource/version.aps
 *.o
 *.d
 common.a
+Engine/ags
 Android/launcher_list/.classpath
 Android/launcher_list/.settings/
 Android/launcher_list/bin/
@@ -67,18 +68,21 @@ iOS/nativelibs/arm64
 iOS/nativelibs/i386
 iOS/nativelibs/x86_64
 Solutions/Engine.App/test.ini
-opt/
 
 OSX/xcode/agsteam
 OSX/xcode/steamworks_sdk
-OSX/include
-OSX/lib
+
 libsrc/*.tar*
 libsrc/*.zip
 
 ac2game.dat
 audio.vox
 speech.vox
+
+OSX/buildlibs/opt/
+OSX/buildlibs/build/
+OSX/include/
+OSX/lib/
 
 ## Xcode Build generated
 build/

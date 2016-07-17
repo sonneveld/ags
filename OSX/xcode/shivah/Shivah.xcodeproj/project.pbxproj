@@ -15,6 +15,7 @@
 		28FD15000DC6FC520079059D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGL.framework */; };
 		52264CBF1D16AB7A00A39A14 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52264CBE1D16AB7A00A39A14 /* Cocoa.framework */; };
 		52264CC11D16AC5000A39A14 /* acsetup.cfg in Resources */ = {isa = PBXBuildFile; fileRef = 52264CC01D16AC5000A39A14 /* acsetup.cfg */; };
+		526F1A181D3B0AC300EF4E1F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 526F1A171D3B0AC300EF4E1F /* MainMenu.xib */; };
 		52A7D3511D1E688100D88BEE /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3501D1E688100D88BEE /* AGSKit.framework */; };
 		52A7D3531D1E689C00D88BEE /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3521D1E689C00D88BEE /* libz.1.dylib */; };
 		52A7D3551D1E68A800D88BEE /* libbz2.1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3541D1E68A800D88BEE /* libbz2.1.0.dylib */; };
@@ -71,6 +72,7 @@
 		32CA4F630368D1EE00C91783 /* Shivah_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Shivah_Prefix.pch; sourceTree = "<group>"; };
 		52264CBE1D16AB7A00A39A14 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		52264CC01D16AC5000A39A14 /* acsetup.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = acsetup.cfg; path = game_files/acsetup.cfg; sourceTree = "<group>"; };
+		526F1A171D3B0AC300EF4E1F /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		52A7D3501D1E688100D88BEE /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AGSKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		52A7D3521D1E689C00D88BEE /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52A7D3541D1E68A800D88BEE /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
@@ -177,6 +179,7 @@
 				110F58A41885B8450061BB0A /* speech.vox */,
 				8D1107310486CEB800E47090 /* Shivah-Info.plist */,
 				52C5C0841D278649001E3B10 /* steam_appid.txt */,
+				526F1A171D3B0AC300EF4E1F /* MainMenu.xib */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -313,6 +316,7 @@
 				52264CC11D16AC5000A39A14 /* acsetup.cfg in Resources */,
 				118F74CE18B52A5200236026 /* Images.xcassets in Resources */,
 				110F58A81885B8450061BB0A /* audio.vox in Resources */,
+				526F1A181D3B0AC300EF4E1F /* MainMenu.xib in Resources */,
 				110F58A91885B8450061BB0A /* speech.vox in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

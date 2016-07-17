@@ -4390,10 +4390,10 @@ index 0000000..35b7631
 +#endif
 diff --git a/src/macosx/cocoagl.m b/src/macosx/cocoagl.m
 new file mode 100644
-index 0000000..556bb4f
+index 0000000..226b46f
 --- /dev/null
 +++ b/src/macosx/cocoagl.m
-@@ -0,0 +1,573 @@
+@@ -0,0 +1,614 @@
 +/*         ______   ___    ___ 
 + *        /\  _  \ /\_ \  /\_ \ 
 + *        \ \ \L\ \\//\ \ \//\ \      __     __   _ __   ___ 
@@ -4421,6 +4421,7 @@ index 0000000..556bb4f
 +#endif
 +
 +#include <OpenGL/gl.h>
++#include <math.h>
 +
 +#define PREFIX_I "al-osxgl INFO: "
 +#define PREFIX_W "al-osxgl WARNING: "
@@ -4512,6 +4513,41 @@ index 0000000..556bb4f
 +};
 +
 +
++static float calc_aspect_ratio(NSSize size) {
++    float display_aspect = ((float)size.width) / size.height;
++
++    /* if 320x200 or 640x400 - non square pixels */
++    if ( ((size.width == 320) && (size.height == 200)) ||
++        ((size.width == 640) && (size.height == 400)) ) {
++        display_aspect = 4.0/3.0;
++    }
++
++    return display_aspect;
++}
++
++static NSSize adjust_display_size(NSSize size) 
++{
++    const float display_aspect = calc_aspect_ratio(size);
++    return NSMakeSize (ceil(size.width), ceil(size.width / display_aspect));
++}
++
++static NSSize scale_display_size(NSSize size) 
++{
++    int display_w = size.width;
++    int display_h = size.height;
++
++    NSRect screenRect = [[NSScreen mainScreen] visibleFrame];
++    int w_scale = screenRect.size.width / display_w;
++    int h_scale = screenRect.size.height / display_h;
++    int scale = w_scale;
++    if (h_scale < scale) { scale = h_scale; }
++    if (scale < 1) { scale = 1; }
++
++    display_w = display_w * scale;
++    display_h = display_h * scale;
++
++    return NSMakeSize (display_w, display_h);
++}
 +
 +static BITMAP *osx_gl_real_init(int w, int h, int v_w, int v_h, int color_depth, GFX_DRIVER * driver)
 +{
@@ -4533,15 +4569,18 @@ index 0000000..556bb4f
 +    // Run on the main thread because we're manipulating the API
 +    runOnMainQueueWithoutDeadlocking(^{
 +
++    const NSSize suggestedSize = NSMakeSize(w, h);
++    const NSSize adjustedSize = adjust_display_size(suggestedSize);
++    const NSSize scaledSize = scale_display_size(adjustedSize);
++
 +    // setup REAL window
-+    NSRect rect = NSMakeRect(0, 0, w, h);
 +    NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask;
 +    //if (is_fullscreen) {
 +      //  rect = [[NSScreen mainScreen] frame];
 +      //  styleMask = NSBorderlessWindowMask;
 +    //}
 +
-+    osx_window = [[AllegroWindow alloc] initWithContentRect: rect
++    osx_window = [[AllegroWindow alloc] initWithContentRect: (NSRect){.origin=NSZeroPoint, .size=scaledSize}
 +                                                  styleMask: styleMask
 +                                                    backing: NSBackingStoreBuffered
 +                                                      defer: NO
@@ -4553,8 +4592,8 @@ index 0000000..556bb4f
 +    [osx_window setAcceptsMouseMovedEvents: YES];
 +    [osx_window setViewsNeedDisplay: NO];
 +    [osx_window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-+
 +    [osx_window center];
++
 +    if (is_fullscreen) {
 +        [osx_window  toggleFullScreen:nil];
 +//        [osx_window setLevel:NSMainMenuWindowLevel+1];
@@ -4564,8 +4603,11 @@ index 0000000..556bb4f
 +
 +    set_window_title(osx_window_title);
 +
-+    AllegroCocoaGLView *osx_gl_view = [[[AllegroCocoaGLView alloc] initWithFrame: rect windowed:driver->windowed backing: displayed_video_bitmap] autorelease];
++    AllegroCocoaGLView *osx_gl_view = [[[AllegroCocoaGLView alloc] initWithFrame: (NSRect){.origin=NSZeroPoint, .size=scaledSize} windowed:driver->windowed backing: displayed_video_bitmap] autorelease];
 +    [osx_window setContentView: osx_gl_view];
++
++    [osx_window setContentMinSize: adjustedSize];
++    [osx_window setContentAspectRatio: adjustedSize];
 +
 +    [osx_window makeKeyAndOrderFront: nil];
 +
@@ -4698,8 +4740,7 @@ index 0000000..556bb4f
 +- (void)resetCursorRects
 +{
 +    [super resetCursorRects];
-+    [self addCursorRect: [self visibleRect]
-+                 cursor: osx_cursor];
++    [self addCursorRect: [self visibleRect] cursor: osx_cursor];
 +    [osx_cursor setOnMouseEntered: YES];
 +}
 +
@@ -4939,15 +4980,15 @@ index 0000000..556bb4f
 +
 +        NSSize myNSWindowSize = [ self frame ].size;
 +
-+        float aspect = ((float)_gameWidth) / _gameHeight;
++        float aspect = calc_aspect_ratio(NSMakeSize(_gameWidth, _gameHeight));
 +
-+        /* if 320x200 or 640x400 - non square pixels */
-+        if ( (_gameWidth == 320) && (_gameHeight == 200) ||
-+            (_gameWidth == 640) && (_gameHeight == 400) ) {
-+            aspect = 1.333333333333;
++        NSRect viewport;
++        viewport.size = NSMakeSize(myNSWindowSize.height * aspect, myNSWindowSize.height);
++        if (viewport.size.width > myNSWindowSize.width) {
++            viewport.size = NSMakeSize(myNSWindowSize.width, myNSWindowSize.width/aspect);
 +        }
++        viewport.origin = NSMakePoint((myNSWindowSize.width - viewport.size.width)/2, (myNSWindowSize.height - viewport.size.height)/2 );
 +
-+        NSRect viewport = NSMakeRect((myNSWindowSize.width - myNSWindowSize.height * aspect)/2, 0, myNSWindowSize.height * aspect, myNSWindowSize.height);
 +        glViewport(viewport.origin.x, viewport.origin.y, viewport.size.width, viewport.size.height);
 +        glScissor(viewport.origin.x, viewport.origin.y, viewport.size.width, viewport.size.height);
 +        
@@ -5436,10 +5477,21 @@ index 7df89ad..d4f967b 100644
  
 +#endif
 diff --git a/src/macosx/qzmouse.m b/src/macosx/qzmouse.m
-index 5da32af..79f171c 100644
+index 5da32af..e5a530b 100644
 --- a/src/macosx/qzmouse.m
 +++ b/src/macosx/qzmouse.m
-@@ -211,8 +211,7 @@ static void osx_mouse_exit(void)
+@@ -110,6 +110,10 @@ void osx_mouse_handler(int ax, int ay, int x, int y, int z, int buttons)
+          [osx_cursor set];
+       }
+       current_cursor = osx_cursor;
++   } else {
++      if (![[NSCursor currentSystemCursor] isEqual: osx_cursor]) {
++         [osx_cursor set];
++      } 
+    }
+ 
+    if (osx_mouse_warped) {
+@@ -211,8 +215,7 @@ static void osx_mouse_exit(void)
  static void osx_mouse_position(int x, int y)
  {
     CGPoint point;
@@ -5449,7 +5501,7 @@ index 5da32af..79f171c 100644
     
     _unix_lock_mutex(osx_event_mutex);
     
-@@ -220,13 +219,19 @@ static void osx_mouse_position(int x, int y)
+@@ -220,13 +223,19 @@ static void osx_mouse_position(int x, int y)
     _mouse_y = point.y = y;
     
     if (osx_window) {
@@ -5473,7 +5525,7 @@ index 5da32af..79f171c 100644
     
     mymickey_x = mymickey_y = 0;
     osx_mouse_warped = TRUE;
-@@ -274,19 +279,12 @@ int osx_mouse_set_sprite(BITMAP *sprite, int x, int y)
+@@ -274,19 +283,12 @@ int osx_mouse_set_sprite(BITMAP *sprite, int x, int y)
  {
     int ix, iy;
     int sw, sh;

@@ -1227,10 +1227,13 @@ Bitmap *OGLGraphicsDriver::ConvertBitmapToSupportedColourDepth(Bitmap *bitmap)
 */   if (colourDepth != 32)
    {
      // we need 32-bit colour
-     Bitmap *tempBmp = BitmapHelper::CreateBitmapCopy(bitmap, 32);
+     Bitmap* tempBmp = BitmapHelper::CreateBitmapCopy(bitmap, 32);
+     delete bitmap;
      set_color_conversion(colorConv);
      return tempBmp;
    }
+    
+    set_color_conversion(colorConv);
    return bitmap;
 }
 

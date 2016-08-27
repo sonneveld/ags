@@ -112,7 +112,7 @@ int rec_kbhit () {
     if ((play.playback) && (recordbuffer != NULL)) {
         // check for real keypresses to abort the replay
         if (keypressed()) {
-            if (my_readkey() == 27) {
+            if (my_readkey() == 0x1B /* ESC */) {
                 disable_replay_playback();
                 return 0;
             }
@@ -478,12 +478,71 @@ void start_playback()
         play.playback = 0;
 }
 
+int ags_keycode_from_allegro_scancode (int key)
+{
+    int scancode = ((key >> 8) & 0x00ff);
+    
+    if (key == READKEY_CODE_ALT_TAB)
+    {
+        // Alt+Tab, it gets stuck down unless we do this
+        return AGS_KEYCODE_ALT_TAB;
+    }
+    
+    int result = -1;
+    
+    if ((key & 0x00ff) == EXTENDED_KEY_CODE) {
+        switch(scancode) {
+            case __allegro_KEY_0_PAD: result = 382; break;
+            case __allegro_KEY_1_PAD: result = 379; break;
+            case __allegro_KEY_2_PAD: result = 380; break;
+            case __allegro_KEY_3_PAD: result = 381; break;
+            case __allegro_KEY_4_PAD: result = 375; break;
+            case __allegro_KEY_5_PAD: result = 376; break;
+            case __allegro_KEY_6_PAD: result = 377; break;
+            case __allegro_KEY_7_PAD: result = 371; break;
+            case __allegro_KEY_8_PAD: result = 372; break;
+            case __allegro_KEY_9_PAD: result = 373; break;
+            case __allegro_KEY_F1: result = 359; break;
+            case __allegro_KEY_F2: result = 360; break;
+            case __allegro_KEY_F3: result = 361; break;
+            case __allegro_KEY_F4: result = 362; break;
+            case __allegro_KEY_F5: result = 363; break;
+            case __allegro_KEY_F6: result = 364; break;
+            case __allegro_KEY_F7: result = 365; break;
+            case __allegro_KEY_F8: result = 366; break;
+            case __allegro_KEY_F9: result = 367; break;
+            case __allegro_KEY_F10: result = 368; break;
+            case __allegro_KEY_F11: result = 433; break;
+            case __allegro_KEY_F12: result = 434; break;
+            case __allegro_KEY_INSERT: result = 382; break;
+            case __allegro_KEY_DEL: result = 383; break;
+            case __allegro_KEY_HOME: result = 371; break;
+            case __allegro_KEY_END: result = 379; break;
+            case __allegro_KEY_PGUP: result = 373; break;
+            case __allegro_KEY_PGDN: result = 381; break;
+            case __allegro_KEY_LEFT: result = 375; break;
+            case __allegro_KEY_RIGHT: result = 377; break;
+            case __allegro_KEY_UP: result = 372; break;
+            case __allegro_KEY_DOWN: result = 380; break;
+            case __allegro_KEY_DEL_PAD: result = 383; break;
+            default: result = AGS_EXT_KEY_SHIFT + scancode; break;
+        }
+    } else {
+        result = key & 0x00ff;
+#if defined(MAC_VERSION)
+        if (scancode==__allegro_KEY_BACKSPACE) {
+            result = 8; //j backspace on mac
+        }
+#endif
+    }
+    
+    return result;
+}
+
 int my_readkey() {
     int gott=readkey();
-    int scancode = ((gott >> 8) & 0x00ff);
 
-    if (gott == READKEY_CODE_ALT_TAB)
-    {
+    if (gott == READKEY_CODE_ALT_TAB) {
         // Alt+Tab, it gets stuck down unless we do this
         return AGS_KEYCODE_ALT_TAB;
     }
@@ -497,58 +556,8 @@ int my_readkey() {
     if ((key_shifts & KB_NUMLOCK_FLAG) == 0)
     gott = (gott & 0xff00) | EXTENDED_KEY_CODE;
     }*/
-
-    if ((gott & 0x00ff) == EXTENDED_KEY_CODE) {
-        gott = scancode + AGS_EXT_KEY_SHIFT;
-
-        // convert Allegro KEY_* numbers to scan codes
-        // (for backwards compatibility we can't just use the
-        // KEY_* constants now, it's too late)
-        if ((gott>=347) & (gott<=356)) gott+=12;
-        // F11-F12
-        else if ((gott==357) || (gott==358)) gott+=76;
-        // insert / numpad insert
-        else if ((scancode == KEY_0_PAD) || (scancode == KEY_INSERT))
-            gott = AGS_KEYCODE_INSERT;
-        // delete / numpad delete
-        else if ((scancode == KEY_DEL_PAD) || (scancode == KEY_DEL))
-            gott = AGS_KEYCODE_DELETE;
-        // Home
-        else if (gott == 378) gott = 371;
-        // End
-        else if (gott == 379) gott = 379;
-        // PgUp
-        else if (gott == 380) gott = 373;
-        // PgDn
-        else if (gott == 381) gott = 381;
-        // left arrow
-        else if (gott==382) gott=375;
-        // right arrow
-        else if (gott==383) gott=377;
-        // up arrow
-        else if (gott==384) gott=372;
-        // down arrow
-        else if (gott==385) gott=380;
-        // numeric keypad
-        else if (gott==338) gott=379;
-        else if (gott==339) gott=380;
-        else if (gott==340) gott=381;
-        else if (gott==341) gott=375;
-        else if (gott==342) gott=376;
-        else if (gott==343) gott=377;
-        else if (gott==344) gott=371;
-        else if (gott==345) gott=372;
-        else if (gott==346) gott=373;
-    }
-    else
-    {
-      gott = gott & 0x00ff;
-#if defined(MAC_VERSION)
-      if (scancode==KEY_BACKSPACE) {
-        gott = 8; //j backspace on mac
-      }
-#endif
-    }
+    
+    gott = ags_keycode_from_allegro_scancode(gott);
 
     // Alt+X, abort (but only once game is loaded)
     if ((gott == play.abort_key) && (displayed_room >= 0)) {

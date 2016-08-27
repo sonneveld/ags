@@ -110,7 +110,7 @@
 		11FD018019DC862800C4A61D /* steam_appid.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = steam_appid.txt; path = game_files/steam/steam_appid.txt; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* Primordia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Primordia.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		32CA4F630368D1EE00C91783 /* Primordia_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Primordia_Prefix.pch; sourceTree = "<group>"; };
-		52B8A5581D2777ED00FA453F /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = ../../../steamworks_sdk_137/redistributable_bin/osx32/libsteam_api.dylib; sourceTree = "<group>"; };
+		52B8A5581D2777ED00FA453F /* libsteam_api.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsteam_api.dylib; path = redistributable_bin/osx32/libsteam_api.dylib; sourceTree = steamworks_sdk; };
 		52B8A5591D2777ED00FA453F /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AGSKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		52B8A55A1D2777ED00FA453F /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52B8A55B1D2777ED00FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
@@ -457,10 +457,10 @@
 				GCC_PREFIX_HEADER = Primordia_Prefix.pch;
 				INFOPLIST_FILE = "Primordia_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/redistributable_bin/osx32";
+				LIBRARY_SEARCH_PATHS = "$(steamworks_sdk)/redistributable_bin/osx32";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.wadjeteyegames.mac.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Primordia;
-				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/public";
+				USER_HEADER_SEARCH_PATHS = "$(steamworks_sdk)/public";
 			};
 			name = Debug;
 		};
@@ -474,10 +474,10 @@
 				GCC_PREFIX_HEADER = Primordia_Prefix.pch;
 				INFOPLIST_FILE = "Primordia_Steam-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				LIBRARY_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/redistributable_bin/osx32";
+				LIBRARY_SEARCH_PATHS = "$(steamworks_sdk)/redistributable_bin/osx32";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.wadjeteyegames.mac.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = Primordia;
-				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/../steamworks_sdk/public";
+				USER_HEADER_SEARCH_PATHS = "$(steamworks_sdk)/public";
 			};
 			name = Release;
 		};

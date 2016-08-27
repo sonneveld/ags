@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		522C8F151D5A0A9B0000B0E0 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 522C8F141D5A0A9B0000B0E0 /* SDL2.framework */; };
 		523AB9711D27DA40002B98F0 /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 523AB9701D27DA40002B98F0 /* AGSKit.framework */; };
 		52B8A6221D27785A00FA453F /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6141D27785A00FA453F /* libz.1.dylib */; };
 		52B8A6231D27785A00FA453F /* libbz2.1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */; };
@@ -41,6 +42,7 @@
 /* Begin PBXFileReference section */
 		1D6058910D05DD3D006BFB54 /* AGS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AGS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		32CA4F630368D1EE00C91783 /* ags_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ags_Prefix.pch; sourceTree = "<group>"; };
+		522C8F141D5A0A9B0000B0E0 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
 		523AB9701D27DA40002B98F0 /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AGSKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		52B8A6141D27785A00FA453F /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
@@ -67,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				522C8F151D5A0A9B0000B0E0 /* SDL2.framework in Frameworks */,
 				52B8A6281D27785A00FA453F /* CoreAudio.framework in Frameworks */,
 				52B8A6231D27785A00FA453F /* libbz2.1.0.dylib in Frameworks */,
 				52B8A6271D27785A00FA453F /* IOKit.framework in Frameworks */,
@@ -138,6 +141,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				522C8F141D5A0A9B0000B0E0 /* SDL2.framework */,
 				523AB9701D27DA40002B98F0 /* AGSKit.framework */,
 				52B8A61F1D27785A00FA453F /* System Frameworks */,
 			);
@@ -245,6 +249,10 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = ags_Prefix.pch;
@@ -261,6 +269,10 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = ags_Prefix.pch;
 				INFOPLIST_FILE = "ags-Info.plist";

@@ -234,99 +234,18 @@ void engine_set_color_conversions()
     Out::FPrint("Initializing colour conversion");
 
     // default shifts for how we store the sprite data
-#if defined(PSP_VERSION)
-    // PSP: Switch b<>r for 15/16 bit.
     _rgb_r_shift_32 = 16;
     _rgb_g_shift_32 = 8;
     _rgb_b_shift_32 = 0;
-    _rgb_b_shift_16 = 11;
-    _rgb_g_shift_16 = 5;
-    _rgb_r_shift_16 = 0;
-    _rgb_b_shift_15 = 10;
-    _rgb_g_shift_15 = 5;
-    _rgb_r_shift_15 = 0;
-#else
-    _rgb_r_shift_32 = 16;
-    _rgb_g_shift_32 = 8;
-    _rgb_b_shift_32 = 0;
+    
     _rgb_r_shift_16 = 11;
     _rgb_g_shift_16 = 5;
     _rgb_b_shift_16 = 0;
+    
+    // NS 15 bit here - unused?
     _rgb_r_shift_15 = 10;
     _rgb_g_shift_15 = 5;
     _rgb_b_shift_15 = 0;
-#endif
-    // Most cards do 5-6-5 RGB, which is the format the files are saved in
-    // Some do 5-6-5 BGR, or  6-5-5 RGB, in which case convert the gfx
-    if ((ScreenResolution.ColorDepth == 16) && ((_rgb_b_shift_16 != 0) || (_rgb_r_shift_16 != 11)))
-    {
-        convert_16bit_bgr = 1;
-        if (_rgb_r_shift_16 == 10) {
-            // some very old graphics cards lie about being 16-bit when they
-            // are in fact 15-bit ... get around this
-            _places_r = 3;
-            _places_g = 3;
-        }
-    }
-    if (ScreenResolution.ColorDepth > 16)
-    {
-        // when we're using 32-bit colour, it converts hi-color images
-        // the wrong way round - so fix that
-
-#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(MAC_VERSION)
-        _rgb_b_shift_16 = 0;
-        _rgb_g_shift_16 = 5;
-        _rgb_r_shift_16 = 11;
-
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
-        _rgb_r_shift_15 = 10;
-
-        _rgb_r_shift_32 = 0;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 16;
-#else
-        _rgb_r_shift_16 = 11;
-        _rgb_g_shift_16 = 5;
-        _rgb_b_shift_16 = 0;
-#endif
-    }
-    else if (ScreenResolution.ColorDepth == 16)
-    {
-        // ensure that any 32-bit graphics displayed are converted
-        // properly to the current depth
-#if defined(PSP_VERSION)
-        _rgb_r_shift_32 = 0;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 16;
-
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
-        _rgb_r_shift_15 = 10;
-#else
-        _rgb_r_shift_32 = 16;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 0;
-#endif
-    }
-    else if (ScreenResolution.ColorDepth < 16)
-    {
-        // ensure that any 32-bit graphics displayed are converted
-        // properly to the current depth
-#if defined (WINDOWS_VERSION)
-        _rgb_r_shift_32 = 16;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 0;
-#else
-        _rgb_r_shift_32 = 0;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 16;
-
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
-        _rgb_r_shift_15 = 10;
-#endif
-    }
 
     set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256);
 }

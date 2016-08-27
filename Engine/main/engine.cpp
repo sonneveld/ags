@@ -136,9 +136,9 @@ bool engine_init_allegro()
 void engine_setup_allegro()
 {
     // Setup allegro using constructed config string
-    String al_config_data = "[mouse]\n";
-    al_config_data.Append(String::FromFormat("mouse_accel_factor = %d\n", 0));
-    set_config_data(al_config_data, al_config_data.GetLength());
+    const char *al_config_data = "[mouse]\n"
+        "mouse_accel_factor = 0\n";
+    override_config_data(al_config_data, ustrsize(al_config_data));
 }
 
 void winclosehook() {
@@ -835,9 +835,25 @@ void engine_init_directories()
         usetup.data_files_dir = ".";
     }
 
-    char newDirBuffer[MAX_PATH];
-    sprintf(newDirBuffer, "%s/%s", UserSavedgamesRootToken.GetCStr(), game.saveGameFolderName);
-    Game_SetSaveGameDirectory(newDirBuffer);
+    // if end-user specified custom save path, use it
+    bool res = false;
+    if (!usetup.user_data_dir.IsEmpty())
+    {
+        res = SetSaveGameDirectoryPath(String::FromFormat("%s/UserSaves", usetup.user_data_dir.GetCStr()), true);
+        if (!res)
+        {
+            Out::FPrint("WARNING: custom user save path failed, using default system paths");
+            usetup.user_data_dir.Empty();
+            res = false;
+        }
+    }
+    // if there is no custom path, or if custom path failed, use default system path
+    if (!res)
+    {
+        char newDirBuffer[MAX_PATH];
+        sprintf(newDirBuffer, "%s/%s", UserSavedgamesRootToken.GetCStr(), game.saveGameFolderName);
+        SetSaveGameDirectoryPath(newDirBuffer);
+    }
 }
 
 #if defined(ANDROID_VERSION)

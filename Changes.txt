@@ -1,5 +1,39 @@
 REVISION HISTORY
 ================
+VERSION 3.3.5 - Patch 6, August 2016
+
+Editor:
+- Fixed properties buttons dissapearing from the Properties panel if the
+  object was selected while the panel was not visible.
+
+Engine:
+- Fixed Display script functions displaying different text if there is any
+  variadic text formatting function called in repeatedly_execute().
+- Fixed text formatting functions did not parse "%%" format properly.
+
+
+VERSION 3.3.5 - Patch 5, July 2016
+
+Engine:
+- Fixed user's allegro.cfg was ignored.
+
+
+VERSION 3.3.5 - Patch 4, July 2016
+
+Compiler:
+- Fixed crash occuring when there is an incomplete declaration in the end
+  of script.
+
+Engine:
+- Engine will fall back to using default system paths if it failed using
+  user-defined custom save path for any reason.
+- Fixed engine displaying same warning twice if the loaded game was compiled
+  for higher version of AGS.
+
+WinSetup:
+- Only let user choose actually existing folders for custom save paths.
+
+
 VERSION 3.3.5 - Patch 3, June 2016
 
 Engine:

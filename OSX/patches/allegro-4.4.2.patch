@@ -4390,10 +4390,10 @@ index 0000000..35b7631
 +#endif
 diff --git a/src/macosx/cocoagl.m b/src/macosx/cocoagl.m
 new file mode 100644
-index 0000000..226b46f
+index 0000000..4b7ebfa
 --- /dev/null
 +++ b/src/macosx/cocoagl.m
-@@ -0,0 +1,614 @@
+@@ -0,0 +1,616 @@
 +/*         ______   ___    ___ 
 + *        /\  _  \ /\_ \  /\_ \ 
 + *        \ \ \L\ \\//\ \ \//\ \      __     __   _ __   ___ 
@@ -4516,11 +4516,13 @@ index 0000000..226b46f
 +static float calc_aspect_ratio(NSSize size) {
 +    float display_aspect = ((float)size.width) / size.height;
 +
++#ifdef ALLEGRO_MACOSX_ALLOW_NON_SQUARE_PIXELS    
 +    /* if 320x200 or 640x400 - non square pixels */
 +    if ( ((size.width == 320) && (size.height == 200)) ||
 +        ((size.width == 640) && (size.height == 400)) ) {
 +        display_aspect = 4.0/3.0;
 +    }
++#endif
 +
 +    return display_aspect;
 +}

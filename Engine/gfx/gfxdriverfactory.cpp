@@ -26,6 +26,8 @@
 #include "gfx/gfxfilter_d3d.h"
 #endif
 
+#include "gfx/ali3dsdl2.hpp"
+
 #include "main/main_allegro.h"
 
 extern int psp_gfx_renderer;
@@ -56,8 +58,12 @@ IGfxDriverFactory *GetGfxDriverFactory(const String id)
     if (id.CompareNoCase("OGL") == 0 || (id.CompareNoCase("D3D9") == 0 && psp_gfx_renderer > 0))
         return OGL::OGLGraphicsFactory::GetFactory();
 #endif
-    if (id.CompareNoCase("DX5") == 0)
+    if (id.CompareNoCase("DX5") == 0) {
         return ALSW::ALSWGraphicsFactory::GetFactory();
+    }
+    if (id.CompareNoCase("SDL2") == 0) {
+        return OGL::SDLGraphicsFactory::GetFactory();
+    }
     set_allegro_error("No graphics factory with such id: %s", id.GetCStr());
     return NULL;
 }

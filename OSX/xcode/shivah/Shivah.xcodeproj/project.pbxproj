@@ -43,7 +43,6 @@
 		525611A41D718C50001C9D62 /* steam_appid.txt in CopyFiles */ = {isa = PBXBuildFile; fileRef = 52C5C0841D278649001E3B10 /* steam_appid.txt */; };
 		525611AC1D718C8F001C9D62 /* plugin_registration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 525611AA1D718C8F001C9D62 /* plugin_registration.cpp */; };
 		525611AE1D718DC1001C9D62 /* ac2game.dat in Resources */ = {isa = PBXBuildFile; fileRef = 525611AD1D718DC1001C9D62 /* ac2game.dat */; };
-		525611B11D718EAE001C9D62 /* Shivah_Steam-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 525611B01D718EAE001C9D62 /* Shivah_Steam-Info.plist */; };
 		526F1A181D3B0AC300EF4E1F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 526F1A171D3B0AC300EF4E1F /* MainMenu.xib */; };
 		52A7D3511D1E688100D88BEE /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3501D1E688100D88BEE /* AGSKit.framework */; };
 		52A7D3531D1E689C00D88BEE /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3521D1E689C00D88BEE /* libz.1.dylib */; };
@@ -427,7 +426,6 @@
 				525611891D718C50001C9D62 /* Images.xcassets in Resources */,
 				5256118A1D718C50001C9D62 /* audio.vox in Resources */,
 				5256118B1D718C50001C9D62 /* MainMenu.xib in Resources */,
-				525611B11D718EAE001C9D62 /* Shivah_Steam-Info.plist in Resources */,
 				5256118C1D718C50001C9D62 /* speech.vox in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

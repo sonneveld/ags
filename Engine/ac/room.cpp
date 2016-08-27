@@ -404,6 +404,8 @@ extern int convert_16bit_bgr;
 // forchar = playerchar on NewRoom, or NULL if restore saved game
 void load_new_room(int newnum, CharacterInfo*forchar) {
 
+    // [NS] this is where room data is loaded
+    
     DEBUG_CONSOLE("Loading room %d", newnum);
 
     String room_filename;

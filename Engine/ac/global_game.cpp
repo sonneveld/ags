@@ -596,6 +596,7 @@ void GetLocationName(int xxx,int yyy,char*tempo) {
     play.get_loc_name_last_time = onhs;
 }
 
+// keycodes are defined in agsdefns.sh as 'enum eKeyCode'
 int IsKeyPressed (int keycode) {
 #ifdef ALLEGRO_KEYBOARD_HANDLER
     if (keyboard_needs_poll())

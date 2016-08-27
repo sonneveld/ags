@@ -361,6 +361,8 @@ void SpriteCache::seekToSprite(int index) {
 
 int SpriteCache::loadSprite(int index)
 {
+  // [NS] note to self: this is where sprites are loaded.
+    
   int hh = 0;
 
   while (cachesize > maxCacheSize) {

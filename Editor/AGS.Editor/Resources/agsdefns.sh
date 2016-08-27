@@ -195,6 +195,7 @@ enum VideoSkipStyle
   eVideoSkipAnyKeyOrMouse = 3
 };
 
+// [NS] these keycodes need a native enum equivilant 
 enum eKeyCode
 {
 #ifdef SCRIPT_API_v330

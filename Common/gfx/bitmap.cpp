@@ -209,6 +209,9 @@ void SetScreenBitmap(Bitmap *bitmap)
     // (Did I mention this is an ugly workaround? So...)
 	gl_ScreenBmp = bitmap;
 
+    // [NS]: this OVERWRITES the global screen variable. Why do we do this?  Is there code somewhere that also
+    // accesses 'screen' but we want it to use our bitmap instead?
+    
     // Only set allegro screen pointer if there's actual bitmap;
     // setting it to NULL does not have any sense and may (will?)
     // cause crashes.

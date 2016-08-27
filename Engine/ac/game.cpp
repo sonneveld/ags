@@ -988,6 +988,7 @@ void serialize_bitmap(const Common::Bitmap *thispic, Stream *out) {
           case 8:
           // CHECKME: originally, AGS does not use real BPP here, but simply divides color depth by 8;
           // therefore 15-bit bitmaps are saved only partially? is this a bug? or?
+          // [NS] ALSO check me.
           case 15:
             out->WriteArray(&thispic->GetScanLine(cc)[0], thispic->GetWidth(), 1);
             break;
@@ -1044,7 +1045,8 @@ Bitmap *read_serialized_bitmap(Stream *in) {
       {
       case 8:
       // CHECKME: originally, AGS does not use real BPP here, but simply divides color depth by 8
-      case 15:
+      //  [NS] ALSO CHECKME
+     case 15:
         in->ReadArray(thispic->GetScanLineForWriting(vv), picwid, 1);
         break;
       case 16:

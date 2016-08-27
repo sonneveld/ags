@@ -25,6 +25,8 @@
 #include "core/types.h"
 #include "gfx/bitmap.h"
 
+// [NS] This wraps the allego bitmap and adds a bunch of methods.
+
 namespace AGS
 {
 namespace Common

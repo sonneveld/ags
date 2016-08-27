@@ -169,8 +169,11 @@ void GUIMain::DrawAt(Common::Bitmap *ds, int x, int y)
     if ((Width < 1) || (Height < 1))
         return;
 
+    // [NS] only instance of sub bitmap.. maybe we can refactor it out.
+
     Bitmap subbmp;
     subbmp.CreateSubBitmap(ds, RectWH(x, y, Width, Height));
+    // [NS] This doesn't check if it failed!
 
     SET_EIP(376)
     // stop border being transparent, if the whole GUI isn't

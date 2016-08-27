@@ -550,6 +550,7 @@ void render_black_borders(int atx, int aty)
     }
 }
 
+extern "C" void _sdl_render_it();
 
 void render_to_screen(Bitmap *toRender, int atx, int aty) {
 
@@ -586,6 +587,8 @@ void render_to_screen(Bitmap *toRender, int atx, int aty) {
 #elif defined(IOS_VERSION)
             if (game.color_depth == 1)
                 ios_render();
+#else
+            _sdl_render_it();
 #endif
 
             succeeded = true;

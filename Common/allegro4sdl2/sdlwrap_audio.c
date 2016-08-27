@@ -97,6 +97,7 @@ volatile long midi_pos;
 
 MIDI * load_midi (AL_CONST char *filename) { printf("STUB: load_midi\n");      return 0; }
 void destroy_midi (MIDI *midi) { printf("STUB: destroy_midi\n");      }
+int load_midi_patches (void) { printf("STUB: load_midi_patches\n");      return 0; }
 
 int play_midi(MIDI *midi, int loop) { printf("STUB: play_midi\n");      return 0; }
 void midi_pause(void) { printf("STUB: midi_pause\n");       }

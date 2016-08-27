@@ -57,8 +57,8 @@ char *fix_filename_slashes(char *filename) { return filename; }
 
 
 // File
-int al_findfirst(AL_CONST char *pattern, struct al_ffblk *info, int attrib) { printf("STUB: al_findfirst\n");      return 0; }
-int al_findnext(struct al_ffblk *info) { printf("STUB: al_findnext\n");      return 0; }
+int al_findfirst(AL_CONST char *pattern, struct al_ffblk *info, int attrib) { printf("STUB: al_findfirst\n");      return -1; }
+int al_findnext(struct al_ffblk *info) { printf("STUB: al_findnext\n");      return -1; }
 void al_findclose(struct al_ffblk *info) { printf("STUB: al_findclose\n");       }
 int exists(AL_CONST char *filename) { printf("STUB: exists\n");      return 0; }
 uint64_t file_size_ex(AL_CONST char *filename) { printf("STUB: file_size_ex\n");      return -1; }

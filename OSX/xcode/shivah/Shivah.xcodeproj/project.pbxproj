@@ -112,7 +112,7 @@
 		32CA4F630368D1EE00C91783 /* Shivah_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Shivah_Prefix.pch; sourceTree = "<group>"; };
 		52264CBE1D16AB7A00A39A14 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		52264CC01D16AC5000A39A14 /* acsetup.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = acsetup.cfg; path = game_files/acsetup.cfg; sourceTree = "<group>"; };
-		525611A81D718C50001C9D62 /* Shivah_Steam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shivah_Steam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		525611A81D718C50001C9D62 /* Shivah.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shivah.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		525611AA1D718C8F001C9D62 /* plugin_registration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = plugin_registration.cpp; path = ../OSX/xcode/wadjetcommon/plugin_registration.cpp; sourceTree = "<group>"; };
 		525611AB1D718C8F001C9D62 /* plugin_registration.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = plugin_registration.hpp; path = ../OSX/xcode/wadjetcommon/plugin_registration.hpp; sourceTree = "<group>"; };
 		525611AD1D718DC1001C9D62 /* ac2game.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = ac2game.dat; path = game_files/steam/ac2game.dat; sourceTree = "<group>"; };
@@ -205,7 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				1D6058910D05DD3D006BFB54 /* Shivah.app */,
-				525611A81D718C50001C9D62 /* Shivah_Steam.app */,
+				525611A81D718C50001C9D62 /* Shivah.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -364,7 +364,7 @@
 			);
 			name = Shivah_Steam;
 			productName = Legacy;
-			productReference = 525611A81D718C50001C9D62 /* Shivah_Steam.app */;
+			productReference = 525611A81D718C50001C9D62 /* Shivah.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */

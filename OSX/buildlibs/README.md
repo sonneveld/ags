@@ -1,13 +1,26 @@
 # Requirements
 
+Install homebrew:
+
+(homebrew is a package management tool for osx)
+
+```sh
+$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
 Install via homebrew:
 
-    $ brew install pkg-config autoconf automake libtool cmake curl
+```sh
+$ brew install pkg-config autoconf automake libtool cmake curl
+```
 
 Install Xcode and command line tools. Configure xcode select
 
-    $ sudo xcode-select --reset
+```sh
+$ sudo xcode-select --reset
+```
 
 # Building
 
-    $ make install
+```sh
+$ make install
+```

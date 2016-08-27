@@ -161,25 +161,25 @@ void engine_init_resolution_settings(const Size game_size, ColorDepthOption &col
         color_depths.Prime = 8;
         color_depths.Alternate = 8;
     }
-    else if (debug_15bit_mode)
-    {
-        color_depths.Prime = 15;
-        color_depths.Alternate = 15;
-    }
-    else if (debug_24bit_mode)
-    {
-        color_depths.Prime = 24;
-        color_depths.Alternate = 24;
-    }
+//    else if (debug_15bit_mode)
+//    {
+//        color_depths.Prime = 15;
+//        color_depths.Alternate = 15;
+//    }
+//    else if (debug_24bit_mode)
+//    {
+//        color_depths.Prime = 24;
+//        color_depths.Alternate = 24;
+//    }
     else if ((game.color_depth == 2) || (force_16bit) || (usetup.force_hicolor_mode))
     {
         color_depths.Prime = 16;
-        color_depths.Alternate = 15;
+        color_depths.Alternate = 16;
     }
     else
     {
         color_depths.Prime = 32;
-        color_depths.Alternate = 24;
+        color_depths.Alternate = 32;
     }
 
     Out::FPrint("Game native resolution: %d x %d (%d bit)%s", game_size.Width, game_size.Height, color_depths.Prime,
@@ -328,7 +328,7 @@ void engine_set_color_conversions()
 #endif
     }
 
-    set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256 | COLORCONV_REDUCE_16_TO_15);
+    set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256);
 }
 
 void engine_set_mouse_control(const Size &init_desktop)

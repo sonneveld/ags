@@ -214,32 +214,11 @@ void initialize_sprite (int ee) {
         }
         else if ((spcoldep == 32) && (ScreenResolution.ColorDepth == 32))
         {
-#if defined (AGS_INVERTED_COLOR_ORDER)
-            // PSP: Convert to BGR color order.
-            spriteset.set(ee, convert_32_to_32bgr(spriteset[ee]));
-#endif
             if ((game.spriteflags[ee] & SPF_ALPHACHANNEL) != 0)
             {
                 set_rgb_mask_using_alpha_channel(spriteset[ee]);
             }
         }
-
-#ifdef USE_15BIT_FIX
-        else if ((ScreenResolution.ColorDepth != game.color_depth*8) && (spcoldep == game.color_depth*8)) {
-            // running in 15-bit mode with a 16-bit game, convert sprites
-            Bitmap *oldsprite = spriteset[ee];
-
-            if (game.spriteflags[ee] & SPF_ALPHACHANNEL)
-                // 32-to-24 with alpha channel
-                spriteset.set (ee, remove_alpha_channel(oldsprite));
-            else
-                spriteset.set (ee, convert_16_to_15(oldsprite));
-
-            delete oldsprite;
-        }
-        if ((convert_16bit_bgr == 1) && (spriteset[ee]->GetColorDepth() == 16))
-            spriteset.set (ee, convert_16_to_16bgr (spriteset[ee]));
-#endif
 
         if ((spcoldep == 8) && (ScreenResolution.ColorDepth > 8))
             select_palette(palette);

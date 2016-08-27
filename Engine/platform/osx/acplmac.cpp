@@ -18,6 +18,7 @@
 
 // ********* MacOS PLACEHOLDER DRIVER *********
 
+#include "allegro.h"
 //#include "util/wgt2allg.h"
 //#include "gfx/ali3d.h"
 //#include "ac/runtime_defines.h"
@@ -101,12 +102,12 @@ void AGSMac::DisplayAlert(const char *text, ...) {
 
 void AGSMac::Delay(int millis) {
   while (millis >= 5) {
-    usleep(5);
+    rest(5);
     millis -= 5;
     update_polled_stuff_if_runtime();
   }
   if (millis > 0)
-    usleep(millis);
+    rest(millis);
 }
 
 unsigned long AGSMac::GetDiskFreeSpaceMB() {

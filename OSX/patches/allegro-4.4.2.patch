@@ -1287,7 +1287,7 @@ index 0000000..4d18946
 +#endif
 +
 diff --git a/include/allegro/platform/aintosx.h b/include/allegro/platform/aintosx.h
-index dcd21b2..9c9a408 100644
+index dcd21b2..e17bf6e 100644
 --- a/include/allegro/platform/aintosx.h
 +++ b/include/allegro/platform/aintosx.h
 @@ -42,6 +42,7 @@
@@ -1307,7 +1307,7 @@ index dcd21b2..9c9a408 100644
  - (BOOL)application: (NSApplication *)theApplication openFile: (NSString *)filename;
  - (void)applicationDidFinishLaunching: (NSNotification *)aNotification;
  - (void)applicationDidChangeScreenParameters: (NSNotification *)aNotification;
-@@ -71,8 +72,12 @@
+@@ -71,21 +72,33 @@
  
  
  @interface AllegroWindow : NSWindow
@@ -1320,8 +1320,13 @@ index dcd21b2..9c9a408 100644
  @end
  
  
-@@ -81,11 +86,15 @@
+ @interface AllegroWindowDelegate : NSObject
+ - (BOOL)windowShouldClose: (id)sender;
  - (void)windowDidDeminiaturize: (NSNotification *)aNotification;
++- (void)windowDidBecomeKey:(NSNotification *)notification;
++- (void)windowDidResignKey:(NSNotification *)notification;
++- (void)windowWillEnterFullScreen:(NSNotification *)notification;
++- (void)windowWillExitFullScreen:(NSNotification *)notification;
  @end
  
 -
@@ -1337,7 +1342,7 @@ index dcd21b2..9c9a408 100644
  
  typedef void RETSIGTYPE;
  
-@@ -129,7 +138,6 @@ typedef struct
+@@ -129,7 +142,6 @@ typedef struct
  
  
  void osx_event_handler(void);
@@ -1345,7 +1350,7 @@ index dcd21b2..9c9a408 100644
  
  void setup_direct_shifts(void);
  void osx_init_fade_system(void);
-@@ -160,6 +168,7 @@ void osx_mouse_move(int x, int y);
+@@ -160,6 +172,7 @@ void osx_mouse_move(int x, int y);
  HID_DEVICE_COLLECTION *osx_hid_scan(int type, HID_DEVICE_COLLECTION*);
  void osx_hid_free(HID_DEVICE_COLLECTION *);
  
@@ -1353,7 +1358,7 @@ index dcd21b2..9c9a408 100644
  
  AL_VAR(NSBundle *, osx_bundle);
  AL_VAR(void *, osx_event_mutex);
-@@ -173,7 +182,9 @@ AL_ARRAY(char, osx_window_title);
+@@ -173,7 +186,9 @@ AL_ARRAY(char, osx_window_title);
  AL_VAR(int, osx_window_first_expose);
  AL_VAR(int, osx_skip_events_processing);
  AL_VAR(void *, osx_skip_events_processing_mutex);
@@ -4062,7 +4067,7 @@ index 0000000..b1c561e
 +   }
 +}
 diff --git a/src/keyboard.c b/src/keyboard.c
-index 56f60da..c433268 100644
+index 56f60da..7e73066 100644
 --- a/src/keyboard.c
 +++ b/src/keyboard.c
 @@ -1,6 +1,6 @@
@@ -4105,9 +4110,20 @@ index 56f60da..c433268 100644
   */
  int readkey(void)
  {
-@@ -388,12 +397,12 @@ END_OF_STATIC_FUNCTION(repeat_timer);
+@@ -387,13 +396,23 @@ END_OF_STATIC_FUNCTION(repeat_timer);
  
  
+ 
++void _hack_stop_keyboard_repeat()
++{
++   if (repeat_key >= 0) {
++      remove_int(repeat_timer);
++      repeat_key = -1;
++      repeat_scan = -1;
++   }
++}
++
++
  /* install_keyboard_hooks:
 - *  You should only use this function if you *aren't* using the rest of the 
 - *  keyboard handler. It can be called in the place of install_keyboard(), 
@@ -4124,7 +4140,7 @@ index 56f60da..c433268 100644
   *  input from your own code.
   */
  void install_keyboard_hooks(int (*keypressed)(void), int (*readkey)(void))
-@@ -464,7 +473,7 @@ void _handle_key_press(int keycode, int scancode)
+@@ -464,7 +483,7 @@ void _handle_key_press(int keycode, int scancode)
     }
  
     /* autorepeat? */
@@ -4133,7 +4149,7 @@ index 56f60da..c433268 100644
         (keycode >= 0) && (scancode > 0) && (scancode != KEY_PAUSE) &&
         ((keycode != repeat_key) || (scancode != repeat_scan))) {
        repeat_key = keycode;
-@@ -519,6 +528,7 @@ END_OF_FUNCTION(_handle_key_release);
+@@ -519,6 +538,7 @@ END_OF_FUNCTION(_handle_key_release);
   *  switch into polling mode and will no longer operate asynchronously
   *  even if the driver actually does support that.
   */
@@ -4141,7 +4157,7 @@ index 56f60da..c433268 100644
  int poll_keyboard(void)
  {
     int i;
-@@ -549,7 +559,7 @@ int poll_keyboard(void)
+@@ -549,7 +569,7 @@ int poll_keyboard(void)
        }
  
        while (_key_buffer.start != _key_buffer.end) {
@@ -4150,7 +4166,7 @@ index 56f60da..c433268 100644
  			      _key_buffer.scancode[_key_buffer.start]);
  
  	 if (_key_buffer.start < KEY_BUFFER_SIZE-1)
-@@ -617,7 +627,7 @@ AL_CONST char *scancode_to_name(int scancode)
+@@ -617,7 +637,7 @@ AL_CONST char *scancode_to_name(int scancode)
  
  
  /* install_keyboard:
@@ -4159,7 +4175,7 @@ index 56f60da..c433268 100644
   *  any of the keyboard input routines. Returns -1 on failure.
   */
  int install_keyboard(void)
-@@ -690,7 +700,7 @@ int install_keyboard(void)
+@@ -690,7 +710,7 @@ int install_keyboard(void)
  
  
  /* remove_keyboard:
@@ -5012,10 +5028,10 @@ index 0000000..4b7ebfa
 +@end
 diff --git a/src/macosx/cocoashared.m b/src/macosx/cocoashared.m
 new file mode 100644
-index 0000000..27d8c9e
+index 0000000..b3d87e4
 --- /dev/null
 +++ b/src/macosx/cocoashared.m
-@@ -0,0 +1,124 @@
+@@ -0,0 +1,138 @@
 +#include "allegro.h"
 +#include "allegro/internal/aintern.h"
 +#include "allegro/platform/aintosx.h"
@@ -5029,6 +5045,8 @@ index 0000000..27d8c9e
 +void osx_qz_mark_dirty();
 +void prepare_window_for_animation(int refresh_view);
 +#endif
++
++extern void _hack_stop_keyboard_repeat();
 +
 +@implementation AllegroWindow
 +
@@ -5109,7 +5127,6 @@ index 0000000..27d8c9e
 +}
 +
 +
-+
 +/* windowDidResignKey:
 + * Sent by the default notification center immediately after an NSWindow
 + * object has resigned its status as key window.
@@ -5119,6 +5136,19 @@ index 0000000..27d8c9e
 +    _unix_lock_mutex(osx_skip_events_processing_mutex);
 +    osx_skip_events_processing = TRUE;
 +    _unix_unlock_mutex(osx_skip_events_processing_mutex);
++
++    // Stop repeating keys since we might not actually see the "key up" event.
++    _hack_stop_keyboard_repeat();
++}
++
++- (void)windowWillEnterFullScreen:(NSNotification *)notification
++{
++    _hack_stop_keyboard_repeat();
++}
++
++- (void)windowWillExitFullScreen:(NSNotification *)notification
++{
++    _hack_stop_keyboard_repeat();
 +}
 +
 +@end
@@ -5479,21 +5509,19 @@ index 7df89ad..d4f967b 100644
  
 +#endif
 diff --git a/src/macosx/qzmouse.m b/src/macosx/qzmouse.m
-index 5da32af..e5a530b 100644
+index 5da32af..0f264b1 100644
 --- a/src/macosx/qzmouse.m
 +++ b/src/macosx/qzmouse.m
-@@ -110,6 +110,10 @@ void osx_mouse_handler(int ax, int ay, int x, int y, int z, int buttons)
-          [osx_cursor set];
-       }
-       current_cursor = osx_cursor;
-+   } else {
-+      if (![[NSCursor currentSystemCursor] isEqual: osx_cursor]) {
-+         [osx_cursor set];
-+      } 
-    }
+@@ -103,7 +103,7 @@ void osx_mouse_handler(int ax, int ay, int x, int y, int z, int buttons)
  
-    if (osx_mouse_warped) {
-@@ -211,8 +215,7 @@ static void osx_mouse_exit(void)
+    if (osx_cursor != current_cursor) {
+       if (osx_window) {
+-         NSView* vw = [osx_window contentView];
++         NSView *vw = [osx_window contentView];
+          [osx_window invalidateCursorRectsForView: vw];
+       }
+       else {
+@@ -211,8 +211,7 @@ static void osx_mouse_exit(void)
  static void osx_mouse_position(int x, int y)
  {
     CGPoint point;
@@ -5503,7 +5531,7 @@ index 5da32af..e5a530b 100644
     
     _unix_lock_mutex(osx_event_mutex);
     
-@@ -220,13 +223,19 @@ static void osx_mouse_position(int x, int y)
+@@ -220,13 +219,19 @@ static void osx_mouse_position(int x, int y)
     _mouse_y = point.y = y;
     
     if (osx_window) {
@@ -5527,7 +5555,7 @@ index 5da32af..e5a530b 100644
     
     mymickey_x = mymickey_y = 0;
     osx_mouse_warped = TRUE;
-@@ -274,19 +283,12 @@ int osx_mouse_set_sprite(BITMAP *sprite, int x, int y)
+@@ -274,19 +279,12 @@ int osx_mouse_set_sprite(BITMAP *sprite, int x, int y)
  {
     int ix, iy;
     int sw, sh;
@@ -5759,7 +5787,7 @@ index 8e4a606..e62e6ae 100644
  /* c-basic-offset: 3      */
  /* indent-tabs-mode: nil  */
 diff --git a/src/macosx/system.m b/src/macosx/system.m
-index 1b01839..3ff7bdf 100644
+index 1b01839..e8b4a27 100644
 --- a/src/macosx/system.m
 +++ b/src/macosx/system.m
 @@ -26,8 +26,6 @@
@@ -5771,7 +5799,7 @@ index 1b01839..3ff7bdf 100644
  #endif
  
  
-@@ -137,26 +135,31 @@ SYSTEM_DRIVER system_macosx =
+@@ -137,26 +135,55 @@ SYSTEM_DRIVER system_macosx =
  static RETSIGTYPE osx_signal_handler(int num)
  {
     _unix_unlock_mutex(osx_event_mutex);
@@ -5795,7 +5823,7 @@ index 1b01839..3ff7bdf 100644
 - *  Event handling function; gets repeatedly called inside a dedicated thread.
 - */
 -void osx_event_handler()
-+inline static void osx_scale_mouse(NSPointPointer position, const NSRectPointer window, const NSRectPointer view)
++static void osx_scale_mouse(NSPointPointer position, const NSRectPointer window, const NSRectPointer view)
  {
 -   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 -   NSEvent *event;
@@ -5807,15 +5835,39 @@ index 1b01839..3ff7bdf 100644
 +    }
 +}
 +
++static NSPoint locationInView (NSEvent *event, NSView *inTermsOfView) {
++   NSPoint windowLocation;
++
++   NSWindow *eventWindow = [event window];
++   NSWindow *viewWindow = [inTermsOfView window];
++
++   if (eventWindow) {
++      if (eventWindow == viewWindow) {
++         windowLocation = [event locationInWindow];
++      } else {
++         // event from a completely different window.. convert to global and back to _our_ window
++         NSPoint globalLocation = [eventWindow convertBaseToScreen: windowLocation];
++         windowLocation = [viewWindow convertScreenToBase: globalLocation];
++      }
++   } else {
++      // if window is nil, then it's assumed to be screen coordinates.
++      NSPoint globalLocation = [event locationInWindow];
++      windowLocation = [viewWindow convertScreenToBase: globalLocation ];
++   }
++
++   return [inTermsOfView convertPoint: windowLocation fromView: nil];
++}
 +
 +void osx_add_event_monitor() {
++
++   __block BOOL cursor_hidden = NO;  // need to keep track because nscursor requires balanced hide/unhide
 +
 +   [NSEvent addLocalMonitorForEventsMatchingMask:NSAnyEventMask handler:^NSEvent * (NSEvent *event) {
 +
     NSDate *distant_past = [NSDate distantPast];
     NSPoint point;
     NSRect frame, view;
-@@ -166,251 +169,171 @@ void osx_event_handler()
+@@ -166,239 +193,173 @@ void osx_event_handler()
     static int buttons = 0;
     int event_type;
     BOOL gotmouseevent = NO;
@@ -5828,7 +5880,7 @@ index 1b01839..3ff7bdf 100644
 -      _unix_lock_mutex(osx_skip_events_processing_mutex);
 -      int skip_events_processing = osx_skip_events_processing;
 -      _unix_unlock_mutex(osx_skip_events_processing_mutex);
- 
+-
 -      if ((skip_events_processing) || (osx_gfx_mode == OSX_GFX_NONE)) {
 -         [NSApp sendEvent: event];
 -	 continue;
@@ -6006,24 +6058,11 @@ index 1b01839..3ff7bdf 100644
 -      osx_mouse_handler(mx, my, dx, dy, dz, buttons);
 -   [pool release];
 -}
+-
+ 
 +   _unix_lock_mutex(osx_skip_events_processing_mutex);
 +   int skip_events_processing = osx_skip_events_processing;
 +   _unix_unlock_mutex(osx_skip_events_processing_mutex);
- 
-+   if ((skip_events_processing) || (osx_gfx_mode == OSX_GFX_NONE)) {
-+      return event;
-+   }
- 
-+   view = NSMakeRect(0, 0, gfx_driver->w, gfx_driver->h);
-+   point = [event locationInWindow];
-+   if (osx_window)
-+   {
-+      frame = [[osx_window contentView] frame];
-+   }
-+   else
-+   {
-+       frame = [[NSScreen mainScreen] frame];
-+   }
  
 -/* osx_tell_dock:
 - *  Tell the dock about us; the origins of this hack are unknown, but it's
@@ -6035,6 +6074,24 @@ index 1b01839..3ff7bdf 100644
 -static void osx_tell_dock(void)
 -{
 -   struct CPSProcessSerNum psn;
++   if ((skip_events_processing) || (osx_gfx_mode == OSX_GFX_NONE)) {
++      return event;
++   }
+ 
+-   if ((!CPSGetCurrentProcess(&psn)) &&
+-       (!CPSEnableForegroundOperation(&psn, 0x03, 0x3C, 0x2C, 0x1103)) &&
+-       (!CPSSetFrontProcess(&psn)))
+-      [NSApplication sharedApplication];
+-}
++   view = NSMakeRect(0, 0, gfx_driver->w, gfx_driver->h);
+ 
++   point = NSMakePoint(0, 0);
++   if (osx_window) {
++      frame = [[osx_window contentView] frame];
++      point = locationInView (event, [osx_window contentView]);
++   } else {
++      frame = [[NSScreen mainScreen] frame];
++   }
 +   osx_scale_mouse(&point, &frame, &view);
 +
 +   event_type = [event type];
@@ -6081,8 +6138,6 @@ index 1b01839..3ff7bdf 100644
 +              _mouse_on = TRUE;
 +               }
 +            }
-+            if (osx_window)
-+               [osx_window invalidateCursorRectsForView: [osx_window contentView]];
 +            if (_keyboard_installed)
 +               osx_keyboard_focused(TRUE, 0);
 +            _switch_in();
@@ -6141,6 +6196,13 @@ index 1b01839..3ff7bdf 100644
 +      case NSMouseEntered:
 +         if (([event trackingNumber] == osx_mouse_tracking_rect) && ([NSApp isActive])) {
 +            if (_mouse_installed) {
++
++               // hide the cursor because sometimes osx will reshow cursor for no reason
++               if (!cursor_hidden) {
++                  [NSCursor hide];
++                  cursor_hidden = YES;
++               }
++
 +               mx = point.x;
 +               my = point.y;
 +               buttons = 0;
@@ -6153,6 +6215,12 @@ index 1b01839..3ff7bdf 100644
 +      case NSMouseExited:
 +         if ([event trackingNumber] == osx_mouse_tracking_rect) {
 +            if (_mouse_installed) {
++
++               if (cursor_hidden) {
++                  [NSCursor unhide];
++                  cursor_hidden = NO;
++               }
++
 +               _mouse_on = FALSE;
 +               gotmouseevent = YES;
 +            }
@@ -6164,18 +6232,9 @@ index 1b01839..3ff7bdf 100644
 +         break;
 +   }
  
--   if ((!CPSGetCurrentProcess(&psn)) &&
--       (!CPSEnableForegroundOperation(&psn, 0x03, 0x3C, 0x2C, 0x1103)) &&
--       (!CPSSetFrontProcess(&psn)))
--      [NSApplication sharedApplication];
--}
 +   if (gotmouseevent == YES) {
 +      osx_mouse_handler(mx, my, dx, dy, dz, buttons);
 +   }
- 
-+   return event;
- 
-+   }];
  
 -/* osx_bootstrap_ok:
 - *  Check if the current bootstrap context is privilege. If it's not, we can't
@@ -6198,13 +6257,16 @@ index 1b01839..3ff7bdf 100644
 -   CFRelease(cfport);
 -   _ok = (ret == KERN_SUCCESS) ? 1 : 0;
 -   return _ok;
- }
+-}
++   return event;
  
--
--
++   }];
+ 
++}
+ 
  /* osx_sys_init:
   *  Initalizes the MacOS X system driver.
-  */
+@@ -406,11 +367,6 @@ int osx_bootstrap_ok(void)
  static int osx_sys_init(void)
  {
     long result;
@@ -6216,7 +6278,7 @@ index 1b01839..3ff7bdf 100644
  
     /* Install emergency-exit signal handlers */
     old_sig_abrt = signal(SIGABRT, osx_signal_handler);
-@@ -420,21 +343,15 @@ static int osx_sys_init(void)
+@@ -420,21 +376,15 @@ static int osx_sys_init(void)
     old_sig_term = signal(SIGTERM, osx_signal_handler);
     old_sig_int  = signal(SIGINT,  osx_signal_handler);
     old_sig_quit = signal(SIGQUIT, osx_signal_handler);
@@ -6240,7 +6302,7 @@ index 1b01839..3ff7bdf 100644
     /* Setup a blank cursor */
     cursor_data = calloc(1, 16 * 16 * 4);
     cursor_rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes: &cursor_data
-@@ -595,10 +512,17 @@ static int osx_sys_set_display_switch_mode(int mode)
+@@ -595,10 +545,17 @@ static int osx_sys_set_display_switch_mode(int mode)
   */
  static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
  {
@@ -6258,7 +6320,7 @@ index 1b01839..3ff7bdf 100644
  }
  
  
-@@ -608,13 +532,10 @@ static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
+@@ -608,13 +565,10 @@ static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
   */
  static int osx_sys_desktop_color_depth(void)
  {
@@ -6274,7 +6336,7 @@ index 1b01839..3ff7bdf 100644
     
     return color_depth == 16 ? 15 : color_depth;
  }
-@@ -625,13 +546,9 @@ static int osx_sys_desktop_color_depth(void)
+@@ -625,13 +579,9 @@ static int osx_sys_desktop_color_depth(void)
   */
  static int osx_sys_get_desktop_resolution(int *width, int *height)
  {

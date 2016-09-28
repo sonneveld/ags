@@ -46,7 +46,6 @@
 		52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
 		52B8A6161D27785A00FA453F /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		52B8A6171D27785A00FA453F /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
-		52B8A6181D27785A00FA453F /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		52B8A6191D27785A00FA453F /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		52B8A61A1D27785A00FA453F /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = "<absolute>"; };
 		52B8A61B1D27785A00FA453F /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
@@ -153,7 +152,6 @@
 				52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */,
 				52B8A6161D27785A00FA453F /* CoreVideo.framework */,
 				52B8A6171D27785A00FA453F /* Cocoa.framework */,
-				52B8A6181D27785A00FA453F /* QuickTime.framework */,
 				52B8A6191D27785A00FA453F /* IOKit.framework */,
 				52B8A61A1D27785A00FA453F /* CoreAudio.framework */,
 				52B8A61B1D27785A00FA453F /* AudioUnit.framework */,

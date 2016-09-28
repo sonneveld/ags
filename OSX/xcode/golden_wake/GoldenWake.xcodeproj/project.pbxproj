@@ -51,10 +51,6 @@
 		52B8A5CB1D27781300FA453F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AD1D27781300FA453F /* Cocoa.framework */; };
 		52B8A5CC1D27781300FA453F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AD1D27781300FA453F /* Cocoa.framework */; };
 		52B8A5CD1D27781300FA453F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AD1D27781300FA453F /* Cocoa.framework */; };
-		52B8A5CE1D27781300FA453F /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AE1D27781300FA453F /* QuickTime.framework */; };
-		52B8A5CF1D27781300FA453F /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AE1D27781300FA453F /* QuickTime.framework */; };
-		52B8A5D01D27781300FA453F /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AE1D27781300FA453F /* QuickTime.framework */; };
-		52B8A5D11D27781300FA453F /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AE1D27781300FA453F /* QuickTime.framework */; };
 		52B8A5D21D27781300FA453F /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AF1D27781300FA453F /* IOKit.framework */; };
 		52B8A5D31D27781300FA453F /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AF1D27781300FA453F /* IOKit.framework */; };
 		52B8A5D41D27781300FA453F /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A5AF1D27781300FA453F /* IOKit.framework */; };
@@ -210,7 +206,6 @@
 		52B8A5AB1D27781300FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
 		52B8A5AC1D27781300FA453F /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
 		52B8A5AD1D27781300FA453F /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
-		52B8A5AE1D27781300FA453F /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		52B8A5AF1D27781300FA453F /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/IOKit.framework; sourceTree = "<absolute>"; };
 		52B8A5B01D27781300FA453F /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreAudio.framework; sourceTree = "<absolute>"; };
 		52B8A5B11D27781300FA453F /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
@@ -243,7 +238,6 @@
 				52B8A5D71D27781300FA453F /* CoreAudio.framework in Frameworks */,
 				52B8A5C31D27781300FA453F /* libbz2.1.0.dylib in Frameworks */,
 				52B8A5B71D27781300FA453F /* libsteam_api.dylib in Frameworks */,
-				52B8A5CF1D27781300FA453F /* QuickTime.framework in Frameworks */,
 				52B8A5D31D27781300FA453F /* IOKit.framework in Frameworks */,
 				52B8A5E71D27781300FA453F /* AudioToolbox.framework in Frameworks */,
 				52B8A5E31D27781300FA453F /* OpenGL.framework in Frameworks */,
@@ -262,7 +256,6 @@
 			files = (
 				52B8A5D81D27781300FA453F /* CoreAudio.framework in Frameworks */,
 				52B8A5C41D27781300FA453F /* libbz2.1.0.dylib in Frameworks */,
-				52B8A5D01D27781300FA453F /* QuickTime.framework in Frameworks */,
 				52B8A5D41D27781300FA453F /* IOKit.framework in Frameworks */,
 				52B8A5E81D27781300FA453F /* AudioToolbox.framework in Frameworks */,
 				52B8A5E41D27781300FA453F /* OpenGL.framework in Frameworks */,
@@ -282,7 +275,6 @@
 				52B8A5D91D27781300FA453F /* CoreAudio.framework in Frameworks */,
 				52B8A5C51D27781300FA453F /* libbz2.1.0.dylib in Frameworks */,
 				52B8A5B91D27781300FA453F /* libsteam_api.dylib in Frameworks */,
-				52B8A5D11D27781300FA453F /* QuickTime.framework in Frameworks */,
 				52B8A5D51D27781300FA453F /* IOKit.framework in Frameworks */,
 				52B8A5E91D27781300FA453F /* AudioToolbox.framework in Frameworks */,
 				52B8A5E51D27781300FA453F /* OpenGL.framework in Frameworks */,
@@ -301,7 +293,6 @@
 			files = (
 				52B8A5D61D27781300FA453F /* CoreAudio.framework in Frameworks */,
 				52B8A5C21D27781300FA453F /* libbz2.1.0.dylib in Frameworks */,
-				52B8A5CE1D27781300FA453F /* QuickTime.framework in Frameworks */,
 				52B8A5D21D27781300FA453F /* IOKit.framework in Frameworks */,
 				52B8A5E61D27781300FA453F /* AudioToolbox.framework in Frameworks */,
 				52B8A5E21D27781300FA453F /* OpenGL.framework in Frameworks */,
@@ -398,7 +389,6 @@
 				52B8A5AB1D27781300FA453F /* libbz2.1.0.dylib */,
 				52B8A5AC1D27781300FA453F /* CoreVideo.framework */,
 				52B8A5AD1D27781300FA453F /* Cocoa.framework */,
-				52B8A5AE1D27781300FA453F /* QuickTime.framework */,
 				52B8A5AF1D27781300FA453F /* IOKit.framework */,
 				52B8A5B01D27781300FA453F /* CoreAudio.framework */,
 				52B8A5B11D27781300FA453F /* AudioUnit.framework */,

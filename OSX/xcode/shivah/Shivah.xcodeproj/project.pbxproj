@@ -140,7 +140,6 @@
 		DB994B28180ECBB200835511 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		DB994B2A180ECBBE00835511 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		DB994B2C180ECBCB00835511 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
-		DBCDB722180ECF8B00FF80B1 /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -314,7 +313,6 @@
 				52A7D3541D1E68A800D88BEE /* libbz2.1.0.dylib */,
 				52DA542F1D194C4C0056FB17 /* CoreVideo.framework */,
 				52264CBE1D16AB7A00A39A14 /* Cocoa.framework */,
-				DBCDB722180ECF8B00FF80B1 /* QuickTime.framework */,
 				DB994B2C180ECBCB00835511 /* IOKit.framework */,
 				DB994B2A180ECBBE00835511 /* CoreAudio.framework */,
 				DB994B28180ECBB200835511 /* AudioUnit.framework */,

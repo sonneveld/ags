@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 245be10..105c923 100644
+index 245be10..1843455 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -65,7 +65,7 @@ if(WIN32)
@@ -69,7 +69,7 @@ index 245be10..105c923 100644
  endif(WANT_LINUX_CONSOLE AND CMAKE_SYSTEM_NAME STREQUAL Linux)
  
  # -- Windows --
-@@ -637,6 +658,13 @@ endif(BEOS)
+@@ -637,29 +658,33 @@ endif(BEOS)
  
  if(ALLEGRO_MACOSX)
      list(APPEND PLATFORM_SOURCES ${ALLEGRO_SRC_MACOSX_FILES})
@@ -83,26 +83,42 @@ index 245be10..105c923 100644
      if(NOT SHARED)
  	list(APPEND PLATFORM_SOURCES src/macosx/main.m)
      endif(NOT SHARED)
-@@ -647,8 +675,9 @@ if(ALLEGRO_MACOSX)
+ 
+     find_library(COCOA_LIBRARY Cocoa)
+-    find_library(CARBON_LIBRARY Carbon)
+     find_library(IOKIT_LIBRARY IOKit)
      find_library(COREAUDIO_LIBRARY CoreAudio)
      find_library(AUDIOUNIT_LIBRARY AudioUnit)
      find_library(AUDIOTOOLBOX_LIBRARY AudioToolbox)
-+    find_library(OPENGL_LIBRARY OpenGL)
-     find_package(QuickTime)
+-    find_package(QuickTime)
 -    mark_as_advanced(COCOA_LIBRARY CARBON_LIBRARY IOKIT_LIBRARY)
-+    mark_as_advanced(COCOA_LIBRARY CARBON_LIBRARY IOKIT_LIBRARY OPENGL_LIBRARY)
++    find_library(OPENGL_LIBRARY OpenGL)
++    mark_as_advanced(COCOA_LIBRARY IOKIT_LIBRARY OPENGL_LIBRARY)
      mark_as_advanced(COREAUDIO_LIBRARY AUDIOUNIT_LIBRARY AUDIOTOOLBOX_LIBRARY)
-     mark_as_advanced(QUICKTIME_INCLUDE_DIR QUICKTIME_LIBRARY)
+-    mark_as_advanced(QUICKTIME_INCLUDE_DIR QUICKTIME_LIBRARY)
  
-@@ -660,6 +689,7 @@ if(ALLEGRO_MACOSX)
+     list(APPEND PLATFORM_LIBS
+ 	${COCOA_LIBRARY}
+-	${CARBON_LIBRARY}
+ 	${IOKIT_LIBRARY}
+ 	${COREAUDIO_LIBRARY}
  	${AUDIOUNIT_LIBRARY}
  	${AUDIOTOOLBOX_LIBRARY}
- 	${QUICKTIME_LIBRARY}
+-	${QUICKTIME_LIBRARY}
 +	${OPENGL_LIBRARY}
  	)
  endif(ALLEGRO_MACOSX)
  
-@@ -907,12 +937,17 @@ option(WANT_LOADPNG "Enable loadpng" on)
+@@ -879,7 +904,7 @@ if(UNIX) # including MACOSX
+         if(BUILD_SHARED_LIBS)
+             set(FRAMEWORKS "-framework Cocoa -framework Allegro -lalleg-main${BUILD_TYPE_SUFFIX}")
+         else(BUILD_SHARED_LIBS)
+-            set(FRAMEWORKS "-framework Cocoa -framework Allegro -lalleg-main${BUILD_TYPE_SUFFIX} -framework Carbon -framework IOKit -framework System -framework CoreAudio -framework AudioUnit -framework AudioToolbox -framework QuickTime")
++            set(FRAMEWORKS "-framework Cocoa -framework Allegro -lalleg-main${BUILD_TYPE_SUFFIX} -framework IOKit -framework System -framework CoreAudio -framework AudioUnit -framework AudioToolbox")
+         endif(BUILD_SHARED_LIBS)
+     else()
+         set(ACCEPT_FRAMEWORKS no)
+@@ -907,12 +932,17 @@ option(WANT_LOADPNG "Enable loadpng" on)
  option(WANT_LOGG "Enable logg" on)
  option(WANT_JPGALLEG "Enable JPGAlleg" on)
  
@@ -1516,10 +1532,18 @@ index 0000000..be35c3d
 +
 +#endif
 diff --git a/include/allegro/platform/alosx.h b/include/allegro/platform/alosx.h
-index 20787f3..9c2a4e9 100644
+index 20787f3..79bd040 100644
 --- a/include/allegro/platform/alosx.h
 +++ b/include/allegro/platform/alosx.h
-@@ -92,8 +92,12 @@ AL_VAR(MOUSE_DRIVER, mouse_macosx);
+@@ -42,7 +42,6 @@
+       #import <CoreAudio/CoreAudio.h>
+       #import <AudioUnit/AudioUnit.h>
+       #import <AudioToolbox/AudioToolbox.h>
+-      #import <QuickTime/QuickTime.h>
+       #import <IOKit/IOKitLib.h>
+       #import <IOKit/IOCFPlugIn.h>
+       #import <IOKit/hid/IOHIDLib.h>
+@@ -92,8 +91,12 @@ AL_VAR(MOUSE_DRIVER, mouse_macosx);
  /* Gfx drivers */
  #define GFX_QUARTZ_WINDOW       AL_ID('Q','Z','W','N')
  #define GFX_QUARTZ_FULLSCREEN   AL_ID('Q','Z','F','L')
@@ -1532,6 +1556,16 @@ index 20787f3..9c2a4e9 100644
  
  /* Digital sound drivers */
  #define DIGI_CORE_AUDIO         AL_ID('D','C','A',' ')
+@@ -103,9 +106,7 @@ AL_VAR(DIGI_DRIVER, digi_sound_manager);
+ 
+ /* MIDI music drivers */
+ #define MIDI_CORE_AUDIO         AL_ID('M','C','A',' ')
+-#define MIDI_QUICKTIME          AL_ID('Q','T','M',' ')
+ AL_VAR(MIDI_DRIVER, midi_core_audio);
+-AL_VAR(MIDI_DRIVER, midi_quicktime);
+ 
+ /* Joystick drivers */
+ #define JOYSTICK_HID            AL_ID('H','I','D','J')
 diff --git a/include/allegro/platform/alunix.h b/include/allegro/platform/alunix.h
 index c0196f5..f179854 100644
 --- a/include/allegro/platform/alunix.h

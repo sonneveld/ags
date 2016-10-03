@@ -363,3 +363,18 @@ void _normal_rectfill(BITMAP *bmp, int x1, int y1, int x2, int y2, int color)
     
     bmp->vtable->floodfill(bmp, x, y, color);
 }
+
+void line (BITMAP *bmp, int x1, int y_1, int x2, int y2, int color)
+{
+    ASSERT(bmp);
+    
+    bmp->vtable->line(bmp, x1, y_1, x2, y2, color);
+}
+
+void circlefill (BITMAP *bmp, int x, int y, int radius, int color)
+{
+    ASSERT(bmp);
+    
+    bmp->vtable->circlefill(bmp, x, y, radius, color);
+}
+

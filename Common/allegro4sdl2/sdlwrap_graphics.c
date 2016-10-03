@@ -170,7 +170,7 @@ static GFX_VTABLE _stub_vtable8 =
     _linear_vline8,
     _linear_hline8,
     _linear_hline8,
-    _stub_line,
+    _normal_line,
     _stub_fastline,
     _normal_rectfill,
     _stub_triangle,
@@ -206,7 +206,7 @@ static GFX_VTABLE _stub_vtable8 =
     _stub_polygon,
     _soft_rect,
     _stub_circle,
-    _stub_circlefill,
+    _soft_circlefill,
     _stub_ellipse,
     _stub_ellipsefill,
     _stub_arc,
@@ -237,7 +237,7 @@ static GFX_VTABLE _stub_vtable15 =
     _linear_vline15,
     _linear_hline15,
     _linear_hline15,
-    _stub_line,
+    _normal_line,
     _stub_fastline,
     _normal_rectfill,
     _stub_triangle,
@@ -273,7 +273,7 @@ static GFX_VTABLE _stub_vtable15 =
     _stub_polygon,
     _soft_rect,
     _stub_circle,
-    _stub_circlefill,
+    _soft_circlefill,
     _stub_ellipse,
     _stub_ellipsefill,
     _stub_arc,
@@ -303,7 +303,7 @@ static GFX_VTABLE _stub_vtable16 =
     _linear_vline16,
     _linear_hline16,
     _linear_hline16,
-    _stub_line,
+    _normal_line,
     _stub_fastline,
     _normal_rectfill,
     _stub_triangle,
@@ -339,7 +339,7 @@ static GFX_VTABLE _stub_vtable16 =
     _stub_polygon,
     _soft_rect,
     _stub_circle,
-    _stub_circlefill,
+    _soft_circlefill,
     _stub_ellipse,
     _stub_ellipsefill,
     _stub_arc,
@@ -369,7 +369,7 @@ static GFX_VTABLE _stub_vtable32 =
     _linear_vline32,
     _linear_hline32,
     _linear_hline32,
-    _stub_line,
+    _normal_line,
     _stub_fastline,
     _normal_rectfill,
     _stub_triangle,
@@ -405,7 +405,7 @@ static GFX_VTABLE _stub_vtable32 =
     _stub_polygon,
     _soft_rect,
     _stub_circle,
-    _stub_circlefill,
+    _soft_circlefill,
     _stub_ellipse,
     _stub_ellipsefill,
     _stub_arc,
@@ -886,10 +886,6 @@ void _sdl_render_it() {
     //printf("** PRESENTED\n");
     
 }
-
-
-void circlefill(BITMAP *bmp, int x, int y, int radius, int color) { printf("STUB: circlefill\n");      }
-void line(BITMAP *bmp, int x1, int y_1, int x2, int y2, int color) { printf("STUB: line\n");        }
 
 
 struct BITMAP * load_pcx(AL_CONST char *filename, struct RGB *pal) { printf("STUB: load_pcx\n");      return 0; }

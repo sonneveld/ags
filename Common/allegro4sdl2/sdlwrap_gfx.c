@@ -516,3 +516,125 @@ void polygon (BITMAP *bmp, int vertices, AL_CONST int *points, int color)
     ASSERT(bmp);
     _soft_polygon(bmp, vertices, points, color);
 }
+
+/* _normal_line:
+ *  Draws a line from x1, y1 to x2, y2, using putpixel() to do the work.
+ */
+void _normal_line(BITMAP *bmp, int x1, int y1, int x2, int y2, int color)
+{
+    int sx, sy, dx, dy, t;
+    
+    if (x1 == x2) {
+        vline(bmp, x1, y1, y2, color);
+        return;
+    }
+    
+    if (y1 == y2) {
+        hline(bmp, x1, y1, x2, color);
+        return;
+    }
+    
+    /* use a bounding box to check if the line needs clipping */
+    if (bmp->clip) {
+        sx = x1;
+        sy = y1;
+        dx = x2;
+        dy = y2;
+        
+        if (sx > dx) {
+            t = sx;
+            sx = dx;
+            dx = t;
+        }
+        
+        if (sy > dy) {
+            t = sy;
+            sy = dy;
+            dy = t;
+        }
+        
+        if ((sx >= bmp->cr) || (sy >= bmp->cb) || (dx < bmp->cl) || (dy < bmp->ct))
+            return;
+        
+        if ((sx >= bmp->cl) && (sy >= bmp->ct) && (dx < bmp->cr) && (dy < bmp->cb))
+            bmp->clip = FALSE;
+        
+        t = TRUE;
+    }
+    else
+        t= FALSE;
+    
+    acquire_bitmap(bmp);
+    
+    do_line(bmp, x1, y1, x2, y2, color, bmp->vtable->putpixel);
+    
+    release_bitmap(bmp);
+    
+    bmp->clip = t;
+}
+
+/* circlefill:
+ *  Draws a filled circle.
+ */
+void _soft_circlefill(BITMAP *bmp, int x, int y, int radius, int color)
+{
+    int cx = 0;
+    int cy = radius;
+    int df = 1 - radius;
+    int d_e = 3;
+    int d_se = -2 * radius + 5;
+    int clip, sx, sy, dx, dy;
+    ASSERT(bmp);
+    
+    if (bmp->clip) {
+        sx = x-radius-1;
+        sy = y-radius-1;
+        dx = x+radius+1;
+        dy = y+radius+1;
+        
+        if ((sx >= bmp->cr) || (sy >= bmp->cb) || (dx < bmp->cl) || (dy < bmp->ct))
+            return;
+        
+        if ((sx >= bmp->cl) && (sy >= bmp->ct) && (dx < bmp->cr) && (dy < bmp->cb))
+            bmp->clip = FALSE;
+        
+        clip = TRUE;
+    }
+    else
+        clip = FALSE;
+    
+    acquire_bitmap(bmp);
+    
+    do {
+        bmp->vtable->hfill(bmp, x-cy, y-cx, x+cy, color);
+        
+        if (cx)
+            bmp->vtable->hfill(bmp, x-cy, y+cx, x+cy, color);
+        
+        if (df < 0)  {
+            df += d_e;
+            d_e += 2;
+            d_se += 2;
+        }
+        else {
+            if (cx != cy) {
+                bmp->vtable->hfill(bmp, x-cx, y-cy, x+cx, color);
+                
+                if (cy)
+                    bmp->vtable->hfill(bmp, x-cx, y+cy, x+cx, color);
+            }
+            
+            df += d_se;
+            d_e += 2;
+            d_se += 4;
+            cy--;
+        } 
+        
+        cx++; 
+        
+    } while (cx <= cy);
+    
+    release_bitmap(bmp);
+    
+    bmp->clip = clip;
+}

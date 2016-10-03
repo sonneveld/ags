@@ -15,20 +15,22 @@
 #ifndef __AC_MYSTATICOGG_H
 #define __AC_MYSTATICOGG_H
 
-#include "alogg.h"
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#include <ALMixer/Almixer.h>
+
 #include "media/audio/soundclip.h"
 
 // pre-loaded (non-streaming) OGG file
 struct MYSTATICOGG:public SOUNDCLIP
 {
-    ALOGG_OGG *tune;
+    struct ALmixer_RWops *rw_ops;
+    ALmixer_Data *almixerData = nullptr;
+    int almixerChannel = -1;
+    
     char *mp3buffer;
-    int mp3buffersize;
+    long mp3buffersize;
     int extraOffset;
-
-    int last_but_one_but_one;
-    int last_but_one;
-    int last_ms_offs;
 
     int poll();
 
@@ -57,7 +59,15 @@ struct MYSTATICOGG:public SOUNDCLIP
 
     int play();
 
+    void set_panning(int newPanning);
+    
+    void pause();
+    
+    void resume();
+    
     MYSTATICOGG();
+    
+    int load_from_buffer(char *buffer, long size);
 
 protected:
     virtual void adjust_volume();

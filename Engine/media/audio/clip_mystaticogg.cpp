@@ -20,28 +20,22 @@
 
 #include "platform/base/agsplatformdriver.h"
 
-extern "C" {
-    extern int alogg_is_end_of_oggstream(ALOGG_OGGSTREAM *ogg);
-    extern int alogg_is_end_of_ogg(ALOGG_OGG *ogg);
-    extern int alogg_get_ogg_freq(ALOGG_OGG *ogg);
-    extern int alogg_get_ogg_stereo(ALOGG_OGG *ogg);
-}
-
-extern int use_extra_sound_offset;  // defined in ac.cpp
+#include <math.h>
+#include <SDL2/sdl.h>
 
 int MYSTATICOGG::poll()
 {
 	AGS::Engine::MutexLock _lock(_mutex);
 
-    if (tune && !done && _destroyThis)
+    if (this->almixerChannel >= 0 && !done && _destroyThis)
     {
       internal_destroy();
       _destroyThis = false;
     }
 
-    if ((tune == NULL) || (!ready))
+    if ((this->almixerChannel < 0) || (!ready))
         ; // Do nothing
-    else if (alogg_poll_ogg(tune) == ALOGG_POLL_PLAYJUSTFINISHED) {
+    else if (ALmixer_IsPlayingChannel(this->almixerChannel)) {
         if (!repeat)
         {
             done = 1;
@@ -55,9 +49,25 @@ int MYSTATICOGG::poll()
 }
 
 void MYSTATICOGG::adjust_stream()
-{
-    if (tune)
-        alogg_adjust_ogg(tune, get_final_volume(), panning, speed, repeat);
+{    
+    // volume
+    float volumef = (float)get_final_volume() / 255.0f;
+    if (volumef > 1.0f) { volumef = 1.0f; }
+    if (volumef < -1.0f) { volumef = -1.0f; }
+    ALmixer_SetVolumeChannel(this->almixerChannel, volumef);
+    
+    int sid = ALmixer_GetSource(this->almixerChannel);
+    
+    // panning
+    //  via http://stackoverflow.com/a/23189797/84262
+    float balance = ((float)this->panning / 255.0f) * 2.0f - 1.0f;
+    if (balance > 1.0f) { balance = 1.0f; }
+    if (balance < -1.0f) { balance = -1.0f; }
+    alSource3f(sid, AL_POSITION, balance, 0.0f, sqrtf(1.0f - powf(balance, 2.0f)));
+    
+    // repeat cannot be adjusted
+    
+    alSourcef(sid, AL_PITCH, speed/1000.0f);
 }
 
 void MYSTATICOGG::adjust_volume()
@@ -79,10 +89,20 @@ void MYSTATICOGG::set_speed(int new_speed)
 
 void MYSTATICOGG::internal_destroy()
 {
-    if (tune != NULL) {
-        alogg_stop_ogg(tune);
-        alogg_destroy_ogg(tune);
-        tune = NULL;
+    if (this->almixerChannel >= 0) {
+        ALmixer_HaltChannel(this->almixerChannel);
+        this->almixerChannel = -1;
+    }
+    
+    if (this->almixerData) {
+        ALmixer_FreeData(this->almixerData);
+        this->almixerData = nullptr;
+    }
+    
+    if (this->rw_ops) {
+        // Turns out that almixer handily frees this.
+        // SDL_RWclose(reinterpret_cast<SDL_RWops *>(this->rw_ops));
+        this->rw_ops = nullptr;
     }
 
     if (mp3buffer != NULL) {
@@ -115,12 +135,10 @@ void MYSTATICOGG::destroy()
 void MYSTATICOGG::seek(int pos)
 {
 	AGS::Engine::MutexLock _lock;
-    if (psp_audio_multithreaded)
+    if (psp_audio_multithreaded) {
 		_lock.Acquire(_mutex);
-    // we stop and restart it because otherwise the buffer finishes
-    // playing first and the seek isn't quite accurate
-    alogg_stop_ogg(tune);
-    play_from(pos);
+    }
+    ALmixer_SeekChannel(this->almixerChannel, pos);
 }
 
 int MYSTATICOGG::get_pos()
@@ -130,79 +148,36 @@ int MYSTATICOGG::get_pos()
 
 int MYSTATICOGG::get_pos_ms()
 {
-    // Unfortunately the alogg_get_pos_msecs function
-    // returns the ms offset that was last decoded, so it's always
-    // ahead of the actual playback. Therefore we have this
-    // hideous hack below to sort it out.
-    if ((done) || (!alogg_is_playing_ogg(tune)))
-        return 0;
-
-    AUDIOSTREAM *str = alogg_get_audiostream_ogg(tune);
-    long offs = (voice_get_position(str->voice) * 1000) / str->samp->freq;
-
-    if (last_ms_offs != alogg_get_pos_msecs_ogg(tune)) {
-        last_but_one_but_one = last_but_one;
-        last_but_one = last_ms_offs;
-        last_ms_offs = alogg_get_pos_msecs_ogg(tune);
-    }
-
-    // just about to switch buffers
-    if (offs < 0)
-        return last_but_one;
-
-    int end_of_stream = alogg_is_end_of_ogg(tune);
-
-    if ((str->active == 1) && (last_but_one_but_one > 0) && (str->locked == NULL)) {
-        switch (end_of_stream) {
-case 0:
-case 2:
-    offs -= (last_but_one - last_but_one_but_one);
-    break;
-case 1:
-    offs -= (last_but_one - last_but_one_but_one);
-    break;
-        }
-    }
-
-    /*    char tbuffer[260];
-    sprintf(tbuffer,"offs: %d  last_but_one_but_one: %d  last_but_one: %d  active:%d  locked: %p   EOS: %d",
-    offs, last_but_one_but_one, last_but_one, str->active, str->locked, end_of_stream);
-    write_log(tbuffer);*/
-
-    if (end_of_stream == 1) {
-
-        return offs + last_but_one + extraOffset;
-    }
-
-    return offs + last_but_one_but_one + extraOffset;
+    int source = ALmixer_GetSource(this->almixerChannel);
+    ALfloat offsetSeconds;
+    alGetSourcef(source, AL_SEC_OFFSET, &offsetSeconds);
+    
+    int result = (int)(offsetSeconds*1000.0f);
+    return result;
 }
 
 int MYSTATICOGG::get_length_ms()
 {
-    return alogg_get_length_msecs_ogg(tune);
+    return ALmixer_GetTotalTime(this->almixerData);
 }
 
 void MYSTATICOGG::restart()
 {
-    if (tune != NULL) {
-        alogg_stop_ogg(tune);
-        alogg_rewind_ogg(tune);
-        alogg_play_ogg(tune, 16384, vol, panning);
-        last_ms_offs = 0;
-        last_but_one = 0;
-        last_but_one_but_one = 0;
-        done = 0;
-
-        if (!psp_audio_multithreaded)
-          poll();
-    }
+    if (this->almixerChannel < 0) { return; }
+    
+    ALmixer_SeekChannel(this->almixerChannel, 0);
+    ALmixer_ResumeChannel(this->almixerChannel);
+    
+    done = 0;
+    
+    if (!psp_audio_multithreaded)
+        poll();
 }
 
 int MYSTATICOGG::get_voice()
 {
-    AUDIOSTREAM *ast = alogg_get_audiostream_ogg(tune);
-    if (ast)
-        return ast->voice;
+    printf("OGG STUB: get_voice\n");
+    // only used by super to change some parameters.
     return -1;
 }
 
@@ -212,23 +187,13 @@ int MYSTATICOGG::get_sound_type() {
 
 int MYSTATICOGG::play_from(int position)
 {
-    if (use_extra_sound_offset) 
-        extraOffset = ((16384 / (alogg_get_wave_is_stereo_ogg(tune) ? 2 : 1)) * 1000) / alogg_get_wave_freq_ogg(tune);
-    else
-        extraOffset = 0;
+    _playing = true;
+    
+    this->almixerChannel = ALmixer_PlayChannel(-1, this->almixerData, this->repeat ? -1 : 0);
 
-    if (alogg_play_ex_ogg(tune, 16384, vol, panning, 1000, repeat) != ALOGG_OK) {
-        destroy();
-        delete this;
-        return 0;
+    if (position > 0) {
+        ALmixer_SeekChannel(this->almixerChannel, position);
     }
-
-    last_ms_offs = position;
-    last_but_one = position;
-    last_but_one_but_one = position;
-
-    if (position > 0)
-        alogg_seek_abs_msecs_ogg(tune, position);
 
     if (!psp_audio_multithreaded)
       poll();
@@ -237,12 +202,48 @@ int MYSTATICOGG::play_from(int position)
 }
 
 int MYSTATICOGG::play() {
-    _playing = true;
     return play_from(0);
 }
 
+void MYSTATICOGG::set_panning(int newPanning) {
+    panning = newPanning;
+    this->adjust_stream();
+}
+
+void MYSTATICOGG::pause() {
+    ALmixer_PauseChannel(this->almixerChannel);
+    paused = 1;
+}
+
+void MYSTATICOGG::resume() {
+    ALmixer_ResumeChannel(this->almixerChannel);
+    paused = 0;
+}
+
+int MYSTATICOGG::load_from_buffer(char *buffer, long muslen) {
+    this->done = 0;
+    this->mp3buffer = buffer;
+    this->mp3buffersize = muslen;
+    
+    this->rw_ops = reinterpret_cast<ALmixer_RWops *>(SDL_RWFromConstMem(mp3buffer, muslen));
+    if (!rw_ops) { return -1; }
+    
+    this->almixerData = ALmixer_LoadAll_RW(this->rw_ops, "ogg", AL_FALSE);
+    if (!this->almixerData) { return -1; }
+    
+    this->ready = true;
+    return 0;
+}
+
 MYSTATICOGG::MYSTATICOGG() : SOUNDCLIP() {
-    last_but_one = 0;
-    last_ms_offs = 0;
-    last_but_one_but_one = 0;
+    this->mp3buffer = nullptr;
+    this->mp3buffersize = -1;
+    
+    this->rw_ops = nullptr;
+    this->almixerData = nullptr;
+    this->almixerChannel = -1;
+
+    this->done = 0;
+
+    this->ready = false;
 }

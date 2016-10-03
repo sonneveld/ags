@@ -54,7 +54,6 @@ int numSoundChannels = 8;
 #endif
 
 
-int use_extra_sound_offset = 0;
 
 
 
@@ -184,9 +183,10 @@ SOUNDCLIP *my_load_static_mp3(const char *filname, int voll, bool loop)
 
 
 
-MYSTATICOGG *thissogg;
 SOUNDCLIP *my_load_static_ogg(const char *filname, int voll, bool loop)
 {
+    MYSTATICOGG *thissogg;
+    
     // Load via soundcache.
     long muslen = 0;
     char* mp3buffer = get_cached_sound(filname, false, &muslen);
@@ -195,21 +195,15 @@ SOUNDCLIP *my_load_static_ogg(const char *filname, int voll, bool loop)
 
     // now, create an OGG structure for it
     thissogg = new MYSTATICOGG();
+    
     thissogg->vol = voll;
     thissogg->repeat = loop;
-    thissogg->done = 0;
-    thissogg->mp3buffer = mp3buffer;
-    thissogg->mp3buffersize = muslen;
-
-    thissogg->tune = alogg_create_ogg_from_buffer(mp3buffer, muslen);
-    thissogg->ready = true;
-
-    if (thissogg->tune == NULL) {
+    if (thissogg->load_from_buffer(mp3buffer, muslen) != 0) {
         thissogg->destroy();
         delete thissogg;
-        return NULL;
+        return nullptr;
     }
-
+    
     return thissogg;
 }
 

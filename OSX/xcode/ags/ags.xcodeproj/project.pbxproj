@@ -10,6 +10,7 @@
 		522C8F151D5A0A9B0000B0E0 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 522C8F141D5A0A9B0000B0E0 /* SDL2.framework */; };
 		523AB9711D27DA40002B98F0 /* AGSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 523AB9701D27DA40002B98F0 /* AGSKit.framework */; };
 		52670F5A1DA1F9F40094CD99 /* ALmixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52670F591DA1F9F40094CD99 /* ALmixer.framework */; };
+		52670F601DA222670094CD99 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52670F5F1DA222670094CD99 /* OpenAL.framework */; };
 		52B8A6221D27785A00FA453F /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6141D27785A00FA453F /* libz.1.dylib */; };
 		52B8A6231D27785A00FA453F /* libbz2.1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */; };
 		52B8A6241D27785A00FA453F /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52B8A6161D27785A00FA453F /* CoreVideo.framework */; };
@@ -46,6 +47,7 @@
 		522C8F141D5A0A9B0000B0E0 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
 		523AB9701D27DA40002B98F0 /* AGSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AGSKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		52670F591DA1F9F40094CD99 /* ALmixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ALmixer.framework; path = ../../../../../../../../Library/Frameworks/ALmixer.framework; sourceTree = "<group>"; };
+		52670F5F1DA222670094CD99 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		52B8A6141D27785A00FA453F /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = /usr/lib/libz.1.dylib; sourceTree = "<absolute>"; };
 		52B8A6151D27785A00FA453F /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = /usr/lib/libbz2.1.0.dylib; sourceTree = "<absolute>"; };
 		52B8A6161D27785A00FA453F /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
@@ -71,6 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52670F601DA222670094CD99 /* OpenAL.framework in Frameworks */,
 				52670F5A1DA1F9F40094CD99 /* ALmixer.framework in Frameworks */,
 				522C8F151D5A0A9B0000B0E0 /* SDL2.framework in Frameworks */,
 				52B8A6281D27785A00FA453F /* CoreAudio.framework in Frameworks */,
@@ -144,6 +147,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				52670F5F1DA222670094CD99 /* OpenAL.framework */,
 				52670F591DA1F9F40094CD99 /* ALmixer.framework */,
 				522C8F141D5A0A9B0000B0E0 /* SDL2.framework */,
 				523AB9701D27DA40002B98F0 /* AGSKit.framework */,

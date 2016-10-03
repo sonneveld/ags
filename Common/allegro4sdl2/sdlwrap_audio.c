@@ -13,7 +13,7 @@
 #include <strings.h>
 #include <ctype.h>
 
-
+#include <ALmixer/ALmixer.h>
 
 
 
@@ -60,7 +60,7 @@
 int digi_card = DIGI_AUTODETECT;
 
 void reserve_voices(int digi_voices, int midi_voices) { printf("STUB: reserve_voices\n");       }
-int install_sound() { printf("STUB: install_sound\n");      return -1; }
+int install_sound() { printf("STUB: install_sound\n");      return 0; }
 void remove_sound(){ printf("STUB: remove_sound\n");       }
 void set_volume(int digi_volume, int midi_volume) { printf("STUB: set_volume\n");       }
 void set_volume_per_voice(int scale) { printf("STUB: set_volume_per_voice\n");        }

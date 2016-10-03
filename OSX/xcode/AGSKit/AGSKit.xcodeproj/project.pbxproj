@@ -90,6 +90,8 @@
 		52670F551DA1D9880094CD99 /* cspr24.c in Sources */ = {isa = PBXBuildFile; fileRef = 5202F3A61D67D628000CD45A /* cspr24.c */; };
 		52670F561DA1D9880094CD99 /* cspr32.c in Sources */ = {isa = PBXBuildFile; fileRef = 5202F3A71D67D628000CD45A /* cspr32.c */; };
 		52670F581DA1E8560094CD99 /* cstretch.c in Sources */ = {isa = PBXBuildFile; fileRef = 52670F571DA1E8560094CD99 /* cstretch.c */; };
+		52670F5C1DA1FA270094CD99 /* ALmixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52670F5B1DA1FA270094CD99 /* ALmixer.framework */; };
+		52670F5E1DA1FBA40094CD99 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52670F5D1DA1FBA40094CD99 /* OpenAL.framework */; };
 		526F229E1D3B5C4900EF4E1F /* animationstruct.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F211B1D3B5C4800EF4E1F /* animationstruct.h */; };
 		526F229F1D3B5C4900EF4E1F /* audiocliptype.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526F211C1D3B5C4800EF4E1F /* audiocliptype.cpp */; };
 		526F22A01D3B5C4900EF4E1F /* audiocliptype.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F211D1D3B5C4800EF4E1F /* audiocliptype.h */; };
@@ -882,6 +884,8 @@
 		52670F3D1DA1D81F0094CD99 /* flood.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = flood.c; path = "allegro-4.4/flood.c"; sourceTree = "<group>"; };
 		52670F3E1DA1D81F0094CD99 /* polygon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = polygon.c; path = "allegro-4.4/polygon.c"; sourceTree = "<group>"; };
 		52670F571DA1E8560094CD99 /* cstretch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cstretch.c; path = "allegro-4.4/c/cstretch.c"; sourceTree = "<group>"; };
+		52670F5B1DA1FA270094CD99 /* ALmixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ALmixer.framework; path = ../../../../../../../../Library/Frameworks/ALmixer.framework; sourceTree = "<group>"; };
+		52670F5D1DA1FBA40094CD99 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		526F211B1D3B5C4800EF4E1F /* animationstruct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = animationstruct.h; sourceTree = "<group>"; };
 		526F211C1D3B5C4800EF4E1F /* audiocliptype.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = audiocliptype.cpp; sourceTree = "<group>"; };
 		526F211D1D3B5C4800EF4E1F /* audiocliptype.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = audiocliptype.h; sourceTree = "<group>"; };
@@ -1590,6 +1594,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52670F5E1DA1FBA40094CD99 /* OpenAL.framework in Frameworks */,
+				52670F5C1DA1FA270094CD99 /* ALmixer.framework in Frameworks */,
 				521C56911D1E5AAC00BD619E /* Cocoa.framework in Frameworks */,
 				521C56931D1E5AB100BD619E /* AppKit.framework in Frameworks */,
 				521C56951D1E5AB800BD619E /* OpenGL.framework in Frameworks */,
@@ -1843,6 +1849,8 @@
 		521C56B61D1E5BCF00BD619E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				52670F5D1DA1FBA40094CD99 /* OpenAL.framework */,
+				52670F5B1DA1FA270094CD99 /* ALmixer.framework */,
 				522C8F121D5A09DA0000B0E0 /* SDL2.framework */,
 				52A7D3271D1E643800D88BEE /* libbz2.1.0.dylib */,
 				52A7D3251D1E641F00D88BEE /* libz.1.dylib */,

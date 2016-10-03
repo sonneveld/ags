@@ -140,7 +140,7 @@ void rest(unsigned int time)
 // --------------------------------------------------------------------------
 
 const char *get_config_text(const char *msg) { return msg; } // used by set_allegro_error
-void override_config_data(const char *data, int length) { }  // used to disable mouse accel
+
 
 
 

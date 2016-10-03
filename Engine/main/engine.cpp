@@ -133,10 +133,6 @@ bool engine_init_allegro()
 
 void engine_setup_allegro()
 {
-    // Setup allegro using constructed config string
-    const char *al_config_data = "[mouse]\n"
-        "mouse_accel_factor = 0\n";
-    override_config_data(al_config_data, ustrsize(al_config_data));
 }
 
 void winclosehook() {

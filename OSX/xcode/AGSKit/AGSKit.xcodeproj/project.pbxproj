@@ -89,6 +89,7 @@
 		52670F541DA1D9880094CD99 /* cspr16.c in Sources */ = {isa = PBXBuildFile; fileRef = 5202F3A51D67D628000CD45A /* cspr16.c */; };
 		52670F551DA1D9880094CD99 /* cspr24.c in Sources */ = {isa = PBXBuildFile; fileRef = 5202F3A61D67D628000CD45A /* cspr24.c */; };
 		52670F561DA1D9880094CD99 /* cspr32.c in Sources */ = {isa = PBXBuildFile; fileRef = 5202F3A71D67D628000CD45A /* cspr32.c */; };
+		52670F581DA1E8560094CD99 /* cstretch.c in Sources */ = {isa = PBXBuildFile; fileRef = 52670F571DA1E8560094CD99 /* cstretch.c */; };
 		526F229E1D3B5C4900EF4E1F /* animationstruct.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F211B1D3B5C4800EF4E1F /* animationstruct.h */; };
 		526F229F1D3B5C4900EF4E1F /* audiocliptype.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526F211C1D3B5C4800EF4E1F /* audiocliptype.cpp */; };
 		526F22A01D3B5C4900EF4E1F /* audiocliptype.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F211D1D3B5C4800EF4E1F /* audiocliptype.h */; };
@@ -880,6 +881,7 @@
 		52670F3B1DA1D7C30094CD99 /* colblend.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = colblend.c; path = "allegro-4.4/colblend.c"; sourceTree = "<group>"; };
 		52670F3D1DA1D81F0094CD99 /* flood.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = flood.c; path = "allegro-4.4/flood.c"; sourceTree = "<group>"; };
 		52670F3E1DA1D81F0094CD99 /* polygon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = polygon.c; path = "allegro-4.4/polygon.c"; sourceTree = "<group>"; };
+		52670F571DA1E8560094CD99 /* cstretch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cstretch.c; path = "allegro-4.4/c/cstretch.c"; sourceTree = "<group>"; };
 		526F211B1D3B5C4800EF4E1F /* animationstruct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = animationstruct.h; sourceTree = "<group>"; };
 		526F211C1D3B5C4800EF4E1F /* audiocliptype.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = audiocliptype.cpp; sourceTree = "<group>"; };
 		526F211D1D3B5C4800EF4E1F /* audiocliptype.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = audiocliptype.h; sourceTree = "<group>"; };
@@ -1672,6 +1674,7 @@
 				5202F3A51D67D628000CD45A /* cspr16.c */,
 				5202F3A61D67D628000CD45A /* cspr24.c */,
 				5202F3A71D67D628000CD45A /* cspr32.c */,
+				52670F571DA1E8560094CD99 /* cstretch.c */,
 			);
 			name = c;
 			sourceTree = "<group>";
@@ -3434,6 +3437,7 @@
 				526F275A1D3B5CC300EF4E1F /* math.cpp in Sources */,
 				526F27231D3B5CC300EF4E1F /* global_overlay.cpp in Sources */,
 				52F5D8521DA120CB006F8F4B /* main_game_file.cpp in Sources */,
+				52670F581DA1E8560094CD99 /* cstretch.c in Sources */,
 				526F26D81D3B5CC300EF4E1F /* scriptdatetime.cpp in Sources */,
 				526F276F1D3B5CC300EF4E1F /* richgamemedia.cpp in Sources */,
 				526F27D21D3B5CC300EF4E1F /* cscidialog.cpp in Sources */,

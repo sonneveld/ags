@@ -887,24 +887,9 @@ void _sdl_render_it() {
     
 }
 
-void _nick_masked_blit(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
-{
-    printf("STUB: masked_blit\n");
-    blit(src, dest, s_x, s_y, d_x, d_y, w, h);
-    
-}
-
-void masked_stretch_blit(BITMAP *src, BITMAP *dst, int sx, int sy, int sw, int sh,
-                         int dx, int dy, int dw, int dh) { printf("STUB: masked_stretch_blit\n");       }
-void stretch_blit(BITMAP *src, BITMAP *dst, int sx, int sy, int sw, int sh,
-                  int dx, int dy, int dw, int dh) { printf("STUB: stretch_blit\n");     }
-void stretch_sprite(BITMAP *dst, BITMAP *src, int x, int y, int w, int h) { printf("STUB: stretch_sprite\n");     }
-
 
 void circlefill(BITMAP *bmp, int x, int y, int radius, int color) { printf("STUB: circlefill\n");      }
 void line(BITMAP *bmp, int x1, int y_1, int x2, int y2, int color) { printf("STUB: line\n");        }
-
-
 
 
 struct BITMAP * load_pcx(AL_CONST char *filename, struct RGB *pal) { printf("STUB: load_pcx\n");      return 0; }

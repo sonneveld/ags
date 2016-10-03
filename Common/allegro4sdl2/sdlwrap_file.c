@@ -13,7 +13,7 @@
 #include "allegro/internal/aintern.h"
 #include <strings.h>
 #include <ctype.h>
-
+#include <stdlib.h>
 
 
 // --------------------------------------------------------------------------
@@ -21,8 +21,7 @@
 // --------------------------------------------------------------------------
 char *canonicalize_filename(char *dest, const char *filename, int size)
 {
-    printf("STUB: canonicalize_filename\n");
-    strcpy(dest, filename);
+    realpath(filename, dest);
     return dest;
 }
 char *get_filename(const char *path) {
@@ -45,7 +44,7 @@ int is_relative_filename(const char *filename)
 }
 char *append_filename(char *dest, AL_CONST char *path, AL_CONST char *filename, int size)
 {
-    sprintf(dest, "%s/%s/", path, filename);
+    sprintf(dest, "%s/%s", path, filename);
     return dest;
 }
 int file_exists(AL_CONST char *filename, int attrib, int *aret)

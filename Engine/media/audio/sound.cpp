@@ -53,35 +53,53 @@ int numSoundChannels = 8;
 #include <ctype.h>
 #endif
 
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#include <ALMixer/Almixer.h>
+
+// almixer/openal can automatically allocate a channel but it might reuse before we're done with it!
+// so instead, keep track of channels we want with this hack.
+static long usedChannelsHack = 0;
+
+ALint allocate_almixer_channel()
+{
+    for (int i = 0; i < 32; i++) {
+        if (ALmixer_IsActiveChannel(i)) { continue; }
+        long mask = 1 << i;
+        if ((usedChannelsHack & mask) == 0) {
+            usedChannelsHack |= mask;
+            return i;
+        }
+    }
+    return -1;
+}
+
+void release_almixer_channel(ALint channel)
+{
+    usedChannelsHack &= ~(channel << 1);
+}
 
 
-
-
-MYWAVE *thiswave;
 SOUNDCLIP *my_load_wave(const char *filename, int voll, int loop)
 {
-#ifdef MAC_VERSION
-    SAMPLE *new_sample = NULL;
-    PACKFILE* wavin = pack_fopen(filename, "rb");
-    if (wavin != NULL) {
-      new_sample = load_wav_pf(wavin);
-      pack_fclose(wavin);
-    }
-#else
+    MYWAVE *thiswave;
+
     // Load via soundcache.
-    long dummy;
-    SAMPLE *new_sample = (SAMPLE*)get_cached_sound(filename, true, &dummy);
-#endif
+    long len;
+    char *new_sample = get_cached_sound(filename, false, &len);
 
-    if (new_sample == NULL)
-        return NULL;
-
+    if (!new_sample) { return nullptr; }
+    
     thiswave = new MYWAVE();
-    thiswave->wave = new_sample;
+    
     thiswave->vol = voll;
-    thiswave->firstTime = 1;
     thiswave->repeat = (loop != 0);
-
+    if (thiswave->load_from_buffer(new_sample, len) != 0) {
+        thiswave->destroy();
+        delete thiswave;
+        return nullptr;
+    }
+    
     return thiswave;
 }
 
@@ -190,8 +208,7 @@ SOUNDCLIP *my_load_static_ogg(const char *filname, int voll, bool loop)
     // Load via soundcache.
     long muslen = 0;
     char* mp3buffer = get_cached_sound(filname, false, &muslen);
-    if (mp3buffer == NULL)
-        return NULL;
+    if (!mp3buffer) { return nullptr; }
 
     // now, create an OGG structure for it
     thissogg = new MYSTATICOGG();

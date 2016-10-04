@@ -23,6 +23,9 @@
 #include <math.h>
 #include <SDL2/sdl.h>
 
+extern ALint allocate_almixer_channel();
+extern void release_almixer_channel(ALint channel);
+
 int MYSTATICOGG::poll()
 {
 	AGS::Engine::MutexLock _lock(_mutex);
@@ -91,6 +94,7 @@ void MYSTATICOGG::internal_destroy()
 {
     if (this->almixerChannel >= 0) {
         ALmixer_HaltChannel(this->almixerChannel);
+        release_almixer_channel(this->almixerChannel);
         this->almixerChannel = -1;
     }
     
@@ -189,8 +193,9 @@ int MYSTATICOGG::play_from(int position)
 {
     _playing = true;
     
-    this->almixerChannel = ALmixer_PlayChannel(-1, this->almixerData, this->repeat ? -1 : 0);
-
+    this->almixerChannel = allocate_almixer_channel();
+    this->almixerChannel = ALmixer_PlayChannel(this->almixerChannel, this->almixerData, this->repeat ? -1 : 0);
+    
     if (position > 0) {
         ALmixer_SeekChannel(this->almixerChannel, position);
     }

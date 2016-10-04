@@ -15,14 +15,23 @@
 #ifndef __AC_MYWAVE_H
 #define __AC_MYWAVE_H
 
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#include <ALMixer/Almixer.h>
+
 #include "media/audio/soundclip.h"
 
 // My new MP3STREAM wrapper
 struct MYWAVE:public SOUNDCLIP
 {
-    SAMPLE *wave;
+    struct ALmixer_RWops *rw_ops;
+    ALmixer_Data *almixerData = nullptr;
+    int almixerChannel = -1;
+    
+    char *mp3buffer;
+    long mp3buffersize;
+    
     int voice;
-    int firstTime;
 
     int poll();
 
@@ -49,8 +58,20 @@ struct MYWAVE:public SOUNDCLIP
 
     MYWAVE();
 
+    void  adjust_stream();
+    void  set_speed(int new_speed);
+    int  play_from(int position);
+    void  set_panning(int newPanning);
+    
+    void  pause();
+    
+    void resume();
+    
+    int  load_from_buffer(char *buffer, long muslen);
+    
 protected:
     virtual void adjust_volume();
+
 };
 
 #endif // __AC_MYWAVE_H

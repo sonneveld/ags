@@ -21,61 +21,100 @@
 
 #include "platform/base/agsplatformdriver.h"
 
+#include <math.h>
+#include <SDL2/sdl.h>
+
+extern ALint allocate_almixer_channel();
+extern void release_almixer_channel(ALint channel);
 
 int MYWAVE::poll()
 {
     AGS::Engine::MutexLock _lock(_mutex);
-
-    if (!done && _destroyThis)
+    
+    if (this->almixerChannel >= 0 && !done && _destroyThis)
     {
-      internal_destroy();
-      _destroyThis = false;
+        internal_destroy();
+        _destroyThis = false;
     }
-
-    if (wave == NULL)
-    {
-        return 1;
+    
+    if ((this->almixerChannel < 0) || (!ready))
+        ; // Do nothing
+    else if (ALmixer_IsPlayingChannel(this->almixerChannel)) {
+        if (!repeat)
+        {
+            done = 1;
+            if (psp_audio_multithreaded)
+                internal_destroy();
+        }
     }
-    if (paused)
-    {
-        return 0;
-    }
-
-    if (firstTime) {
-        // need to wait until here so that we have been assigned a channel
-        //sample_update_callback(wave, voice);
-        firstTime = 0;
-    }
-
-    if (voice_get_position(voice) < 0)
-    {
-        done = 1;
-        if (psp_audio_multithreaded)
-            internal_destroy();
-    }
-
+    else get_pos();  // call this to keep the last_but_one stuff up to date
+    
     return done;
+}
+
+void MYWAVE::adjust_stream()
+{
+    // volume
+    float volumef = (float)get_final_volume() / 255.0f;
+    if (volumef > 1.0f) { volumef = 1.0f; }
+    if (volumef < -1.0f) { volumef = -1.0f; }
+    ALmixer_SetVolumeChannel(this->almixerChannel, volumef);
+    
+    int sid = ALmixer_GetSource(this->almixerChannel);
+    
+    // panning
+    //  via http://stackoverflow.com/a/23189797/84262
+    float balance = ((float)this->panning / 255.0f) * 2.0f - 1.0f;
+    if (balance > 1.0f) { balance = 1.0f; }
+    if (balance < -1.0f) { balance = -1.0f; }
+    alSource3f(sid, AL_POSITION, balance, 0.0f, sqrtf(1.0f - powf(balance, 2.0f)));
+    
+    // repeat cannot be adjusted
+    
+    alSourcef(sid, AL_PITCH, speed/1000.0f);
 }
 
 void MYWAVE::adjust_volume()
 {
-    if (voice >= 0)
-        voice_set_volume(voice, get_final_volume());
+    adjust_stream();
 }
 
 void MYWAVE::set_volume(int newvol)
 {
     vol = newvol;
-    adjust_volume();
+    adjust_stream();
+}
+
+void MYWAVE::set_speed(int new_speed)
+{
+    speed = new_speed;
+    adjust_stream();
 }
 
 void MYWAVE::internal_destroy()
 {
-    // Stop sound and decrease reference count.
-    stop_sample(wave);
-    sound_cache_free((char*)wave, true);
-    wave = NULL;
-
+    if (this->almixerChannel >= 0) {
+        ALmixer_HaltChannel(this->almixerChannel);
+        release_almixer_channel(this->almixerChannel);
+        this->almixerChannel = -1;
+    }
+    
+    if (this->almixerData) {
+        ALmixer_FreeData(this->almixerData);
+        this->almixerData = nullptr;
+    }
+    
+    if (this->rw_ops) {
+        // Turns out that almixer handily frees this.
+        // SDL_RWclose(reinterpret_cast<SDL_RWops *>(this->rw_ops));
+        this->rw_ops = nullptr;
+    }
+    
+    if (mp3buffer != NULL) {
+        sound_cache_free(mp3buffer, false);
+        mp3buffer = NULL;
+    }
+    
     _destroyThis = false;
     done = 1;
 }
@@ -83,73 +122,141 @@ void MYWAVE::internal_destroy()
 void MYWAVE::destroy()
 {
     AGS::Engine::MutexLock _lock(_mutex);
-
+    
     if (psp_audio_multithreaded && _playing && !_audio_doing_crossfade)
-      _destroyThis = true;
+        _destroyThis = true;
     else
-      internal_destroy();
-
-	_lock.Release();
-
+        internal_destroy();
+    
+    _lock.Release();
+    
     while (!done)
-      AGSPlatformDriver::GetDriver()->YieldCPU();
+        AGSPlatformDriver::GetDriver()->YieldCPU();
+    
+    // Allow the last poll cycle to finish.
+    _lock.Acquire(_mutex);
 }
 
 void MYWAVE::seek(int pos)
 {
-    voice_set_position(voice, pos);
+    AGS::Engine::MutexLock _lock;
+    if (psp_audio_multithreaded) {
+        _lock.Acquire(_mutex);
+    }
+    ALmixer_SeekChannel(this->almixerChannel, pos);
 }
 
 int MYWAVE::get_pos()
 {
-    return voice_get_position(voice);
+    return get_pos_ms();
 }
 
 int MYWAVE::get_pos_ms()
 {
-    // convert the offset in samples into the offset in ms
-    //return ((1000000 / voice_get_frequency(voice)) * voice_get_position(voice)) / 1000;
-
-    if (voice_get_frequency(voice) < 100)
-        return 0;
-    // (number of samples / (samples per second / 100)) * 10 = ms
-    return (voice_get_position(voice) / (voice_get_frequency(voice) / 100)) * 10;
+    int source = ALmixer_GetSource(this->almixerChannel);
+    ALfloat offsetSeconds;
+    alGetSourcef(source, AL_SEC_OFFSET, &offsetSeconds);
+    
+    int result = (int)(offsetSeconds*1000.0f);
+    return result;
 }
 
 int MYWAVE::get_length_ms()
 {
-    if (wave->freq < 100)
-        return 0;
-    return (wave->len / (wave->freq / 100)) * 10;
+    return ALmixer_GetTotalTime(this->almixerData);
 }
 
 void MYWAVE::restart()
 {
-    if (wave != NULL) {
-        done = 0;
-        paused = 0;
-        stop_sample(wave);
-        voice = play_sample(wave, vol, panning, 1000, 0);
-    }
+    if (this->almixerChannel < 0) { return; }
+    
+    ALmixer_SeekChannel(this->almixerChannel, 0);
+    ALmixer_ResumeChannel(this->almixerChannel);
+    
+    done = 0;
+    
+    if (!psp_audio_multithreaded)
+        poll();
 }
 
 int MYWAVE::get_voice()
 {
-    return voice;
+    printf("MYWAVE STUB: get_voice\n");
+    // only used by super to change some parameters.
+    return -1;
 }
 
 int MYWAVE::get_sound_type() {
     return MUS_WAVE;
 }
 
-int MYWAVE::play() {
-    voice = play_sample(wave, vol, panning, 1000, repeat);
-
+int MYWAVE::play_from(int position)
+{
     _playing = true;
-
+    
+    this->almixerChannel = allocate_almixer_channel();
+    this->almixerChannel = ALmixer_PlayChannel(this->almixerChannel, this->almixerData, this->repeat ? -1 : 0);
+    
+    if (position > 0) {
+        ALmixer_SeekChannel(this->almixerChannel, position);
+    }
+    
+    if (!psp_audio_multithreaded)
+        poll();
+    
     return 1;
 }
 
+int MYWAVE::play() {
+    return play_from(0);
+}
+
+void MYWAVE::set_panning(int newPanning)
+{
+    panning = newPanning;
+    this->adjust_stream();
+}
+
+void MYWAVE::pause()
+{
+    ALmixer_PauseChannel(this->almixerChannel);
+    paused = 1;
+}
+
+void MYWAVE::resume()
+{
+    ALmixer_ResumeChannel(this->almixerChannel);
+    paused = 0;
+}
+
+int MYWAVE::load_from_buffer(char *buffer, long muslen)
+{
+    this->done = 0;
+    this->mp3buffer = buffer;
+    this->mp3buffersize = muslen;
+    
+    this->rw_ops = reinterpret_cast<ALmixer_RWops *>(SDL_RWFromConstMem(mp3buffer, muslen));
+    if (!rw_ops) { return -1; }
+    
+    this->almixerData = ALmixer_LoadAll_RW(this->rw_ops, "wav", AL_FALSE);
+    if (!this->almixerData) { return -1; }
+    
+    this->ready = true;
+    return 0;
+}
+
+
+
 MYWAVE::MYWAVE() : SOUNDCLIP() {
-    voice = -1;
+    this->mp3buffer = nullptr;
+    this->mp3buffersize = -1;
+    
+    this->rw_ops = nullptr;
+    this->almixerData = nullptr;
+    
+    this->almixerChannel = -1;
+    
+    this->done = 0;
+    
+    this->ready = false;
 }

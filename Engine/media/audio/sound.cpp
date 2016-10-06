@@ -204,18 +204,13 @@ SOUNDCLIP *my_load_static_mp3(const char *filname, int voll, bool loop)
 SOUNDCLIP *my_load_static_ogg(const char *filname, int voll, bool loop)
 {
     MYSTATICOGG *thissogg;
-    
-    // Load via soundcache.
-    long muslen = 0;
-    char* mp3buffer = get_cached_sound(filname, false, &muslen);
-    if (!mp3buffer) { return nullptr; }
 
     // now, create an OGG structure for it
     thissogg = new MYSTATICOGG();
     
     thissogg->vol = voll;
     thissogg->repeat = loop;
-    if (thissogg->load_from_buffer(mp3buffer, muslen) != 0) {
+    if (thissogg->load_from_filename(filname) != 0) {
         thissogg->destroy();
         delete thissogg;
         return nullptr;

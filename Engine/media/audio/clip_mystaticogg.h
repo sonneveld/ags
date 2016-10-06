@@ -68,6 +68,8 @@ struct MYSTATICOGG:public SOUNDCLIP
     MYSTATICOGG();
     
     int load_from_buffer(char *buffer, long size);
+    
+    int load_from_filename(const char *filename);
 
 protected:
     virtual void adjust_volume();

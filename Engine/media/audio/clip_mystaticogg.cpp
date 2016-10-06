@@ -25,6 +25,7 @@
 
 extern ALint allocate_almixer_channel();
 extern void release_almixer_channel(ALint channel);
+extern SDL_RWops *SDL_RWFromAgsAsset(const char *filnam1, const char *modd1);
 
 int MYSTATICOGG::poll()
 {
@@ -230,13 +231,30 @@ int MYSTATICOGG::load_from_buffer(char *buffer, long muslen) {
     this->mp3buffer = buffer;
     this->mp3buffersize = muslen;
     
-    this->rw_ops = reinterpret_cast<ALmixer_RWops *>(SDL_RWFromConstMem(mp3buffer, muslen));
+    this->rw_ops = reinterpret_cast<ALmixer_RWops *>(SDL_RWFromConstMem(buffer, muslen));
     if (!rw_ops) { return -1; }
     
     this->almixerData = ALmixer_LoadAll_RW(this->rw_ops, "ogg", AL_FALSE);
     if (!this->almixerData) { return -1; }
     
     this->ready = true;
+    return 0;
+}
+
+int MYSTATICOGG::load_from_filename(const char *filename)
+{
+    this->done = 0;
+    
+    this->rw_ops = reinterpret_cast<ALmixer_RWops *>(SDL_RWFromAgsAsset(filename, "rb"));
+    this->almixerData = ALmixer_LoadStream_RW( this->rw_ops, "ogg", ALMIXER_DEFAULT_BUFFERSIZE, ALMIXER_DEFAULT_QUEUE_BUFFERS, ALMIXER_DEFAULT_STARTUP_BUFFERS, ALMIXER_DEFAULT_BUFFERS_TO_QUEUE_PER_UPDATE_PASS, AL_FALSE);
+    
+    if (!this->almixerData) {
+        printf("error occured loading: %s", ALmixer_GetError());
+        return -1;
+    }
+    
+    this->ready = true;
+    
     return 0;
 }
 

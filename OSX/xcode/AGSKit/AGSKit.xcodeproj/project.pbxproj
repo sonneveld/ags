@@ -777,6 +777,7 @@
 		526F28E91D3B5CC300EF4E1F /* thread_pthread.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F26971D3B5CC300EF4E1F /* thread_pthread.h */; };
 		526F28EA1D3B5CC300EF4E1F /* thread_wii.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F26981D3B5CC300EF4E1F /* thread_wii.h */; };
 		526F28EB1D3B5CC300EF4E1F /* thread_windows.h in Headers */ = {isa = PBXBuildFile; fileRef = 526F26991D3B5CC300EF4E1F /* thread_windows.h */; };
+		5283E5291DA4FDC0000E2020 /* sdlwrap_filepack.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5283E5281DA4FDC0000E2020 /* sdlwrap_filepack.cpp */; };
 		52A7D3291D1E644700D88BEE /* libz.1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3251D1E641F00D88BEE /* libz.1.dylib */; };
 		52A7D32A1D1E645200D88BEE /* libbz2.1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 52A7D3271D1E643800D88BEE /* libbz2.1.0.dylib */; };
 		52D12C1F1D61C0950077B784 /* savegame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52D12C1C1D61C0950077B784 /* savegame.cpp */; };
@@ -1571,6 +1572,7 @@
 		526F26971D3B5CC300EF4E1F /* thread_pthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thread_pthread.h; sourceTree = "<group>"; };
 		526F26981D3B5CC300EF4E1F /* thread_wii.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thread_wii.h; sourceTree = "<group>"; };
 		526F26991D3B5CC300EF4E1F /* thread_windows.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thread_windows.h; sourceTree = "<group>"; };
+		5283E5281DA4FDC0000E2020 /* sdlwrap_filepack.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sdlwrap_filepack.cpp; sourceTree = "<group>"; };
 		52A7D3251D1E641F00D88BEE /* libz.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.1.dylib; path = ../../../../../../../../usr/lib/libz.1.dylib; sourceTree = "<group>"; };
 		52A7D3271D1E643800D88BEE /* libbz2.1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libbz2.1.0.dylib; path = ../../../../../../../../usr/lib/libbz2.1.0.dylib; sourceTree = "<group>"; };
 		52D12C1C1D61C0950077B784 /* savegame.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = savegame.cpp; sourceTree = "<group>"; };
@@ -1629,6 +1631,7 @@
 				52670F091DA1D3630094CD99 /* sdlwrap_draw.c */,
 				52670F0A1DA1D3630094CD99 /* sdlwrap_events.c */,
 				52670F0B1DA1D3630094CD99 /* sdlwrap_file.c */,
+				5283E5281DA4FDC0000E2020 /* sdlwrap_filepack.cpp */,
 				52670F0C1DA1D3630094CD99 /* sdlwrap_gfx.c */,
 				52670F0D1DA1D3630094CD99 /* sdlwrap_graphics.c */,
 				52670F0E1DA1D3630094CD99 /* sdlwrap_maths.c */,
@@ -3720,6 +3723,7 @@
 				526F27581D3B5CC300EF4E1F /* listbox.cpp in Sources */,
 				526F27811D3B5CC300EF4E1F /* speech.cpp in Sources */,
 				526F27051D3B5CC300EF4E1F /* global_debug.cpp in Sources */,
+				5283E5291DA4FDC0000E2020 /* sdlwrap_filepack.cpp in Sources */,
 				526F27B21D3B5CC300EF4E1F /* ali3dsw.cpp in Sources */,
 				526F28CC1D3B5CC300EF4E1F /* script_runtime.cpp in Sources */,
 				526F27741D3B5CC300EF4E1F /* roomobject.cpp in Sources */,

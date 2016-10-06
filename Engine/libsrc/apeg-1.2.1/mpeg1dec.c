@@ -318,7 +318,7 @@ APEG_STREAM *apeg_open_memory_stream(void *mpeg_data, int data_len)
 
 	layer->mem_data.buf = mpeg_data;
 	layer->mem_data.bytes_left = data_len;
-	layer->pf = pack_fopen_vtable(&mem_vtable, layer);
+    layer->pf = 0;
 	if(!layer->pf)
 		apeg_error_jump("Could not open stream");
 
@@ -351,7 +351,7 @@ APEG_STREAM *apeg_open_stream_ex(void *ptr)
 	layer->ext_data.skip = _skip_func;
 	layer->ext_data.ptr = ptr;
 
-	layer->pf = pack_fopen_vtable(&ext_vtable, layer);
+	layer->pf = 0;
 	if(!layer->pf)
 		apeg_error_jump("Could not open stream");
 	layer->buffer_type = USER_BUFFER;

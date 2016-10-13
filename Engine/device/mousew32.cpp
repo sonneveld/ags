@@ -48,9 +48,12 @@
 #include "ac/global_game.h" // j for IsKeyPressed
 #endif
 
+#include "util/mutex.h"
+#include "util/mutex_lock.h"
+
 using namespace AGS::Common;
 
-
+extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
 
 char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
@@ -92,6 +95,70 @@ namespace Mouse
     float Speed = 1.f;
 }
 
+/*
+ Button tracking:
+ 
+ hook into the mouse callback to track buttons.
+ On OSX, some tap to click up/down events happen too quickly to be detected on the polled mouse_b global variable.
+ Instead we accumulate button presses over a couple of timer loops. 
+ 
+ Requires only polling if necessary because otherwise will only call the callback when poll is called.
+ */
+
+static AGS::Engine::Mutex _mouse_mutex;
+static int _button_state = 0;
+static int _accumulated_button_state = 0;
+static long _clear_at_global_timer_counter = 0;
+
+#if defined(WINDOWS_VERSION)
+void __cdecl _ags_mouse_callback(int flags)
+#else
+extern "C" void _ags_mouse_callback(int flags)
+#endif
+{
+    AGS::Engine::MutexLock _lock(_mouse_mutex);
+    
+    if (flags&MOUSE_FLAG_LEFT_DOWN) {
+        _button_state |= 1;
+        _accumulated_button_state |= 1;
+    }
+    if (flags&MOUSE_FLAG_RIGHT_DOWN) {
+        _button_state |= 2;
+        _accumulated_button_state |= 2;
+    }
+    if (flags&MOUSE_FLAG_MIDDLE_DOWN) {
+        _button_state |= 4;
+        _accumulated_button_state |= 4;
+    }
+    
+    if (flags&MOUSE_FLAG_LEFT_UP) {
+        _button_state &= ~1;
+    }
+    if (flags&MOUSE_FLAG_RIGHT_UP) {
+        _button_state &= ~2;
+    }
+    if (flags&MOUSE_FLAG_MIDDLE_UP) {
+        _button_state &= ~4;
+    }
+}
+END_OF_FUNCTION(_ags_mouse_callback)
+
+int get_mouse_b()
+{
+    if (mouse_needs_poll()) {
+        poll_mouse();
+    }
+    
+    AGS::Engine::MutexLock _lock(_mouse_mutex);
+    
+    int result = _button_state | _accumulated_button_state;
+    
+    if (globalTimerCounter >= _clear_at_global_timer_counter) {
+        _accumulated_button_state = 0;
+        _clear_at_global_timer_counter = globalTimerCounter + 2;
+    }
+    return result;
+}
 
 void msetcallback(IMouseGetPosCallback *gpCallback) {
   callback = gpCallback;
@@ -109,7 +176,10 @@ void mgraphconfine(int x1, int y1, int x2, int y2)
 
 void mgetgraphpos()
 {
-    poll_mouse();
+    if (mouse_needs_poll()) {
+        poll_mouse();
+    }
+    
     if (disable_mgetgraphpos)
     {
         // The cursor coordinates are provided from alternate source;
@@ -302,8 +372,7 @@ int butwas = 0;
 int mgetbutton()
 {
   int toret = NONE;
-  poll_mouse();
-  int butis = mouse_b;
+  int butis = get_mouse_b();
 
   if ((butis > 0) & (butwas > 0))
     return NONE;  // don't allow holding button down
@@ -331,10 +400,7 @@ int mgetbutton()
 const int MB_ARRAY[3] = { 1, 2, 4 };
 int misbuttondown(int buno)
 {
-  poll_mouse();
-  if (mouse_b & MB_ARRAY[buno])
-    return TRUE;
-  return FALSE;
+    return get_mouse_b() & MB_ARRAY[buno];
 }
 
 void msetgraphpos(int xa, int ya)
@@ -352,6 +418,10 @@ void msethotspot(int xx, int yy)
 
 int minstalled()
 {
+  // only useful for DOS
+  LOCK_FUNCTION(_ags_mouse_callback);
+  mouse_callback = &_ags_mouse_callback;
+    
   int nbuts = install_mouse();
   mgraphconfine(0, 0, 319, 199);  // use 320x200 co-ord system
   return nbuts;

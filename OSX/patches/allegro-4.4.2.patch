@@ -4442,10 +4442,10 @@ index 0000000..35b7631
 +#endif
 diff --git a/src/macosx/cocoagl.m b/src/macosx/cocoagl.m
 new file mode 100644
-index 0000000..4b7ebfa
+index 0000000..7aaf29b
 --- /dev/null
 +++ b/src/macosx/cocoagl.m
-@@ -0,0 +1,616 @@
+@@ -0,0 +1,617 @@
 +/*         ______   ___    ___ 
 + *        /\  _  \ /\_ \  /\_ \ 
 + *        \ \ \L\ \\//\ \ \//\ \      __     __   _ __   ___ 
@@ -4796,6 +4796,16 @@ index 0000000..4b7ebfa
 +    [super resetCursorRects];
 +    [self addCursorRect: [self visibleRect] cursor: osx_cursor];
 +    [osx_cursor setOnMouseEntered: YES];
++
++    if (osx_mouse_tracking_rect != -1) {
++      [self removeTrackingRect: osx_mouse_tracking_rect];
++    }
++
++    osx_mouse_tracking_rect = [self addTrackingRect: [self visibleRect]
++                                                     owner: NSApp
++                                                  userData: nil
++                                              assumeInside: YES];
++
 +}
 +
 +/* Custom view: when created, select a suitable pixel format */
@@ -5019,15 +5029,6 @@ index 0000000..4b7ebfa
 +{
 +    [super reshape];
 +
-+    if (osx_mouse_tracking_rect != -1) {
-+      [self removeTrackingRect: osx_mouse_tracking_rect];
-+    }
-+
-+    osx_mouse_tracking_rect = [self addTrackingRect: self.frame
-+                                                     owner: NSApp
-+                                                  userData: nil
-+                                              assumeInside: YES];
-+
 +    CGLLockContext([[self openGLContext] CGLContextObj]);
 +    @try {
 +        [[self openGLContext] makeCurrentContext];
@@ -5064,10 +5065,10 @@ index 0000000..4b7ebfa
 +@end
 diff --git a/src/macosx/cocoashared.m b/src/macosx/cocoashared.m
 new file mode 100644
-index 0000000..e7f6e08
+index 0000000..733666e
 --- /dev/null
 +++ b/src/macosx/cocoashared.m
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,170 @@
 +#include "allegro.h"
 +#include "allegro/internal/aintern.h"
 +#include "allegro/platform/aintosx.h"
@@ -5122,6 +5123,7 @@ index 0000000..e7f6e08
 +
 +@end
 +
++static int _isFullScreen = 0;
 +
 +@implementation AllegroWindowDelegate
 +
@@ -5155,12 +5157,13 @@ index 0000000..e7f6e08
 +
 +- (void)windowDidBecomeMain:(NSNotification *)notification
 +{
-+    osx_mouse_available();
++    if (_isFullScreen) {
++        [[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationAutoHideMenuBar | NSApplicationPresentationHideDock];
++    }
 +}
 +
 +- (void)windowDidResignMain:(NSNotification *)notification
 +{
-+    osx_mouse_not_available();
 +}
 +
 +/* windowDidBecomeKey:
@@ -5169,11 +5172,15 @@ index 0000000..e7f6e08
 + */
 +- (void)windowDidBecomeKey:(NSNotification *)notification
 +{
++    if (_isFullScreen) {
++        [[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationAutoHideMenuBar | NSApplicationPresentationHideDock];
++    }
 +    _unix_lock_mutex(osx_skip_events_processing_mutex);
 +    osx_skip_events_processing = FALSE;
 +    _unix_unlock_mutex(osx_skip_events_processing_mutex);
-+}
 +
++    osx_mouse_available();
++}
 +
 +/* windowDidResignKey:
 + * Sent by the default notification center immediately after an NSWindow
@@ -5185,18 +5192,32 @@ index 0000000..e7f6e08
 +    osx_skip_events_processing = TRUE;
 +    _unix_unlock_mutex(osx_skip_events_processing_mutex);
 +
++    osx_mouse_not_available();
++
 +    // Stop repeating keys since we might not actually see the "key up" event.
 +    _hack_stop_keyboard_repeat();
 +}
 +
 +- (void)windowWillEnterFullScreen:(NSNotification *)notification
 +{
++    [[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationAutoHideMenuBar | NSApplicationPresentationHideDock];
 +    _hack_stop_keyboard_repeat();
 +}
 +
 +- (void)windowWillExitFullScreen:(NSNotification *)notification
 +{
++    [[NSApplication sharedApplication] setPresentationOptions:NSApplicationPresentationDefault];
 +    _hack_stop_keyboard_repeat();
++}
++
++- (void)windowDidEnterFullScreen:(NSNotification *)notification
++{
++    _isFullScreen = 1;
++}
++
++- (void)windowDidExitFullScreen:(NSNotification *)notification
++{
++    _isFullScreen = 0;
 +}
 +
 +@end
@@ -5835,7 +5856,7 @@ index 8e4a606..e62e6ae 100644
  /* c-basic-offset: 3      */
  /* indent-tabs-mode: nil  */
 diff --git a/src/macosx/system.m b/src/macosx/system.m
-index 1b01839..a5a360f 100644
+index 1b01839..6b15e5b 100644
 --- a/src/macosx/system.m
 +++ b/src/macosx/system.m
 @@ -26,8 +26,6 @@
@@ -5847,7 +5868,7 @@ index 1b01839..a5a360f 100644
  #endif
  
  
-@@ -137,268 +135,279 @@ SYSTEM_DRIVER system_macosx =
+@@ -137,268 +135,310 @@ SYSTEM_DRIVER system_macosx =
  static RETSIGTYPE osx_signal_handler(int num)
  {
     _unix_unlock_mutex(osx_event_mutex);
@@ -5866,8 +5887,16 @@ index 1b01839..a5a360f 100644
  }
  
  
+-
+-/* osx_event_handler:
+- *  Event handling function; gets repeatedly called inside a dedicated thread.
+- */
+-void osx_event_handler()
 +static void osx_scale_mouse(NSPointPointer position, const NSRectPointer window, const NSRectPointer view)
-+{
+ {
+-   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+-   NSEvent *event;
+-   NSDate *distant_past = [NSDate distantPast];
 +    // flip the vertical to top down
 +    position->y = window->size.height - position->y;
 +    if (!NSEqualSizes(window->size, view->size)) {
@@ -5875,11 +5904,7 @@ index 1b01839..a5a360f 100644
 +        position->y = position->y / window->size.height * view->size.height;
 +    }
 +}
- 
--/* osx_event_handler:
-- *  Event handling function; gets repeatedly called inside a dedicated thread.
-- */
--void osx_event_handler()
++
 +static NSPoint locationInView (NSEvent *event, NSView *inTermsOfView) {
 +   NSPoint windowLocation;
 +
@@ -5916,12 +5941,9 @@ index 1b01839..a5a360f 100644
 +static int my=0;
 +static int buttons = 0;
 +
-+void osx_mouse_available() 
- {
--   NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
--   NSEvent *event;
--   NSDate *distant_past = [NSDate distantPast];
++void update_cursor() {
 +   if (!_mouse_installed) { return; }
++   if (!_mouse_on) { return; }
 +
     NSPoint point;
     NSRect frame, view;
@@ -5955,7 +5977,28 @@ index 1b01839..a5a360f 100644
 -      else
 -      {
 -	 frame = [[NSScreen mainScreen] frame];
--      }
++   view = NSMakeRect(0, 0, gfx_driver->w, gfx_driver->h);
++
++   point = NSMakePoint(0, 0);
++   if (osx_window) {
++      frame = [[osx_window contentView] frame];
++      point = locationInView (nil, [osx_window contentView]);
++   } else {
++      frame = [[NSScreen mainScreen] frame];
++   }
++   osx_scale_mouse(&point, &frame, &view);
++
++   if (NSPointInRect(point, view)) {
++
++      // hide the cursor because sometimes osx will reshow cursor for no reason
++      if (!cursor_hidden) {
++         [NSCursor hide];
++         cursor_hidden = YES;
++      } else {
++         // if dock is shown, having the mouse near the edge might show the cursor, so unhide/hide
++         [NSCursor unhide];
++         [NSCursor hide];
+       }
 -      event_type = [event type];
 -      switch (event_type) {
 -	 
@@ -6112,7 +6155,15 @@ index 1b01839..a5a360f 100644
 -	 default:
 -	    [NSApp sendEvent: event];
 -	    break;
--      }
+       }
++}
++
++void osx_mouse_available() 
++{
++   if (!_mouse_installed) { return; }
++
++   NSPoint point;
++   NSRect frame, view;
 +   view = NSMakeRect(0, 0, gfx_driver->w, gfx_driver->h);
 +
 +   point = NSMakePoint(0, 0);
@@ -6127,16 +6178,12 @@ index 1b01839..a5a360f 100644
 +
 +   if (NSPointInRect(point, view)) {
 +
-+      // hide the cursor because sometimes osx will reshow cursor for no reason
-+      if (!cursor_hidden) {
-+         [NSCursor hide];
-+         cursor_hidden = YES;
-+      }
-+
 +      mx = point.x;
 +      my = point.y;
 +      buttons = 0;
 +      _mouse_on = TRUE;
++
++      update_cursor();
 +
        osx_mouse_handler(mx, my, dx, dy, dz, buttons);
 -   [pool release];
@@ -6321,6 +6368,10 @@ index 1b01839..a5a360f 100644
 +      case NSRightMouseDragged:
 +      case NSOtherMouseDragged:
 +      case NSMouseMoved:
++
++         // a bit dodgy but hide mouse cursor 
++         update_cursor();
++
 +         dx += [event deltaX];
 +         dy += [event deltaY];
 +
@@ -6352,7 +6403,7 @@ index 1b01839..a5a360f 100644
 +      default:
 +         break;
 +   }
- 
++
 +   if (gotmouseevent == YES) {
 +      osx_mouse_handler(mx, my, dx, dy, dz, buttons);
 +   }
@@ -6360,12 +6411,12 @@ index 1b01839..a5a360f 100644
 +   return event;
  
 +   }];
-+
+ 
 +}
  
  /* osx_sys_init:
   *  Initalizes the MacOS X system driver.
-@@ -406,11 +415,6 @@ int osx_bootstrap_ok(void)
+@@ -406,11 +446,6 @@ int osx_bootstrap_ok(void)
  static int osx_sys_init(void)
  {
     long result;
@@ -6377,7 +6428,7 @@ index 1b01839..a5a360f 100644
  
     /* Install emergency-exit signal handlers */
     old_sig_abrt = signal(SIGABRT, osx_signal_handler);
-@@ -420,21 +424,15 @@ static int osx_sys_init(void)
+@@ -420,21 +455,15 @@ static int osx_sys_init(void)
     old_sig_term = signal(SIGTERM, osx_signal_handler);
     old_sig_int  = signal(SIGINT,  osx_signal_handler);
     old_sig_quit = signal(SIGQUIT, osx_signal_handler);
@@ -6401,7 +6452,7 @@ index 1b01839..a5a360f 100644
     /* Setup a blank cursor */
     cursor_data = calloc(1, 16 * 16 * 4);
     cursor_rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes: &cursor_data
-@@ -595,10 +593,17 @@ static int osx_sys_set_display_switch_mode(int mode)
+@@ -595,10 +624,17 @@ static int osx_sys_set_display_switch_mode(int mode)
   */
  static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
  {
@@ -6419,7 +6470,7 @@ index 1b01839..a5a360f 100644
  }
  
  
-@@ -608,13 +613,10 @@ static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
+@@ -608,13 +644,10 @@ static void osx_sys_get_gfx_safe_mode(int *driver, struct GFX_MODE *mode)
   */
  static int osx_sys_desktop_color_depth(void)
  {
@@ -6435,7 +6486,7 @@ index 1b01839..a5a360f 100644
     
     return color_depth == 16 ? 15 : color_depth;
  }
-@@ -625,13 +627,9 @@ static int osx_sys_desktop_color_depth(void)
+@@ -625,13 +658,9 @@ static int osx_sys_desktop_color_depth(void)
   */
  static int osx_sys_get_desktop_resolution(int *width, int *height)
  {

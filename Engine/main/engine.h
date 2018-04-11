@@ -20,12 +20,24 @@
 
 const char *get_engine_version();
 void		show_preload ();
-void		init_game_settings();
+void		engine_init_game_settings();
 int         initialize_engine(int argc,char*argv[]);
 int			initialize_engine_with_exception_handling(int argc,char*argv[]);
 
-extern char *music_file;
-extern char *speech_file;
+struct ScreenSetup;
+// Try to set new graphics mode deduced from given configuration;
+// if requested mode fails, tries to find any compatible mode close to the
+// requested one.
+bool        engine_try_set_gfxmode_any(const ScreenSetup &setup);
+// Tries to switch between fullscreen and windowed mode; uses previously saved
+// setup if it is available, or default settings for the new mode
+bool        engine_try_switch_windowed_gfxmode();
+// Shutdown graphics mode (used before shutting down tha application)
+void        engine_shutdown_gfxmode();
+
+// Names of the data files containing music and speech, respectively
+extern String music_file;
+extern String speech_file;
 
 // Register a callback that will be called before engine is initialised.
 // Used for apps to register their own plugins and other configuration

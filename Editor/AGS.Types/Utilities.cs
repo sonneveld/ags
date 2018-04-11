@@ -1,47 +1,50 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.IO;
 using System.Text;
+using System.Reflection;
 
 namespace AGS.Types
 {
     public static class Utilities
     {
-        public static int GetGameResolutionWidth(GameResolutions resolution)
+        public static T GetDefaultValue<T>(Type type, string propertyName, T defaultValue)
         {
-            switch (resolution)
-            {
-                case GameResolutions.R320x200:
-                case GameResolutions.R320x240:
-                    return 320;
-                case GameResolutions.R640x400:
-                case GameResolutions.R640x480:
-                    return 640;
-                case GameResolutions.R800x600:
-                    return 800;
-                case GameResolutions.R1024x768:
-                    return 1024;
-            }
-            throw new InvalidDataException("Invalid game resolution: " + resolution.ToString());
+            PropertyInfo property = type.GetProperty(propertyName);
+            DefaultValueAttribute[] defaults = (DefaultValueAttribute[])property.GetCustomAttributes(typeof(DefaultValueAttribute), false);
+            return (defaults.Length > 0) ? (T)defaults[0].Value : defaultValue;
         }
 
-        public static int GetGameResolutionHeight(GameResolutions resolution)
+        /// <summary>
+        /// Finds second maximal value in enumeration Type.
+        /// </summary>
+        public static T GetSecondMaxEnumValue<T>()
         {
-            switch (resolution)
+            Array arr = Enum.GetValues(typeof(T));
+            int max = int.MinValue;
+            int second = int.MinValue;
+            foreach (int i in arr)
             {
-                case GameResolutions.R320x200:
-                    return 200;
-                case GameResolutions.R640x400:
-                    return 400;
-                case GameResolutions.R320x240:
-                    return 240;
-                case GameResolutions.R640x480:
-                    return 480;
-                case GameResolutions.R800x600:
-                    return 600;
-                case GameResolutions.R1024x768:
-                    return 768;
+                if (i > max)
+                {
+                    second = max;
+                    max = i;
+                }
+                else if (i > second)
+                {
+                    second = i;
+                }
             }
-            throw new InvalidDataException("Invalid game resolution: " + resolution.ToString());
+            return (T)Enum.ToObject(typeof(T), second);
+        }
+
+        public static ScriptAPIVersion GetActualAPI(ScriptAPIVersion v)
+        {
+            if (v == ScriptAPIVersion.Highest)
+                return Utilities.GetSecondMaxEnumValue<ScriptAPIVersion>();
+            return v;
         }
 
         public static string RemoveInvalidCharactersFromScriptName(string name)
@@ -92,6 +95,46 @@ namespace AGS.Types
         public static string ValidateScriptName(string name)
         {
             return ValidateScriptName(name, 99999);
+        }
+
+        public static Size UserStringToResolution(string s)
+        {
+            String[] parts = s.Split('x');
+            return new Size(Int32.Parse(parts[0]), Int32.Parse(parts[1]));
+        }
+
+        public static string ResolutionToUserString(Size size)
+        {
+            return String.Format("{0} x {1}", size.Width, size.Height);
+        }
+
+        /// <summary>
+        /// Tells if the given path equals to parent or subdirectory of parent.
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsPathOrSubDir(string parent, string path)
+        {
+            Uri baseUri = new Uri(parent + Path.DirectorySeparatorChar);
+            Uri pathUri = new Uri(Path.Combine(parent, path) + Path.DirectorySeparatorChar);
+            return baseUri.IsBaseOf(pathUri);
+        }
+
+        /// <summary>
+        /// Tries to parse version string, detecting and IGNORING any additional characters
+        /// appended after standard version format.Returns null in case of parsing exception.
+        /// </summary>
+        public static System.Version TryParseVersion(string s)
+        {
+            System.Version v = null;
+            try
+            {
+                int pos;
+                for (pos = 0; pos < s.Length && (Char.IsDigit(s[pos]) || s[pos] == '.'); pos++);
+                s = s.Substring(0, pos);
+                v = new System.Version(s);
+            }
+            catch (Exception){ /* just return null in case of any exception */ }
+            return v;
         }
     }
 }

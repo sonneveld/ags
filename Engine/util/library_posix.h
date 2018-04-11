@@ -23,7 +23,7 @@
 #if defined (ANDROID_VERSION)
 extern char android_app_directory[256];
 #else
-extern char appDirectory[512];
+extern AGS::Common::String appDirectory;
 #endif
 
 
@@ -46,7 +46,7 @@ public:
     Unload();
   };
 
-  AGS::Common::String BuildPath(char *path, AGS::Common::String libraryName)
+  AGS::Common::String BuildPath(const char *path, AGS::Common::String libraryName)
   {
     AGS::Common::String platformLibraryName = "";
     if (path)
@@ -63,7 +63,7 @@ public:
     platformLibraryName.Append(".so");
 #endif
 
-    AGS::Common::Out::FPrint("Built library path: %s", platformLibraryName.GetCStr());
+    AGS::Common::Debug::Printf("Built library path: %s", platformLibraryName.GetCStr());
     return platformLibraryName;
   }
 
@@ -73,7 +73,7 @@ public:
 
     // Try rpath first
     _library = dlopen(BuildPath(NULL, libraryName).GetCStr(), RTLD_LAZY);
-    AGS::Common::Out::FPrint("dlopen returned: %s", dlerror());
+    AGS::Common::Debug::Printf("dlopen returned: %s", dlerror());
     if (_library != NULL)
     {
       return true;
@@ -82,21 +82,21 @@ public:
     // Try current path
     _library = dlopen(BuildPath(".", libraryName).GetCStr(), RTLD_LAZY);
 
-    AGS::Common::Out::FPrint("dlopen returned: %s", dlerror());
+    AGS::Common::Debug::Printf("dlopen returned: %s", dlerror());
 
     if (_library == NULL)
     {
       // Try the engine directory
-      char buffer[200];
 
 #if defined (ANDROID_VERSION)
+      char buffer[200];
       sprintf(buffer, "%s%s", android_app_directory, "/lib");
       _library = dlopen(BuildPath(buffer, libraryName).GetCStr(), RTLD_LAZY);
 #else
       _library = dlopen(BuildPath(appDirectory, libraryName).GetCStr(), RTLD_LAZY);
 #endif
 
-      AGS::Common::Out::FPrint("dlopen returned: %s", dlerror());
+      AGS::Common::Debug::Printf("dlopen returned: %s", dlerror());
     }
 
     return (_library != NULL);

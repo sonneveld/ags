@@ -27,11 +27,6 @@
 #include "alfont.h"
 #endif
 
-#include "core/assetmanager.h"
-#include "util/stream.h"
-
-using AGS::Common::Stream;
-
 // For engine these are defined in ac.cpp
 extern int our_eip;
 extern GameSetupStruct game;
@@ -48,27 +43,4 @@ void set_our_eip(int eip)
 int get_our_eip()
 {
   return our_eip;
-}
-
-Stream *fopen_shared(char *filnamm,
-                          Common::FileOpenMode open_mode,
-                          Common::FileWorkMode work_mode)
-{
-  return Common::AssetManager::OpenAsset(filnamm, open_mode, work_mode);
-}
-
-int flength_shared(Stream *ffi)
-{
-  // Common::AssetManager::OpenAsset will have set Common::AssetManager::GetLastAssetSize()
-  return Common::AssetManager::GetLastAssetSize();
-}
-
-int get_font_outline(int font_number)
-{
-    return game.fontoutline[font_number];
-}
-
-void set_font_outline(int font_number, int outline_type)
-{
-    game.fontoutline[font_number] = FONT_OUTLINE_AUTO;
 }

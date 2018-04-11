@@ -18,33 +18,53 @@
 #ifndef __AGS_CN_AC__GAMESETUPSTRUCT_H
 #define __AGS_CN_AC__GAMESETUPSTRUCT_H
 
+#include <vector>
 #include "ac/audiocliptype.h"        // AudioClipType
-#include "ac/customproperties.h" // CustomProperties, CustomPropertySchema
-#include "ac/interaction.h"      // NewInteraction
+#include "ac/game_version.h"
 #include "ac/inventoryiteminfo.h"   // InventoryItemInfo
 #include "ac/mousecursor.h"      // MouseCursor
 #include "ac/gamesetupstructbase.h"
 #include "ac/oldgamesetupstruct.h"
 #include "ac/dynobj/scriptaudioclip.h" // ScriptAudioClip
-#include "util/string.h"
+#include "game/customproperties.h"
+#include "game/interactions.h"
+#include "game/main_game_file.h"
 
+namespace AGS { namespace Common { struct AssetLibInfo; } }
+
+using AGS::Common::Interaction;
+using AGS::Common::InteractionScripts;
+using AGS::Common::MainGameFileError;
+
+// TODO: split GameSetupStruct into struct used to hold loaded game data, and actual runtime object
 struct GameSetupStruct: public GameSetupStructBase {
+    // These arrays are used only to read data into;
+    // font parameters are then put and queried in the fonts module
     unsigned char     fontflags[MAX_FONTS];
     char              fontoutline[MAX_FONTS];
+    int               fontvoffset[MAX_FONTS]; // vertical font offset
+    int               fontlnspace[MAX_FONTS]; // font's line spacing (0 = default)
+    //
     unsigned char     spriteflags[MAX_SPRITES];
     InventoryItemInfo invinfo[MAX_INV];
     MouseCursor       mcurs[MAX_CURSOR];
-    NewInteraction   **intrChar;
-    NewInteraction   *intrInv[MAX_INV];
+    Interaction     **intrChar;
+    Interaction      *intrInv[MAX_INV];
     InteractionScripts **charScripts;
     InteractionScripts **invScripts;
+    // TODO: why we do not use this in the engine instead of
+    // loaded_game_file_version?
     int               filever;  // just used by editor
     char              lipSyncFrameLetters[MAXLIPSYNCFRAMES][50];
-    CustomPropertySchema propSchema;
-    CustomProperties  *charProps, invProps[MAX_INV];
-    char              **viewNames;
-    char              invScriptNames[MAX_INV][MAX_SCRIPT_NAME_LEN];
-    char              dialogScriptNames[MAX_DIALOG][MAX_SCRIPT_NAME_LEN];
+    AGS::Common::PropertySchema propSchema;
+    std::vector<AGS::Common::StringIMap> charProps;
+    AGS::Common::StringIMap invProps[MAX_INV];
+    // NOTE: although the view names are stored in game data, they are never
+    // used, nor registered as script exports; numeric IDs are used to
+    // reference views instead.
+    std::vector<Common::String> viewNames;
+    Common::String    invScriptNames[MAX_INV];
+    std::vector<Common::String> dialogScriptNames;
     char              guid[MAX_GUID_LENGTH];
     char              saveGameFileExtension[MAX_SG_EXT_LENGTH];
     char              saveGameFolderName[MAX_SG_FOLDER_LEN];
@@ -55,6 +75,9 @@ struct GameSetupStruct: public GameSetupStructBase {
     ScriptAudioClip  *audioClips;
     int               audioClipTypeCount;
     AudioClipType    *audioClipTypes;
+    // A clip to play when player gains score in game
+    // TODO: find out why OPT_SCORESOUND option cannot be used to store this in >=3.2 games
+    int               scoreClipID;
 
 
 
@@ -69,35 +92,17 @@ struct GameSetupStruct: public GameSetupStructBase {
     //
     // I also had to move BuildAudioClipArray from the engine and make it
     // GameSetupStruct member.
-    // Anyway, I believe that read/write/init functions should be in the
-    // class regardless it is shared by both engine and editor or not.
-    struct GAME_STRUCT_READ_DATA
-    {
-        // in
-        int  filever;
-        int  max_audio_types;
-        AGS::Common::String game_file_name;
 
-        // out
-        char *saveGameSuffix;
-        int  score_sound;
-    };
-
-    void BuildAudioClipArray();
-
-    void ReadFromFile_Part1(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void ReadFromFile_Part2(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void ReadFromFile_Part3(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
     //--------------------------------------------------------------------
     // Do not call these directly
     //------------------------------
     // Part 1
-    void read_savegame_info(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_font_flags(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_sprite_flags(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_cursors(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_interaction_scripts(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_words_dictionary(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
+    void read_savegame_info(Common::Stream *in, GameDataVersion data_ver);
+    void read_font_flags(Common::Stream *in, GameDataVersion data_ver);
+    MainGameFileError read_sprite_flags(Common::Stream *in, GameDataVersion data_ver);
+    MainGameFileError read_cursors(Common::Stream *in, GameDataVersion data_ver);
+    void read_interaction_scripts(Common::Stream *in, GameDataVersion data_ver);
+    void read_words_dictionary(Common::Stream *in);
 
     void ReadInvInfo_Aligned(Common::Stream *in);
     void WriteInvInfo_Aligned(Common::Stream *out);
@@ -105,17 +110,17 @@ struct GameSetupStruct: public GameSetupStructBase {
     void WriteMouseCursors_Aligned(Common::Stream *out);
     //------------------------------
     // Part 2
-    void read_characters(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_lipsync(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_messages(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
+    void read_characters(Common::Stream *in, GameDataVersion data_ver);
+    void read_lipsync(Common::Stream *in, GameDataVersion data_ver);
+    void read_messages(Common::Stream *in, GameDataVersion data_ver);
 
     void ReadCharacters_Aligned(Common::Stream *in);
     void WriteCharacters_Aligned(Common::Stream *out);
     //------------------------------
     // Part 3
-    void read_customprops(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_audio(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
-    void read_room_names(Common::Stream *in, GAME_STRUCT_READ_DATA &read_data);
+    MainGameFileError read_customprops(Common::Stream *in, GameDataVersion data_ver);
+    MainGameFileError read_audio(Common::Stream *in, GameDataVersion data_ver);
+    void read_room_names(Common::Stream *in, GameDataVersion data_ver);
 
     void ReadAudioClips_Aligned(Common::Stream *in);
     //--------------------------------------------------------------------
@@ -128,6 +133,9 @@ struct GameSetupStruct: public GameSetupStructBase {
 
 //=============================================================================
 
+// TODO: find out how this function was supposed to be used
 void ConvertOldGameStruct (OldGameSetupStruct *ogss, GameSetupStruct *gss);
+// Finds an audio clip using legacy convention index
+ScriptAudioClip* GetAudioClipForOldStyleNumber(GameSetupStruct &game, bool is_music, int num);
 
 #endif // __AGS_CN_AC__GAMESETUPSTRUCT_H

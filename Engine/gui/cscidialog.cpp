@@ -14,9 +14,10 @@
 
 #include <cctype>
 #include "util/wgt2allg.h"
-#include "gfx/ali3d.h"
 #include "ac/common.h"
+#include "ac/draw.h"
 #include "ac/gamesetup.h"
+#include "ac/gamestate.h"
 #include "ac/gui.h"
 #include "ac/keycode.h"
 #include "ac/mouse.h"
@@ -46,10 +47,6 @@ extern GameSetup usetup;
 
 //-----------------------------------------------------------------------------
 // DIALOG SYSTEM STUFF below
-
-IDriverDependantBitmap *dialogBmp = NULL;
-int windowPosX, windowPosY, windowPosWidth, windowPosHeight;
-Bitmap *windowBuffer = NULL;
 
 int windowbackgroundcolor = COL254, pushbuttondarkcolor = COL255;
 int pushbuttonlightcolor = COL253;
@@ -86,6 +83,7 @@ int WINAPI _export CSCIGetVersion()
 }
 
 int windowcount = 0, curswas = 0;
+int win_x = 0, win_y = 0, win_width = 0, win_height = 0;
 int WINAPI _export CSCIDrawWindow(Bitmap *ds, int xx, int yy, int wid, int hit)
 {
     ignore_bounds++;
@@ -114,10 +112,10 @@ int WINAPI _export CSCIDrawWindow(Bitmap *ds, int xx, int yy, int wid, int hit)
     //  domouse(1);
     oswi[drawit].oldtop = topwindowhandle;
     topwindowhandle = drawit;
-    windowPosX = xx;
-    windowPosY = yy;
-    windowPosWidth = wid;
-    windowPosHeight = hit;
+    win_x = xx;
+    win_y = yy;
+    win_width = wid;
+    win_height = hit;
     return drawit;
 }
 
@@ -135,7 +133,7 @@ void WINAPI _export CSCIEraseWindow(Bitmap *ds, int handl)
 
 int WINAPI _export CSCIWaitMessage(Bitmap *ds, CSCIMessage * cscim)
 {
-    next_iteration();
+    NextIteration();
     for (int uu = 0; uu < MAXCONTROLS; uu++) {
         if (vobjs[uu] != NULL) {
             //      domouse(2);
@@ -144,14 +142,12 @@ int WINAPI _export CSCIWaitMessage(Bitmap *ds, CSCIMessage * cscim)
         }
     }
 
-    windowBuffer = BitmapHelper::CreateBitmap(windowPosWidth, windowPosHeight, ds->GetColorDepth());
-    windowBuffer = gfxDriver->ConvertBitmapToSupportedColourDepth(windowBuffer);
-    dialogBmp = gfxDriver->CreateDDBFromBitmap(windowBuffer, false, true);
+    prepare_gui_screen(win_x, win_y, win_width, win_height, true);
 
     while (1) {
         timerloop = 0;
-        next_iteration();
-        refresh_screen();
+        NextIteration();
+        refresh_gui_screen();
 
         cscim->id = -1;
         cscim->code = 0;
@@ -198,14 +194,11 @@ int WINAPI _export CSCIWaitMessage(Bitmap *ds, CSCIMessage * cscim)
         while (timerloop == 0) ;
     }
 
-    gfxDriver->DestroyDDB(dialogBmp);
-    dialogBmp = NULL;
-    delete windowBuffer;
-    windowBuffer = NULL;
+    clear_gui_screen();
     return 0;
 }
 
-int WINAPI _export CSCICreateControl(int typeandflags, int xx, int yy, int wii, int hii, char *title)
+int WINAPI _export CSCICreateControl(int typeandflags, int xx, int yy, int wii, int hii, const char *title)
 {
     multiply_up(&xx, &yy, &wii, &hii);
     int usec = -1;

@@ -17,7 +17,7 @@
 //
 
 #include "main/mainheader.h"
-#include "gfx/ali3d.h"
+#include "ac/asset_helper.h"
 #include "ac/common.h"
 #include "ac/character.h"
 #include "ac/characterextras.h"
@@ -31,6 +31,8 @@
 #include "ac/gui.h"
 #include "ac/lipsync.h"
 #include "ac/objectcache.h"
+#include "ac/path_helper.h"
+#include "ac/record.h"
 #include "ac/roomstatus.h"
 #include "ac/speech.h"
 #include "ac/translation.h"
@@ -42,10 +44,12 @@
 #include "debug/out.h"
 #include "font/agsfontrenderer.h"
 #include "font/fonts.h"
+#include "game/main_game_file.h"
 #include "main/config.h"
 #include "main/game_start.h"
-#include "main/graphics_mode.h"
 #include "main/engine.h"
+#include "main/engine_setup.h"
+#include "main/graphics_mode.h"
 #include "main/main.h"
 #include "main/main_allegro.h"
 #include "media/audio/sound.h"
@@ -59,9 +63,9 @@
 #include "util/path.h"
 #include "main/game_file.h"
 #include "debug/out.h"
-#include "core/asset.h"
 
 using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern char check_dynamic_sprites_at_exit;
 extern int our_eip;
@@ -77,18 +81,14 @@ extern SpriteCache spriteset;
 extern ObjectCache objcache[MAX_INIT_SPR];
 extern ScriptObject scrObj[MAX_INIT_SPR];
 extern ViewStruct*views;
-extern GUIMain*guis;
 extern int displayed_room;
 extern int eip_guinum;
 extern int eip_guiobj;
 extern const char *replayTempFile;
 extern SpeechLipSyncLine *splipsync;
 extern int numLipLines, curLipLine, curLipLinePhoneme;
-extern int scrnwid,scrnhit;
 extern ScriptSystem scsystem;
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
 extern IGraphicsDriver *gfxDriver;
-extern Bitmap *virtual_screen;
 extern Bitmap **actsps;
 extern color palette[256];
 extern CharacterExtras *charextra;
@@ -96,14 +96,12 @@ extern CharacterInfo*playerchar;
 extern Bitmap **guibg;
 extern IDriverDependantBitmap **guibgbmp;
 
-char *music_file;
-char *speech_file;
+String music_file;
+String speech_file;
 
 Common::AssetError errcod;
 
 t_engine_pre_init_callback engine_pre_init_callback = 0;
-
-extern "C" HWND allegro_wnd;
 
 #define ALLEGRO_KEYBOARD_HANDLER
 // KEYBOARD HANDLER
@@ -116,7 +114,7 @@ int errno;
 
 bool engine_init_allegro()
 {
-    Out::FPrint("Initializing allegro");
+    Debug::Printf(kDbgMsg_Init, "Initializing allegro");
 
     our_eip = -199;
     // Initialize allegro
@@ -145,17 +143,11 @@ void winclosehook() {
   want_exit = 1;
   abort_engine = 1;
   check_dynamic_sprites_at_exit = 0;
-/*  while (want_exit == 1)
-    yield_timeslice();
-  / *if (want_quit == 0)
-    want_quit = 1;
-  else* / quit("|game aborted");
-*/
 }
 
 void engine_setup_window()
 {
-    Out::FPrint("Setting up window");
+    Debug::Printf(kDbgMsg_Init, "Setting up window");
 
     our_eip = -198;
 #if (ALLEGRO_DATE > 19990103)
@@ -172,27 +164,40 @@ void engine_setup_window()
     platform->SetGameWindowIcon();
 }
 
-bool engine_check_run_setup(ConfigTree &cfg, int argc,char*argv[])
+bool engine_check_run_setup(const String &exe_path, ConfigTree &cfg)
 {
 #if defined (WINDOWS_VERSION)
     // check if Setup needs to be run instead
     if (justRunSetup)
     {
-            Out::FPrint("Running Setup");
+            String cfg_file = find_user_cfg_file();
+            if (cfg_file.IsEmpty())
+                return false;
+
+            Debug::Printf(kDbgMsg_Init, "Running Setup");
 
             // Add information about game resolution and let setup application
             // display some properties to the user
-            INIwriteint(cfg, "misc", "defaultres", game.default_resolution);
+            INIwriteint(cfg, "misc", "defaultres", game.GetDefaultResolution());
             INIwriteint(cfg, "misc", "letterbox", game.options[OPT_LETTERBOX]);
+            INIwriteint(cfg, "misc", "game_width", game.size.Width);
+            INIwriteint(cfg, "misc", "game_height", game.size.Height);
+            INIwriteint(cfg, "misc", "gamecolordepth", game.color_depth * 8);
+            if (game.options[OPT_RENDERATSCREENRES] != kRenderAtScreenRes_UserDefined)
+            {
+                // force enabled/disabled
+                INIwriteint(cfg, "graphics", "render_at_screenres", game.options[OPT_RENDERATSCREENRES] == kRenderAtScreenRes_Enabled);
+                INIwriteint(cfg, "disabled", "render_at_screenres", 1);
+            }
 
             ConfigTree cfg_out;
             SetupReturnValue res = platform->RunSetup(cfg, cfg_out);
             if (res != kSetup_Cancel)
             {
-                if (!IniUtil::Merge(ac_config_file, cfg_out))
+                if (!IniUtil::Merge(cfg_file, cfg_out))
                 {
                     platform->DisplayAlert("Unable to write to the configuration file (error code 0x%08X).\n%s",
-                        platform->GetLastSystemError(), platform->GetFileWriteTroubleshootingText());
+                        platform->GetLastSystemError(), platform->GetDiskWriteAccessTroubleshootingText());
                 }
             }
             if (res != kSetup_RunGame)
@@ -203,9 +208,9 @@ bool engine_check_run_setup(ConfigTree &cfg, int argc,char*argv[])
             // Just re-reading the config file seems to cause a caching
             // problem on Win9x, so let's restart the process.
             allegro_exit();
-            char quotedpath[255];
-            sprintf (quotedpath, "\"%s\"", argv[0]);
-            _spawnl (_P_OVERLAY, argv[0], quotedpath, NULL);
+            char quotedpath[MAX_PATH];
+            snprintf(quotedpath, MAX_PATH, "\"%s\"", exe_path.GetCStr());
+            _spawnl (_P_OVERLAY, exe_path, quotedpath, NULL);
     }
 #endif
 
@@ -215,10 +220,17 @@ bool engine_check_run_setup(ConfigTree &cfg, int argc,char*argv[])
 void engine_force_window()
 {
     // Force to run in a window, override the config file
+    // TODO: actually overwrite config tree instead
     if (force_window == 1)
-        usetup.windowed = true;
+    {
+        usetup.Screen.DisplayMode.Windowed = true;
+        usetup.Screen.DisplayMode.ScreenSize.SizeDef = kScreenDef_ByGameScaling;
+    }
     else if (force_window == 2)
-        usetup.windowed = false;
+    {
+        usetup.Screen.DisplayMode.Windowed = false;
+        usetup.Screen.DisplayMode.ScreenSize.SizeDef = kScreenDef_MaxDisplay;
+    }
 }
 
 void init_game_file_name_from_cmdline()
@@ -229,26 +241,6 @@ void init_game_file_name_from_cmdline()
 #else
     game_file_name = GetPathFromCmdArg(datafile_argv);
 #endif
-}
-
-bool is_main_game_file(const String &filename)
-{
-    // We must not only detect if the given file is a correct AGS data library,
-    // we also have to assure that this library contains main game asset.
-    // Library may contain some optional data (digital audio, speech etc), but
-    // that is not what we want.
-    AssetLibInfo lib;
-    if (AssetManager::ReadDataFileTOC(filename, lib) != kAssetNoError)
-        return false;
-    for (size_t i = 0; i < lib.AssetInfos.size(); ++i)
-    {
-        if (lib.AssetInfos[i].FileName.CompareNoCase(MainGameAssetName_v3) == 0 ||
-            lib.AssetInfos[i].FileName.CompareNoCase(MainGameAssetName_v2) == 0)
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 String find_game_data_in_directory(const String &path)
@@ -283,7 +275,7 @@ String find_game_data_in_directory(const String &path)
         if (is_std_name || first_nonstd_fn.IsEmpty())
         {
             test_file.Format("%s/%s", path.GetCStr(), ff.name);
-            if (is_main_game_file(test_file))
+            if (IsMainGameLibrary(test_file))
             {
                 if (is_std_name)
                 {
@@ -300,7 +292,6 @@ String find_game_data_in_directory(const String &path)
     return first_nonstd_fn;
 }
 
-extern char appDirectory[512];
 void initialise_game_file_name()
 {
     // 1. From command line argument
@@ -362,18 +353,18 @@ void initialise_game_file_name()
     // Finally, store game file's absolute path, or report error
     if (game_file_name.IsEmpty())
     {
-        Out::FPrint("Game data file could not be found\n");
+        Debug::Printf(kDbgMsg_Error, "Game data file could not be found\n");
     }
     else
     {
         game_file_name = Path::MakeAbsolutePath(game_file_name);
-        Out::FPrint("Game data file: %s\n", game_file_name.GetCStr());
+        Debug::Printf(kDbgMsg_Init, "Located game data file: %s\n", game_file_name.GetCStr());
     }
 }
 
 bool engine_init_game_data()
 {
-    Out::FPrint("Looking for game data file");
+    Debug::Printf("Looking for game data file");
 
     // initialize the data file
     initialise_game_file_name();
@@ -428,7 +419,7 @@ bool engine_init_game_data()
 
 void engine_init_fonts()
 {
-    Out::FPrint("Initializing TTF renderer");
+    Debug::Printf(kDbgMsg_Init, "Initializing TTF renderer");
 
     init_font_renderer();
 }
@@ -437,15 +428,15 @@ int engine_init_mouse()
 {
     int res = minstalled();
     if (res < 0)
-        Out::FPrint("Initializing mouse: failed");
+        Debug::Printf(kDbgMsg_Init, "Initializing mouse: failed");
     else
-        Out::FPrint("Initializing mouse: number of buttons reported is %d", res);
+        Debug::Printf(kDbgMsg_Init, "Initializing mouse: number of buttons reported is %d", res);
 	return RETURN_CONTINUE;
 }
 
 int engine_check_memory()
 {
-    Out::FPrint("Checking memory");
+    Debug::Printf(kDbgMsg_Init, "Checking memory");
 
     char*memcheck=(char*)malloc(4000000);
     if (memcheck==NULL) {
@@ -465,34 +456,21 @@ void engine_init_rooms()
     // Obsolete now since room statuses are allocated only when needed
 }
 
-int engine_init_speech()
+void engine_init_speech()
 {
     play.want_speech=-2;
 
     if (!usetup.no_speech_pack) {
-        /* Can't just use fopen here, since we need to change the filename
-        so that pack functions, etc. will have the right case later */
-        speech_file = ci_find_file(usetup.data_files_dir, "speech.vox");
+        speech_file = "speech.vox";
+        String speech_filepath = find_assetlib(speech_file);
+        if (!speech_filepath.IsEmpty()) {
 
-        Stream *speech_s = ci_fopen(speech_file);
-
-        if (speech_s == NULL)
-        {
-            // In case they're running in debug, check Compiled folder
-            free(speech_file);
-            speech_file = ci_find_file("Compiled", "speech.vox");
-            speech_s = ci_fopen(speech_file);
-        }
-
-        if (speech_s) {
-            delete speech_s;
-
-            Out::FPrint("Initializing speech vox");
+            Debug::Printf("Initializing speech vox");
 
             //if (Common::AssetManager::SetDataFile(useloc,"")!=0) {
-            if (Common::AssetManager::SetDataFile(speech_file)!=Common::kAssetNoError) {
-                platform->DisplayAlert("Unable to initialize speech sample file - check for corruption and that\nit belongs to this game.\n");
-                return EXIT_NORMAL;
+            if (Common::AssetManager::SetDataFile(speech_filepath)!=Common::kAssetNoError) {
+                platform->DisplayAlert("Unable to read voice pack, file could be corrupted or of unknown format.\nSpeech voice-over will be disabled.");
+                return;
             }
             Stream *speechsync = Common::AssetManager::OpenAsset("syncdata.dat");
             if (speechsync != NULL) {
@@ -518,48 +496,36 @@ int engine_init_speech()
                 delete speechsync;
             }
             Common::AssetManager::SetDataFile(game_file_name);
-            Out::FPrint("Speech sample file found and initialized.");
+            Debug::Printf(kDbgMsg_Init, "Voice pack found and initialized.");
+            play.want_speech=1;
+        }
+        else if (Path::ComparePaths(usetup.data_files_dir, get_voice_install_dir()) != 0)
+        {
+            // If we have custom voice directory set, we will enable voice-over even if speech.vox does not exist
+            Debug::Printf(kDbgMsg_Init, "Voice pack was not found, but voice installation directory is defined: enabling voice-over.");
             play.want_speech=1;
         }
     }
-
-    return RETURN_CONTINUE;
 }
 
 int engine_init_music()
 {
-    play.seperate_music_lib = 0;
+    play.separate_music_lib = 0;
 
-    /* Can't just use fopen here, since we need to change the filename
-    so that pack functions, etc. will have the right case later */
-    music_file = ci_find_file(usetup.data_files_dir, "audio.vox");
+    music_file = "audio.vox";
+    String music_filepath = find_assetlib(music_file);
+    if (!music_filepath.IsEmpty()) {
 
-    /* Don't need to use ci_fopen here, because we've used ci_find_file to get
-    the case insensitive matched filename already */
-    // Use ci_fopen anyway because it can handle NULL filenames.
-    Stream *music_s = ci_fopen(music_file);
-
-    if (music_s == NULL)
-    {
-        // In case they're running in debug, check Compiled folder
-        free(music_file);
-        music_file = ci_find_file("Compiled", "audio.vox");
-        music_s = ci_fopen(music_file);
-    }
-
-    if (music_s) {
-        delete music_s;
-
-        Out::FPrint("Initializing audio vox");
+        Debug::Printf("Initializing audio vox");
 
         //if (Common::AssetManager::SetDataFile(useloc,"")!=0) {
-        if (Common::AssetManager::SetDataFile(music_file)!=Common::kAssetNoError) {
+        if (Common::AssetManager::SetDataFile(music_filepath)!=Common::kAssetNoError) {
             platform->DisplayAlert("Unable to initialize music library - check for corruption and that\nit belongs to this game.\n");
             return EXIT_NORMAL;
         }
         Common::AssetManager::SetDataFile(game_file_name);
-        Out::FPrint("Audio vox found and initialized.");
-        play.seperate_music_lib = 1;
+        Debug::Printf(kDbgMsg_Init, "Audio vox found and initialized.");
+        play.separate_music_lib = 1;
     }
 
     return RETURN_CONTINUE;
@@ -568,7 +534,7 @@ int engine_init_music()
 void engine_init_keyboard()
 {
 #ifdef ALLEGRO_KEYBOARD_HANDLER
-    Out::FPrint("Initializing keyboard");
+    Debug::Printf(kDbgMsg_Init, "Initializing keyboard");
 
     install_keyboard();
 #endif
@@ -576,7 +542,7 @@ void engine_init_keyboard()
 
 void engine_init_timer()
 {
-    Out::FPrint("Install timer");
+    Debug::Printf(kDbgMsg_Init, "Install timer");
     install_timer();
 }
 
@@ -620,17 +586,17 @@ bool try_install_sound(int digi_id, int midi_id)
     // Therefore we try to guess.
     if (midi_id != MIDI_NONE)
     {
-        Out::FPrint("Failed to init one of the drivers; Error: %s\nTrying to start without MIDI", get_allegro_error());
+        Debug::Printf(kDbgMsg_Error, "Failed to init one of the drivers; Error: '%s'.\nWill try to start without MIDI", get_allegro_error());
         if (install_sound(digi_id, MIDI_NONE, NULL) == 0)
             return true;
     }
     if (digi_id != DIGI_NONE)
     {
-        Out::FPrint("Failed to init one of the drivers; Error: %s\nTrying to start without DIGI", get_allegro_error());
+        Debug::Printf(kDbgMsg_Error, "Failed to init one of the drivers; Error: '%s'.\nWill try to start without DIGI", get_allegro_error());
         if (install_sound(DIGI_NONE, midi_id, NULL) == 0)
             return true;
     }
-    Out::FPrint("Failed to init sound drivers. Error: %s", get_allegro_error());
+    Debug::Printf(kDbgMsg_Error, "Failed to init sound drivers. Error: %s", get_allegro_error());
     return false;
 }
 
@@ -643,7 +609,7 @@ void engine_init_sound()
     set_volume_per_voice(1);
 #endif
 
-    Out::FPrint("Initialize sound drivers");
+    Debug::Printf("Initialize sound drivers");
 
     // PSP: Disable sound by config file.
     if (!psp_audio_enabled)
@@ -659,13 +625,13 @@ void engine_init_sound()
     AlIDStr midi_id;
     AlDigiToChars(usetup.digicard, digi_id);
     AlMidiToChars(usetup.midicard, midi_id);
-    Out::FPrint("Trying digital driver ID: '%s' (0x%x), MIDI driver ID: '%s' (0x%x)",
+    Debug::Printf(kDbgMsg_Init, "Sound settings: digital driver ID: '%s' (0x%x), MIDI driver ID: '%s' (0x%x)",
         digi_id, usetup.digicard, midi_id, usetup.midicard);
 
     bool sound_res = try_install_sound(usetup.digicard, usetup.midicard);
     if (!sound_res && opts.mod_player)
     {
-        Out::FPrint("Resetting to default sound parameters and trying again.");
+        Debug::Printf("Resetting to default sound parameters and trying again.");
         reserve_voices(-1, -1); // this resets voice number to defaults
         opts.mod_player = 0;
         opts.mp3_player = 0; // CHECKME: why disabling MP3 player too?
@@ -690,7 +656,7 @@ void engine_init_sound()
 
     AlDigiToChars(usetup.digicard, digi_id);
     AlMidiToChars(usetup.midicard, midi_id);
-    Out::FPrint("Installed digital driver ID: '%s' (0x%x), MIDI driver ID: '%s' (0x%x)",
+    Debug::Printf(kDbgMsg_Init, "Installed digital driver ID: '%s' (0x%x), MIDI driver ID: '%s' (0x%x)",
         digi_id, usetup.digicard, midi_id, usetup.midicard);
 
     our_eip = -181;
@@ -701,7 +667,7 @@ void engine_init_sound()
         // therefore the MIDI soundtrack will be used if present,
         // and the voice mode should not go to Voice Only
         play.want_speech = -2;
-        play.seperate_music_lib = 0;
+        play.separate_music_lib = 0;
     }
 
 #ifdef WINDOWS_VERSION
@@ -736,17 +702,11 @@ void atexit_handler() {
             our_eip, EngineVersion.LongString.GetCStr());
         platform->DisplayAlert(pexbuf);
     }
-
-    if (!(music_file == NULL))
-        free(music_file);
-
-    if (!(speech_file == NULL))
-        free(speech_file);
 }
 
 void engine_init_exit_handler()
 {
-    Out::FPrint("Install exit handler");
+    Debug::Printf(kDbgMsg_Init, "Install exit handler");
 
     atexit(atexit_handler);
 }
@@ -759,29 +719,29 @@ void engine_init_rand()
 
 void engine_init_pathfinder()
 {
-    Out::FPrint("Initialize path finder library");
+    Debug::Printf(kDbgMsg_Init, "Initialize path finder library");
 
     init_pathfinder();
 }
 
 void engine_pre_init_gfx()
 {
-    //Out::FPrint("Initialize gfx");
+    //Debug::Printf("Initialize gfx");
 
     //platform->InitialiseAbufAtStartup();
 }
 
 int engine_load_game_data()
 {
-    Out::FPrint("Load game data");
+    Debug::Printf("Load game data");
 
     our_eip=-17;
-    GameFileError err = load_game_file();
-    if (err != kGameFile_NoError) {
+    String err_str;
+    if (!load_game_file(err_str))
+    {
         proper_exit=1;
         platform->FinishedUsingGraphicsMode();
-
-        display_game_file_error(err);
+        display_game_file_error(err_str);
         return EXIT_NORMAL;
     }
 
@@ -815,16 +775,28 @@ void engine_init_title()
     set_window_title(game.gamename);
 #endif
 
-    Out::FPrint(game.gamename);
+    Debug::Printf(kDbgMsg_Init, "Game title: '%s'", game.gamename);
 }
 
 void engine_init_directories()
 {
-    if (file_exists("Compiled", FA_ARCH | FA_DIREC, NULL))
+    Debug::Printf(kDbgMsg_Init, "Data directory: %s", usetup.data_files_dir.GetCStr());
+    if (!usetup.install_dir.IsEmpty())
+        Debug::Printf(kDbgMsg_Init, "Optional install directory: %s", usetup.install_dir.GetCStr());
+    if (!usetup.install_audio_dir.IsEmpty())
+        Debug::Printf(kDbgMsg_Init, "Optional audio directory: %s", usetup.install_audio_dir.GetCStr());
+    if (!usetup.install_voice_dir.IsEmpty())
+        Debug::Printf(kDbgMsg_Init, "Optional voice-over directory: %s", usetup.install_voice_dir.GetCStr());
+    if (!usetup.user_data_dir.IsEmpty())
+        Debug::Printf(kDbgMsg_Init, "User data directory: %s", usetup.user_data_dir.GetCStr());
+    if (!usetup.shared_data_dir.IsEmpty())
+        Debug::Printf(kDbgMsg_Init, "Shared data directory: %s", usetup.shared_data_dir.GetCStr());
+
+    set_install_dir(usetup.install_dir, usetup.install_audio_dir, usetup.install_voice_dir);
+    if (!usetup.install_dir.IsEmpty())
     {
-        // running in debugger
-        use_compiled_folder_as_current_dir = 1;
-        // don't redirect to the game exe folder (_Debug)
+        // running in debugger: don't redirect to the game exe folder (_Debug)
+        // TODO: find out why we need to do this (and do we?)
         usetup.data_files_dir = ".";
     }
 
@@ -832,10 +804,10 @@ void engine_init_directories()
     bool res = false;
     if (!usetup.user_data_dir.IsEmpty())
     {
-        res = SetCustomSaveParent(String::FromFormat("%s/UserSaves", usetup.user_data_dir.GetCStr()));
+        res = SetCustomSaveParent(usetup.user_data_dir);
         if (!res)
         {
-            Out::FPrint("WARNING: custom user save path failed, using default system paths");
+            Debug::Printf(kDbgMsg_Warn, "WARNING: custom user save path failed, using default system paths");
             usetup.user_data_dir.Empty();
             res = false;
         }
@@ -865,6 +837,7 @@ int check_write_access() {
   sprintf(tempPath, "%s""tmptest.tmp", saveGameDirectory);
   Stream *temp_s = Common::File::CreateFile(tempPath);
   if (!temp_s)
+      // TODO: move this somewhere else (Android platform driver init?)
 #if defined(ANDROID_VERSION)
   {
 	  put_backslash(android_base_directory);
@@ -892,17 +865,10 @@ int check_write_access() {
 
 int engine_check_disk_space()
 {
-    Out::FPrint("Checking for disk space");
+    Debug::Printf(kDbgMsg_Init, "Checking for disk space");
 
-    //init_language_text("en");
     if (check_write_access()==0) {
-#if defined(IOS_VERSION)
-        platform->DisplayAlert("Unable to write to the current directory. Make sure write permissions are"
-            " set for the game directory.\n");
-#else
-        platform->DisplayAlert("Unable to write to the current directory. Do not run this game off a\n"
-            "network or CD-ROM drive. Also check drive free space (you need 1 Mb free).\n");
-#endif
+        platform->DisplayAlert("Unable to write in the savegame directory.\n%s", platform->GetDiskWriteAccessTroubleshootingText());
         proper_exit = 1;
         return EXIT_NORMAL; 
     }
@@ -910,12 +876,11 @@ int engine_check_disk_space()
     return RETURN_CONTINUE;
 }
 
-// [IKM] I have a feeling this should be merged with engine_init_fonts
-int engine_check_fonts()
+int engine_check_font_was_loaded()
 {
-    if (fontRenderers[0] == NULL) 
+    if (!font_first_renderer_loaded())
     {
-        platform->DisplayAlert("No fonts found. If you're trying to run the game from the Debug directory, this is not supported. Use the Build EXE command to create an executable in the Compiled folder.");
+        platform->DisplayAlert("No game fonts found. At least one font is required to run the game.");
         proper_exit = 1;
         return EXIT_NORMAL;
     }
@@ -930,7 +895,7 @@ void engine_init_modxm_player()
         opts.mod_player = 0;
 
     if (opts.mod_player) {
-        Out::FPrint("Initializing MOD/XM player");
+        Debug::Printf(kDbgMsg_Init, "Initializing MOD/XM player");
 
         if (init_mod_player(NUM_MOD_DIGI_VOICES) < 0) {
             platform->DisplayAlert("Warning: install_mod: MOD player failed to initialize.");
@@ -939,7 +904,7 @@ void engine_init_modxm_player()
     }
 #else
     opts.mod_player = 0;
-    Out::FPrint("Compiled without MOD/XM player");
+    Debug::Printf(kDbgMsg_Init, "Compiled without MOD/XM player");
 #endif
 }
 
@@ -954,7 +919,7 @@ void show_preload () {
         Bitmap *tsc = BitmapHelper::CreateBitmapCopy(splashsc, screen_bmp->GetColorDepth());
 
 		screen_bmp->Fill(0);
-        screen_bmp->StretchBlt(tsc, RectWH(0, 0, scrnwid,scrnhit), Common::kBitmap_Transparency);
+        screen_bmp->StretchBlt(tsc, RectWH(0, 0, play.viewport.GetWidth(),play.viewport.GetHeight()), Common::kBitmap_Transparency);
 
         gfxDriver->ClearDrawList();
 
@@ -976,14 +941,14 @@ void show_preload () {
 
 void engine_show_preload()
 {
-    Out::FPrint("Check for preload image");
+    Debug::Printf("Check for preload image");
 
     show_preload ();
 }
 
 int engine_init_sprites()
 {
-    Out::FPrint("Initialize sprites");
+    Debug::Printf(kDbgMsg_Init, "Initialize sprites");
 
     if (spriteset.initFile ("acsprset.spr")) 
     {
@@ -999,23 +964,15 @@ int engine_init_sprites()
     return RETURN_CONTINUE;
 }
 
-void engine_setup_screen()
+void engine_init_game_settings()
 {
-    Out::FPrint("Set up screen");
-
-    virtual_screen=BitmapHelper::CreateBitmap(scrnwid,scrnhit,final_col_dep);
-    virtual_screen->Clear();
-    gfxDriver->SetMemoryBackBuffer(virtual_screen);
-    //  ignore_mouseoff_bitmap = virtual_screen;
-    SetVirtualScreen(BitmapHelper::GetScreenBitmap());
     our_eip=-7;
+    Debug::Printf("Initialize game settings");
 
-    for (int ee = 0; ee < MAX_INIT_SPR + game.numcharacters; ee++)
-        actsps[ee] = NULL;
-}
-
-void init_game_settings() {
     int ee;
+
+    for (ee = 0; ee < MAX_INIT_SPR + game.numcharacters; ee++)
+        actsps[ee] = NULL;
 
     for (ee=0;ee<256;ee++) {
         if (game.paluses[ee]!=PAL_BACKGROUND)
@@ -1126,8 +1083,9 @@ void init_game_settings() {
     play.lipsync_speed = 15;
     play.close_mouth_speech_time = 10;
     play.disable_antialiasing = 0;
+    play.rtint_enabled = false;
     play.rtint_level = 0;
-    play.rtint_light = 255;
+    play.rtint_light = 0;
     play.text_speed_modifier = 0;
     play.text_align = SCALIGN_LEFT;
     // Make the default alignment to the right with right-to-left text
@@ -1173,6 +1131,7 @@ void init_game_settings() {
     play.bad_parsed_word[0] = 0;
     play.swap_portrait_side = 0;
     play.swap_portrait_lastchar = -1;
+    play.swap_portrait_lastlastchar = -1;
     play.in_conversation = 0;
     play.skip_display = 3;
     play.no_multiloop_repeat = 0;
@@ -1221,6 +1180,7 @@ void init_game_settings() {
     play.speech_portrait_x = 0;
     play.speech_portrait_y = 0;
     play.speech_display_post_time_ms = 0;
+    play.dialog_options_highlight_color = DIALOG_OPTIONS_HIGHLIGHT_COLOR_DEFAULT;
     play.speech_in_post_state = false;
     play.narrator_speech = game.playercharacter;
     play.crossfading_out_channel = 0;
@@ -1251,29 +1211,25 @@ void init_game_settings() {
     for (ee = 0; ee < MAX_SOUND_CHANNELS; ee++)
         last_sound_played[ee] = -1;
 
-    if (usetup.translation)
+    if (!usetup.translation.IsEmpty())
         init_translation (usetup.translation, "", true);
 
     update_invorder();
     displayed_room = -10;
+
+    currentcursor=0;
+    our_eip=-4;
+    mousey=100;  // stop icon bar popping up
+
+    // We use same variable to read config and be used at runtime for now,
+    // so update it here with regards to game design option
+    usetup.RenderAtScreenRes = 
+        (game.options[OPT_RENDERATSCREENRES] == kRenderAtScreenRes_UserDefined && usetup.RenderAtScreenRes) ||
+         game.options[OPT_RENDERATSCREENRES] == kRenderAtScreenRes_Enabled;
 }
 
-void engine_init_game_settings()
+void engine_setup_scsystem_auxiliary()
 {
-    Out::FPrint("Initialize game settings");
-
-    init_game_settings();
-}
-
-void engine_init_game_shit()
-{
-    scsystem.width = final_scrn_wid;
-    scsystem.height = final_scrn_hit;
-    scsystem.coldepth = final_col_dep;
-    scsystem.windowed = 0;
-    scsystem.vsync = 0;
-    scsystem.viewport_width = divide_down_coordinate(scrnwid);
-    scsystem.viewport_height = divide_down_coordinate(scrnhit);
     // ScriptSystem::aci_version is only 10 chars long
     strncpy(scsystem.aci_version, EngineVersion.LongString, 10);
     if (usetup.override_script_os >= 0)
@@ -1284,25 +1240,6 @@ void engine_init_game_shit()
     {
         scsystem.os = platform->GetSystemOSID();
     }
-
-    if (usetup.windowed)
-        scsystem.windowed = 1;
-
-#if defined (DOS_VERSION)
-    filter->SetMouseArea(0,0,BASEWIDTH-1,BASEHEIGHT-1);
-#else
-    filter->SetMouseArea(0, 0, scrnwid-1, scrnhit-1);
-#endif
-    //  mloadwcursor("mouse.spr");
-    //mousecurs[0]=spriteset[2054];
-    currentcursor=0;
-    our_eip=-4;
-    mousey=100;  // stop icon bar popping up
-    init_invalid_regions(final_scrn_hit);
-    SetVirtualScreen(virtual_screen);
-    our_eip = -41;
-
-    gfxDriver->SetRenderOffset(get_screen_x_adjustment(virtual_screen), get_screen_y_adjustment(virtual_screen));
 }
 
 void engine_update_mp3_thread()
@@ -1321,25 +1258,25 @@ void engine_start_multithreaded_audio()
   {
     if (!audioThread.CreateAndStart(engine_update_mp3_thread, true))
     {
-      Out::FPrint("Failed to start audio thread, audio will be processed on the main thread");
+      Debug::Printf(kDbgMsg_Init, "Failed to start audio thread, audio will be processed on the main thread");
       psp_audio_multithreaded = 0;
     }
     else
     {
-      Out::FPrint("Audio thread started");
+      Debug::Printf(kDbgMsg_Init, "Audio thread started");
     }
   }
   else
   {
-    Out::FPrint("Audio is processed on the main thread");
+    Debug::Printf(kDbgMsg_Init, "Audio is processed on the main thread");
   }
 }
 
 void engine_prepare_to_start_game()
 {
-    Out::FPrint("Prepare to start game");
+    Debug::Printf("Prepare to start game");
 
-    engine_init_game_shit();
+    engine_setup_scsystem_auxiliary();
     engine_start_multithreaded_audio();
 
 #if defined(ANDROID_VERSION)
@@ -1358,14 +1295,22 @@ void allegro_bitmap_test_init()
 	//test_allegro_bitmap = AllegroBitmap::CreateBitmap(320,200,32);
 }
 
-bool engine_read_config(ConfigTree &cfg, int argc,char*argv[])
+bool engine_read_config(const String &exe_path, ConfigTree &cfg)
 {
-    Out::FPrint("Reading configuration");
+    Debug::Printf(kDbgMsg_Init, "Reading configuration");
+
+    config_defaults();
+    // Don't read in the standard config file if disabled.
+    if (psp_ignore_acsetup_cfg_file)
+        return true;
 
     // Read default configuration file
     our_eip = -200;
-    load_default_config_file(cfg, argv[0]);
+    String def_cfg_file = find_default_cfg_file(exe_path);
+    IniUtil::Read(def_cfg_file, cfg);
+
     read_game_data_location(cfg);
+
     // Deduce the game data file location
     if (!engine_init_game_data())
         return false;
@@ -1374,15 +1319,38 @@ bool engine_read_config(ConfigTree &cfg, int argc,char*argv[])
     // TODO: research if that is possible to avoid this step and just
     // read the full head game data at this point. This might require
     // further changes of the order of initialization.
-    GameFileError err = preload_game_data();
-    if (err != kGameFile_NoError)
+    String err_str;
+    if (!preload_game_data(err_str))
     {
-        display_game_file_error(err);
+        display_game_file_error(err_str);
         return false;
     }
 
+    // Disabled on Windows because people were afraid that this config could be mistakenly
+    // created by some installer and screw up their games. Until any kind of solution is found.
+    String user_global_cfg_file;
+#if !defined (WINDOWS_VERSION)
+    // Read user global configuration file
+    user_global_cfg_file = find_user_global_cfg_file();
+    if (Path::ComparePaths(user_global_cfg_file, def_cfg_file) != 0)
+        IniUtil::Read(user_global_cfg_file, cfg);
+#endif
+
     // Read user configuration file
-    load_user_config_file(cfg);
+    String user_cfg_file = find_user_cfg_file();
+    if (Path::ComparePaths(user_cfg_file, def_cfg_file) != 0 &&
+        Path::ComparePaths(user_cfg_file, user_global_cfg_file) != 0)
+        IniUtil::Read(user_cfg_file, cfg);
+
+    // TODO: override config tree with all the command-line args.
+    // NOTE: at the moment AGS provide little means to determine whether an
+    // option was overriden by command line, and since command line args
+    // are applied first, we need to check if the option differs from
+    // default before applying value from config file.
+    if (disable_log_file)
+        INIwriteint(cfg, "misc", "log", 0);
+    else if (enable_log_file)
+        INIwriteint(cfg, "misc", "log", 1);
 
     // Parse and set up game config
     read_config(cfg);
@@ -1395,12 +1363,12 @@ bool engine_read_config(ConfigTree &cfg, int argc,char*argv[])
 bool engine_do_config(int argc, char*argv[])
 {
     ConfigTree cfg;
-    if (!engine_read_config(cfg, argc, argv))
+    if (!engine_read_config(argv[0], cfg))
         return false;
 
-    apply_output_configuration();
+    apply_debug_config(cfg);
 
-    return engine_check_run_setup(cfg, argc, argv);
+    return engine_check_run_setup(argv[0], cfg);
 }
 
 int initialize_engine(int argc,char*argv[])
@@ -1444,14 +1412,13 @@ int initialize_engine(int argc,char*argv[])
         return res;
     }
 
+    engine_init_directories();
+
     engine_init_rooms();
 
     our_eip = -186;
     
-    res = engine_init_speech();
-    if (res != RETURN_CONTINUE) {
-        return res;
-    }
+    engine_init_speech();
 
     our_eip = -185;
     
@@ -1512,18 +1479,15 @@ int initialize_engine(int argc,char*argv[])
 
     our_eip = -189;
 
-    engine_init_directories();
-
-    our_eip = -178;
-
     res = engine_check_disk_space();
     if (res != RETURN_CONTINUE) {
         return res;
     }
 
-    // [IKM] I do not really understand why is this checked only now;
-    // should not it be checked right after fonts initialization?
-    res = engine_check_fonts();
+    // Make sure that at least one font was loaded in the process of loading
+    // the game data.
+    // TODO: Fold this check into engine_load_game_data()
+    res = engine_check_font_was_loaded();
     if (res != RETURN_CONTINUE) {
         return res;
     }
@@ -1532,20 +1496,17 @@ int initialize_engine(int argc,char*argv[])
 
     engine_init_modxm_player();
 
-    res = graphics_mode_init();
-    if (res != RETURN_CONTINUE) {
-        return res;
-    }
+    engine_init_resolution_settings(game.size);
+
+    // Attempt to initialize graphics mode
+    if (!engine_try_set_gfxmode_any(usetup.Screen))
+        return EXIT_NORMAL;
 
     SetMultitasking(0);
 
     // [ER] 2014-03-13
     // Hide the system cursor via allegro
     show_os_cursor(MOUSE_CURSOR_NONE);
-    
-    // If auto lock option is set, lock mouse to the game window
-    if (usetup.mouse_auto_lock && usetup.windowed)
-        Mouse::TryLockToWindow();
 
     engine_show_preload();
 
@@ -1553,8 +1514,6 @@ int initialize_engine(int argc,char*argv[])
     if (res != RETURN_CONTINUE) {
         return res;
     }
-
-    engine_setup_screen();
 
     engine_init_game_settings();
 
@@ -1566,6 +1525,84 @@ int initialize_engine(int argc,char*argv[])
 
     quit("|bye!");
     return 0;
+}
+
+bool engine_try_set_gfxmode_any(const ScreenSetup &setup)
+{
+    engine_shutdown_gfxmode();
+
+    const Size init_desktop = get_desktop_size();
+    if (!graphics_mode_init_any(game.size, setup, engine_get_color_depth()))
+        return false;
+
+    engine_post_gfxmode_setup(init_desktop);
+    return true;
+}
+
+bool engine_try_switch_windowed_gfxmode()
+{
+    if (!gfxDriver || !gfxDriver->IsModeSet())
+        return false;
+
+    // Keep previous mode in case we need to revert back
+    DisplayMode old_dm = gfxDriver->GetDisplayMode();
+    GameFrameSetup old_frame = graphics_mode_get_render_frame();
+
+    // Release engine resources that depend on display mode
+    engine_pre_gfxmode_release();
+
+    Size init_desktop = get_desktop_size();
+    bool switch_to_windowed = !old_dm.Windowed;
+    ActiveDisplaySetting setting = graphics_mode_get_last_setting(switch_to_windowed);
+    DisplayMode last_opposite_mode = setting.Dm;
+    GameFrameSetup use_frame_setup = setting.FrameSetup;
+    
+    // If there are saved parameters for given mode (fullscreen/windowed)
+    // then use them, if there are not, get default setup for the new mode.
+    bool res;
+    if (last_opposite_mode.IsValid())
+    {
+        res = graphics_mode_set_dm(last_opposite_mode);
+    }
+    else
+    {
+        // we need to clone from initial config, because not every parameter is set by graphics_mode_get_defaults()
+        DisplayModeSetup dm_setup = usetup.Screen.DisplayMode;
+        dm_setup.Windowed = !old_dm.Windowed;
+        graphics_mode_get_defaults(dm_setup.Windowed, dm_setup.ScreenSize, use_frame_setup);
+        res = graphics_mode_set_dm_any(game.size, dm_setup, old_dm.ColorDepth, use_frame_setup);
+    }
+
+    // Apply corresponding frame render method
+    if (res)
+        res = graphics_mode_set_render_frame(use_frame_setup);
+    
+    if (!res)
+    {
+        // If failed, try switching back to previous gfx mode
+        res = graphics_mode_set_dm(old_dm) &&
+              graphics_mode_set_render_frame(old_frame);
+    }
+
+    if (res)
+    {
+        // If succeeded (with any case), update engine objects that rely on
+        // active display mode.
+        if (gfxDriver->GetDisplayMode().Windowed)
+            init_desktop = get_desktop_size();
+        engine_post_gfxmode_setup(init_desktop);
+    }
+    clear_input_buffer();
+    return res;
+}
+
+void engine_shutdown_gfxmode()
+{
+    if (!gfxDriver)
+        return;
+
+    engine_pre_gfxsystem_shutdown();
+    graphics_mode_shutdown();
 }
 
 
@@ -1582,11 +1619,10 @@ extern char*printfworkingspace;
 
 int initialize_engine_with_exception_handling(int argc,char*argv[])
 {
-    Out::FPrint("Installing exception handler");
-
 #ifdef USE_CUSTOM_EXCEPTION_HANDLER
     __try 
     {
+        Debug::Printf(kDbgMsg_Init, "Installing exception handler");
 #endif
 
         return initialize_engine(argc, argv);
@@ -1602,7 +1638,7 @@ int initialize_engine_with_exception_handling(int argc,char*argv[])
             excinfo.ExceptionCode, excinfo.ExceptionAddress, tempmsg, our_eip, EngineVersion.LongString.GetCStr(), eip_guinum, eip_guiobj, get_cur_script(5),
             (miniDumpResultCode == 0) ? "An error file CrashInfo.dmp has been created. You may be asked to upload this file when reporting this problem on the AGS Forums." : 
             "Unable to create an error dump file.", miniDumpResultCode);
-        MessageBoxA(allegro_wnd, printfworkingspace, "Illegal exception", MB_ICONSTOP | MB_OK);
+        MessageBoxA(win_get_window(), printfworkingspace, "Illegal exception", MB_ICONSTOP | MB_OK);
         proper_exit = 1;
     }
     return EXIT_CRASH;

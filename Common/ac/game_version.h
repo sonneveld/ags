@@ -77,6 +77,26 @@ Audio clips
 43 : 3.3.0
 Added few more game options.
 
+44 : 3.3.1
+Added custom dialog option highlight colour.
+
+45 : 3.4.0.1
+Support for custom game resolution.
+
+46 : 3.4.0.2-.3
+Audio playback speed.
+Custom dialog option rendering extension.
+
+47 : 3.4.0.4
+Custom properties changed at runtime.
+Ambient lighting
+
+48 : 3.4.1
+OPT_RENDERATSCREENRES, extended engine caps check, font vertical offset.
+
+49 : 3.4.1.2
+Font custom line spacing.
+
 */
 
 enum GameDataVersion
@@ -102,10 +122,22 @@ enum GameDataVersion
     kGameVersion_312            = 40,
     kGameVersion_320            = 41,
     kGameVersion_321            = 42,
-    kGameVersion_330,
-    kGameVersion_Current        = kGameVersion_330
+    kGameVersion_330            = 43,
+    kGameVersion_331            = 44,
+    kGameVersion_340_1          = 45,
+    kGameVersion_340_2          = 46,
+    kGameVersion_340_4          = 47,
+    kGameVersion_341            = 48,
+    kGameVersion_341_2          = 49,
+    kGameVersion_Current        = kGameVersion_341_2
 };
 
 extern GameDataVersion loaded_game_file_version;
+
+// Test if the game is made at the times of old audio system
+inline bool is_old_audio_system()
+{
+    return loaded_game_file_version < kGameVersion_320;
+}
 
 #endif // __AGS_CN_AC__GAMEVERSION_H

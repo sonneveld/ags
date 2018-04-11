@@ -20,6 +20,7 @@
 #include "ac/tree_map.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
+#include "plugin/plugin_engine.h"
 
 extern GameState play;
 extern AGSPlatformDriver *platform;
@@ -27,7 +28,7 @@ extern int source_text_length;
 extern TreeMap *transtree;
 extern char transFileName[MAX_PATH];
 
-char *get_translation (const char *text) {
+const char *get_translation (const char *text) {
     if (text == NULL)
         quit("!Null string supplied to CheckForTranslations");
 
@@ -43,7 +44,7 @@ char *get_translation (const char *text) {
     }
 
     // check if a plugin wants to translate it - if so, return that
-    char *plResult = (char*)platform->RunPluginHooks(AGSE_TRANSLATETEXT, (long)text);
+    char *plResult = (char*)pl_run_plugin_hooks(AGSE_TRANSLATETEXT, (long)text);
     if (plResult) {
 
 //  64bit: This is a wonky way to detect a valid pointer
@@ -60,7 +61,7 @@ char *get_translation (const char *text) {
             return transl;
     }
     // return the original text
-    return (char*)text;
+    return text;
 }
 
 int IsTranslationAvailable () {

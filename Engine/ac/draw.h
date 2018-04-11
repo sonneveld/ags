@@ -20,6 +20,7 @@
 
 #include "core/types.h"
 #include "ac/common_defines.h"
+#include "gfx/gfx_def.h"
 #include "util/wgt2allg.h"
 
 namespace AGS { namespace Common { class Bitmap; } }
@@ -55,7 +56,9 @@ struct CachedActSpsData {
 void invalidate_screen();
 void mark_current_background_dirty();
 void invalidate_cached_walkbehinds();
+// Avoid freeing and reallocating the memory if possible
 Common::Bitmap *recycle_bitmap(Common::Bitmap *bimp, int coldep, int wid, int hit, bool make_transparent = false);
+Engine::IDriverDependantBitmap* recycle_ddb_bitmap(Engine::IDriverDependantBitmap *bimp, Common::Bitmap *source, bool hasAlpha = false);
 void push_screen (Common::Bitmap *ds);
 Common::Bitmap *pop_screen();
 void update_screen();
@@ -65,18 +68,19 @@ void render_graphics(Engine::IDriverDependantBitmap *extraBitmap = NULL, int ext
 void construct_virtual_screen(bool fullRedraw) ;
 void add_to_sprite_list(Engine::IDriverDependantBitmap* spp, int xx, int yy, int baseline, int trans, int sprNum, bool isWalkBehind = false);
 void tint_image (Common::Bitmap *g, Common::Bitmap *source, int red, int grn, int blu, int light_level, int luminance=255);
-void draw_sprite_support_alpha(Common::Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, Common::Bitmap *image, bool src_has_alpha, int alpha = 0xFF);
-void draw_sprite_slot_support_alpha(Common::Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, int src_slot, int alpha = 0xFF);
-void draw_gui_sprite(Common::Bitmap *ds, int pic, int x, int y, bool use_alpha = true);
-void draw_gui_sprite_v330(Common::Bitmap *ds, int pic, int x, int y, bool use_alpha = true);
+void draw_sprite_support_alpha(Common::Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, Common::Bitmap *image, bool src_has_alpha,
+                               Common::BlendMode blend_mode = Common::kBlendMode_Alpha, int alpha = 0xFF);
+void draw_sprite_slot_support_alpha(Common::Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, int src_slot,
+                                    Common::BlendMode blend_mode = Common::kBlendMode_Alpha, int alpha = 0xFF);
+void draw_gui_sprite(Common::Bitmap *ds, int pic, int x, int y, bool use_alpha, Common::BlendMode blend_mode);
+void draw_gui_sprite_v330(Common::Bitmap *ds, int pic, int x, int y, bool use_alpha = true, Common::BlendMode blend_mode = Common::kBlendMode_Alpha);
 void render_to_screen(Common::Bitmap *toRender, int atx, int aty);
 void draw_screen_callback();
 void write_screen();
 void GfxDriverOnInitCallback(void *data);
 bool GfxDriverNullSpriteCallback(int x, int y);
 void init_invalid_regions(int scrnHit);
-int get_screen_x_adjustment(Common::Bitmap *checkFor);
-int get_screen_y_adjustment(Common::Bitmap *checkFor);
+void destroy_invalid_regions();
 void putpixel_compensate (Common::Bitmap *g, int xx,int yy, int col);
 // create the actsps[aa] image with the object drawn correctly
 // returns 1 if nothing at all has changed and actsps is still
@@ -85,7 +89,6 @@ int construct_object_gfx(int aa, int *drawnWidth, int *drawnHeight, bool alwaysU
 void clear_letterbox_borders();
 
 void draw_and_invalidate_text(Common::Bitmap *ds, int x1, int y1, int font, color_t text_color, const char *text);
-void wouttext_reverseifnecessary(Common::Bitmap *ds, int x, int y, int font, color_t text_color, char *text);
 
 void setpal();
 
@@ -98,8 +101,18 @@ extern AGS_INLINE void multiply_up_coordinates_round_up(int *x, int *y);
 extern AGS_INLINE int divide_down_coordinate(int coord);
 extern AGS_INLINE int divide_down_coordinate_round_up(int coord);
 
-Common::Bitmap *convert_16_to_15(Common::Bitmap *iii);
-Common::Bitmap *convert_16_to_16bgr(Common::Bitmap *tempbl);
-Common::Bitmap *convert_32_to_32bgr(Common::Bitmap *tempbl);
+// Checks if the bitmap needs to be converted and **deletes original** if a new bitmap
+// had to be created (by default).
+// TODO: this helper function was meant to remove bitmap deletion from the GraphicsDriver's
+// implementations while keeping code changes to minimum. The proper solution would probably
+// be to use shared pointers when storing Bitmaps, or make Bitmap reference-counted object.
+// WARNING: apparently MSVS2008 std::tr1::shared_ptr does not check for assigning same pointer,
+// this should be kept in mind!
+Common::Bitmap *ReplaceBitmapWithSupportedFormat(Common::Bitmap *bitmap);
+// Checks if the bitmap needs any kind of adjustments before it may be used
+// in AGS sprite operations. Also handles number of certain special cases
+// (old systems or uncommon gfx modes, and similar stuff).
+// Original bitmap **gets deleted** if a new bitmap had to be created.
+Common::Bitmap *PrepareSpriteForUse(Common::Bitmap *bitmap, bool has_alpha);
 
 #endif // __AGS_EE_AC__DRAW_H

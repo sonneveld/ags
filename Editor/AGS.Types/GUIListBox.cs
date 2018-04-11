@@ -6,9 +6,10 @@ using System.Xml;
 using System.Drawing;
 
 namespace AGS.Types
-{
-    [Serializable]
+{    
+    [Serializable]    
     [PropertyTab(typeof(PropertyTabEvents), PropertyTabScope.Component)]
+    [DefaultProperty("TextColor")]
     public class GUIListBox : GUIControl
     {
         public const string CONTROL_DISPLAY_NAME = "ListBox";
@@ -53,17 +54,7 @@ namespace AGS.Types
         public string OnSelectionChanged
         {
             get { return _selectionChangedEventHandler; }
-            set
-            {
-                if (value.Length > MAX_EVENT_HANDLER_LENGTH)
-                {
-                    _selectionChangedEventHandler = value.Substring(0, MAX_EVENT_HANDLER_LENGTH);
-                }
-                else
-                {
-                    _selectionChangedEventHandler = value;
-                }
-            }
+            set { _selectionChangedEventHandler = value; }
         }
 
         [Description("Determines whether the listbox default up/down scroll arrows are drawn")]

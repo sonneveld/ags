@@ -13,7 +13,6 @@
 //=============================================================================
 
 #include <string.h>
-#include "gfx/ali3d.h"
 #include "ac/display.h"
 #include "ac/gamesetup.h"
 #include "ac/string.h"
@@ -31,7 +30,7 @@ extern char lines[MAXLINE][200];
 
 extern int acdialog_font;
 
-MyLabel::MyLabel(int xx, int yy, int wii, char *tee)
+MyLabel::MyLabel(int xx, int yy, int wii, const char *tee)
 {
     strncpy(text, tee, 150);
     text[149] = 0;

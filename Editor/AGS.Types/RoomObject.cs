@@ -6,10 +6,10 @@ using System.Text;
 namespace AGS.Types
 {
     [PropertyTab(typeof(PropertyTabInteractions), PropertyTabScope.Component)]
+    [DefaultProperty("Image")]
 	public class RoomObject : IComparable<RoomObject>, IChangeNotification, ICustomTypeDescriptor
     {
 		public const string PROPERTY_NAME_SCRIPT_NAME = "Name";
-        private const int MAX_NAME_LENGTH = 19;
 
         private static InteractionSchema _interactionSchema;
 
@@ -17,6 +17,8 @@ namespace AGS.Types
         private int _image;
         private int _x;
         private int _y;
+        private bool _clickable = true;
+        private bool _locked;
         private bool _visible = true;
         private int _baseline;
         private int _effectiveBaseline;
@@ -76,6 +78,14 @@ namespace AGS.Types
             set { _baseline = value; }
         }
 
+        [Description("Determines whether the object can be clicked on, or whether mouse clicks pass straight through it")]
+        [Category("Design")]
+        public bool Clickable
+        {
+            get { return _clickable; }
+            set { _clickable = value; }
+        }
+
 		[Description("Allows you to manually specify this object's position in the front-to-back z-order, rather than the default behaviour of using its Y co-ordinate.")]
 		[Category("Design")]
 		[RefreshProperties(RefreshProperties.All)]
@@ -100,6 +110,14 @@ namespace AGS.Types
         {
             get { return _effectiveBaseline; }
             set { _effectiveBaseline = value; }
+        }
+
+        [Description("Whether the object can be moved in the editor")]
+        [Category("Design")]
+        public bool Locked
+        {
+            get { return _locked; }
+            set { _locked = value; }
         }
 
         [Description("X co-ordinate within the room of the left side of the object")]
@@ -132,10 +150,10 @@ namespace AGS.Types
         public string Name
         {
             get { return _name; }
-            set { _name = Utilities.ValidateScriptName(value, MAX_NAME_LENGTH); }
+            set { _name = Utilities.ValidateScriptName(value); }
         }
 
-        [Description("Whether the object should be effected by walkable area scaling")]
+        [Description("Whether the object should be affected by walkable area scaling")]
         [Category("Appearance")]
         public bool UseRoomAreaScaling
         {
@@ -143,7 +161,7 @@ namespace AGS.Types
             set { _useRoomAreaScaling = value; }
         }
 
-        [Description("Whether the object should be effected by walkable area lighting")]
+        [Description("Whether the object should be affected by walkable area lighting")]
         [Category("Appearance")]
         public bool UseRoomAreaLighting
         {

@@ -30,31 +30,42 @@ struct RuntimeScriptValue;
 typedef RuntimeScriptValue ScriptAPIFunction(const RuntimeScriptValue *params, int32_t param_count);
 typedef RuntimeScriptValue ScriptAPIObjectFunction(void *self, const RuntimeScriptValue *params, int32_t param_count);
 
+// Sprintf that takes either script values or common argument list from plugin.
+// Uses EITHER sc_args/sc_argc or varg_ptr as parameter list, whichever is not
+// NULL, with varg_ptr having HIGHER priority.
+const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format,
+                          const RuntimeScriptValue *sc_args, int32_t sc_argc, va_list *varg_ptr);
 // Sprintf that takes script values as arguments
-const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format, const RuntimeScriptValue *args, int32_t argc);
+inline const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format, const RuntimeScriptValue *args, int32_t argc)
+{
+    return ScriptSprintf(buffer, buf_length, format, args, argc, NULL);
+}
 // Variadic sprintf (needed, because all arguments are pushed as pointer-sized values). Currently used only when plugin calls
 // exported engine function. Should be removed when this plugin issue is resolved.
-const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, va_list &arg_ptr);
+inline const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, va_list &arg_ptr)
+{
+    return ScriptSprintf(buffer, buf_length, format, NULL, 0, &arg_ptr);
+}
 
 // Helper macros for script functions
 #define ASSERT_SELF(METHOD) \
     if (!self) \
     { \
-        AGS::Common::Out::FPrint("ERROR: Object pointer is null in call to %s", ""#METHOD); \
+        AGS::Common::Debug::Printf(AGS::Common::kDbgMsg_Error, "ERROR: Object pointer is null in call to %s", ""#METHOD); \
         return RuntimeScriptValue(); \
     }
 
 #define ASSERT_PARAM_COUNT(FUNCTION, X) \
     if (X > 0 && (!params || param_count < X)) \
     { \
-        AGS::Common::Out::FPrint("ERROR: Not enough parameters in call to %s: expected %d, got %d", ""#FUNCTION, X, param_count); \
+        AGS::Common::Debug::Printf(AGS::Common::kDbgMsg_Error, "ERROR: Not enough parameters in call to %s: expected %d, got %d", ""#FUNCTION, X, param_count); \
         return RuntimeScriptValue(); \
     }
 
 #define ASSERT_VARIABLE_VALUE(VARIABLE) \
     if (!params || param_count < 1) \
     { \
-        AGS::Common::Out::FPrint("ERROR: Not enough parameters to set %s: expected %d, got %d", ""#VARIABLE, 1, param_count); \
+        AGS::Common::Debug::Printf(AGS::Common::kDbgMsg_Error, "ERROR: Not enough parameters to set %s: expected %d, got %d", ""#VARIABLE, 1, param_count); \
         return RuntimeScriptValue(); \
     }
 
@@ -241,6 +252,18 @@ const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, 
 #define API_SCALL_BOOL(FUNCTION) \
     return RuntimeScriptValue().SetInt32AsBool(FUNCTION())
 
+#define API_SCALL_BOOL_OBJ(FUNCTION, P1CLASS) \
+    ASSERT_PARAM_COUNT(FUNCTION, 1) \
+    return RuntimeScriptValue().SetInt32AsBool(FUNCTION((P1CLASS*)params[0].Ptr))
+
+#define API_SCALL_BOOL_POBJ_PINT(FUNCTION, P1CLASS) \
+    ASSERT_PARAM_COUNT(FUNCTION, 2) \
+    return RuntimeScriptValue().SetInt32AsBool(FUNCTION((P1CLASS*)params[0].Ptr, params[1].IValue))
+
+#define API_SCALL_BOOL_POBJ2(FUNCTION, P1CLASS, P2CLASS) \
+    ASSERT_PARAM_COUNT(FUNCTION, 2) \
+    return RuntimeScriptValue().SetInt32AsBool(FUNCTION((P1CLASS*)params[0].Ptr, (P2CLASS*)params[1].Ptr))
+
 #define API_SCALL_OBJ(RET_CLASS, RET_MGR, FUNCTION) \
     return RuntimeScriptValue().SetDynamicObject((void*)(RET_CLASS*)FUNCTION(), &RET_MGR)
 
@@ -415,6 +438,22 @@ const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, 
 #define API_OBJCALL_INT_POBJ_PBOOL(CLASS, METHOD, P1CLASS) \
     ASSERT_OBJ_PARAM_COUNT(METHOD, 2) \
     return RuntimeScriptValue().SetInt32(METHOD((CLASS*)self, (P1CLASS*)params[0].Ptr, params[1].GetAsBool()))
+
+#define API_OBJCALL_BOOL(CLASS, METHOD) \
+    ASSERT_SELF(METHOD) \
+    return RuntimeScriptValue().SetInt32AsBool(METHOD((CLASS*)self))
+
+#define API_OBJCALL_BOOL_PINT(CLASS, METHOD) \
+    ASSERT_OBJ_PARAM_COUNT(METHOD, 1) \
+    return RuntimeScriptValue().SetInt32AsBool(METHOD((CLASS*)self, params[0].IValue))
+
+#define API_OBJCALL_BOOL_POBJ_PINT(CLASS, METHOD, P1CLASS) \
+    ASSERT_OBJ_PARAM_COUNT(METHOD, 2) \
+    return RuntimeScriptValue().SetInt32AsBool(METHOD((CLASS*)self, (P1CLASS*)params[0].Ptr, params[1].IValue))
+
+#define API_OBJCALL_BOOL_POBJ2(CLASS, METHOD, P1CLASS, P2CLASS) \
+    ASSERT_OBJ_PARAM_COUNT(METHOD, 2) \
+    return RuntimeScriptValue().SetInt32AsBool(METHOD((CLASS*)self, (P1CLASS*)params[0].Ptr, (P2CLASS*)params[1].Ptr))
 
 #define API_OBJCALL_BOOL(CLASS, METHOD) \
     ASSERT_SELF(METHOD) \

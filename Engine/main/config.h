@@ -18,16 +18,20 @@
 #ifndef __AGS_EE_MAIN__CONFIG_H
 #define __AGS_EE_MAIN__CONFIG_H
 
+#include "main/graphics_mode.h"
 #include "util/ini_util.h"
 
 using AGS::Common::String;
 using AGS::Common::ConfigTree;
 
-extern String ac_config_file;
-// Find and load default configuration file (usually located in the game installation directory)
-void load_default_config_file(AGS::Common::ConfigTree &cfg, const char *alt_cfg_file);
-// Find and load user configuration file (located into writable user location)
-void load_user_config_file(AGS::Common::ConfigTree &cfg);
+// Set up default config settings
+void config_defaults();
+// Find and default configuration file (usually located in the game installation directory)
+String find_default_cfg_file(const char *alt_cfg_file);
+// Find all-games user configuration file
+String find_user_global_cfg_file();
+// Find and game-specific user configuration file (located into writable user directory)
+String find_user_cfg_file();
 // Read optional data file name and location from config
 void read_game_data_location(const AGS::Common::ConfigTree &cfg);
 // Setup game using final config tree
@@ -37,10 +41,20 @@ void post_config();
 
 void save_config_file();
 
+void parse_scaling_option(const String &scaling_option, FrameScaleDefinition &scale_def, int &scale_factor);
+void parse_scaling_option(const String &scaling_option, GameFrameSetup &frame_setup);
+String make_scaling_option(FrameScaleDefinition scale_def, int scale_factor = 0);
+String make_scaling_option(const GameFrameSetup &frame_setup);
+uint32_t convert_scaling_to_fp(int scale_factor);
+int convert_fp_to_scaling(uint32_t scaling);
+// Fill in setup structs with default settings for the given mode (windowed or fullscreen)
+void graphics_mode_get_defaults(bool windowed, ScreenSizeSetup &scsz_setup, GameFrameSetup &frame_setup);
+
 bool INIreaditem(const ConfigTree &cfg, const String &sectn, const String &item, String &value);
-String INIreadstring(const ConfigTree &cfg, const String &sectn, const String &item, const String &def_value = "");
-int INIreadint(const ConfigTree &cfg, const String &sectn, const String &item);
+int INIreadint(const ConfigTree &cfg, const String &sectn, const String &item, int def_value = 0);
 float INIreadfloat(const ConfigTree &cfg, const String &sectn, const String &item, float def_value = 0.f);
+String INIreadstring(const ConfigTree &cfg, const String &sectn, const String &item, const String &def_value = "");
+void INIwriteint(ConfigTree &cfg, const String &sectn, const String &item, int value);
 void INIwritestring(ConfigTree &cfg, const String &sectn, const String &item, const String &value);
 void INIwriteint(ConfigTree &cfg, const String &sectn, const String &item, int value);
 

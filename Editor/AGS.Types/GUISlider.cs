@@ -8,6 +8,7 @@ namespace AGS.Types
 {
     [Serializable]
     [PropertyTab(typeof(PropertyTabEvents), PropertyTabScope.Component)]
+    [DefaultProperty("HandleImage")]
     public class GUISlider : GUIControl
     {
         public const string CONTROL_DISPLAY_NAME = "Slider";
@@ -44,17 +45,7 @@ namespace AGS.Types
         public string OnChange
         {
             get { return _changeEventHandler; }
-            set
-            {
-                if (value.Length > MAX_EVENT_HANDLER_LENGTH)
-                {
-                    _changeEventHandler = value.Substring(0, MAX_EVENT_HANDLER_LENGTH);
-                }
-                else
-                {
-                    _changeEventHandler = value;
-                }
-            }
+            set { _changeEventHandler = value; }
         }
 
         [Description("Image to use for the grabbable handle on the slider")]

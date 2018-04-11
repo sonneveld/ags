@@ -18,10 +18,40 @@
 #ifndef __AGS_CN_UTIL__GEOMETRY_H
 #define __AGS_CN_UTIL__GEOMETRY_H
 
+#include "util/math.h"
+
+namespace AGSMath = AGS::Common::Math;
 //namespace AGS
 //{
 //namespace Common
 //{
+
+enum RectPlacement
+{
+    kPlaceOffset,
+    kPlaceCenter,
+    kPlaceStretch,
+    kPlaceStretchProportional,
+    kNumRectPlacement
+};
+
+struct Point
+{
+    int X;
+    int Y;
+
+    Point()
+    {
+        X = 0;
+        Y = 0;
+    }
+
+    Point(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+};
 
 struct Line
 {
@@ -80,6 +110,12 @@ struct Size
         return Width <= 0 || Height <= 0;
     }
 
+    inline void Clamp(const Size floor, const Size ceil)
+    {
+        Width = AGSMath::Clamp(floor.Width, ceil.Width, Width);
+        Height = AGSMath::Clamp(floor.Height, ceil.Height, Height);
+    }
+
     // Indicates if current size exceeds other size by any metric
     inline bool ExceedsByAny(const Size size) const
     {
@@ -94,6 +130,11 @@ struct Size
     inline bool operator!=(const Size size) const
     {
         return Width != size.Width || Height != size.Height;
+    }
+
+    inline bool operator<(const Size &other) const
+    {
+        return Width < other.Width || (Width == other.Width && Height < other.Height);
     }
 
     inline Size operator *(int x) const
@@ -121,6 +162,8 @@ struct Size
     }
 };
 
+// TODO: consider making Rect have right-bottom coordinate with +1 offset
+// to comply with many other libraries (i.e. Right - Left == Width)
 struct Rect
 {
 	int Left;
@@ -132,8 +175,8 @@ struct Rect
 	{
 		Left	= 0;
 		Top		= 0;
-		Right	= 0;
-		Bottom	= 0;
+		Right	= -1;
+		Bottom	= -1;
 	}
 
 	Rect(int l, int t, int r, int b)
@@ -143,6 +186,11 @@ struct Rect
 		Right	= r;
 		Bottom	= b;
 	}
+
+    inline Point GetLT() const
+    {
+        return Point(Left, Top);
+    }
 
 	inline int GetWidth() const
 	{
@@ -154,9 +202,46 @@ struct Rect
 		return Bottom - Top + 1;
 	}
 
+    inline Size GetSize() const
+    {
+        return Size(GetWidth(), GetHeight());
+    }
+    
+    inline bool IsEmpty() const
+    {
+        return Right < Left || Bottom < Top;
+    }
+
     inline bool IsInside(int x, int y) const
     {
         return x >= Left && y >= Top && (x <= Right) && (y <= Bottom);
+    }
+
+    inline bool IsInside(const Point &pt) const
+    {
+        return IsInside(pt.X, pt.Y);
+    }
+
+    inline void MoveToX(int x)
+    {
+        Right += x - Left;
+        Left = x;
+    }
+
+    inline void MoveToY(int y)
+    {
+        Bottom += y - Top;
+        Top = y;
+    }
+
+    inline void SetWidth(int width)
+    {
+        Right = Left + width - 1;
+    }
+
+    inline void SetHeight(int height)
+    {
+        Bottom = Top + height - 1;
     }
 };
 
@@ -165,6 +250,12 @@ inline Rect RectWH(int x, int y, int width, int height)
 {
 	return Rect(x, y, x + width - 1, y + height - 1);
 }
+
+inline Rect RectWH(const Size &sz)
+{
+    return Rect(0, 0, sz.Width - 1, sz.Height - 1);
+}
+
 
 struct Triangle
 {
@@ -218,6 +309,13 @@ struct Circle
 
 };
 
+
+Size ProportionalStretch(int dest_w, int dest_h, int item_w, int item_h);
+Size ProportionalStretch(const Size &dest, const Size &item);
+
+Rect OffsetRect(const Rect &r, const Point off);
+Rect CenterInRect(const Rect &place, const Rect &item);
+Rect PlaceInRect(const Rect &place, const Rect &item, const RectPlacement &placement);
 //} // namespace Common
 //} // namespace AGS
 

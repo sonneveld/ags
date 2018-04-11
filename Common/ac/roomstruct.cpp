@@ -22,10 +22,7 @@
 #include "core/assetmanager.h"
 #include "gfx/bitmap.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-
-using AGS::Common::Stream;
+using namespace AGS::Common;
 
 Bitmap *backups[5];
 int _acroom_bpp = 1;  // bytes per pixel of currently loading room
@@ -46,8 +43,7 @@ roomstruct::roomstruct() {
     numhotspots = 0;
     memset(&objbaseline[0], 0xff, sizeof(int) * MAX_INIT_SPR);
     memset(&objectFlags[0], 0, sizeof(short) * MAX_INIT_SPR);
-    width = 320; height = 200; scripts = NULL; compiled_script = NULL;
-    compiled_script_shared = false;
+    width = 320; height = 200; scripts = NULL;
     cscriptsize = 0;
     memset(&walk_area_zoom[0], 0, sizeof(short) * (MAX_WALK_AREAS + 1));
     memset(&walk_area_light[0], 0, sizeof(short) * (MAX_WALK_AREAS + 1));
@@ -62,15 +58,13 @@ roomstruct::roomstruct() {
         walk_area_bottom[i] = -1;
     }
     for (i = 0; i < MAX_HOTSPOTS; i++) {
-        intrHotspot[i] = new NewInteraction();
-        hotspotnames[i] = NULL;
-        hotspotScriptNames[i][0] = 0;
+        intrHotspot[i] = new Interaction();
     }
     for (i = 0; i < MAX_INIT_SPR; i++)
-        intrObject[i] = new NewInteraction();
+        intrObject[i] = new Interaction();
     for (i = 0; i < MAX_REGIONS; i++)
-        intrRegion[i] = new NewInteraction();
-    intrRoom = new NewInteraction();
+        intrRegion[i] = new Interaction();
+    intrRoom = new Interaction();
     gameId = 0;
     numRegions = 0;
     hotspotScripts = NULL;
@@ -94,12 +88,7 @@ void roomstruct::freescripts()
         scripts = NULL;
     }
 
-    if (!compiled_script_shared)
-    {
-        delete compiled_script;
-    }
-    compiled_script = NULL;
-    compiled_script_shared = false;
+    compiled_script.reset();
 
     if (roomScripts != NULL) 
     {
@@ -135,6 +124,34 @@ void roomstruct::freescripts()
     }
 }
 
+bool roomstruct::has_region_lightlevel(int id) const
+{
+    if (id >= 0 && id < MAX_REGIONS)
+        return regionTintLevel[id] == 0;
+    return false;
+}
+
+bool roomstruct::has_region_tint(int id) const
+{
+    if (id >= 0 && id < MAX_REGIONS)
+        return regionTintLevel[id] != 0;
+    return false;
+}
+
+int roomstruct::get_region_lightlevel(int id) const
+{
+    if (id >= 0 && id < MAX_REGIONS)
+        return has_region_lightlevel(id) ? regionLightLevel[id] : 0;
+    return 0;
+}
+
+int roomstruct::get_region_tintluminance(int id) const
+{
+    if (id >= 0 && id < MAX_REGIONS)
+        return has_region_tint(id) ? (regionLightLevel[id] * 10) / 25 : 0;
+    return 0;
+}
+
 void room_file_header::ReadFromFile(Stream *in)
 {
     version = (RoomFileVersion)in->ReadInt16();
@@ -168,15 +185,11 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
   memset(&rstruc->walk_area_light[0], 0, sizeof(short) * (MAX_WALK_AREAS + 1));
 
   for (f = 0; f < MAX_HOTSPOTS; f++) {
-    rstruc->hotspotScriptNames[f][0] = 0;
-	if (rstruc->hotspotnames[f] != NULL)
-		free(rstruc->hotspotnames[f]);
-
-	rstruc->hotspotnames[f] = (char*)malloc(20);
-    sprintf(rstruc->hotspotnames[f], "Hotspot %d", f);
-
+    rstruc->hotspotScriptNames[f].Free();
     if (f == 0)
-      strcpy(rstruc->hotspotnames[f], "No hotspot");
+      rstruc->hotspotnames[f] = "No hotspot";
+    else
+      rstruc->hotspotnames[f].Format("Hotspot %d", f);
   }
 
 /*  memset(&rstruc->hscond[0], 0, sizeof(EventBlock) * MAX_HOTSPOTS);
@@ -211,25 +224,27 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
     // [IKM] TODO: read/write member for _Point?
     in->ReadArrayOfInt16((int16_t*)&rstruc->hswalkto[0], 2*rstruc->numhotspots);
 
-	for (f = 0; f < rstruc->numhotspots; f++)
-	{
-		free(rstruc->hotspotnames[f]);
-		if (rfh.version >= kRoomVersion_303a)
-		{
-			fgetstring_limit(buffre, in, 2999);
-			rstruc->hotspotnames[f] = (char*)malloc(strlen(buffre) + 1);
-			strcpy(rstruc->hotspotnames[f], buffre);
-		}
-		else
-		{
-			rstruc->hotspotnames[f] = (char*)malloc(30);
-			in->Read(rstruc->hotspotnames[f], 30);
-		}
-	}
+  for (f = 0; f < rstruc->numhotspots; f++)
+  {
+    if (rfh.version >= kRoomVersion_3415)
+      rstruc->hotspotnames[f] = StrUtil::ReadString(in);
+    else if (rfh.version >= kRoomVersion_303a)
+      rstruc->hotspotnames[f] = String::FromStream(in);
+    else
+      rstruc->hotspotnames[f] = String::FromStreamCount(in, 30);
+   }
 
   if (rfh.version >= kRoomVersion_270)
-    in->ReadArray(&rstruc->hotspotScriptNames[0], MAX_SCRIPT_NAME_LEN, rstruc->numhotspots);
-    
+  {
+    for (int i = 0; i < rstruc->numhotspots; ++i)
+    {
+      if (rfh.version >= kRoomVersion_3415)
+        rstruc->hotspotScriptNames[i] = StrUtil::ReadString(in);
+      else
+        rstruc->hotspotScriptNames[i] = String::FromStreamCount(in, MAX_SCRIPT_NAME_LEN);
+    }
+  }
+
   rstruc->numwalkareas = in->ReadInt32();
   for (int iteratorCount = 0; iteratorCount < rstruc->numwalkareas; ++iteratorCount)
   {
@@ -256,7 +271,7 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
 
       for (int iteratorCount = 0; iteratorCount < rstruc->numLocalVars; ++iteratorCount)
       {
-          rstruc->localvars[iteratorCount].ReadFromFile(in);
+          rstruc->localvars[iteratorCount].Read(in);
       }
     }
   }
@@ -277,9 +292,9 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
 	  if (rfh.version < kRoomVersion_300a) 
 	  {
 		  if (f < rstruc->numhotspots)
-			rstruc->intrHotspot[f] = deserialize_new_interaction (in);
+			rstruc->intrHotspot[f] = Interaction::CreateFromStream(in);
 		  else
-			rstruc->intrHotspot[f] = new NewInteraction();
+			rstruc->intrHotspot[f] = new Interaction();
 	  }
     }
 
@@ -292,22 +307,22 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
 	  if (rfh.version < kRoomVersion_300a) 
 	  {
 		  if (f < rstruc->numsprs)
-			rstruc->intrObject[f] = deserialize_new_interaction (in);
+			rstruc->intrObject[f] = Interaction::CreateFromStream(in);
 		  else
-			rstruc->intrObject[f] = new NewInteraction();
+			rstruc->intrObject[f] = new Interaction();
 	  }
     }
 
 	if (rfh.version < kRoomVersion_300a) 
 	{
 	    delete rstruc->intrRoom;
-		rstruc->intrRoom = deserialize_new_interaction (in);
+		rstruc->intrRoom = Interaction::CreateFromStream(in);
 	}
 
     for (f = 0; f < MAX_REGIONS; f++) {
       if (rstruc->intrRegion[f] != NULL)
         delete rstruc->intrRegion[f];
-      rstruc->intrRegion[f] = new NewInteraction();
+      rstruc->intrRegion[f] = new Interaction();
     }
 
     if (rfh.version >= kRoomVersion_255b) {
@@ -319,7 +334,7 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
 	  {
         for (f = 0; f < rstruc->numRegions; f++) {
           delete rstruc->intrRegion[f];
-          rstruc->intrRegion[f] = deserialize_new_interaction (in);
+          rstruc->intrRegion[f] = Interaction::CreateFromStream(in);
 		}
       }
     }
@@ -329,20 +344,16 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
 	  rstruc->hotspotScripts = new InteractionScripts*[rstruc->numhotspots];
 	  rstruc->objectScripts = new InteractionScripts*[rstruc->numsprs];
       rstruc->regionScripts = new InteractionScripts*[rstruc->numRegions];
-	  rstruc->roomScripts = new InteractionScripts();
-	  deserialize_interaction_scripts(in, rstruc->roomScripts);
+      rstruc->roomScripts = InteractionScripts::CreateFromStream(in);
 	  int bb;
       for (bb = 0; bb < rstruc->numhotspots; bb++) {
-        rstruc->hotspotScripts[bb] = new InteractionScripts();
-        deserialize_interaction_scripts(in, rstruc->hotspotScripts[bb]);
+        rstruc->hotspotScripts[bb] = InteractionScripts::CreateFromStream(in);
       }
       for (bb = 0; bb < rstruc->numsprs; bb++) {
-        rstruc->objectScripts[bb] = new InteractionScripts();
-        deserialize_interaction_scripts(in, rstruc->objectScripts[bb]);
+        rstruc->objectScripts[bb] = InteractionScripts::CreateFromStream(in);
       }
 	  for (bb = 0; bb < rstruc->numRegions; bb++) {
-        rstruc->regionScripts[bb] = new InteractionScripts();
-        deserialize_interaction_scripts(in, rstruc->regionScripts[bb]);
+        rstruc->regionScripts[bb] = InteractionScripts::CreateFromStream(in);
       }
 
 	}
@@ -427,7 +438,7 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
 
     if (rstruc->numanims > 0)
         // [IKM] CHECKME later: this will cause trouble if structure changes
-        in->Seek (Common::kSeekCurrent, sizeof(FullAnimation) * rstruc->numanims);
+        in->Seek (sizeof(FullAnimation) * rstruc->numanims);
 //      in->ReadArray(&rstruc->anims[0], sizeof(FullAnimation), rstruc->numanims);
   }
   else {
@@ -446,6 +457,22 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
   if (rfh.version >= kRoomVersion_255b) {
     in->ReadArrayOfInt16 (&rstruc->regionLightLevel[0], rstruc->numRegions);
     in->ReadArrayOfInt32 (&rstruc->regionTintLevel[0], rstruc->numRegions);
+  }
+
+  if (rfh.version < kRoomVersion_3404)
+  {
+    // Convert the old format tint saturation
+    for (int i = 0; i < MAX_REGIONS; ++i)
+    {
+      if ((rstruc->regionTintLevel[i] & LEGACY_TINT_IS_ENABLED) != 0)
+      {
+        rstruc->regionTintLevel[i] &= ~LEGACY_TINT_IS_ENABLED;
+        // older versions of the editor had a bug - work around it
+        int tint_amount = (rstruc->regionLightLevel[i] > 0 ? rstruc->regionLightLevel[i] : 50);
+        rstruc->regionTintLevel[i] |= (tint_amount & 0xFF) << 24;
+        rstruc->regionLightLevel[i] = 255;
+      }
+    }
   }
 
   update_polled_stuff_if_runtime();
@@ -487,7 +514,7 @@ void load_main_block(roomstruct *rstruc, const char *files, Stream *in, room_fil
     rstruc->regions->Blit (rstruc->walls, 0, 0, 0, 0, rstruc->regions->GetWidth(), rstruc->regions->GetHeight());
     for (f = 0; f <= 15; f++) {
       rstruc->regionLightLevel[f] = rstruc->walk_area_light[f];
-      rstruc->regionTintLevel[f] = 0;
+      rstruc->regionTintLevel[f] = 255;
     }
   }
 
@@ -523,8 +550,11 @@ void load_room(const char *files, roomstruct *rstruc, bool gameIsHighRes) {
 
   rstruc->num_bscenes = 1;
   rstruc->bscene_anim_speed = 5;
-  memset (&rstruc->objectnames[0][0], 0, MAX_INIT_SPR * MAXOBJNAMELEN);
-  memset (&rstruc->objectscriptnames[0][0], 0, MAX_INIT_SPR * MAX_SCRIPT_NAME_LEN);
+  for (size_t i = 0; i < MAX_INIT_SPR; ++i)
+  {
+    rstruc->objectnames[i].Free();
+    rstruc->objectscriptnames[i].Free();
+  }
   memset (&rstruc->regionLightLevel[0], 0, sizeof(short) * MAX_REGIONS);
   memset (&rstruc->regionTintLevel[0], 0, sizeof(int) * MAX_REGIONS);
 
@@ -535,10 +565,10 @@ void load_room(const char *files, roomstruct *rstruc, bool gameIsHighRes) {
   }
 
   for (i = 0; i < rstruc->numhotspots; i++)
-    rstruc->hsProps[i].reset();
+    rstruc->hsProps[i].clear();
   for (i = 0; i < rstruc->numsprs; i++)
-    rstruc->objProps[i].reset();
-  rstruc->roomProps.reset();
+    rstruc->objProps[i].clear();
+  rstruc->roomProps.clear();
 
   if (rstruc->localvars != NULL)
     free (rstruc->localvars);
@@ -600,8 +630,7 @@ void load_room(const char *files, roomstruct *rstruc, bool gameIsHighRes) {
         rstruc->scripts[hh] += passwencstring[hh % 11];
     }
     else if (thisblock == BLOCKTYPE_COMPSCRIPT3) {
-      rstruc->compiled_script = ccScript::CreateFromStream(opty);
-      rstruc->compiled_script_shared = false;
+      rstruc->compiled_script.reset(ccScript::CreateFromStream(opty));
       if (rstruc->compiled_script == NULL)
         quit("Load_room: Script load failed; need newer version?");
     }
@@ -615,13 +644,25 @@ void load_room(const char *files, roomstruct *rstruc, bool gameIsHighRes) {
       if (opty->ReadByte() != rstruc->numsprs)
         quit("Load_room: inconsistent blocks for object names");
 
-      opty->ReadArray(&rstruc->objectnames[0][0], MAXOBJNAMELEN, rstruc->numsprs);
+      for (int i = 0; i < rstruc->numsprs; ++i)
+      {
+        if (rfh.version >= kRoomVersion_3415)
+          rstruc->objectnames[i] = StrUtil::ReadString(opty);
+        else
+          rstruc->objectnames[i].ReadCount(opty, LEGACY_MAXOBJNAMELEN);
+      }
     }
     else if (thisblock == BLOCKTYPE_OBJECTSCRIPTNAMES) {
       if (opty->ReadByte() != rstruc->numsprs)
         quit("Load_room: inconsistent blocks for object script names");
 
-      opty->ReadArray(&rstruc->objectscriptnames[0][0], MAX_SCRIPT_NAME_LEN, rstruc->numsprs);
+      for (int i = 0; i < rstruc->numsprs; ++i)
+      {
+        if (rfh.version >= kRoomVersion_3415)
+          rstruc->objectscriptnames[i] = StrUtil::ReadString(opty);
+        else
+          rstruc->objectscriptnames[i].ReadCount(opty, MAX_SCRIPT_NAME_LEN);
+      }
     }
     else if (thisblock == BLOCKTYPE_ANIMBKGRND) {
       int   ct;
@@ -650,17 +691,17 @@ void load_room(const char *files, roomstruct *rstruc, bool gameIsHighRes) {
     else if (thisblock == BLOCKTYPE_PROPERTIES) {
       // Read custom properties
       if (opty->ReadInt32() != 1)
-        quit("LoadRoom: unknown Custom Properties Bitmap *encounreted");
+        quit("LoadRoom: unknown Custom Properties block encountered");
 
       int errors = 0, gg;
 
-      if (rstruc->roomProps.UnSerialize (opty))
-        quit("LoadRoom: error reading custom properties Bitmap *");
+      if (Properties::ReadValues(rstruc->roomProps, opty))
+        quit("LoadRoom: error reading custom properties block");
 
       for (gg = 0; gg < rstruc->numhotspots; gg++)
-        errors += rstruc->hsProps[gg].UnSerialize (opty);
+        errors += Properties::ReadValues(rstruc->hsProps[gg], opty);
       for (gg = 0; gg < rstruc->numsprs; gg++)
-        errors += rstruc->objProps[gg].UnSerialize (opty);
+        errors += Properties::ReadValues(rstruc->objProps[gg], opty);
 
       if (errors > 0)
         quit("LoadRoom: errors encountered reading custom props");
@@ -672,14 +713,11 @@ void load_room(const char *files, roomstruct *rstruc, bool gameIsHighRes) {
       return;
     }
     else {
-      char  tempbfr[90];
-      sprintf(tempbfr, "LoadRoom: unknown block type %d encountered in '%s'", thisblock, files);
-      quit(tempbfr);
+      quitprintf("LoadRoom: unknown block type %d encountered in '%s'", thisblock, files);
     }
 
-    // The GetPosition call below has caused crashes
     if (opty->GetPosition() != bloklen)
-        opty->Seek(Common::kSeekBegin, bloklen);
+      quitprintf("LoadRoom: unexpected end of block %d in in '%s'", thisblock, files);
   }
 
   // sync bpalettes[0] with room.pal

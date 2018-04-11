@@ -58,9 +58,13 @@ SOUNDCLIP::SOUNDCLIP() {
     priority = 50;
     panning = 128;
     panningAsPercentage = 0;
+    speed = 1000;
     soundType = -1;
     sourceClip = NULL;
+    vol = 0;
+    volAsPercentage = 0;
     volModifier = 0;
+    muted = false;
     repeat = false;
     xSource = -1;
     ySource = -1;

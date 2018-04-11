@@ -25,12 +25,12 @@
 using AGS::Common::Stream;
 using AGS::Common::Bitmap;
 
-DynamicArray<GUIListBox> guilist;
+std::vector<GUIListBox> guilist;
 int numguilist = 0;
 
 void GUIListBox::ChangeFont(int newfont) {
   font = newfont;
-  rowheight = wgettextheight("YpyjIHgMNWQ", font) + get_fixed_pixel_size(2);
+  rowheight = getfontheight(font) + get_fixed_pixel_size(2);
   num_items_fit = hit / rowheight;
 }
 
@@ -57,7 +57,7 @@ void GUIListBox::WriteToFile(Stream *out)
   out->WriteInt32(reserved1);
   out->WriteInt32(selectedbgcol);
   for (a = 0; a < numItems; a++)
-    out->Write(&items[a][0], strlen(items[a]) + 1);
+    items[a].Write(out);
 
   if (exflags & GLF_SGINDEXVALID)
     out->WriteArrayOfInt16(&saveGameIndex[0], numItems);
@@ -67,6 +67,8 @@ void GUIListBox::ReadFromFile(Stream *in, GuiVersion gui_version)
 {
   int a, i;
   char tempbuf[300];
+
+  Clear();
 
   GUIObject::ReadFromFile(in, gui_version);
   // MACPORT FIXES: swap
@@ -95,8 +97,7 @@ void GUIListBox::ReadFromFile(Stream *in, GuiVersion gui_version)
     while ((tempbuf[i] = in->ReadInt8()) != 0)
       i++;
 
-    items[a] = (char *)malloc(strlen(tempbuf) + 5);
-    strcpy(items[a], tempbuf);
+    items[a] = tempbuf;
     saveGameIndex[a] = -1;
   }
 
@@ -114,8 +115,7 @@ int GUIListBox::AddItem(const char *toadd)
     return -1;
 
   guis_need_update = 1;
-  items[numItems] = (char *)malloc(strlen(toadd) + 5);
-  strcpy(items[numItems], toadd);
+  items[numItems] = toadd;
   saveGameIndex[numItems] = -1;
   numItems++;
   return numItems - 1;
@@ -138,8 +138,7 @@ int GUIListBox::InsertItem(int index, const char *toadd)
     saveGameIndex[aa] = saveGameIndex[aa - 1];
   }
 
-  items[index] = (char *)malloc(strlen(toadd) + 5);
-  strcpy(items[index], toadd);
+  items[index] = toadd;
   saveGameIndex[index] = -1;
   numItems++;
 
@@ -155,16 +154,14 @@ void GUIListBox::SetItemText(int item, const char *newtext)
     return;
 
   guis_need_update = 1;
-  free(items[item]);
-  items[item] = (char *)malloc(strlen(newtext) + 5);
-  strcpy(items[item], newtext);
+  items[item] = newtext;
 }
 
 void GUIListBox::Clear()
 {
   int aa;
   for (aa = 0; aa < numItems; aa++)
-    free(items[aa]);
+    items[aa].Free();
 
   numItems = 0;
   selected = 0;
@@ -179,7 +176,6 @@ void GUIListBox::RemoveItem(int index)
   if ((index < 0) || (index >= numItems))
     return;
 
-  free(items[index]);
   numItems--;
   for (aa = index; aa < numItems; aa++) {
     items[aa] = items[aa + 1];

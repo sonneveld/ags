@@ -29,9 +29,13 @@
 #include "debug/debug_log.h"
 #include "debug/debugger.h"
 #include "script/script.h"
+#include "util/math.h"
+
+using namespace Common;
 
 extern GameState play;
 extern GameSetupStruct game;
+extern RoomStatus *croom;
 extern CharacterInfo*playerchar;
 extern int displayed_room;
 extern int in_enters_screen;
@@ -48,13 +52,23 @@ void SetAmbientTint (int red, int green, int blue, int opacity, int luminance) {
         (luminance < 0) || (luminance > 100))
         quit("!SetTint: invalid parameter. R,G,B must be 0-255, opacity & luminance 0-100");
 
-    DEBUG_CONSOLE("Set ambient tint RGB(%d,%d,%d) %d%%", red, green, blue, opacity);
+    debug_script_log("Set ambient tint RGB(%d,%d,%d) %d%%", red, green, blue, opacity);
 
+    play.rtint_enabled = opacity > 0;
     play.rtint_red = red;
     play.rtint_green = green;
     play.rtint_blue = blue;
     play.rtint_level = opacity;
     play.rtint_light = (luminance * 25) / 10;
+}
+
+void SetAmbientLightLevel(int light_level)
+{
+    light_level = Math::Clamp(-100, 100, light_level);
+
+    play.rtint_enabled = light_level != 0;
+    play.rtint_level = 0;
+    play.rtint_light = light_level;
 }
 
 extern ScriptPosition last_in_dialog_request_script_pos;
@@ -69,7 +83,7 @@ void NewRoom(int nrnum) {
     }
 
 
-    DEBUG_CONSOLE("Room change requested to room %d", nrnum);
+    debug_script_log("Room change requested to room %d", nrnum);
     EndSkippingUntilCharStops();
 
     can_run_delayed_command();
@@ -120,9 +134,7 @@ void NewRoom(int nrnum) {
 
 
 void NewRoomEx(int nrnum,int newx,int newy) {
-
     Character_ChangeRoom(playerchar, nrnum, newx, newy);
-
 }
 
 void NewRoomNPC(int charid, int nrnum, int newx, int newy) {
@@ -143,17 +155,12 @@ void ResetRoom(int nrnum) {
     if (isRoomStatusValid(nrnum))
     {
         RoomStatus* roomstat = getRoomStatus(nrnum);
-        if (roomstat->beenhere)
-        {
-            if (roomstat->tsdata != NULL)
-                free(roomstat->tsdata);
-            roomstat->tsdata = NULL;
-            roomstat->tsdatasize = 0;
-        }
+        roomstat->FreeScriptData();
+        roomstat->FreeProperties();
         roomstat->beenhere = 0;
     }
 
-    DEBUG_CONSOLE("Room %d reset to original state", nrnum);
+    debug_script_log("Room %d reset to original state", nrnum);
 }
 
 int HasPlayerBeenInRoom(int roomnum) {
@@ -173,7 +180,7 @@ void CallRoomScript (int value) {
 
     play.roomscript_finished = 0;
     RuntimeScriptValue rval_null;
-    curscript->run_another("$on_call", RuntimeScriptValue().SetInt32(value), rval_null /*0*/);
+    curscript->run_another("on_call", kScInstRoom, 1, RuntimeScriptValue().SetInt32(value), rval_null);
 }
 
 int HasBeenToRoom (int roomnum) {
@@ -186,12 +193,9 @@ int HasBeenToRoom (int roomnum) {
         return 0;
 }
 
-int GetRoomProperty (const char *property) {
-    return get_int_property (&thisroom.roomProps, property);
-}
-
-void GetRoomPropertyText (const char *property, char *bufer) {
-    get_text_property (&thisroom.roomProps, property, bufer);
+void GetRoomPropertyText (const char *property, char *bufer)
+{
+    get_text_property(thisroom.roomProps, croom->roomProps, property, bufer);
 }
 
 void SetBackgroundFrame(int frnum) {

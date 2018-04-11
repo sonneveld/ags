@@ -20,7 +20,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "gfx/ali3d.h"
+#include <allegro.h>
+#include <allegro/platform/aintwin.h>
 #include "ac/common.h"
 #include "ac/draw.h"
 #include "ac/gamesetup.h"
@@ -34,12 +35,14 @@
 #include "main/engine.h"
 #include "media/audio/audio.h"
 #include "platform/base/agsplatformdriver.h"
+#include "platform/windows/setup/winsetup.h"
 #include "plugin/agsplugin.h"
 #include "util/file.h"
 #include "util/stream.h"
 #include "util/string_utils.h"
 
 using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern GameSetupStruct game;
 extern GameSetup usetup;
@@ -51,6 +54,7 @@ extern Bitmap *virtual_screen;
 #include <shlobj.h>
 #include <time.h>
 #include <shlwapi.h>
+#include <windows.h>
 #ifdef VS2005
 #include <rpcsal.h>
 #endif
@@ -84,13 +88,11 @@ String win32OutputDirectory;
 
 const unsigned int win32TimerPeriod = 1;
 
-extern "C" HWND allegro_wnd;
 extern void dxmedia_abort_video();
 extern void dxmedia_pause_video();
 extern void dxmedia_resume_video();
 extern char lastError[200];
 extern SetupReturnValue acwsetup(const ConfigTree &cfg_in, ConfigTree &cfg_out, const String &game_data_dir, const char*, const char*);
-extern void set_icon();
 
 struct AGSWin32 : AGSPlatformDriver {
   AGSWin32();
@@ -103,9 +105,9 @@ struct AGSWin32 : AGSPlatformDriver {
   virtual const char *GetAllUsersDataDirectory();
   virtual const char *GetUserSavedgamesDirectory();
   virtual const char *GetUserConfigDirectory();
+  virtual const char *GetUserGlobalConfigDirectory();
   virtual const char *GetAppOutputDirectory();
   virtual const char *GetIllegalFileChars();
-  virtual const char *GetFileWriteTroubleshootingText();
   virtual const char *GetGraphicsTroubleshootingText();
   virtual unsigned long GetDiskFreeSpaceMB();
   virtual const char* GetNoMouseErrorString();
@@ -120,11 +122,19 @@ struct AGSWin32 : AGSPlatformDriver {
   virtual void SetGameWindowIcon();
   virtual void ShutdownCDPlayer();
   virtual void WriteStdOut(const char *fmt, ...);
-  virtual void DisplaySwitchOut() ;
-  virtual void DisplaySwitchIn() ;
+  virtual void DisplaySwitchOut();
+  virtual void DisplaySwitchIn();
+  virtual void PauseApplication();
+  virtual void ResumeApplication();
+  virtual void GetSystemDisplayModes(std::vector<Engine::DisplayMode> &dms);
+  virtual bool EnterFullscreenMode(const Engine::DisplayMode &dm);
+  virtual bool ExitFullscreenMode();
+  virtual void AdjustWindowStyleForFullscreen();
+  virtual void RestoreWindowStyle();
   virtual void RegisterGameWithGameExplorer();
   virtual void UnRegisterGameWithGameExplorer();
   virtual int  ConvertKeycodeToScanCode(int keyCode);
+  virtual void ValidateWindowSize(int &x, int &y, bool borderless) const;
   virtual bool LockMouseToWindow();
   virtual void UnlockMouse();
 
@@ -138,12 +148,14 @@ private:
   void register_file_extension(const char *exePath);
   void unregister_file_extension();
 
+  bool SetSystemDisplayMode(const DisplayMode &dm, bool fullscreen);
+
   bool _isDebuggerPresent; // indicates if the win app is running in the context of a debugger
+  DisplayMode _preFullscreenMode; // saved display mode before switching system to fullscreen
 };
 
 AGSWin32::AGSWin32() {
   _isDebuggerPresent = ::IsDebuggerPresent() != FALSE;
-  allegro_wnd = NULL;
 }
 
 void check_parental_controls() {
@@ -389,7 +401,7 @@ void AGSWin32::update_game_explorer(bool add)
   HRESULT hr = CoCreateInstance( __uuidof(GameExplorer), NULL, CLSCTX_INPROC_SERVER, __uuidof(IGameExplorer), (void**)&pFwGameExplorer);
   if( FAILED(hr) || pFwGameExplorer == NULL ) 
   {
-    Out::FPrint("Game Explorer not found to register game, Windows Vista required");
+    Debug::Printf(kDbgMsg_Warn, "Game Explorer not found to register game, Windows Vista required");
   }
   else 
   {
@@ -524,17 +536,44 @@ void AGSWin32::PostAllegroInit(bool windowed)
   // Sleep() don't take more time than specified
   MMRESULT result = timeBeginPeriod(win32TimerPeriod);
   if (result != TIMERR_NOERROR)
-    Out::FPrint("Failed to set the timer resolution to %d ms", win32TimerPeriod);
+    Debug::Printf(kDbgMsg_Error, "Failed to set the timer resolution to %d ms", win32TimerPeriod);
 }
 
 typedef UINT (CALLBACK* Dynamic_SHGetKnownFolderPathType) (GUID& rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath); 
 GUID FOLDERID_SAVEDGAMES = {0x4C5C32FF, 0xBB9D, 0x43b0, {0xB5, 0xB4, 0x2D, 0x72, 0xE5, 0x4E, 0xAA, 0xA4}}; 
+#define _WIN32_WINNT_VISTA              0x0600
+#define VER_MINORVERSION                0x0000001
+#define VER_MAJORVERSION                0x0000002
+#define VER_SERVICEPACKMAJOR            0x0000020
+#define VER_GREATER_EQUAL               3
+
+// These helpers copied from VersionHelpers.h in the Windows 8.1 SDK
+bool IsWindowsVersionOrGreater(WORD wMajorVersion, WORD wMinorVersion, WORD wServicePackMajor)
+{
+  OSVERSIONINFOEXW osvi = { sizeof(osvi), 0, 0, 0, 0,{ 0 }, 0, 0 };
+  DWORDLONG        const dwlConditionMask = VerSetConditionMask(
+    VerSetConditionMask(
+      VerSetConditionMask(
+        0, VER_MAJORVERSION, VER_GREATER_EQUAL),
+      VER_MINORVERSION, VER_GREATER_EQUAL),
+    VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
+
+  osvi.dwMajorVersion = wMajorVersion;
+  osvi.dwMinorVersion = wMinorVersion;
+  osvi.wServicePackMajor = wServicePackMajor;
+
+  return VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR, dwlConditionMask) != FALSE;
+}
+
+bool IsWindowsVistaOrGreater() {
+  return IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_VISTA), LOBYTE(_WIN32_WINNT_VISTA), 0);
+}
 
 void determine_app_data_folder()
 {
   if (win32AppDataDirectory[0] != 0) 
   {
-    //already worked it out
+    // already discovered
     return;
   }
 
@@ -556,48 +595,54 @@ void determine_saved_games_folder()
 {
   if (win32SavedGamesDirectory[0] != 0)
   {
-    // already loaded
+    // already discovered
     return;
   }
 
-  // Default to My Documents in case it's not Vista
-  WCHAR unicodeSaveGameDir[MAX_PATH];
-  WCHAR unicodeShortSaveGameDir[MAX_PATH];
-  // workaround for case where My Documents path has unicode chars (eg.
-  // with Russian Windows) -- so use Short File Name instead
-  SHGetSpecialFolderPathW(NULL, unicodeSaveGameDir, CSIDL_PERSONAL, FALSE);
-  if (GetShortPathNameW(unicodeSaveGameDir, unicodeShortSaveGameDir, MAX_PATH) == 0)
+  WCHAR unicodeSaveGameDir[MAX_PATH] = L"";
+  WCHAR unicodeShortSaveGameDir[MAX_PATH] = L"";
+
+  if (IsWindowsVistaOrGreater())
   {
-    platform->DisplayAlert("Unable to get My Documents dir: GetShortPathNameW failed");
-    return;
+    HINSTANCE hShellDLL = LoadLibrary("shell32.dll");
+    Dynamic_SHGetKnownFolderPathType Dynamic_SHGetKnownFolderPath = (Dynamic_SHGetKnownFolderPathType)GetProcAddress(hShellDLL, "SHGetKnownFolderPath");
+
+    if (Dynamic_SHGetKnownFolderPath != NULL)
+    {
+      PWSTR path = NULL;
+      if (SUCCEEDED(Dynamic_SHGetKnownFolderPath(FOLDERID_SAVEDGAMES, 0, NULL, &path)))
+      {
+        if (GetShortPathNameW(path, unicodeShortSaveGameDir, MAX_PATH) > 0) {
+          WideCharToMultiByte(CP_ACP, 0, unicodeShortSaveGameDir, -1, win32SavedGamesDirectory, MAX_PATH, NULL, NULL);
+        }
+        CoTaskMemFree(path);
+      }
+    }
+
+    FreeLibrary(hShellDLL);
   }
-  WideCharToMultiByte(CP_ACP, 0, unicodeShortSaveGameDir, -1, win32SavedGamesDirectory, MAX_PATH, NULL, NULL);
-  strcat(win32SavedGamesDirectory, "\\My Saved Games");
-
-  // Now see if we have a Vista "My Saved Games" folder
-  HINSTANCE hShellDLL = NULL;
-  Dynamic_SHGetKnownFolderPathType Dynamic_SHGetKnownFolderPath = NULL;
-
-  hShellDLL = LoadLibrary("shell32.dll"); 
-
-  Dynamic_SHGetKnownFolderPath = (Dynamic_SHGetKnownFolderPathType)GetProcAddress(hShellDLL, "SHGetKnownFolderPath");
-
-  if (Dynamic_SHGetKnownFolderPath != NULL) 
-  { 
-    PWSTR path = NULL; 
-
-    if (SUCCEEDED(Dynamic_SHGetKnownFolderPath(FOLDERID_SAVEDGAMES, 0, NULL, &path))) 
-    { 
-      GetShortPathNameW(path, unicodeShortSaveGameDir, MAX_PATH);
-      WideCharToMultiByte(CP_ACP, 0, unicodeShortSaveGameDir, -1, win32SavedGamesDirectory, MAX_PATH, NULL, NULL ); 
-
-      CoTaskMemFree(path);
+  else
+  {
+    // Windows XP didn't have a "My Saved Games" folder, so create one under "My Documents"
+    SHGetSpecialFolderPathW(NULL, unicodeSaveGameDir, CSIDL_PERSONAL, FALSE);
+    // workaround for case where My Documents path has unicode chars (eg.
+    // with Russian Windows) -- so use Short File Name instead
+    if (GetShortPathNameW(unicodeSaveGameDir, unicodeShortSaveGameDir, MAX_PATH) > 0)
+    {
+      WideCharToMultiByte(CP_ACP, 0, unicodeShortSaveGameDir, -1, win32SavedGamesDirectory, MAX_PATH, NULL, NULL);
+      strcat(win32SavedGamesDirectory, "\\My Saved Games");
+      mkdir(win32SavedGamesDirectory);
     }
   }
 
-  FreeLibrary(hShellDLL);
-  // in case it's on XP My Documents\My Saved Games, create this part of the path
-  mkdir(win32SavedGamesDirectory);
+  // Fallback to a subdirectory of the app data directory
+  if (win32SavedGamesDirectory[0] == '\0')
+  {
+    determine_app_data_folder();
+    strcpy(win32SavedGamesDirectory, win32AppDataDirectory);
+    strcat(win32SavedGamesDirectory, "\\Saved Games");
+    mkdir(win32SavedGamesDirectory);
+  }
 }
 
 void DetermineAppOutputDirectory()
@@ -643,6 +688,12 @@ const char *AGSWin32::GetUserConfigDirectory()
   return win32SavedGamesDirectory;
 }
 
+const char *AGSWin32::GetUserGlobalConfigDirectory()
+{
+  DetermineAppOutputDirectory();
+  return win32OutputDirectory;
+}
+
 const char *AGSWin32::GetAppOutputDirectory()
 {
   DetermineAppOutputDirectory();
@@ -654,15 +705,10 @@ const char *AGSWin32::GetIllegalFileChars()
     return "\\/:?\"<>|*";
 }
 
-const char *AGSWin32::GetFileWriteTroubleshootingText()
-{
-    return "If you are using Windows Vista or higher, you may need to right-click and Run as Administrator on the Setup application.";
-}
-
 const char *AGSWin32::GetGraphicsTroubleshootingText()
 {
   return "\n\nPossible causes:\n"
-    "* your graphics card drivers do not support this resolution. "
+    "* your graphics card drivers do not support requested resolution. "
     "Run the game setup program and try another resolution.\n"
     "* the graphics driver you have selected does not work. Try switching between Direct3D and DirectDraw.\n"
     "* the graphics filter you have selected does not work. Try another filter.\n"
@@ -672,12 +718,95 @@ const char *AGSWin32::GetGraphicsTroubleshootingText()
     "Run DXDiag using the Run command (Start->Run, type \"dxdiag.exe\") and correct any problems reported there.";
 }
 
-void AGSWin32::DisplaySwitchOut() {
-  dxmedia_pause_video();
+void AGSWin32::DisplaySwitchOut()
+{
+    // If we have explicitly set up fullscreen mode then minimize the window
+    if (_preFullscreenMode.IsValid())
+        ShowWindow(win_get_window(), SW_MINIMIZE);
 }
 
 void AGSWin32::DisplaySwitchIn() {
-  dxmedia_resume_video();
+    // If we have explicitly set up fullscreen mode then restore the window
+    if (_preFullscreenMode.IsValid())
+        ShowWindow(win_get_window(), SW_RESTORE);
+}
+
+void AGSWin32::PauseApplication()
+{
+    dxmedia_pause_video();
+}
+
+void AGSWin32::ResumeApplication()
+{
+    dxmedia_resume_video();
+}
+
+void AGSWin32::GetSystemDisplayModes(std::vector<DisplayMode> &dms)
+{
+    dms.clear();
+    GFX_MODE_LIST *gmlist = get_gfx_mode_list(GFX_DIRECTX);
+    for (int i = 0; i < gmlist->num_modes; ++i)
+    {
+        const GFX_MODE &m = gmlist->mode[i];
+        dms.push_back(DisplayMode(GraphicResolution(m.width, m.height, m.bpp)));
+    }
+    destroy_gfx_mode_list(gmlist);
+}
+
+bool AGSWin32::SetSystemDisplayMode(const DisplayMode &dm, bool fullscreen)
+{
+  DEVMODE devmode;
+  memset(&devmode, 0, sizeof(devmode));
+  devmode.dmSize = sizeof(devmode);
+  devmode.dmPelsWidth = dm.Width;
+  devmode.dmPelsHeight = dm.Height;
+  devmode.dmBitsPerPel = dm.ColorDepth;
+  devmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+  return ChangeDisplaySettings(&devmode, fullscreen ? CDS_FULLSCREEN : 0) == DISP_CHANGE_SUCCESSFUL;
+}
+
+bool AGSWin32::EnterFullscreenMode(const DisplayMode &dm)
+{
+  // Remember current mode
+  get_desktop_resolution(&_preFullscreenMode.Width, &_preFullscreenMode.Height);
+  _preFullscreenMode.ColorDepth = desktop_color_depth();
+
+  // Set requested desktop mode
+  return SetSystemDisplayMode(dm, true);
+}
+
+bool AGSWin32::ExitFullscreenMode()
+{
+  if (!_preFullscreenMode.IsValid())
+    return false;
+
+  DisplayMode dm = _preFullscreenMode;
+  _preFullscreenMode = DisplayMode();
+  return SetSystemDisplayMode(dm, false);
+}
+
+void AGSWin32::AdjustWindowStyleForFullscreen()
+{
+  // Remove the border in full-screen mode
+  Size sz;
+  get_desktop_resolution(&sz.Width, &sz.Height);
+  HWND allegro_wnd = win_get_window();
+  LONG winstyle = GetWindowLong(allegro_wnd, GWL_STYLE);
+  SetWindowLong(allegro_wnd, GWL_STYLE, (winstyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP);
+  SetWindowPos(allegro_wnd, HWND_TOP, 0, 0, sz.Width, sz.Height, 0);
+}
+
+void AGSWin32::RestoreWindowStyle()
+{
+  // Restore allegro window styles in case we modified them
+  restore_window_style();
+  HWND allegro_wnd = win_get_window();
+  LONG winstyle = GetWindowLong(allegro_wnd, GWL_STYLE);
+  SetWindowLong(allegro_wnd, GWL_STYLE, (winstyle & ~WS_POPUP)/* | WS_OVERLAPPEDWINDOW*/);
+  // For uncertain reasons WS_EX_TOPMOST (applied when creating fullscreen)
+  // cannot be removed with style altering functions; here use SetWindowPos
+  // as a workaround
+  SetWindowPos(win_get_window(), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 int AGSWin32::CDPlayerCommand(int cmdd, int datt) {
@@ -694,7 +823,7 @@ void AGSWin32::DisplayAlert(const char *text, ...) {
   va_start(ap, text);
   vsprintf(displbuf, text, ap);
   va_end(ap);
-  MessageBox(allegro_wnd, displbuf, "Adventure Game Studio", MB_OK | MB_ICONEXCLAMATION);
+  MessageBox(win_get_window(), displbuf, "Adventure Game Studio", MB_OK | MB_ICONEXCLAMATION);
 }
 
 int AGSWin32::GetLastSystemError()
@@ -822,22 +951,18 @@ void AGSWin32::AboutToQuitGame()
 }
 
 void AGSWin32::PostAllegroExit() {
-  allegro_wnd = NULL;
-
   // Release the timer setting
   timeEndPeriod(win32TimerPeriod);
 }
 
 SetupReturnValue AGSWin32::RunSetup(const ConfigTree &cfg_in, ConfigTree &cfg_out)
 {
-  const char *engineVersion = get_engine_version();
-  char titleBuffer[200];
-  sprintf(titleBuffer, "Adventure Game Studio v%s setup", engineVersion);
-  return acwsetup(cfg_in, cfg_out, usetup.data_files_dir, titleBuffer, engineVersion);
+  String version_str = String::FromFormat("Adventure Game Studio v%s setup", get_engine_version());
+  return AGS::Engine::WinSetup(cfg_in, cfg_out, usetup.data_files_dir, version_str);
 }
 
 void AGSWin32::SetGameWindowIcon() {
-  set_icon();
+  SetWinIcon();
 }
 
 void AGSWin32::WriteStdOut(const char *fmt, ...) {
@@ -882,9 +1007,39 @@ int AGSWin32::ConvertKeycodeToScanCode(int keycode)
   return keycode;
 }
 
+void AGSWin32::ValidateWindowSize(int &x, int &y, bool borderless) const
+{
+    // MS Windows DirectDraw and Direct3D renderers do not support a window
+    // which exceeds the height of current desktop resolution
+    RECT rc;
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &rc, 0);
+    int cx = rc.right - rc.left;
+    int cy = rc.bottom - rc.top;
+    if (!borderless)
+    {
+        OSVERSIONINFO OS;
+        OS.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
+        GetVersionEx (&OS);
+
+        NONCLIENTMETRICS ncm;
+        size_t ncm_sz = sizeof(ncm);
+        if (OS.dwMajorVersion < 6)
+            ncm_sz -= sizeof(ncm.iPaddedBorderWidth);
+        ncm.cbSize = ncm_sz;
+        SystemParametersInfo(SPI_GETNONCLIENTMETRICS, ncm_sz, &ncm, 0);
+        int border = ncm.iBorderWidth * 2 + ncm.iCaptionHeight;
+        if (OS.dwMajorVersion >= 6)
+            border += ncm.iPaddedBorderWidth * 2;
+        cy -= border;
+    }
+    x = Math::Clamp(1, cx, x);
+    y = Math::Clamp(1, cy, y);
+}
+
 bool AGSWin32::LockMouseToWindow()
 {
     RECT rc;
+    HWND allegro_wnd = win_get_window();
     GetClientRect(allegro_wnd, &rc);
     ClientToScreen(allegro_wnd, (POINT*)&rc);
     ClientToScreen(allegro_wnd, (POINT*)&rc.right);
@@ -908,7 +1063,7 @@ AGSPlatformDriver* AGSPlatformDriver::GetDriver() {
 // *********** WINDOWS-SPECIFIC PLUGIN API FUNCTIONS *************
 
 HWND IAGSEngine::GetWindowHandle () {
-  return allegro_wnd;
+  return win_get_window();
 }
 LPDIRECTDRAW2 IAGSEngine::GetDirectDraw2 () {
   if (directdraw == NULL)

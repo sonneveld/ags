@@ -20,13 +20,24 @@
 
 #include "gui/guimain.h"
 
+using AGS::Common::GUIMain;
+
 int  _display_main(int xx,int yy,int wii,const char*todis,int blocking,int usingfont,int asspch, int isThought, int allowShrink, bool overlayPositionFixed);
 void _display_at(int xx,int yy,int wii,const char*todis,int blocking,int asspch, int isThought, int allowShrink, bool overlayPositionFixed);
 bool ShouldAntiAliasText();
 int GetTextDisplayTime (const char *text, int canberel=0);
 void wouttext_outline(Common::Bitmap *ds, int xxp, int yyp, int usingfont, color_t text_color, const char*texx);
 void wouttext_aligned (Common::Bitmap *ds, int usexp, int yy, int oriwid, int usingfont, color_t text_color, const char *text, int align);
-int wgetfontheight(int font);
+// TODO: GUI classes located in Common library do not make use of outlining,
+// need to find a way to make all code use same functions.
+// Get the maximal height of the given font, with possible outlining in mind
+int getfontheight_outlined(int font);
+// Get line spacing for the given font, with possible outlining in mind
+int getfontspacing_outlined(int font);
+// Get the distance between bottom one one line and top of the next line (may be negative!)
+int getfontlinegap(int font);
+// Gets the total maximal height of the given number of lines printed with the given font
+int getheightoflines(int font, int numlines);
 int wgettextwidth_compensate(const char *tex, int font);
 void do_corner(Common::Bitmap *ds, int sprn,int xx1,int yy1,int typx,int typy);
 int get_but_pic(GUIMain*guo,int indx);
@@ -44,5 +55,6 @@ int get_textwindow_top_border_height (int twgui);
 void draw_text_window(Common::Bitmap **text_window_ds, bool should_free_ds, int*xins,int*yins,int*xx,int*yy,int*wii,color_t *set_text_color,int ovrheight, int ifnum);
 void draw_text_window_and_bar(Common::Bitmap **text_window_ds, bool should_free_ds,
                               int*xins,int*yins,int*xx,int*yy,int*wii,color_t *set_text_color,int ovrheight=0, int ifnum=-1);
+int get_textwindow_padding(int ifnum);
 
 #endif // __AGS_EE_AC__DISPLAY_H

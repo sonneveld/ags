@@ -23,10 +23,8 @@ namespace Path
 bool IsDirectory(const String &filename)
 {
     struct stat st;
-    String fixed_path = filename;
     // stat() does not like trailing slashes, remove them
-    fixed_path.TrimRight('/');
-    fixed_path.TrimRight('\\');
+    String fixed_path = MakePathNoSlash(filename);
     if (stat(fixed_path, &st) == 0)
     {
         return (st.st_mode & S_IFMT) == S_IFDIR;
@@ -62,13 +60,28 @@ int ComparePaths(const String &path1, const String &path2)
     return cmp_result;
 }
 
+String GetDirectoryPath(const String &path)
+{
+    String dir = path;
+    if (IsFile(dir))
+    {
+        int slash_at = dir.FindCharReverse('/');
+        if (slash_at > 0)
+            dir.ClipMid(slash_at);
+    }
+    return dir;
+}
+
 bool IsSameOrSubDir(const String &parent, const String &path)
 {
     char can_parent[MAX_PATH];
     char can_path[MAX_PATH];
     char relative[MAX_PATH];
-    canonicalize_filename(can_parent, parent, MAX_PATH);
-    canonicalize_filename(can_path, path, MAX_PATH);
+    // canonicalize_filename treats "." as "./." (file in working dir)
+    const char *use_parent = parent == "." ? "./" : parent;
+    const char *use_path   = path   == "." ? "./" : path;
+    canonicalize_filename(can_parent, use_parent, MAX_PATH);
+    canonicalize_filename(can_path, use_path, MAX_PATH);
     const char *pstr = make_relative_filename(relative, can_parent, can_path, MAX_PATH);
     if (!pstr)
         return false;
@@ -90,13 +103,22 @@ void FixupPath(String &path)
     path.Replace('\\', '/');
 }
 
+String  MakePathNoSlash(const String &path)
+{
+    String dir_path = path;
+    FixupPath(dir_path);
+    dir_path.TrimRight('/');
+    return dir_path;
+}
+
 String MakeAbsolutePath(const String &path)
 {
     if (path.IsEmpty())
     {
         return "";
     }
-    String abs_path = path;
+    // canonicalize_filename treats "." as "./." (file in working dir)
+    String abs_path = path == "." ? "./" : path;
 #if defined (WINDOWS_VERSION)
     // NOTE: cannot use long path names in the engine, because it does not have unicode strings support
     //
@@ -114,6 +136,26 @@ String MakeAbsolutePath(const String &path)
     abs_path = buf;
     FixupPath(abs_path);
     return abs_path;
+}
+
+String FixupSharedFilename(const String &filename)
+{
+    const char *illegal_chars = "\\/:?\"<>|*";
+    String fixed_name = filename;
+    for (size_t i = 0; i < filename.GetLength(); ++i)
+    {
+        if (filename[i] < ' ')
+        {
+            fixed_name.SetAt(i, '_');
+        }
+        else
+        {
+            for (const char *ch_ptr = illegal_chars; *ch_ptr; ++ch_ptr)
+                if (filename[i] == *ch_ptr)
+                    fixed_name.SetAt(i, '_');
+        }
+    }
+    return fixed_name;
 }
 
 } // namespace Path

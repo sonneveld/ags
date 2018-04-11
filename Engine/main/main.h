@@ -18,14 +18,14 @@
 #ifndef __AGS_EE_MAIN__MAIN_H
 #define __AGS_EE_MAIN__MAIN_H
 
-#include "main/version.h"
+#include "util/version.h"
 
 // Current engine version
-extern AGS::Engine::Version EngineVersion;
+extern AGS::Common::Version EngineVersion;
 // Lowest savedgame version, accepted by this engine
-extern AGS::Engine::Version SavedgameLowestBackwardCompatVersion;
+extern AGS::Common::Version SavedgameLowestBackwardCompatVersion;
 // Lowest engine version, which would accept current savedgames
-extern AGS::Engine::Version SavedgameLowestForwardCompatVersion;
+extern AGS::Common::Version SavedgameLowestForwardCompatVersion;
 
 #if defined(WINDOWS_VERSION) && !defined(_DEBUG)
 #define USE_CUSTOM_EXCEPTION_HANDLER
@@ -34,16 +34,20 @@ extern AGS::Engine::Version SavedgameLowestForwardCompatVersion;
 //=============================================================================
 
 #ifdef WINDOWS_VERSION
+#ifndef _WINNT_
+typedef void *LPWSTR;
+#endif
 extern int wArgc;
 extern LPWSTR *wArgv;
 #endif
 extern char **global_argv;
+extern AGS::Common::String appDirectory;
 
 AGS::Common::String GetPathFromCmdArg(int arg_index);
 
 // Startup flags, set from parameters to engine
 extern int datafile_argv, change_to_game_dir, force_window;
-extern int override_start_room, force_16bit;
+extern int override_start_room;
 extern bool justRegisterGame;
 extern bool justUnRegisterGame;
 extern const char *loadSaveGameOnStartup;

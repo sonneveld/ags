@@ -1,20 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace AGS.Types
 {
+    [DeserializeIgnore("LastBuildConfiguration")]
+    [DeserializeIgnore("GraphicsDriver")]
+    [DefaultProperty("DebugMode")]
     public class Settings : ICustomTypeDescriptor
     {
         public const string PROPERTY_GAME_NAME = "Game name";
         public const string PROPERTY_COLOUR_DEPTH = "Colour depth";
         public const string PROPERTY_RESOLUTION = "Resolution";
-        public const string PROPERTY_SCALE_FONTS = "Fonts designed for 640x480";
+        public const string PROPERTY_SCALE_FONTS = "Fonts designed for high resolution";
 		public const string PROPERTY_ANTI_ALIAS_FONTS = "Anti-alias TTF fonts";
         public const string PROPERTY_LETTERBOX_MODE = "Enable letterbox mode";
+        public const string PROPERTY_BUILD_TARGETS = "Build target platforms";
+        public const string PROPERTY_RENDERATSCREENRES = "Render sprites at screen resolution";
 		public const string REGEX_FOUR_PART_VERSION = @"^(\d+)\.(\d+)\.(\d+)\.(\d+)$";
 
 		private const string DEFAULT_GENRE = "Adventure";
@@ -26,9 +33,8 @@ namespace AGS.Types
         }
 
         private string _gameName = "New game";
-        private GameResolutions _resolution = GameResolutions.R320x200;
+        private Size _resolution = new Size(320, 200);
         private GameColorDepth _colorDepth = GameColorDepth.HighColor;
-		private GraphicsDriver _graphicsDriver = GraphicsDriver.DX5;
         private bool _debugMode = true;
         private bool _antiGlideMode = true;
         private bool _walkInLookMode = false;
@@ -36,6 +42,7 @@ namespace AGS.Types
         private bool _pixelPerfect = true;
         private bool _autoMoveInWalkMode = true;
         private bool _letterboxMode = false;
+        private RenderAtScreenResolution _renderAtScreenRes = RenderAtScreenResolution.UserDefined;
         private int _splitResources = 0;
         private bool _turnBeforeWalking = true;
         private bool _turnBeforeFacing = true;
@@ -46,10 +53,15 @@ namespace AGS.Types
         private bool _inventoryCursors = true;
         private bool _handleInvInScript = false;
         private bool _displayMultipleInv = false;
+        private ScriptAPIVersion _scriptAPIVersion = ScriptAPIVersion.Highest;
+        private ScriptAPIVersion _scriptCompatLevel = ScriptAPIVersion.Highest;
+        private ScriptAPIVersion _scriptAPIVersionReal = Utilities.GetActualAPI(ScriptAPIVersion.Highest);
+        private ScriptAPIVersion _scriptCompatLevelReal = Utilities.GetActualAPI(ScriptAPIVersion.Highest);
         private bool _enforceObjectScripting = true;
         private bool _leftToRightPrecedence = true;
         private bool _enforceNewStrings = true;
         private bool _enforceNewAudio = true;
+        private bool _oldCustomDlgOptsAPI = false;
         private int _playSoundOnScore = 0;
         private CrossfadeSpeed _crossfadeMusic = CrossfadeSpeed.No;
         private int _dialogOptionsGUI = 0;
@@ -78,7 +90,7 @@ namespace AGS.Types
         private bool _runGameLoopsWhileDialogOptionsDisplayed = false;
         private InventoryHotspotMarker _inventoryHotspotMarker = new InventoryHotspotMarker();
         private bool _useLowResCoordinatesInScript = true;
-        // Vista game explorer fields
+        // Windows game explorer fields
 		private bool _enableGameExplorer = false;
 		private string _description = string.Empty;
 		private DateTime _releaseDate = DateTime.Now;
@@ -91,6 +103,38 @@ namespace AGS.Types
 		private bool _enhancedSaveGames = false;
         private string _saveGamesFolderName = string.Empty;
         private int _audioIndexer = 0;
+        private string _buildTargets = GetBuildTargetsString(BuildTargetsInfo.GetAvailableBuildTargetNames(), false);
+
+        /// <summary>
+        /// Helper function to validate the BuildTargets string. Excludes data file target
+        /// from the string unless it is the only target, and optionally checks that the
+        /// targets are available for building.
+        /// </summary>
+        private static string GetBuildTargetsString(string[] targets, bool checkAvailable)
+        {
+            if (targets.Length == 0) return BuildTargetsInfo.DATAFILE_TARGET_NAME;
+            List<string> availableTargets = null; // only retrieve available targets on request
+            if (checkAvailable) availableTargets = new List<string>(BuildTargetsInfo.GetAvailableBuildTargetNames());
+            List<string> resultTargetList = new List<string>(targets.Length);
+            foreach (string targ in targets)
+            {
+                if ((!checkAvailable) || (availableTargets.Contains(targ)))
+                {
+                    // only include data file target if it is the only target
+                    if ((targ != BuildTargetsInfo.DATAFILE_TARGET_NAME) || (targets.Length == 1))
+                    {
+                        resultTargetList.Add(targ);
+                    }
+                }
+            }
+            return string.Join(BuildTargetUIEditor.Separators[0], resultTargetList.ToArray());
+        }
+
+        private static string GetBuildTargetsString(string targetList, bool checkAvailable)
+        {
+            return GetBuildTargetsString(targetList.Split(BuildTargetUIEditor.Separators,
+                StringSplitOptions.RemoveEmptyEntries), checkAvailable);
+        }
 
 		public void GenerateNewGameID()
 		{
@@ -100,7 +144,7 @@ namespace AGS.Types
 
 		[DisplayName(PROPERTY_GAME_NAME)]
         [Description("The game's name (for display in the title bar)")]
-        [Category("(Setup)")]
+        [Category("(Basic properties)")]
         public string GameName
         {
             get { return _gameName; }
@@ -131,7 +175,7 @@ namespace AGS.Types
 
         [DisplayName(PROPERTY_COLOUR_DEPTH)]
         [Description("The colour depth of the game (higher gives better colour quality, but slower performance)")]
-        [Category("(Setup)")]
+        [Category("(Basic properties)")]
         [TypeConverter(typeof(EnumTypeConverter))]
         public GameColorDepth ColorDepth
         {
@@ -139,26 +183,87 @@ namespace AGS.Types
             set { _colorDepth = value; }
         }
 
-        [DisplayName(PROPERTY_RESOLUTION)]
-        [Description("The graphics resolution of the game (higher allows more detail, but slower performance and larger file size)")]
-        [Category("(Setup)")]
-        [TypeConverter(typeof(EnumTypeConverter))]
-        [RefreshProperties(RefreshProperties.All)]
+        [AGSNoSerialize]
+        [Browsable(false)]
+        [Obsolete("Old Resolution property of Enum type is replaced by CustomResolution of Size type.")]
         public GameResolutions Resolution
         {
-            get { return _resolution; }
-            set { _resolution = value; }
+            get { return GameResolutions.Custom; }
+            set
+            {
+                switch (value)
+                {
+                    case GameResolutions.R320x200:
+                        CustomResolution = new Size(320, 200); break;
+                    case GameResolutions.R320x240:
+                        CustomResolution = new Size(320, 240); break;
+                    case GameResolutions.R640x400:
+                        CustomResolution = new Size(640, 400); break;
+                    case GameResolutions.R640x480:
+                        CustomResolution = new Size(640, 480); break;
+                    case GameResolutions.R800x600:
+                        CustomResolution = new Size(800, 600); break;
+                    case GameResolutions.R1024x768:
+                        CustomResolution = new Size(1024, 768); break;
+                    case GameResolutions.R1280x720:
+                        CustomResolution = new Size(1280, 720); break;
+                    case GameResolutions.Custom:
+                        throw new ArgumentOutOfRangeException("You are not allowed to explicitly set Custom resolution type to the deprecated Settings.Resolution property.");
+                }
+            }
         }
 
-		[DisplayName("Default graphics driver")]
-		[Description("The default graphics driver that your game will use. Direct3D allows fast high-resolution alpha-blended sprites, but DirectDraw is better at RawDrawing.")]
-		[Category("(Setup)")]
-		[TypeConverter(typeof(EnumTypeConverter))]
-		public GraphicsDriver GraphicsDriver
-		{
-			get { return _graphicsDriver; }
-			set { _graphicsDriver = value; }
-		}
+        [DisplayName(PROPERTY_RESOLUTION)]
+        [Description("The graphics resolution of the game (higher allows more detail, but slower performance and larger file size)")]
+        [Category("(Basic properties)")]
+        [EditorAttribute(typeof(CustomResolutionUIEditor), typeof(System.Drawing.Design.UITypeEditor))]
+        [TypeConverter(typeof(CustomResolutionTypeConverter))]
+        [RefreshProperties(RefreshProperties.All)]
+        public Size CustomResolution
+        {
+            get { return _resolution; }
+            set
+            {
+                _resolution = value;
+                if (LegacyLetterboxResolution == GameResolutions.Custom)
+                    LetterboxMode = false;
+            }
+        }
+
+        /// <summary>
+        /// Tells if the game should be considered low-resolution.
+        /// For backwards-compatble logic only.
+        /// The "low resolution" assumes that game does not exceed
+        /// 320x240 pixels.
+        /// </summary>
+        [Browsable(false)]
+        public bool LowResolution
+        {
+            get
+            {
+                return (CustomResolution.Width * CustomResolution.Height) <= (320 * 240);
+            }
+        }
+
+        /// <summary>
+        /// Tells which of the legacy resolution types would be represented by
+        /// the current game resolution if designed in letterboxed mode.
+        /// Returns GameResolutions.Custom if current resolution cannot be used
+        /// for letterboxed design.
+        /// For backwards-compatible logic only.
+        /// </summary>
+        [Browsable(false)]
+        public GameResolutions LegacyLetterboxResolution
+        {
+            get
+            {
+                if (CustomResolution.Width == 320 && CustomResolution.Height == 200)
+                    return GameResolutions.R320x200;
+                if (CustomResolution.Width == 640 && CustomResolution.Height == 400)
+                    return GameResolutions.R640x400;
+                return GameResolutions.Custom;
+            }
+        }
 
         [DisplayName("Compress the sprite file")]
         [Description("Compress the sprite file to reduce its size, at the expense of performance")]
@@ -243,11 +348,15 @@ namespace AGS.Types
         [DisplayName("Enable letterbox mode")]
         [Description("Game will run at 320x240 or 640x480 with top and bottom black borders to give a square aspect ratio")]
         [DefaultValue(false)]
-        [Category("(Setup)")]
+        [Category("(Basic properties)")]
         public bool LetterboxMode
         {
             get { return _letterboxMode; }
-            set { _letterboxMode = value; }
+            set
+            {
+                if (value == false || LegacyLetterboxResolution != GameResolutions.Custom)
+                    _letterboxMode = value;
+            }
         }
 
         [DisplayName("Automatically move the player in Walk mode")]
@@ -417,6 +526,60 @@ namespace AGS.Types
             set { _displayMultipleInv = value; }
         }
 
+        [DisplayName("Script API version")]
+        [Description("Choose the version of the script API to use in your scripts")]
+        [DefaultValue(ScriptAPIVersion.Highest)]
+        [Category("Backwards Compatibility")]
+        [TypeConverter(typeof(EnumTypeConverter))]
+        public ScriptAPIVersion ScriptAPIVersion
+        {
+            get { return _scriptAPIVersion; }
+            set
+            {
+                _scriptAPIVersion = value;
+                _scriptAPIVersionReal = Utilities.GetActualAPI(_scriptAPIVersion);
+                if (_scriptAPIVersion < _scriptCompatLevel)
+                    ScriptCompatLevel = _scriptAPIVersion;
+            }
+        }
+
+        [DisplayName("Script compatibility level")]
+        [Description("Lowest version of the obsoleted script API to support in your script")]
+        [DefaultValue(ScriptAPIVersion.Highest)]
+        [Category("Backwards Compatibility")]
+        [TypeConverter(typeof(EnumTypeConverter))]
+        public ScriptAPIVersion ScriptCompatLevel
+        {
+            get { return _scriptCompatLevel; }
+            set
+            {
+                _scriptCompatLevel = value;
+                _scriptCompatLevelReal = Utilities.GetActualAPI(_scriptCompatLevel);
+                if (_scriptCompatLevel > _scriptAPIVersion)
+                    ScriptAPIVersion = _scriptCompatLevel;
+            }
+        }
+
+        /// <summary>
+        /// Returns actual current API version, even if project is set to use Highest
+        /// </summary>
+        [AGSNoSerialize]
+        [Browsable(false)]
+        public ScriptAPIVersion ScriptAPIVersionReal
+        {
+            get { return _scriptAPIVersionReal; }
+        }
+
+        /// <summary>
+        /// Returns actual current API compat level, even if project is set to use Highest
+        /// </summary>
+        [AGSNoSerialize]
+        [Browsable(false)]
+        public ScriptAPIVersion ScriptCompatLevelReal
+        {
+            get { return _scriptCompatLevelReal; }
+        }
+
         [DisplayName("Enforce object-based scripting")]
         [Description("Disable old-style AGS 2.62 script commands")]
         [DefaultValue(true)]
@@ -445,6 +608,16 @@ namespace AGS.Types
         {
             get { return _enforceNewAudio; }
             set { _enforceNewAudio = value; }
+        }
+
+        [DisplayName("Use old-style custom dialog options API")]
+        [Description("Use pre-3.4.0 callback functions to handle custom dialog options GUI")]
+        [DefaultValue(false)]
+        [Category("Backwards Compatibility")]
+        public bool UseOldCustomDialogOptionsAPI
+        {
+            get { return _oldCustomDlgOptsAPI; }
+            set { _oldCustomDlgOptsAPI = value; }
         }
 
         [DisplayName("Left-to-right operator precedence")]
@@ -617,7 +790,7 @@ namespace AGS.Types
         }
 
         [DisplayName(PROPERTY_SCALE_FONTS)]
-        [Description("Tells AGS that your fonts are designed for 640x480, and therefore not to scale them up at this resolution")]
+        [Description("Tells AGS that your fonts are designed for high resolution (higher than 320x240), and therefore not to scale them up in hi-res game")]
         [DefaultValue(false)]
         [Category("Text output")]
         public bool FontsForHiRes
@@ -658,7 +831,7 @@ namespace AGS.Types
 
         [DisplayName("Maximum possible score")]
         [Description("The maximum score that the player can achieve (displayed by @TOTALSCORE@ on GUI labels)")]
-        [Category("(Setup)")]
+        [Category("(Basic properties)")]
         public int MaximumScore
         {
             get { return _totalScore; }
@@ -674,7 +847,7 @@ namespace AGS.Types
 
 		[DisplayName("Enable Game Explorer integration")]
 		[Description("Whether or not this game can be added to the Vista Game Explorer")]
-		[Category("Windows Vista Game Explorer")]
+		[Category("Windows Game Explorer")]
 		public bool GameExplorerEnabled
 		{
 			get { return _enableGameExplorer; }
@@ -683,7 +856,7 @@ namespace AGS.Types
 
 		[DisplayName("Game description")]
 		[Description("The Description displayed in the Game Explorer")]
-		[Category("Windows Vista Game Explorer")]
+		[Category("Windows Game Explorer")]
 		public string Description
 		{
 			get { return _description; }
@@ -692,7 +865,7 @@ namespace AGS.Types
 
 		[DisplayName("Release date")]
 		[Description("Date on which this game is first released")]
-		[Category("Windows Vista Game Explorer")]
+		[Category("Windows Game Explorer")]
 		public DateTime ReleaseDate
 		{
 			get { return _releaseDate; }
@@ -701,7 +874,7 @@ namespace AGS.Types
 
 		[DisplayName("Genre")]
 		[Description("The Genre displayed in the Game Explorer")]
-		[Category("Windows Vista Game Explorer")]
+		[Category("Windows Game Explorer")]
 		public string Genre
 		{
 			get { return _genre; }
@@ -710,7 +883,7 @@ namespace AGS.Types
 
 		[DisplayName("Version")]
 		[Description("The Version displayed in the Game Explorer")]
-		[Category("Windows Vista Game Explorer")]
+		[Category("Windows Game Explorer")]
 		public string Version
 		{
 			get { return _version; }
@@ -726,8 +899,8 @@ namespace AGS.Types
 		}
 
 		[DisplayName("Windows Experience Index")]
-		[Description("The minimum Vista Experience Index necessary to play the game")]
-		[Category("Windows Vista Game Explorer")]
+		[Description("The minimum Windows Experience Index necessary to play the game")]
+		[Category("Windows Game Explorer")]
 		public int WindowsExperienceIndex
 		{
 			get { return _windowsExperienceIndex; }
@@ -735,8 +908,8 @@ namespace AGS.Types
 		}
 
 		[DisplayName("Developer name")]
-		[Description("The name of the game developer (you!). Displayed on the game EXE in Explorer, and in the Vista Game Explorer.")]
-        [Category("(Setup)")]
+		[Description("The name of the game developer (you!). Displayed on the game EXE in Explorer, and in the Windows Game Explorer.")]
+        [Category("(Basic properties)")]
 		public string DeveloperName
 		{
 			get { return _developerName; }
@@ -745,7 +918,7 @@ namespace AGS.Types
 
 		[DisplayName("Developer website")]
 		[Description("URL of game developer's website")]
-		[Category("Windows Vista Game Explorer")]
+		[Category("Windows Game Explorer")]
 		public string DeveloperURL
 		{
 			get { return _developerURL; }
@@ -787,7 +960,7 @@ namespace AGS.Types
 		}
 
         [DisplayName("Save games folder name")]
-        [Description("If set, creates a folder of this name inside the user's Saved Games folder in Vista (or My Documents in XP) to store the save games in.")]
+        [Description("If set, creates a folder of this name inside the user's Saved Games folder in Windows Vista and higher (or My Documents in XP) to store the save games in.")]
         [Category("Saved Games")]
         public string SaveGameFolderName
         {
@@ -818,7 +991,7 @@ namespace AGS.Types
 
         [DisplayName("Put sound and sprite files in source control")]
         [Description("If you are using a source control provider, this controls whether the sound and sprite files are added to source control. With large games, these files can become extremely large and therefore you may wish to exclude them from source control.")]
-        [Category("(Setup)")]
+        [Category("(Basic properties)")]
         public bool BinaryFilesInSourceControl
         {
             get { return _binaryFilesInSourceControl; }
@@ -832,6 +1005,20 @@ namespace AGS.Types
             set { _audioIndexer = value; }
         }
 
+        [DisplayName(PROPERTY_BUILD_TARGETS)]
+        [Description("Sets the platforms to compile your game for.")]
+        [Category("Compiler")]
+        [Editor(typeof(BuildTargetUIEditor), typeof(System.Drawing.Design.UITypeEditor))]
+        public string BuildTargets
+        {
+            get { return _buildTargets; }
+
+            set
+            {
+                _buildTargets = GetBuildTargetsString(value, true);
+            }
+        }
+
         public void ToXml(XmlTextWriter writer)
         {
             SerializeUtils.SerializeToXML(this, writer);
@@ -839,7 +1026,6 @@ namespace AGS.Types
 
         public void FromXml(XmlNode node)
         {
-			_graphicsDriver = GraphicsDriver.DX5;
             _totalScore = 0;
 			_guid = Guid.Empty;
 			_enableGameExplorer = false;
@@ -872,6 +1058,17 @@ namespace AGS.Types
             {
                 this.SaveGameFolderName = _gameName;
             }
+        }
+
+        [DisplayName("Render sprites at screen resolution")]
+        [Description("When drawing zoomed character and object sprites, AGS will take advantage of higher runtime resolution to give scaled images more detail, than it would be possible if the game was displayed in its native resolution. The effect is stronger for low-res games. Keep disabled for pixel-perfect output. Currently supported only by Direct3D and OpenGL renderers.")]
+        [DefaultValue(RenderAtScreenResolution.UserDefined)]
+        [Category("(Basic properties)")]
+        [TypeConverter(typeof(EnumTypeConverter))]
+        public RenderAtScreenResolution RenderAtScreenResolution
+        {
+            get { return _renderAtScreenRes; }
+            set { _renderAtScreenRes = value; }
         }
 
         #region ICustomTypeDescriptor Members
@@ -941,9 +1138,9 @@ namespace AGS.Types
                 {
                     wantThisProperty = false;
                 }
-                else if ((_resolution != GameResolutions.R320x200) && 
-                         (_resolution != GameResolutions.R640x400) &&
-                         (property.Name == "LetterboxMode"))
+                // TODO: this must be done other way; leaving for backwards-compatibility only
+                else if (property.Name == "LetterboxMode" &&
+                    LegacyLetterboxResolution == GameResolutions.Custom)
                 {
                     // Only show letterbox option for 320x200 and 640x400 games
                     wantThisProperty = false;

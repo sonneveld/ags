@@ -64,7 +64,9 @@
 #include "ac/mouse.h"
 #include "ac/parser.h"
 #include "ac/string.h"
+#include "ac/room.h"
 #include "media/audio/audio.h"
+#include "media/video/video.h"
 #include "util/string_utils.h"
 
 #include "ac/dynobj/scriptstring.h"
@@ -731,12 +733,6 @@ RuntimeScriptValue Sc_GetRegionAt(const RuntimeScriptValue *params, int32_t para
     API_SCALL_INT_PINT2(GetRegionAt);
 }
 
-// int  (const char *property)
-RuntimeScriptValue Sc_GetRoomProperty(const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_SCALL_INT_POBJ(GetRoomProperty, const char);
-}
-
 // void  (const char *property, char *bufer)
 RuntimeScriptValue Sc_GetRoomPropertyText(const RuntimeScriptValue *params, int32_t param_count)
 {
@@ -777,6 +773,16 @@ RuntimeScriptValue Sc_GetTextHeight(const RuntimeScriptValue *params, int32_t pa
 RuntimeScriptValue Sc_GetTextWidth(const RuntimeScriptValue *params, int32_t param_count)
 {
     API_SCALL_INT_POBJ_PINT(GetTextWidth, const char);
+}
+
+RuntimeScriptValue Sc_GetFontHeight(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_INT_PINT(GetFontHeight);
+}
+
+RuntimeScriptValue Sc_GetFontLineSpacing(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_INT_PINT(GetFontLineSpacing);
 }
 
 // int (int whatti)
@@ -1221,12 +1227,6 @@ RuntimeScriptValue Sc_scrPlayVideo(const RuntimeScriptValue *params, int32_t par
     API_SCALL_VOID_POBJ_PINT2(scrPlayVideo, const char);
 }
 
-// void (int xx,int yy,int mood)
-RuntimeScriptValue Sc_ProcessClick(const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_SCALL_VOID_PINT3(ProcessClick);
-}
-
 // void (int dialog)
 RuntimeScriptValue Sc_QuitGame(const RuntimeScriptValue *params, int32_t param_count)
 {
@@ -1503,6 +1503,11 @@ RuntimeScriptValue Sc_SetActiveInventory(const RuntimeScriptValue *params, int32
 RuntimeScriptValue Sc_SetAmbientTint(const RuntimeScriptValue *params, int32_t param_count)
 {
     API_SCALL_VOID_PINT5(SetAmbientTint);
+}
+
+RuntimeScriptValue Sc_SetAmbientLightLevel(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_VOID_PINT(SetAmbientLightLevel);
 }
 
 // void (int area, int brightness)
@@ -2380,7 +2385,7 @@ void RegisterGlobalAPI()
 	ccAddExternalStaticFunction("GetPlayerCharacter",       Sc_GetPlayerCharacter);
 	ccAddExternalStaticFunction("GetRawTime",               Sc_GetRawTime);
 	ccAddExternalStaticFunction("GetRegionAt",              Sc_GetRegionAt);
-	ccAddExternalStaticFunction("GetRoomProperty",          Sc_GetRoomProperty);
+	ccAddExternalStaticFunction("GetRoomProperty",          Sc_Room_GetProperty);
 	ccAddExternalStaticFunction("GetRoomPropertyText",      Sc_GetRoomPropertyText);
 	ccAddExternalStaticFunction("GetSaveSlotDescription",   Sc_GetSaveSlotDescription);
 	ccAddExternalStaticFunction("GetScalingAt",             Sc_GetScalingAt);
@@ -2388,6 +2393,8 @@ void RegisterGlobalAPI()
 	ccAddExternalStaticFunction("GetTextBoxText",           Sc_GetTextBoxText);
 	ccAddExternalStaticFunction("GetTextHeight",            Sc_GetTextHeight);
 	ccAddExternalStaticFunction("GetTextWidth",             Sc_GetTextWidth);
+	ccAddExternalStaticFunction("GetFontHeight",            Sc_GetFontHeight);
+	ccAddExternalStaticFunction("GetFontLineSpacing",       Sc_GetFontLineSpacing);
 	ccAddExternalStaticFunction("GetTime",                  Sc_sc_GetTime);
 	ccAddExternalStaticFunction("GetTranslation",           Sc_get_translation);
 	ccAddExternalStaticFunction("GetTranslationName",       Sc_GetTranslationName);
@@ -2463,7 +2470,6 @@ void RegisterGlobalAPI()
 	ccAddExternalStaticFunction("PlaySoundEx",              Sc_PlaySoundEx);
 	ccAddExternalStaticFunction("PlaySpeech",               Sc_scr_play_speech);
 	ccAddExternalStaticFunction("PlayVideo",                Sc_scrPlayVideo);
-	ccAddExternalStaticFunction("ProcessClick",             Sc_ProcessClick);
 	ccAddExternalStaticFunction("QuitGame",                 Sc_QuitGame);
 	ccAddExternalStaticFunction("Random",                   Sc_Rand);
 	ccAddExternalStaticFunction("RawClearScreen",           Sc_RawClear);
@@ -2512,6 +2518,7 @@ void RegisterGlobalAPI()
 	ccAddExternalStaticFunction("SeekMP3PosMillis",         Sc_SeekMP3PosMillis);
 	ccAddExternalStaticFunction("SetActiveInventory",       Sc_SetActiveInventory);
 	ccAddExternalStaticFunction("SetAmbientTint",           Sc_SetAmbientTint);
+    ccAddExternalStaticFunction("SetAmbientLightLevel",     Sc_SetAmbientLightLevel);
 	ccAddExternalStaticFunction("SetAreaLightLevel",        Sc_SetAreaLightLevel);
 	ccAddExternalStaticFunction("SetAreaScaling",           Sc_SetAreaScaling);
 	ccAddExternalStaticFunction("SetBackgroundFrame",       Sc_SetBackgroundFrame);
@@ -2747,7 +2754,7 @@ void RegisterGlobalAPI()
     ccAddExternalFunctionForPlugin("GetPlayerCharacter",       (void*)GetPlayerCharacter);
     ccAddExternalFunctionForPlugin("GetRawTime",               (void*)GetRawTime);
     ccAddExternalFunctionForPlugin("GetRegionAt",              (void*)GetRegionAt);
-    ccAddExternalFunctionForPlugin("GetRoomProperty",          (void*)GetRoomProperty);
+    ccAddExternalFunctionForPlugin("GetRoomProperty",          (void*)Room_GetProperty);
     ccAddExternalFunctionForPlugin("GetRoomPropertyText",      (void*)GetRoomPropertyText);
     ccAddExternalFunctionForPlugin("GetSaveSlotDescription",   (void*)GetSaveSlotDescription);
     ccAddExternalFunctionForPlugin("GetScalingAt",             (void*)GetScalingAt);

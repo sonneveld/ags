@@ -17,6 +17,7 @@
 //=============================================================================
 
 #include "util/wgt2allg.h"
+#include "ac/file.h"
 #include "media/audio/audiodefines.h"
 #include "media/audio/sound.h"
 #include "media/audio/audiointernaldefs.h"
@@ -45,6 +46,12 @@
 #error Either JGMOD_MOD_PLAYER or DUMB_MOD_PLAYER should be defined.
 #endif
 
+extern "C"
+{
+// Load MIDI from PACKFILE stream
+MIDI *load_midi_pf(PACKFILE *pf);
+}
+
 int numSoundChannels = 8;
 
 
@@ -59,20 +66,11 @@ int use_extra_sound_offset = 0;
 
 
 MYWAVE *thiswave;
-SOUNDCLIP *my_load_wave(const char *filename, int voll, int loop)
+SOUNDCLIP *my_load_wave(const AssetPath &asset_name, int voll, int loop)
 {
-#ifdef MAC_VERSION
-    SAMPLE *new_sample = NULL;
-    PACKFILE* wavin = pack_fopen(filename, "rb");
-    if (wavin != NULL) {
-      new_sample = load_wav_pf(wavin);
-      pack_fclose(wavin);
-    }
-#else
     // Load via soundcache.
     long dummy;
-    SAMPLE *new_sample = (SAMPLE*)get_cached_sound(filename, true, &dummy);
-#endif
+    SAMPLE *new_sample = (SAMPLE*)get_cached_sound(asset_name, true, &dummy);
 
     if (new_sample == NULL)
         return NULL;
@@ -81,7 +79,7 @@ SOUNDCLIP *my_load_wave(const char *filename, int voll, int loop)
     thiswave->wave = new_sample;
     thiswave->vol = voll;
     thiswave->firstTime = 1;
-    thiswave->repeat = loop;
+    thiswave->repeat = (loop != 0);
 
     return thiswave;
 }
@@ -91,9 +89,9 @@ PACKFILE *mp3in;
 #ifndef NO_MP3_PLAYER
 
 MYMP3 *thistune;
-SOUNDCLIP *my_load_mp3(const char *filname, int voll)
+SOUNDCLIP *my_load_mp3(const AssetPath &asset_name, int voll)
 {
-    mp3in = pack_fopen(filname, "rb");
+    mp3in = PackfileFromAsset(asset_name);
     if (mp3in == NULL)
         return NULL;
 
@@ -133,11 +131,11 @@ SOUNDCLIP *my_load_mp3(const char *filname, int voll)
 
 
 MYSTATICMP3 *thismp3;
-SOUNDCLIP *my_load_static_mp3(const char *filname, int voll, bool loop)
+SOUNDCLIP *my_load_static_mp3(const AssetPath &asset_name, int voll, bool loop)
 {
     // Load via soundcache.
     long muslen = 0;
-    char* mp3buffer = get_cached_sound(filname, false, &muslen);
+    char* mp3buffer = get_cached_sound(asset_name, false, &muslen);
     if (mp3buffer == NULL)
         return NULL;
 
@@ -170,12 +168,12 @@ SOUNDCLIP *my_load_static_mp3(const char *filname, int voll, bool loop)
 
 #else // NO_MP3_PLAYER
 
-SOUNDCLIP *my_load_mp3(const char *filname, int voll)
+SOUNDCLIP *my_load_mp3(const AssetPath &asset_name, int voll)
 {
     return NULL;
 }
 
-SOUNDCLIP *my_load_static_mp3(const char *filname, int voll, bool loop)
+SOUNDCLIP *my_load_static_mp3(const AssetPath &asset_name, int voll, bool loop)
 {
     return NULL;
 }
@@ -185,11 +183,11 @@ SOUNDCLIP *my_load_static_mp3(const char *filname, int voll, bool loop)
 
 
 MYSTATICOGG *thissogg;
-SOUNDCLIP *my_load_static_ogg(const char *filname, int voll, bool loop)
+SOUNDCLIP *my_load_static_ogg(const AssetPath &asset_name, int voll, bool loop)
 {
     // Load via soundcache.
     long muslen = 0;
-    char* mp3buffer = get_cached_sound(filname, false, &muslen);
+    char* mp3buffer = get_cached_sound(asset_name, false, &muslen);
     if (mp3buffer == NULL)
         return NULL;
 
@@ -214,10 +212,9 @@ SOUNDCLIP *my_load_static_ogg(const char *filname, int voll, bool loop)
 }
 
 MYOGG *thisogg;
-SOUNDCLIP *my_load_ogg(const char *filname, int voll)
+SOUNDCLIP *my_load_ogg(const AssetPath &asset_name, int voll)
 {
-
-    mp3in = pack_fopen(filname, "rb");
+    mp3in = PackfileFromAsset(asset_name);
     if (mp3in == NULL)
         return NULL;
 
@@ -257,13 +254,18 @@ SOUNDCLIP *my_load_ogg(const char *filname, int voll)
 
 
 MYMIDI *thismidi;
-SOUNDCLIP *my_load_midi(const char *filname, int repet)
+SOUNDCLIP *my_load_midi(const AssetPath &asset_name, int repet)
 {
     // The first a midi is played, preload all patches.
     if (!thismidi && psp_midi_preload_patches)
         load_midi_patches();
 
-    MIDI* midiPtr = load_midi(filname);
+    PACKFILE *pf = PackfileFromAsset(asset_name);
+    if (!pf)
+        return NULL;
+
+    MIDI* midiPtr = load_midi_pf(pf);
+    pack_fclose(pf);
 
     if (midiPtr == NULL)
         return NULL;
@@ -291,7 +293,7 @@ SOUNDCLIP *my_load_mod(const char *filname, int repet)
     thismod = new MYMOD();
     thismod->done = 0;
     thismod->tune = modPtr;
-    thismod->repeat = repet;
+    thismod->repeat = (repet != 0);
 
     return thismod;
 }
@@ -308,31 +310,38 @@ void remove_mod_player() {
 #elif defined DUMB_MOD_PLAYER
 
 MYMOD *thismod = NULL;
-SOUNDCLIP *my_load_mod(const char *filname, int repet)
+SOUNDCLIP *my_load_mod(const AssetPath &asset_name, int repet)
 {
+    DUMBFILE *df = DUMBfileFromAsset(asset_name);
+    if (!df)
+        return NULL;
 
     DUH *modPtr = NULL;
     // determine the file extension
-    const char *lastDot = strrchr(filname, '.');
+    const char *lastDot = strrchr(asset_name.second, '.');
     if (lastDot == NULL)
+    {
+        dumbfile_close(df);
         return NULL;
+    }
     // get the first char of the extensin
     int charAfterDot = toupper(lastDot[1]);
 
     // use the appropriate loader
     if (charAfterDot == 'I') {
-        modPtr = dumb_load_it(filname);
+        modPtr = dumb_read_it(df);
     }
     else if (charAfterDot == 'X') {
-        modPtr = dumb_load_xm(filname);
+        modPtr = dumb_read_xm(df);
     }
     else if (charAfterDot == 'S') {
-        modPtr = dumb_load_s3m(filname);
+        modPtr = dumb_read_s3m(df);
     }
     else if (charAfterDot == 'M') {
-        modPtr = dumb_load_mod(filname);
+        modPtr = dumb_read_mod(df);
     }
 
+    dumbfile_close(df);
     if (modPtr == NULL)
         return NULL;
 

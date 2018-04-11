@@ -329,12 +329,6 @@ namespace AGS.Editor
             }
             else if (AboutToAddControl())
             {
-				if (_gui.Controls.Count >= GUI.MAX_CONTROLS_PER_GUI)
-				{
-					Factory.GUIController.ShowMessage("You already have the maximum number of controls on this GUI, and cannot add any more.", MessageBoxIcon.Warning);
-					return;
-				}
-
                 _addingControl = true;
                 _addingControlX = e.X;
                 _addingControlY = e.Y;
@@ -760,11 +754,6 @@ namespace AGS.Editor
 
         private void PasteControlClick(object sender, EventArgs e)
         {
-            if (_gui.Controls.Count >= GUI.MAX_CONTROLS_PER_GUI)
-            {
-                Factory.GUIController.ShowMessage("You already have the maximum number of controls on this GUI, and cannot add any more.", MessageBoxIcon.Warning);
-                return;
-            }
             GUIControl newControl = GUIControl.GetFromClipBoard();
             if (newControl != null)
             {
@@ -1126,17 +1115,10 @@ namespace AGS.Editor
 		private void CreateScriptFunctionForGUIItem(string eventHandler, object objectToCheck, PropertyInfo property)
 		{
 			string itemName;
-			int maxLength;
 			if (objectToCheck is GUI)
-			{
 				itemName = ((GUI)objectToCheck).Name;
-				maxLength = NormalGUI.MAX_EVENT_HANDLER_LENGTH;
-			}
 			else
-			{
 				itemName = ((GUIControl)objectToCheck).Name;
-				maxLength = GUIControl.MAX_EVENT_HANDLER_LENGTH;
-			}
 
 			if (string.IsNullOrEmpty(itemName))
 			{
@@ -1147,7 +1129,7 @@ namespace AGS.Editor
 			object[] paramsAttribute = property.GetCustomAttributes(typeof(ScriptFunctionParametersAttribute), true);
 			if (paramsAttribute.Length > 0)
 			{
-				property.SetValue(objectToCheck, ScriptFunctionUIEditor.CreateOrOpenScriptFunction(eventHandler, itemName, property.Name, (ScriptFunctionParametersAttribute)paramsAttribute[0], true, maxLength), null);
+				property.SetValue(objectToCheck, ScriptFunctionUIEditor.CreateOrOpenScriptFunction(eventHandler, itemName, property.Name, (ScriptFunctionParametersAttribute)paramsAttribute[0], true, 0), null);
 			}
 		}
 

@@ -21,7 +21,6 @@
 #include "ac/draw.h"
 #include "ac/dynamicsprite.h"
 #include "ac/event.h"
-#include "ac/file.h"
 #include "ac/game.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
@@ -36,17 +35,20 @@
 #include "ac/keycode.h"
 #include "ac/mouse.h"
 #include "ac/object.h"
+#include "ac/path_helper.h"
 #include "ac/record.h"
 #include "ac/room.h"
 #include "ac/roomstatus.h"
 #include "ac/roomstruct.h"
 #include "ac/string.h"
+#include "ac/system.h"
 #include "debug/debugger.h"
 #include "debug/debug_log.h"
 #include "gui/guidialog.h"
 #include "main/engine.h"
 #include "main/game_start.h"
 #include "main/game_run.h"
+#include "main/graphics_mode.h"
 #include "media/audio/audio.h"
 #include "script/script.h"
 #include "script/script_runtime.h"
@@ -56,16 +58,12 @@
 #include "main/game_file.h"
 #include "util/string_utils.h"
 
-using AGS::Common::String;
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
 
 #define ALLEGRO_KEYBOARD_HANDLER
 
-extern int guis_need_update;
 extern GameState play;
 extern ExecutingScript*curscript;
-extern const char *load_game_errors[9];
 extern int displayed_room;
 extern int game_paused;
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
@@ -85,10 +83,12 @@ extern int getloctype_index;
 extern int offsetx, offsety;
 extern char saveGameDirectory[260];
 extern IGraphicsDriver *gfxDriver;
-extern int scrnwid,scrnhit;
 extern color palette[256];
 extern Bitmap *virtual_screen;
+
+#if defined(IOS_VERSION) || defined(ANDROID_VERSION)
 extern int psp_gfx_renderer;
+#endif
 
 void GiveScore(int amnt) 
 {
@@ -107,10 +107,7 @@ void restart_game() {
         curscript->queue_action(ePSARestartGame, 0, "RestartGame");
         return;
     }
-    int errcod;
-    if ((errcod = load_game(RESTART_POINT_SAVE_GAME_NUMBER))!=0)
-        quitprintf("unable to restart game (error:%s)", load_game_errors[-errcod]);
-
+    try_restore_save(RESTART_POINT_SAVE_GAME_NUMBER);
 }
 
 void RestoreGameSlot(int slnum) {
@@ -122,7 +119,7 @@ void RestoreGameSlot(int slnum) {
         curscript->queue_action(ePSARestoreGame, slnum, "RestoreGameSlot");
         return;
     }
-    load_game(slnum);
+    try_restore_save(slnum);
 }
 
 void DeleteSaveSlot (int slnum) {
@@ -145,12 +142,12 @@ void DeleteSaveSlot (int slnum) {
 
 void PauseGame() {
     game_paused++;
-    DEBUG_CONSOLE("Game paused");
+    debug_script_log("Game paused");
 }
 void UnPauseGame() {
     if (game_paused > 0)
         game_paused--;
-    DEBUG_CONSOLE("Game UnPaused, pause level now %d", game_paused);
+    debug_script_log("Game UnPaused, pause level now %d", game_paused);
 }
 
 
@@ -162,7 +159,7 @@ int IsGamePaused() {
 int GetSaveSlotDescription(int slnum,char*desbuf) {
     VALIDATE_STRING(desbuf);
     String description;
-    if (read_savedgame_description(get_save_game_path(slnum), description) == 0)
+    if (read_savedgame_description(get_save_game_path(slnum), description))
     {
         strcpy(desbuf, description);
         return 1;
@@ -175,7 +172,7 @@ int LoadSaveSlotScreenshot(int slnum, int width, int height) {
     int gotSlot;
     multiply_up_coordinates(&width, &height);
 
-    if (read_savedgame_screenshot(get_save_game_path(slnum), gotSlot) != 0)
+    if (!read_savedgame_screenshot(get_save_game_path(slnum), gotSlot))
         return 0;
 
     if (gotSlot == 0)
@@ -204,7 +201,7 @@ void SetGlobalInt(int index,int valu) {
         quit("!SetGlobalInt: invalid index");
 
     if (play.globalscriptvars[index] != valu) {
-        DEBUG_CONSOLE("GlobalInt %d set to %d", index, valu);
+        debug_script_log("GlobalInt %d set to %d", index, valu);
     }
 
     play.globalscriptvars[index]=valu;
@@ -220,7 +217,7 @@ int GetGlobalInt(int index) {
 void SetGlobalString (int index, const char *newval) {
     if ((index<0) | (index >= MAXGLOBALSTRINGS))
         quit("!SetGlobalString: invalid index");
-    DEBUG_CONSOLE("GlobalString %d set to '%s'", index, newval);
+    debug_script_log("GlobalString %d set to '%s'", index, newval);
     strncpy(play.globalstrings[index], newval, MAX_MAXSTRLEN);
     // truncate it to 200 chars, to be sure
     play.globalstrings[index][MAX_MAXSTRLEN - 1] = 0;
@@ -241,14 +238,14 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
     if ((mode & (~AllowedModes)) != 0)
         quit("!RunAGSGame: mode value unknown");
 
-    if (use_compiled_folder_as_current_dir || editor_debugging_enabled)
+    if (editor_debugging_enabled)
     {
         quit("!RunAGSGame cannot be used while running the game from within the AGS Editor. You must build the game EXE and run it from there to use this function.");
     }
 
     if ((mode & RAGMODE_LOADNOW) == 0) {
         // need to copy, since the script gets destroyed
-        get_current_dir_path(gamefilenamebuf, newgame);
+        get_install_dir_path(gamefilenamebuf, newgame);
         game_file_name = gamefilenamebuf;
         usetup.main_data_filename = game_file_name;
         play.takeover_data = data;
@@ -264,7 +261,7 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
         return 0;
     }
 
-    int result, ee;
+    int ee;
 
     unload_old_room();
     displayed_room = -10;
@@ -278,9 +275,9 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
     ds->Fill(0);
     show_preload();
 
-    if ((result = load_game_file ()) != 0) {
-        quitprintf("!RunAGSGame: error %d loading new game file", result);
-    }
+    String err_str;
+    if (!load_game_file(err_str))
+        quitprintf("!RunAGSGame: error loading new game file:\n%s", err_str.GetCStr());
 
     spriteset.reset();
     if (spriteset.initFile ("acsprset.spr"))
@@ -292,11 +289,11 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
             play.globalscriptvars[ee] = 0;  
     }
 
-    init_game_settings();
+    engine_init_game_settings();
     play.screen_is_faded_out = 1;
 
     if (load_new_game_restore >= 0) {
-        load_game (load_new_game_restore);
+        try_restore_save(load_new_game_restore);
         load_new_game_restore = -1;
     }
     else
@@ -388,7 +385,7 @@ void SetGameSpeed(int newspd) {
     if (newspd>1000) newspd=1000;
     if (newspd<10) newspd=10;
     set_game_speed(newspd);
-    DEBUG_CONSOLE("Game speed set to %d", newspd);
+    debug_script_log("Game speed set to %d", newspd);
 }
 
 int GetGameSpeed() {
@@ -530,7 +527,7 @@ void SaveCursorForLocationChange() {
         play.get_loc_name_save_cursor = play.get_loc_name_last_time;
         play.restore_cursor_mode_to = GetCursorMode();
         play.restore_cursor_image_to = GetMouseCursor();
-        DEBUG_CONSOLE("Saving mouse: mode %d cursor %d", play.restore_cursor_mode_to, play.restore_cursor_image_to);
+        debug_script_log("Saving mouse: mode %d cursor %d", play.restore_cursor_mode_to, play.restore_cursor_image_to);
     }
 }
 
@@ -728,7 +725,7 @@ int IsKeyPressed (int keycode) {
     else if (keycode == '.')
         keycode = KEY_STOP;
     else {
-        DEBUG_CONSOLE("IsKeyPressed: unsupported keycode %d", keycode);
+        debug_script_log("IsKeyPressed: unsupported keycode %d", keycode);
         return 0;
     }
 
@@ -752,12 +749,12 @@ int SaveScreenShot(const char*namm) {
     if (gfxDriver->RequiresFullRedrawEachFrame()) 
     {
         // FIXME this weird stuff! (related to incomplete OpenGL renderer)
-#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(WINDOWS_VERSION)
-        int color_depth = (psp_gfx_renderer > 0) ? 32 : final_col_dep;
+#if defined(IOS_VERSION) || defined(ANDROID_VERSION)
+        int color_depth = (psp_gfx_renderer > 0) ? 32 : System_GetColorDepth();
 #else
-        int color_depth = final_col_dep;
+        int color_depth = System_GetColorDepth();
 #endif
-        Bitmap *buffer = BitmapHelper::CreateBitmap(scrnwid, scrnhit, color_depth);
+        Bitmap *buffer = BitmapHelper::CreateBitmap(play.viewport.GetWidth(), play.viewport.GetHeight(), color_depth);
         gfxDriver->GetCopyOfScreenIntoBitmap(buffer);
 
 		if (!buffer->SaveToFile(fileName, palette)!=0)
@@ -783,7 +780,7 @@ void SetMultitasking (int mode) {
     }
 
     // Don't allow background running if full screen
-    if ((mode == 1) && (!usetup.windowed))
+    if ((mode == 1) && (!scsystem.windowed))
         mode = 0;
 
     if (mode == 0) {
@@ -817,7 +814,7 @@ void ProcessClick(int xx,int yy,int mood) {
         else {
             xx=thisroom.hswalkto[hsnum].x;
             yy=thisroom.hswalkto[hsnum].y;
-            DEBUG_CONSOLE("Move to walk-to point hotspot %d", hsnum);
+            debug_script_log("Move to walk-to point hotspot %d", hsnum);
         }
         walk_character(game.playercharacter,xx,yy,0, true);
         return;
@@ -907,7 +904,7 @@ int GetGraphicalVariable (const char *varName) {
         quit(quitmessage);
         return 0;
     }
-    return theVar->value;
+    return theVar->Value;
 }
 
 void SetGraphicalVariable (const char *varName, int p_value) {
@@ -918,7 +915,7 @@ void SetGraphicalVariable (const char *varName, int p_value) {
         quit(quitmessage);
     }
     else
-        theVar->value = p_value;
+        theVar->Value = p_value;
 }
 
 void scrWait(int nloops) {
@@ -927,7 +924,7 @@ void scrWait(int nloops) {
 
     play.wait_counter = nloops;
     play.key_skip_wait = 0;
-    do_main_cycle(UNTIL_MOVEEND,(long)&play.wait_counter);
+    GameLoopUntilEvent(UNTIL_MOVEEND,(long)&play.wait_counter);
 }
 
 int WaitKey(int nloops) {
@@ -936,7 +933,7 @@ int WaitKey(int nloops) {
 
     play.wait_counter = nloops;
     play.key_skip_wait = 1;
-    do_main_cycle(UNTIL_MOVEEND,(long)&play.wait_counter);
+    GameLoopUntilEvent(UNTIL_MOVEEND,(long)&play.wait_counter);
     if (play.wait_counter < 0)
         return 1;
     return 0;
@@ -948,7 +945,7 @@ int WaitMouseKey(int nloops) {
 
     play.wait_counter = nloops;
     play.key_skip_wait = 3;
-    do_main_cycle(UNTIL_MOVEEND,(long)&play.wait_counter);
+    GameLoopUntilEvent(UNTIL_MOVEEND,(long)&play.wait_counter);
     if (play.wait_counter < 0)
         return 1;
     return 0;

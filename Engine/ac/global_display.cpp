@@ -37,7 +37,6 @@ extern TopBarSettings topBar;
 extern GameState play;
 extern roomstruct thisroom;
 extern int display_message_aschar;
-extern int scrnwid,scrnhit;
 extern GameSetupStruct game;
 extern int screen_is_dirty;
 
@@ -68,7 +67,7 @@ void DisplayTopBar(int ypos, int ttexcol, int backcol, const char *title, const 
 
     topBar.wantIt = 1;
     topBar.font = FONT_NORMAL;
-    topBar.height = wgetfontheight(topBar.font);
+    topBar.height = getfontheight_outlined(topBar.font);
     topBar.height += multiply_up_coordinate(play.top_bar_borderwidth) * 2 + get_fixed_pixel_size(1);
 
     // they want to customize the font
@@ -143,14 +142,14 @@ void DisplayAt(int xxp,int yyp,int widd, const char* text) {
     multiply_up_coordinates(&xxp, &yyp);
     widd = multiply_up_coordinate(widd);
 
-    if (widd<1) widd=scrnwid/2;
-    if (xxp<0) xxp=scrnwid/2-widd/2;
+    if (widd<1) widd=play.viewport.GetWidth()/2;
+    if (xxp<0) xxp=play.viewport.GetWidth()/2-widd/2;
     _display_at(xxp,yyp,widd,text,1,0, 0, 0, false);
 }
 
 void DisplayAtY (int ypos, const char *texx) {
-    if ((ypos < -1) || (ypos >= GetMaxScreenHeight()))
-        quitprintf("!DisplayAtY: invalid Y co-ordinate supplied (used: %d; valid: 0..%d)", ypos, GetMaxScreenHeight());
+    if ((ypos < -1) || (ypos >= BASEHEIGHT))
+        quitprintf("!DisplayAtY: invalid Y co-ordinate supplied (used: %d; valid: 0..%d)", ypos, BASEHEIGHT);
 
     // Display("") ... a bit of a stupid thing to do, so ignore it
     if (texx[0] == 0)
@@ -167,11 +166,11 @@ void DisplayAtY (int ypos, const char *texx) {
         if (screen_is_dirty) {
             // erase any previous DisplaySpeech
             play.disabled_user_interface ++;
-            mainloop();
+            UpdateGameOnce();
             play.disabled_user_interface --;
         }
 
-        _display_at(-1,ypos,scrnwid/2+scrnwid/4,get_translation(texx),1,0, 0, 0, false);
+        _display_at(-1,ypos,play.viewport.GetWidth()/2+play.viewport.GetWidth()/4,get_translation(texx),1,0, 0, 0, false);
     }
 }
 
@@ -185,7 +184,7 @@ void SetSkipSpeech (SkipSpeechStyle newval) {
     if ((newval < kSkipSpeechFirst) || (newval > kSkipSpeechLast))
         quit("!SetSkipSpeech: invalid skip mode specified");
 
-    DEBUG_CONSOLE("SkipSpeech style set to %d", newval);
+    debug_script_log("SkipSpeech style set to %d", newval);
     play.cant_skip_speech = user_to_internal_skip_speech((SkipSpeechStyle)newval);
 }
 

@@ -25,20 +25,15 @@
 #include "ac/common.h"
 #include "ac/spritecache.h"
 #include "core/assetmanager.h"
+#include "debug/out.h"
 #include "gfx/bitmap.h"
 #include "util/compress.h"
 #include "util/file.h"
 #include "util/stream.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
 
-using AGS::Common::Stream;
-namespace File = AGS::Common::File;
-
-//#define DEBUG_SPRITECACHE
 // [IKM] We have to forward-declare these because their implementations are in the Engine
-extern void write_log(char *);
 extern void initialize_sprite(int);
 extern void pre_save_sprite(int);
 extern void get_new_size_for_sprite(int, int, int, int &, int &);
@@ -47,12 +42,6 @@ extern int spritewidth[], spriteheight[];
 #define SPRITE_LOCKED -1
 #define START_OF_LIST -1
 #define END_OF_LIST   -1
-// PSP: Use smaller sprite cache due to limited total memory.
-#if defined (PSP_VERSION)
-#define DEFAULTCACHESIZE 5000000
-#else
-#define DEFAULTCACHESIZE 20240000        // max size, in bytes (20 MB)
-#endif
 
 const char *spindexid = "SPRINDEX";
 const char *spindexfilename = "sprindex.dat";
@@ -238,17 +227,6 @@ Bitmap *SpriteCache::operator [] (int index)
     mrulist[listend] = index;
     mrubacklink[index] = listend;
     listend = index;
-
-/*    char bbb[50];   // Print out the MRU list
-    sprintf(bbb, "Used %d, list is:", index);
-    write_log(bbb);
-
-    for (int i = liststart; 1; i = mrulist[i]) {
-      
-      sprintf(bbb, "%d", i);
-      write_log(bbb);
-      if (i == listend) break;
-    }*/
   }
 
   return images[index];
@@ -282,9 +260,7 @@ void SpriteCache::removeOldest()
     // there was one huge sprite, removing it has now emptied the cache completely
     if (cachesize > 0)
     {
-      char msgg[150];
-      sprintf(msgg, "!!!! SPRITE CACHE ERROR: Sprite cache should be empty, but still has %d bytes", cachesize);
-      write_log(msgg);
+      Debug::Printf(kDbgGroup_SprCache, kDbgMsg_Error, "SPRITE CACHE ERROR: Sprite cache should be empty, but still has %d bytes", cachesize);
     }
     mrulist[liststart] = 0;
     liststart = -1;
@@ -302,19 +278,14 @@ void SpriteCache::removeOldest()
       // memory)
       // There must be a bug somewhere causing this, but for now
       // let's just reset the cache
-      write_log("!!!! RUNTIME CACHE ERROR: CACHE INCONSISTENT: RESETTING");
-      char msgg[150];
-      sprintf(msgg, "!!!! At size %d (of %d), start %d end %d  fwdlink=%d",
-              cachesize, maxCacheSize, oldstart, listend, liststart);
-      write_log(msgg);
-
+      Debug::Printf(kDbgGroup_SprCache, kDbgMsg_Error, "RUNTIME CACHE ERROR: CACHE INCONSISTENT: RESETTING\n\tAt size %d (of %d), start %d end %d  fwdlink=%d",
+                    cachesize, maxCacheSize, oldstart, listend, liststart);
       removeAll();
     }
   }
+
 #ifdef DEBUG_SPRITECACHE
-  char msgg[100];
-  sprintf(msgg, "Removed %d, size now %d KB", sprnum, cachesize / 1024);
-  write_log(msgg);
+  Debug::Printf(kDbgGroup_SprCache, kDbgMsg_Debug, "Removed %d, size now %d KB", sprnum, cachesize / 1024);
 #endif
 }
 
@@ -358,15 +329,13 @@ void SpriteCache::precache(int index)
   offsets[index] = SPRITE_LOCKED;
 
 #ifdef DEBUG_SPRITECACHE
-  char msgg[100];
-  sprintf(msgg, "Precached %d", index);
-  write_log(msgg);
+  Debug::Printf(kDbgGroup_SprCache, kDbgMsg_Debug, "Precached %d", index);
 #endif
 }
 
 void SpriteCache::seekToSprite(int index) {
   if (index - 1 != lastLoad)
-      cache_stream->Seek(Common::kSeekBegin, offsets[index]);
+      cache_stream->Seek(offsets[index], kSeekBegin);
 }
 
 int SpriteCache::loadSprite(int index)
@@ -377,7 +346,7 @@ int SpriteCache::loadSprite(int index)
     removeOldest();
     hh++;
     if (hh > 1000) {
-      write_log("!!!! RUNTIME CACHE ERROR: STUCK IN FREE_UP_MEM; RESETTING CACHE");
+      Debug::Printf(kDbgGroup_SprCache, kDbgMsg_Error, "RUNTIME CACHE ERROR: STUCK IN FREE_UP_MEM; RESETTING CACHE");
       removeAll();
     }
 
@@ -459,9 +428,7 @@ int SpriteCache::loadSprite(int index)
   cachesize += sizes[index];
 
 #ifdef DEBUG_SPRITECACHE
-  char msgg[100];
-  sprintf(msgg, "Loaded %d, size now %d KB", index, cachesize / 1024);
-  write_log(msgg);
+  Debug::Printf(kDbgGroup_SprCache, kDbgMsg_Debug, "Loaded %d, size now %d KB", index, cachesize / 1024);
 #endif
 
   return sizes[index];
@@ -560,9 +527,9 @@ int SpriteCache::saveToFile(const char *filnam, int lastElement, bool compressOu
 
         size_t fileSizeSoFar = output->GetPosition();
         // write the length of the compressed data
-        output->Seek(Common::kSeekBegin, lenloc);
+        output->Seek(lenloc, kSeekBegin);
         output->WriteInt32((fileSizeSoFar - lenloc) - 4);
-        output->Seek(Common::kSeekEnd, 0);
+        output->Seek(0, kSeekEnd);
       }
       else
         output->WriteArray(images[i]->GetDataForWriting(), spritewidths[i] * bpss, spriteheights[i]);
@@ -703,7 +670,7 @@ int SpriteCache::initFile(const char *filnam)
 
   if (vers < 5) {
     // skip the palette
-      cache_stream->Seek(Common::kSeekCurrent, 256 * 3);
+      cache_stream->Seek(256 * 3);
   }
 
   numspri = cache_stream->ReadInt16();
@@ -772,7 +739,7 @@ int SpriteCache::initFile(const char *filnam)
       spriteDataSize = wdd * coldep * htt;
     }
 
-    cache_stream->Seek(Common::kSeekCurrent, spriteDataSize);
+    cache_stream->Seek(spriteDataSize);
   }
 
   sprite0InitialOffset = offsets[0];

@@ -44,8 +44,12 @@ enum FileWorkMode
 
 namespace File
 {
+    // Returns size of a file, or -1 if no such file found
+    int         GetFileSize(const String &filename);
     // Tests if file could be opened for reading
     bool        TestReadFile(const String &filename);
+    // Opens a file for writing or creates new one if it does not exist; deletes file if it was created during test
+    bool        TestWriteFile(const String &filename);
     // Create new empty file and deletes it; returns TRUE if was able to create file
     bool        TestCreateFile(const String &filename);
     // Deletes existing file; returns TRUE if was able to delete one
@@ -53,6 +57,8 @@ namespace File
 
     // Sets FileOpenMode and FileWorkMode values corresponding to C-style file open mode string
     bool        GetFileModesFromCMode(const String &cmode, FileOpenMode &open_mode, FileWorkMode &work_mode);
+    // Gets C-style file mode from FileOpenMode and FileWorkMode
+    String      GetCMode(FileOpenMode open_mode, FileWorkMode work_mode);
 
     Stream      *OpenFile(const String &filename, FileOpenMode open_mode, FileWorkMode work_mode);
     // Convenience helpers

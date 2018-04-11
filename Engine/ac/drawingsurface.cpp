@@ -31,11 +31,11 @@
 #include "gui/guimain.h"
 #include "ac/spritecache.h"
 #include "script/runtimescriptvalue.h"
+#include "gfx/gfx_def.h"
 #include "gfx/gfx_util.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-namespace GfxUtil = AGS::Engine::GfxUtil;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern GameSetupStruct game;
 extern GameState play;
@@ -43,7 +43,6 @@ extern RoomStatus*croom;
 extern RoomObject*objs;
 extern CharacterCache *charcache;
 extern ObjectCache objcache[MAX_INIT_SPR];
-extern GUIMain*guis;
 extern SpriteCache spriteset;
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
 extern Bitmap *dynamicallyCreatedSurfaces[MAX_DYNAMIC_SURFACES];
@@ -89,8 +88,8 @@ void DrawingSurface_Release(ScriptDrawingSurface* sds)
             }
             for (tt = 0; tt < game.numgui; tt++) 
             {
-                if ((guis[tt].bgpic == sds->dynamicSpriteNumber) &&
-                    (guis[tt].on == 1))
+                if ((guis[tt].BgImage == sds->dynamicSpriteNumber) &&
+                    (guis[tt].IsVisible()))
                 {
                     guis_need_update = 1;
                     break;
@@ -215,7 +214,7 @@ void DrawingSurface_DrawSurface(ScriptDrawingSurface* target, ScriptDrawingSurfa
 
     // Draw it transparently
     GfxUtil::DrawSpriteWithTransparency(ds, surfaceToDraw, 0, 0,
-        GfxUtil::Trans100ToAlpha255(translev));
+        GfxDef::Trans100ToAlpha255(translev));
     target->FinishedDrawing();
 }
 
@@ -259,11 +258,11 @@ void DrawingSurface_DrawImage(ScriptDrawingSurface* sds, int xx, int yy, int slo
     sds->MultiplyCoordinates(&xx, &yy);
 
     if (sourcePic->GetColorDepth() != ds->GetColorDepth()) {
-        debug_log("RawDrawImage: Sprite %d colour depth %d-bit not same as background depth %d-bit", slot, spriteset[slot]->GetColorDepth(), ds->GetColorDepth());
+        debug_script_warn("RawDrawImage: Sprite %d colour depth %d-bit not same as background depth %d-bit", slot, spriteset[slot]->GetColorDepth(), ds->GetColorDepth());
     }
 
     draw_sprite_support_alpha(ds, sds->hasAlphaChannel != 0, xx, yy, sourcePic, (game.spriteflags[slot] & SPF_ALPHACHANNEL) != 0,
-        GfxUtil::Trans100ToAlpha255(trans));
+        kBlendMode_Alpha, GfxDef::Trans100ToAlpha255(trans));
 
     sds->FinishedDrawing();
 
@@ -377,14 +376,14 @@ void DrawingSurface_DrawString(ScriptDrawingSurface *sds, int xx, int yy, int fo
     color_t text_color = sds->currentColour;
     if ((ds->GetColorDepth() <= 8) && (play.raw_color > 255)) {
         text_color = ds->GetCompatibleColor(1);
-        debug_log ("RawPrint: Attempted to use hi-color on 256-col background");
+        debug_script_warn ("RawPrint: Attempted to use hi-color on 256-col background");
     }
     wouttext_outline(ds, xx, yy, font, text_color, text);
     sds->FinishedDrawing();
 }
 
 void DrawingSurface_DrawStringWrapped(ScriptDrawingSurface *sds, int xx, int yy, int wid, int font, int alignment, const char *msg) {
-    int texthit = wgetfontheight(font);
+    int linespacing = getfontspacing_outlined(font);
     sds->MultiplyCoordinates(&xx, &yy);
     sds->MultiplyThickness(&wid);
 
@@ -406,7 +405,7 @@ void DrawingSurface_DrawStringWrapped(ScriptDrawingSurface *sds, int xx, int yy,
             drawAtX = (xx + wid) - wgettextwidth(lines[i], font);
         }
 
-        wouttext_outline(ds, drawAtX, yy + texthit*i, font, text_color, lines[i]);
+        wouttext_outline(ds, drawAtX, yy + linespacing*i, font, text_color, lines[i]);
     }
 
     sds->FinishedDrawing();

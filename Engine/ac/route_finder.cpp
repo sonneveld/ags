@@ -37,8 +37,7 @@ int waspossible = 1;
 int suggestx, suggesty;
 fixed move_speed_x, move_speed_y;
 
-extern void Display(char *, ...);
-extern void write_log(char *);
+extern void Display(const char *, ...);
 extern void update_polled_stuff_if_runtime();
 
 extern MoveList *mls;
@@ -413,7 +412,6 @@ int find_route_dijkstra(int fromx, int fromy, int destx, int desty)
   visited[0] = fromy * wallscreen->GetWidth() + fromx;
   parent[visited[0]] = -1;
 
-//  write_log("Pathfind starting");
   int granularity = 3, newx = -1, newy, foundAnswer = -1, numreplace;
   int changeiter, numfound, adjcount;
   int destxlow = destx - MAX_GRANULARITY;
@@ -441,7 +439,6 @@ int find_route_dijkstra(int fromx, int fromy, int destx, int desty)
       granularity = walk_area_granularity[wallscreen->GetScanLine(j)[i]];
       adjcount = 1;
 
-//    char tempb[200]; sprintf(tempb, "checking: %d,%d\n",i,j); write_log(tempb);
       if (i >= granularity) {
         modifier = (destx < i) ? DIRECTION_BONUS : 0;
         CHECK_MIN(i - granularity, j)
@@ -570,10 +567,6 @@ int __find_route(int srcx, int srcy, short *tox, short *toy, int noredx)
   if ((noredx == 0) && (wallscreen->GetPixel(tox[0], toy[0]) == 0))
     return 0; // clicked on a wall
 
-  int is_straight = 0;
-  if ((srcx - tox[0] == 0) || (srcy - toy[0] == 0) || (abs(srcx - tox[0]) == abs(srcy - toy[0])))
-    is_straight = 1;
-
   pathbackstage = 0;
 
   if (leftorright == 0) {
@@ -600,9 +593,8 @@ findroutebk:
       return 0;
   }
 
-  if (is_straight)
-    ;            // don't use new algo on arrow key presses
-  else if (find_route_dijkstra(srcx, srcy, tox[0], toy[0])) {
+  // Try the new pathfinding algorithm
+  if (find_route_dijkstra(srcx, srcy, tox[0], toy[0])) {
     return 1;
   }
 

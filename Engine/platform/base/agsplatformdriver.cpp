@@ -27,6 +27,7 @@
 #include "plugin/agsplugin.h"
 
 using namespace AGS::Common;
+using namespace AGS::Engine;
 
 #if defined (AGS_HAS_CD_AUDIO)
 #include "libcda.h"
@@ -41,12 +42,24 @@ void AGSPlatformDriver::AboutToQuitGame() { }
 void AGSPlatformDriver::PostAllegroInit(bool windowed) { }
 void AGSPlatformDriver::DisplaySwitchOut() { }
 void AGSPlatformDriver::DisplaySwitchIn() { }
+void AGSPlatformDriver::PauseApplication() { }
+void AGSPlatformDriver::ResumeApplication() { }
+void AGSPlatformDriver::GetSystemDisplayModes(std::vector<DisplayMode> &dms) { }
+bool AGSPlatformDriver::EnterFullscreenMode(const DisplayMode &dm) { return true; }
+bool AGSPlatformDriver::ExitFullscreenMode() { return true; }
+void AGSPlatformDriver::AdjustWindowStyleForFullscreen() { }
+void AGSPlatformDriver::RestoreWindowStyle() { }
 void AGSPlatformDriver::RegisterGameWithGameExplorer() { }
 void AGSPlatformDriver::UnRegisterGameWithGameExplorer() { }
 
 const char* AGSPlatformDriver::GetAllegroFailUserHint()
 {
     return "Make sure you have latest version of Allegro 4 libraries installed, and your system is running in graphical mode.";
+}
+
+const char *AGSPlatformDriver::GetDiskWriteAccessTroubleshootingText()
+{
+    return "Make sure you have write permissions, and also check the disk's free space.";
 }
 
 void AGSPlatformDriver::GetSystemTime(ScriptDateTime *sdt) {
@@ -74,44 +87,6 @@ void AGSPlatformDriver::WriteStdOut(const char *fmt, ...) {
 
 void AGSPlatformDriver::YieldCPU() {
     this->Delay(1);
-}
-
-void AGSPlatformDriver::ReadPluginsFromDisk(AGS::Common::Stream *iii) {
-#if 1
-  pl_read_plugins_from_disk(iii);
-#else
-  if (iii->ReadInt32() != 1)
-      quit("ERROR: unable to load game, invalid version of plugin data");
-
-  int numPlug = iii->ReadInt32(), a, datasize;
-  String buffer;
-  for (a = 0; a < numPlug; a++) {
-      // read the plugin name
-      buffer = iii->ReadString();
-      datasize = iii->ReadInt32();
-      iii->Seek (Common::kSeekCurrent, datasize);
-  }
-#endif
-}
-
-void AGSPlatformDriver::StartPlugins() {
-  pl_startup_plugins();
-}
-
-void AGSPlatformDriver::ShutdownPlugins() {
-  pl_stop_plugins();
-}
-
-int AGSPlatformDriver::RunPluginHooks(int event, long data) {
-  return pl_run_plugin_hooks(event, data);
-}
-
-void AGSPlatformDriver::RunPluginInitGfxHooks(const char *driverName, void *data) {
-  pl_run_plugin_init_gfx_hooks(driverName, data);
-}
-
-int AGSPlatformDriver::RunPluginDebugHooks(const char *scriptfile, int linenum) {
-  return pl_run_plugin_debug_hooks(scriptfile, linenum);
 }
 
 void AGSPlatformDriver::InitialiseAbufAtStartup()
@@ -145,10 +120,14 @@ bool AGSPlatformDriver::LockMouseToWindow() { return false; }
 void AGSPlatformDriver::UnlockMouse() { }
 
 //-----------------------------------------------
-// IOutputTarget implementation
+// IOutputHandler implementation
 //-----------------------------------------------
-void AGSPlatformDriver::Out(const char *sz_fullmsg) {
-    this->WriteStdOut("%s", sz_fullmsg);
+void AGSPlatformDriver::PrintMessage(const Common::DebugMessage &msg)
+{
+    if (msg.GroupName.IsEmpty())
+        WriteStdOut("%s", msg.Text.GetCStr());
+    else
+        WriteStdOut("%s : %s", msg.GroupName.GetCStr(), msg.Text.GetCStr());
 }
 
 // ********** CD Player Functions common to Win and Linux ********

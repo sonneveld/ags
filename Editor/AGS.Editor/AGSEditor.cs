@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -28,12 +29,13 @@ namespace AGS.Editor
         public event ProcessAllGameTextsHandler ProcessAllGameTexts;
         public delegate void ExtraCompilationStepHandler(CompileMessages errors);
         public event ExtraCompilationStepHandler ExtraCompilationStep;
-        public delegate void ExtraOutputCreationStepHandler();
+        public delegate void ExtraOutputCreationStepHandler(bool miniExeForDebug);
         public event ExtraOutputCreationStepHandler ExtraOutputCreationStep;
 		public event GetSourceControlFileListHandler GetSourceControlFileList;
 
 		public const string BUILT_IN_HEADER_FILE_NAME = "_BuiltInScriptHeader.ash";
         public const string OUTPUT_DIRECTORY = "Compiled";
+        public const string DATA_OUTPUT_DIRECTORY = "Data"; // subfolder in OUTPUT_DIRECTORY for data file outputs
         public const string DEBUG_OUTPUT_DIRECTORY = "_Debug";
         //public const string DEBUG_EXE_FILE_NAME = "_debug.exe";
         public const string GAME_FILE_NAME = "Game.agf";
@@ -43,27 +45,63 @@ namespace AGS.Editor
         public const string AGS_REGISTRY_KEY = @"SOFTWARE\Adventure Game Studio\AGS Editor";
         public const string SPRITE_FILE_NAME = "acsprset.spr";
         public const string SPRITE_INDEX_FILE_NAME = "sprindex.dat";
-		public const string LATEST_XML_VERSION = "3.0.3.2";
-        public const int    LATEST_XML_VERSION_INDEX = 7;
-        public static readonly string AUDIO_VOX_FILE_NAME = OUTPUT_DIRECTORY + Path.DirectorySeparatorChar + "audio.vox";
+
+        /* 
+         * LATEST_XML_VERSION is the last version of the Editor that used 4-point-4-number string
+         * to identify the version of AGS that saved game project.
+         * DO NOT MODIFY THIS CONSTANT UNLESS YOU REALLY WANT TO CHANGE THE IDENTIFICATION METHOD.
+        */
+        public const string LATEST_XML_VERSION = "3.0.3.2";
+
+        /*
+         * LATEST_XML_VERSION_INDEX is the current project XML version.
+         * DO increase this number for every new public release that introduces a new
+         * property in the main project's XML, otherwise people who are trying to open
+         * newer projects in older Editors will get confusing error messages, instead
+         * of clear "wrong version of AGS" message.
+        */
+        /*
+         *  6: 3.2.1
+         *  7: 3.2.2
+         *  8: 3.3.1.1163 - Settings.LastBuildConfiguration;
+         *  9: 3.4.0.1    - Settings.CustomResolution
+         * 10: 3.4.0.2    - Settings.BuildTargets
+         * 11: 3.4.0.4    - Region.TintLuminance
+         * 12: 3.4.0.8    - Settings.UseOldCustomDialogOptionsAPI & ScriptAPILevel
+         * 13: 3.4.0.9    - Settings.ScriptCompatLevel
+         * 14: 3.4.1      - Settings.RenderAtScreenResolution
+         * 15: 3.4.1.2    - DefaultSetup node
+        */
+        public const int    LATEST_XML_VERSION_INDEX = 15;
+        /*
+         * LATEST_USER_DATA_VERSION is the last version of the user data file that used a
+         * 4-point-4-number string to identify the version of AGS that saved the file.
+         * DO NOT MODIFY THIS CONSTANT UNLESS YOU REALLY WANT TO CHANGE THE IDENTIFICATION METHOD.
+        */
+        private const string LATEST_USER_DATA_VERSION = "3.0.2.1";
+        /*
+         * 1: 3.0.2.1
+         * 2: 3.4.0.1    - WorkspaceState section
+        */
+        public const int LATEST_USER_DATA_XML_VERSION_INDEX = 2;
+        public const string AUDIO_VOX_FILE_NAME = "audio.vox";
 
         private const string USER_DATA_FILE_NAME = GAME_FILE_NAME + USER_DATA_FILE_SUFFIX;
         private const string USER_DATA_FILE_SUFFIX = ".user";
         private const string LOCK_FILE_NAME = "_OpenInEditor.lock";
         private const string XML_USER_DATA_ROOT_NODE_NAME = "AGSEditorUserData";
-        private const string LATEST_USER_DATA_VERSION = "3.0.2.1";
         private const string XML_ROOT_NODE_NAME = "AGSEditorDocument";
         private const string XML_ATTRIBUTE_VERSION = "Version";
         private const string XML_ATTRIBUTE_VERSION_INDEX = "VersionIndex";
         private const string XML_ATTRIBUTE_EDITOR_VERSION = "EditorVersion";
-        private const string COMPILED_DTA_FILE_NAME = "game28.dta";
-        private const string CONFIG_FILE_NAME = "acsetup.cfg";
-        private const string ENGINE_EXE_FILE_NAME = "acwin.exe";
-        private const string CUSTOM_ICON_FILE_NAME = "user.ico";
-        private const string SETUP_ICON_FILE_NAME = "setup.ico";
-        private const string SETUP_PROGRAM_SOURCE_FILE = "setup.dat";
-        private const string COMPILED_SETUP_FILE_NAME = "winsetup.exe";
-		private const string GAME_EXPLORER_THUMBNAIL_FILE_NAME = "GameExplorer.png";
+        public const string COMPILED_DTA_FILE_NAME = "game28.dta";
+        public const string CONFIG_FILE_NAME = "acsetup.cfg";
+        public const string ENGINE_EXE_FILE_NAME = "acwin.exe";
+        public const string CUSTOM_ICON_FILE_NAME = "user.ico";
+        public const string SETUP_ICON_FILE_NAME = "setup.ico";
+        public const string SETUP_PROGRAM_SOURCE_FILE = "setup.dat";
+        public const string COMPILED_SETUP_FILE_NAME = "winsetup.exe";
+		public const string GAME_EXPLORER_THUMBNAIL_FILE_NAME = "GameExplorer.png";
 		private const long MINIMUM_BYTES_FREE_TO_SAVE = 15000000;
 		private const long MINIMUM_BYTES_FREE_TO_COMPILE = 50000000;
 
@@ -80,6 +118,9 @@ namespace AGS.Editor
 		private bool _applicationStarted = false;
         private FileSystemWatcher _fileWatcher = null;
         private FileStream _lockFile = null;
+
+        private static readonly string[] _scriptAPIVersionMacros;
+        private static readonly string[] _scriptCompatLevelMacros;
 
         private static AGSEditor _instance;
 
@@ -98,6 +139,28 @@ namespace AGS.Editor
         private AGSEditor()
         {
             _editorExePath = Process.GetCurrentProcess().MainModule.FileName;
+        }
+
+        static AGSEditor()
+        {
+            _scriptAPIVersionMacros = new string[Enum.GetNames(typeof(ScriptAPIVersion)).Length];
+            foreach (ScriptAPIVersion v in Enum.GetValues(typeof(ScriptAPIVersion)))
+            {
+                if (v == ScriptAPIVersion.Highest)
+                    continue; // don't enlist "Highest" constant
+                _scriptAPIVersionMacros[(int)v] = "SCRIPT_API_" + v.ToString();
+            }
+            _scriptCompatLevelMacros = new string[Enum.GetNames(typeof(ScriptAPIVersion)).Length];
+            foreach (ScriptAPIVersion v in Enum.GetValues(typeof(ScriptAPIVersion)))
+            {
+                if (v == ScriptAPIVersion.Highest)
+                    continue; // don't enlist "Highest" constant
+                _scriptCompatLevelMacros[(int)v] = "SCRIPT_COMPAT_" + v.ToString();
+            }
+            BuildTargetsInfo.RegisterBuildTarget(new BuildTargetDataFile());
+            BuildTargetsInfo.RegisterBuildTarget(new BuildTargetWindows());
+            BuildTargetsInfo.RegisterBuildTarget(new BuildTargetDebug());
+            BuildTargetsInfo.RegisterBuildTarget(new BuildTargetLinux());
         }
 
         public Game CurrentGame
@@ -129,22 +192,6 @@ namespace AGS.Editor
         {
             get { return Path.GetFileName(this.GameDirectory); }
         }
-
-		private string CompiledEXEFileName
-		{
-			get
-			{
-				return Path.Combine(OUTPUT_DIRECTORY, this.BaseGameFileName + ".exe");
-			}
-		}
-
-		private string DebugEXEFileName
-		{
-			get
-			{
-				return Path.Combine(DEBUG_OUTPUT_DIRECTORY, this.BaseGameFileName + ".exe");
-			}
-		}
 
         public Script BuiltInScriptHeader
         {
@@ -562,6 +609,26 @@ namespace AGS.Editor
                 {
                     throw new AGSEditorException("User data file is from a newer version of AGS or an unsupported beta version. Please check the AGS website for a newer version of the editor.");
                 }
+                string userDataSavedWithEditorVersion = null;
+                XmlAttribute editorVersionNode = doc.DocumentElement.Attributes[XML_ATTRIBUTE_EDITOR_VERSION];
+                if (editorVersionNode != null)
+                {
+                    userDataSavedWithEditorVersion = editorVersionNode.InnerText;
+                }
+                int? versionIndex = null;
+                XmlAttribute versionIndexNode = doc.DocumentElement.Attributes[XML_ATTRIBUTE_VERSION_INDEX];
+                if (versionIndexNode != null)
+                {
+                    // From 3.0.2.1 we switched to a simple integer version, it's easier to
+                    // compare than using the 4-point version
+                    versionIndex = Convert.ToInt32(versionIndexNode.InnerText);
+                    if ((versionIndex < 1) || (versionIndex > LATEST_USER_DATA_XML_VERSION_INDEX))
+                    {
+                        throw new AGSEditorException("This game's user data file is from " +
+                            ((userDataSavedWithEditorVersion == null) ? "a newer version" : ("version " + userDataSavedWithEditorVersion))
+                            + " of AGS or an unsupported beta version. Please check the AGS website for a newer version of the editor.");
+                    }
+                }
                 docNode = doc.DocumentElement;
             }
             catch (Exception ex)
@@ -570,6 +637,7 @@ namespace AGS.Editor
             }
 
             Factory.Events.OnLoadedUserData(docNode);
+            _game.WorkspaceState.FromXml(docNode);
         }
 
         private void VerifyGameNotAlreadyOpenInAnotherEditor()
@@ -752,6 +820,27 @@ namespace AGS.Editor
             {
                 preprocessor.DefineMacro("STRICT_AUDIO", "1");
             }
+            if (!_game.Settings.UseOldCustomDialogOptionsAPI)
+            {
+                preprocessor.DefineMacro("NEW_DIALOGOPTS_API", "1");
+            }
+            // Define Script API level macros
+            foreach (ScriptAPIVersion v in Enum.GetValues(typeof(ScriptAPIVersion)))
+            {
+                if (v == ScriptAPIVersion.Highest)
+                    continue; // skip Highest constant
+                if (v > _game.Settings.ScriptAPIVersionReal)
+                    continue;
+                preprocessor.DefineMacro(_scriptAPIVersionMacros[(int)v], "1");
+            }
+            foreach (ScriptAPIVersion v in Enum.GetValues(typeof(ScriptAPIVersion)))
+            {
+                if (v == ScriptAPIVersion.Highest)
+                    continue; // skip Highest constant
+                if (v < _game.Settings.ScriptCompatLevelReal)
+                    continue;
+                preprocessor.DefineMacro(_scriptCompatLevelMacros[(int)v], "1");
+            }
         }
 
 		/// <summary>
@@ -859,7 +948,8 @@ namespace AGS.Editor
 
         private void DeleteAnyExistingSplitResourceFiles()
         {
-            foreach (string fileName in Utilities.GetDirectoryFileList(OUTPUT_DIRECTORY, this.BaseGameFileName + ".0*"))
+            string dir = Path.Combine(OUTPUT_DIRECTORY, DATA_OUTPUT_DIRECTORY);
+            foreach (string fileName in Utilities.GetDirectoryFileList(dir, this.BaseGameFileName + ".0*"))
             {
                 File.Delete(fileName);
             }
@@ -868,7 +958,8 @@ namespace AGS.Editor
         private void CreateAudioVOXFile(bool forceRebuild)
         {
             List<string> fileListForVox = new List<string>();
-            bool rebuildVox = (!File.Exists(AUDIO_VOX_FILE_NAME)) || (forceRebuild);
+            string audioVox = Path.Combine(OUTPUT_DIRECTORY, Path.Combine(DATA_OUTPUT_DIRECTORY, AUDIO_VOX_FILE_NAME));
+            bool rebuildVox = (!File.Exists(audioVox)) || (forceRebuild);
 
             foreach (AudioClip clip in _game.RootAudioClipFolder.GetAllAudioClipsFromAllSubFolders())
             {
@@ -884,49 +975,43 @@ namespace AGS.Editor
                 }
             }
 
-            if (File.Exists(AUDIO_VOX_FILE_NAME) && 
+            if (File.Exists(audioVox) && 
                 (fileListForVox.Count == 0) || (rebuildVox))
             {
-                File.Delete(AUDIO_VOX_FILE_NAME);
+                File.Delete(audioVox);
             }
 
             if ((rebuildVox) && (fileListForVox.Count > 0))
             {
-                Factory.NativeProxy.CreateVOXFile(AUDIO_VOX_FILE_NAME, fileListForVox.ToArray());
+                Factory.NativeProxy.CreateVOXFile(audioVox, fileListForVox.ToArray());
             }
         }
 
         private object CreateCompiledFiles(object parameter)
         {
-            bool forceRebuild = (bool)parameter;
-            SetMODMusicFlag();
-            DeleteAnyExistingSplitResourceFiles();
-            Factory.NativeProxy.CompileGameToDTAFile(_game, COMPILED_DTA_FILE_NAME);
-            Factory.NativeProxy.CreateGameEXE(ConstructFileListForEXE(), _game, this.BaseGameFileName);
-            File.Delete(COMPILED_DTA_FILE_NAME);
-            CreateCompiledSetupProgram();
-            CreateAudioVOXFile(forceRebuild);
-
+            CompileScriptsParameters parameters = (CompileScriptsParameters)parameter;
+            CompileMessages errors = parameters.Errors;
+            bool forceRebuild = parameters.RebuildAll;
+            IBuildTarget targetDataFile = BuildTargetsInfo.FindBuildTargetByName(BuildTargetsInfo.DATAFILE_TARGET_NAME);
+            targetDataFile.Build(errors, forceRebuild); // ensure that data file is built first
             if (ExtraOutputCreationStep != null)
             {
-                ExtraOutputCreationStep();
+                ExtraOutputCreationStep(false);
             }
-            
-            return null;
-        }
 
-        private object CreateDebugFiles(object parameter)
-        {
-            SetMODMusicFlag();
-            Factory.NativeProxy.CompileGameToDTAFile(_game, COMPILED_DTA_FILE_NAME);
-            Factory.NativeProxy.CreateDebugMiniEXE(new string[] { COMPILED_DTA_FILE_NAME }, this.BaseGameFileName + ".exe");
-            File.Delete(COMPILED_DTA_FILE_NAME);
-
-            if (ExtraOutputCreationStep != null)
+            // TODO: As of now the build targets other than DataFile and Debug do DEPLOYMENT rather than BUILDING
+            // (BuildTargetDebug, - which is never used right here, - seem to combine both operations:
+            // building and preparing game to run under Windows).
+            // This is why the BuildTargetDataFile is called explicitly at the start.
+            // And that is why the rest must be called AFTER the ExtraOutputCreationStep.
+            //
+            // Possible solution that could improve situation could be to develop some kind of a BuildStep interface,
+            // having BuildTargets providing their build steps of corresponding type and execution order.
+            foreach (IBuildTarget target in BuildTargetsInfo.GetSelectedBuildTargets())
             {
-                ExtraOutputCreationStep();
+                if (target != targetDataFile) target.Build(errors, forceRebuild);
+                Utilities.SetDirectoryFilesAccess(Path.Combine(Factory.AGSEditor.CurrentGame.DirectoryPath, AGSEditor.OUTPUT_DIRECTORY));
             }
-
             return null;
         }
 
@@ -972,11 +1057,13 @@ namespace AGS.Editor
                 errors.Add(new CompileError("The game is set to start in room " + _game.PlayerCharacter.StartingRoom + " which does not exist"));
             }
 
-			if ((_game.Settings.GraphicsDriver == GraphicsDriver.D3D9) &&
-				(_game.Settings.ColorDepth == GameColorDepth.Palette))
-			{
-				errors.Add(new CompileError("Direct3D graphics driver does not support 256-colour games"));
-			}
+            if (_game.Settings.ColorDepth == GameColorDepth.Palette)
+            {
+                if (_game.DefaultSetup.GraphicsDriver == GraphicsDriver.D3D9)
+                    errors.Add(new CompileError("Direct3D graphics driver does not support 256-colour games"));
+                else if (_game.DefaultSetup.GraphicsDriver == GraphicsDriver.OpenGL)
+                    errors.Add(new CompileError("OpenGL graphics driver does not support 256-colour games"));
+            }
 
 			if ((_game.Settings.ColorDepth == GameColorDepth.Palette) &&
 				(_game.Settings.RoomTransition == RoomTransitionStyle.CrossFade))
@@ -1104,6 +1191,23 @@ namespace AGS.Editor
 			throw new AGSEditorException("Unable to find drive for game path: " + _game.DirectoryPath);
 		}
 
+		public bool NeedsRebuildForDebugMode()
+		{
+			bool result;
+			BuildConfiguration pending;
+
+			pending = this._game.Settings.DebugMode ? BuildConfiguration.Debug : BuildConfiguration.Release;
+			if (this._game.WorkspaceState.LastBuildConfiguration != pending)
+			{
+				result = true;
+				this._game.WorkspaceState.LastBuildConfiguration = pending;
+			}
+			else
+				result = false;
+
+			return result;
+		}
+
 		public CompileMessages CompileGame(bool forceRebuild, bool createMiniExeForDebug)
         {
             Factory.GUIController.ClearOutputPanel();
@@ -1137,18 +1241,13 @@ namespace AGS.Editor
 				}
 				else if (!errors.HasErrors)
 				{
-					string sourceEXE = Path.Combine(this.EditorDirectory, ENGINE_EXE_FILE_NAME);
-					if (!File.Exists(sourceEXE))
+					if (createMiniExeForDebug)
 					{
-						errors.Add(new CompileError("Cannot find the file '" + sourceEXE + "'. This file is required in order to compile your game."));
-					}
-					else if (createMiniExeForDebug)
-					{
-						CreateMiniEXEForDebugging(sourceEXE, errors);
+						CreateMiniEXEForDebugging(errors);
 					}
 					else
 					{
-						CreateCompiledFiles(sourceEXE, errors, forceRebuild);
+						CreateCompiledFiles(errors, forceRebuild);
 					}
 				}
 			}
@@ -1160,202 +1259,31 @@ namespace AGS.Editor
             return errors;
         }
 
-		private string GenerateGameExplorerXML()
-		{
-			StringWriter sw = new StringWriter();
-			XmlTextWriter writer = new XmlTextWriter(sw);
-			writer.Formatting = Formatting.Indented;
-
-			writer.WriteProcessingInstruction("xml", "version=\"1.0\" encoding=\"utf-8\"");
-
-			writer.WriteStartElement("GameDefinitionFile");
-			writer.WriteAttributeString("xmlns:baseTypes", "urn:schemas-microsoft-com:GamesExplorerBaseTypes.v1");
-			writer.WriteAttributeString("xmlns", "urn:schemas-microsoft-com:GameDescription.v1");
-
-			writer.WriteStartElement("GameDefinition");
-			writer.WriteAttributeString("gameID", _game.Settings.GUIDAsString);
-			writer.WriteElementString("Name", _game.Settings.GameName);
-			writer.WriteElementString("Description", _game.Settings.Description);
-			writer.WriteElementString("ReleaseDate", _game.Settings.ReleaseDate.ToString("yyyy-MM-dd"));
-
-			writer.WriteStartElement("Genres");
-			writer.WriteElementString("Genre", _game.Settings.Genre);
-			writer.WriteEndElement();
-
-			if (!string.IsNullOrEmpty(_game.Settings.SaveGameFolderName))
-			{
-				writer.WriteStartElement("SavedGames");
-				writer.WriteAttributeString("baseKnownFolderID", "{4C5C32FF-BB9D-43B0-B5B4-2D72E54EAAA4}");
-				writer.WriteAttributeString("path", _game.Settings.SaveGameFolderName);
-				writer.WriteEndElement();
-			}
-
-			writer.WriteStartElement("Version");
-			writer.WriteStartElement("VersionNumber");
-			writer.WriteAttributeString("versionNumber", _game.Settings.Version);
-			writer.WriteEndElement();
-			writer.WriteEndElement();
-
-			writer.WriteStartElement("WindowsSystemPerformanceRating");
-			writer.WriteAttributeString("minimum", _game.Settings.WindowsExperienceIndex.ToString());
-			writer.WriteAttributeString("recommended", _game.Settings.WindowsExperienceIndex.ToString());
-			writer.WriteEndElement();
-
-			if (!string.IsNullOrEmpty(_game.Settings.DeveloperName))
-			{
-				writer.WriteStartElement("Developers");
-				writer.WriteStartElement("Developer");
-				writer.WriteAttributeString("URI", _game.Settings.DeveloperURL);
-				writer.WriteString(_game.Settings.DeveloperName);
-				writer.WriteEndElement();
-				writer.WriteEndElement();
-			}
-
-			writer.WriteEndElement();
-			writer.WriteEndElement();
-			writer.Flush();
-
-			string xml = sw.ToString();
-			writer.Close();
-			return xml;
-		}
-
-		private void UpdateVistaGameExplorerResources(string newExeName) 
-		{
-			if (_game.Settings.GameExplorerEnabled)
-			{
-				string xml = GenerateGameExplorerXML();
-				Factory.NativeProxy.UpdateGameExplorerXML(newExeName, Encoding.UTF8.GetBytes(xml));
-
-				if (File.Exists(GAME_EXPLORER_THUMBNAIL_FILE_NAME))
-				{
-					BinaryReader br = new BinaryReader(new FileStream(GAME_EXPLORER_THUMBNAIL_FILE_NAME, FileMode.Open, FileAccess.Read));
-					byte[] data = br.ReadBytes((int)br.BaseStream.Length);
-					br.Close();
-
-					Factory.NativeProxy.UpdateGameExplorerThumbnail(newExeName, data);
-				}
-			}
-			else
-			{
-				Factory.NativeProxy.UpdateGameExplorerXML(newExeName, null);
-			}
-		}
-
         /// <summary>
         /// Creates a mini-exe that only contains the GAME.DTA file,
         /// in order to improve compile speed.
         /// All other files will be sourced from the game folder.
         /// </summary>
-        private void CreateMiniEXEForDebugging(string sourceEXE, CompileMessages errors)
+        private void CreateMiniEXEForDebugging(CompileMessages errors)
+        {
+            IBuildTarget target = BuildTargetsInfo.FindBuildTargetByName(BuildTargetDebug.DEBUG_TARGET_NAME);
+            target.Build(errors, false);
+            if (ExtraOutputCreationStep != null)
+            {
+                ExtraOutputCreationStep(true);
+            }
+        }
+
+        private void CreateCompiledFiles(CompileMessages errors, bool forceRebuild)
         {
             try
             {
-                if (!Directory.Exists(DEBUG_OUTPUT_DIRECTORY))
-                {
-                    Directory.CreateDirectory(DEBUG_OUTPUT_DIRECTORY);
-                }
-				Utilities.DeleteFileIfExists(this.CompiledEXEFileName);
-                File.Copy(sourceEXE, this.BaseGameFileName + ".exe", true);
-
-                BusyDialog.Show("Please wait while we prepare to run the game...", new BusyDialog.ProcessingHandler(CreateDebugFiles), null);
-
-				Utilities.DeleteFileIfExists(this.DebugEXEFileName);
-				File.Move(this.BaseGameFileName + ".exe", this.DebugEXEFileName);
-
-                // copy configuration from Compiled folder to use with Debugging
-                string cfgFilePath = Path.Combine(OUTPUT_DIRECTORY, CONFIG_FILE_NAME);
-                if (File.Exists(cfgFilePath))
-                {
-                    File.Copy(cfgFilePath, Path.Combine(DEBUG_OUTPUT_DIRECTORY, CONFIG_FILE_NAME), true);
-                }
-
-                foreach (Plugin plugin in _game.Plugins)
-                {
-                    File.Copy(Path.Combine(this.EditorDirectory, plugin.FileName), Path.Combine(DEBUG_OUTPUT_DIRECTORY, plugin.FileName), true);
-                }
+                BusyDialog.Show("Please wait while your game is created...", new BusyDialog.ProcessingHandler(CreateCompiledFiles), new CompileScriptsParameters(errors, forceRebuild));
             }
             catch (Exception ex)
             {
                 errors.Add(new CompileError("Unexpected error: " + ex.Message));
             }
-        }
-
-        private void CreateCompiledFiles(string sourceEXE, CompileMessages errors, bool forceRebuild)
-        {
-            try
-            {
-				string newExeName = this.CompiledEXEFileName;
-                File.Copy(sourceEXE, newExeName, true);
-
-                if (File.Exists(CUSTOM_ICON_FILE_NAME))
-                {
-                    try
-                    {
-                        Factory.NativeProxy.UpdateFileIcon(newExeName, CUSTOM_ICON_FILE_NAME);
-                    }
-                    catch (AGSEditorException ex)
-                    {
-                        Factory.GUIController.ShowMessage("An problem occurred setting your custom icon onto the EXE file. The error was: " + ex.Message, MessageBoxIcon.Warning);
-                    }
-                }
-
-				try
-				{
-					UpdateVistaGameExplorerResources(newExeName);
-				}
-				catch (Exception ex)
-				{
-					errors.Add(new CompileError("Unable to register for Vista Game Explorer: " + ex.Message));
-				}
-
-                try
-                {
-                    Factory.NativeProxy.UpdateFileVersionInfo(newExeName, _game.Settings.DeveloperName, _game.Settings.GameName);
-                }
-                catch (Exception ex)
-                {
-                    errors.Add(new CompileError("Unable to set EXE name/description: " + ex.Message));
-                }
-
-                BusyDialog.Show("Please wait while your game is created...", new BusyDialog.ProcessingHandler(CreateCompiledFiles), forceRebuild);
-
-                foreach (Plugin plugin in _game.Plugins)
-                {
-                    File.Copy(Path.Combine(this.EditorDirectory, plugin.FileName), Path.Combine(OUTPUT_DIRECTORY, plugin.FileName), true);
-                }
-            }
-            catch (Exception ex)
-            {
-                errors.Add(new CompileError("Unexpected error: " + ex.Message));
-            }
-        }
-
-        private void CreateCompiledSetupProgram()
-        {
-            string setupFileName = Path.Combine(OUTPUT_DIRECTORY, COMPILED_SETUP_FILE_NAME);
-            Resources.ResourceManager.CopyFileFromResourcesToDisk(SETUP_PROGRAM_SOURCE_FILE, setupFileName);
-
-            if (File.Exists(SETUP_ICON_FILE_NAME))
-            {
-                try
-                {
-                    Factory.NativeProxy.UpdateFileIcon(setupFileName, SETUP_ICON_FILE_NAME);
-                }
-                catch (AGSEditorException ex)
-                {
-                    Factory.GUIController.ShowMessage("An problem occurred setting your custom icon onto the setup file. The error was: " + ex.Message, MessageBoxIcon.Warning);
-                }
-            }
-
-            string gameFileName = this.BaseGameFileName + ".exe";
-
-            BinaryWriter sw = new BinaryWriter(File.Open(setupFileName, FileMode.Append, FileAccess.Write));
-            sw.Write(Encoding.ASCII.GetBytes(gameFileName));
-            sw.Write((byte)0);
-            sw.Write(gameFileName.Length + 1);
-            sw.Write(Encoding.ASCII.GetBytes("STCUSTOM"));
-            sw.Close();
         }
 
         private string[] ConstructFileListForEXE()
@@ -1386,7 +1314,7 @@ namespace AGS.Editor
             return files.ToArray();
         }
 
-        private void SetMODMusicFlag()
+        public void SetMODMusicFlag()
         {
             foreach (AudioClip clip in _game.RootAudioClipFolder.GetAllAudioClipsFromAllSubFolders())
             {
@@ -1493,9 +1421,51 @@ namespace AGS.Editor
             return result;
         }
 
-		private void WriteConfigFile()
+        private void WriteCustomPathToConfig(string section, string key, string cfg_path, bool use_custom_path, string custom_path)
+        {
+            string path_value = ""; // no value
+            if (use_custom_path)
+            {
+                if (String.IsNullOrEmpty(custom_path))
+                    path_value = "."; // same directory
+                else
+                    path_value = custom_path;
+            }
+            NativeProxy.WritePrivateProfileString(section, key, path_value, cfg_path);
+        }
+
+        private static string GetGfxDriverConfigID(GraphicsDriver driver)
+        {
+            switch (driver)
+            {
+                case GraphicsDriver.Software: return "Software";
+                case GraphicsDriver.D3D9: return "D3D9";
+                case GraphicsDriver.OpenGL: return "OGL";
+            }
+            return "";
+        }
+
+        private static string MakeGameScalingConfig(GameScaling scaling, int multiplier)
+        {
+            string s;
+            switch (scaling)
+            {
+                case GameScaling.MaxInteger: s = "max_round"; break;
+                case GameScaling.StretchToFit: s = "stretch"; break;
+                case GameScaling.ProportionalStretch: s = "proportional"; break;
+                default: s = multiplier.ToString(); break;
+            }
+            return s;
+        }
+
+        /// <summary>
+        /// Writes up-to-date game information into configuration file.
+        /// This updates only values that strongly depend on game properties,
+        /// and does not affect user settings.
+        /// </summary>
+		public void WriteConfigFile(string outputDir)
 		{
-			string configFilePath = Path.Combine(OUTPUT_DIRECTORY, CONFIG_FILE_NAME);
+            string configFilePath = Path.Combine(outputDir, CONFIG_FILE_NAME);
 
 			if (!File.Exists(configFilePath))
 			{
@@ -1510,35 +1480,44 @@ namespace AGS.Editor
 				NativeProxy.WritePrivateProfileString("sound", "midiwinindx", "0", configFilePath);
 			}
 
+            if (_game.Settings.LetterboxMode)
+            {
+                NativeProxy.WritePrivateProfileString("misc", "defaultres", ((int)_game.Settings.LegacyLetterboxResolution).ToString(), configFilePath);
+                NativeProxy.WritePrivateProfileString("misc", "letterbox", "1", configFilePath);
+                NativeProxy.WritePrivateProfileString("misc", "game_width", null, configFilePath);
+                NativeProxy.WritePrivateProfileString("misc", "game_height", null, configFilePath);
+            }
+            else
+            {
+                NativeProxy.WritePrivateProfileString("misc", "defaultres", null, configFilePath);
+                NativeProxy.WritePrivateProfileString("misc", "letterbox", null, configFilePath);
+                NativeProxy.WritePrivateProfileString("misc", "game_width", _game.Settings.CustomResolution.Width.ToString(), configFilePath);
+                NativeProxy.WritePrivateProfileString("misc", "game_height", _game.Settings.CustomResolution.Height.ToString(), configFilePath);
+            }
 			NativeProxy.WritePrivateProfileString("misc", "gamecolordepth", (((int)_game.Settings.ColorDepth) * 8).ToString(), configFilePath);
 
-			int resolution = (int)_game.Settings.Resolution;
-			StringBuilder buffer = new StringBuilder(100);
-			NativeProxy.GetPrivateProfileString("misc", "defaultres", "NULL", buffer, buffer.Capacity, configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "driver", GetGfxDriverConfigID(_game.DefaultSetup.GraphicsDriver), configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "windowed", _game.DefaultSetup.Windowed ? "1" : "0", configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "screen_def", _game.DefaultSetup.Windowed ? "scaling" : "max", configFilePath);
 
-			if (buffer.ToString() != resolution.ToString())
-			{
-				NativeProxy.WritePrivateProfileString("misc", "defaultres", resolution.ToString(), configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "game_scale_fs", MakeGameScalingConfig(_game.DefaultSetup.FullscreenGameScaling, 0), configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "game_scale_win", MakeGameScalingConfig(_game.DefaultSetup.GameScaling, _game.DefaultSetup.GameScalingMultiplier), configFilePath);
 
-				int screenRes = 1;
-				if ((_game.Settings.Resolution == GameResolutions.R320x200) ||
-					(_game.Settings.Resolution == GameResolutions.R320x240)) 
-				{
-					screenRes = 0;
-				}
-				NativeProxy.WritePrivateProfileString("misc", "screenres", screenRes.ToString(), configFilePath);
-			}
-
-            int letterbox = _game.Settings.LetterboxMode ? 1 : 0;
-            NativeProxy.WritePrivateProfileString("misc", "letterbox", letterbox.ToString(), configFilePath);
-
-			NativeProxy.GetPrivateProfileString("misc", "defaultgfxdriver", "NULL", buffer, buffer.Capacity, configFilePath);
-			if (buffer.ToString() != _game.Settings.GraphicsDriver.ToString())
-			{
-				NativeProxy.WritePrivateProfileString("misc", "defaultgfxdriver", _game.Settings.GraphicsDriver.ToString(), configFilePath);
-				NativeProxy.WritePrivateProfileString("misc", "gfxdriver", _game.Settings.GraphicsDriver.ToString(), configFilePath);
-			}
-            NativeProxy.WritePrivateProfileString("misc", "titletext", _game.Settings.GameName + " Setup", configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "filter", _game.DefaultSetup.GraphicsFilter, configFilePath);
+            NativeProxy.WritePrivateProfileString("graphics", "vsync", _game.DefaultSetup.VSync ? "1" : "0", configFilePath);
+            NativeProxy.WritePrivateProfileString("misc", "antialias", _game.DefaultSetup.AAScaledSprites ? "1" : "0", configFilePath);
+            NativeProxy.WritePrivateProfileString("misc", "notruecolor", _game.DefaultSetup.DowngradeTo16bit ? "1" : "0", configFilePath);
+            bool render_at_screenres = _game.Settings.RenderAtScreenResolution == RenderAtScreenResolution.UserDefined ?
+                _game.DefaultSetup.RenderAtScreenResolution : _game.Settings.RenderAtScreenResolution == RenderAtScreenResolution.True;
+            NativeProxy.WritePrivateProfileString("graphics", "render_at_screenres", render_at_screenres ? "1" : "0", configFilePath);
+            NativeProxy.WritePrivateProfileString("language", "translation", _game.DefaultSetup.Translation, configFilePath);
+            NativeProxy.WritePrivateProfileString("mouse", "auto_lock", _game.DefaultSetup.AutoLockMouse ? "1" : "0", configFilePath);
+            NativeProxy.WritePrivateProfileString("mouse", "speed", _game.DefaultSetup.MouseSpeed.ToString(CultureInfo.InvariantCulture), configFilePath);
+            // Note: sprite cache size is written in KB (while we have it in MB on the editor pane)
+            NativeProxy.WritePrivateProfileString("misc", "cachemax", (_game.DefaultSetup.SpriteCacheSize * 1024).ToString(), configFilePath);
+            WriteCustomPathToConfig("misc", "user_data_dir", configFilePath, _game.DefaultSetup.UseCustomSavePath, _game.DefaultSetup.CustomSavePath);
+            WriteCustomPathToConfig("misc", "shared_data_dir", configFilePath, _game.DefaultSetup.UseCustomAppDataPath, _game.DefaultSetup.CustomAppDataPath);
+            NativeProxy.WritePrivateProfileString("misc", "titletext", _game.DefaultSetup.TitleText, configFilePath);
         }
 
 		private void BackupCurrentGameFile()
@@ -1570,8 +1549,12 @@ namespace AGS.Editor
             writer.WriteComment("DO NOT EDIT THIS FILE. It is automatically generated by the AGS Editor, changing it manually could break your game");
             writer.WriteStartElement(XML_USER_DATA_ROOT_NODE_NAME);
             writer.WriteAttributeString(XML_ATTRIBUTE_VERSION, LATEST_USER_DATA_VERSION);
+            writer.WriteAttributeString(XML_ATTRIBUTE_VERSION_INDEX, LATEST_USER_DATA_XML_VERSION_INDEX.ToString());
+            writer.WriteAttributeString(XML_ATTRIBUTE_EDITOR_VERSION, AGS.Types.Version.AGS_EDITOR_FRIENDLY_VERSION);
 
             Factory.Events.OnSavingUserData(writer);
+
+            _game.WorkspaceState.ToXml(writer);
 
             writer.WriteEndElement();
             writer.Flush();
@@ -1595,7 +1578,7 @@ namespace AGS.Editor
 
         private object SaveGameFilesProcess(object parameter)
         {
-			WriteConfigFile();
+			WriteConfigFile(Path.Combine(OUTPUT_DIRECTORY, DATA_OUTPUT_DIRECTORY));
 
             SaveUserDataFile();
 

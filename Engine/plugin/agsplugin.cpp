@@ -15,8 +15,6 @@
 #include <vector>
 
 #include "util/wgt2allg.h"
-#include "plugin/agsplugin.h"
-#include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "ac/roomstruct.h"
 #include "ac/view.h"
@@ -24,7 +22,6 @@
 #include "ac/display.h"
 #include "ac/draw.h"
 #include "ac/dynamicsprite.h"
-#include "ac/file.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/global_audio.h"
@@ -35,6 +32,7 @@
 #include "ac/movelist.h"
 #include "ac/objectcache.h"
 #include "ac/parser.h"
+#include "ac/path_helper.h"
 #include "ac/record.h"
 #include "ac/roomstatus.h"
 #include "ac/string.h"
@@ -42,25 +40,29 @@
 #include "util/string_utils.h"
 #include "debug/debug_log.h"
 #include "debug/debugger.h"
+#include "device/mousew32.h"
 #include "gui/guidefines.h"
 #include "main/engine.h"
 #include "media/audio/audio.h"
 #include "media/audio/sound.h"
+#include "plugin/agsplugin.h"
+#include "plugin/plugin_engine.h"
 #include "plugin/pluginobjectreader.h"
 #include "script/script.h"
 #include "script/script_runtime.h"
 #include "ac/spritecache.h"
 #include "util/stream.h"
-#include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
+#include "gfx/graphicsdriver.h"
+#include "gfx/gfxfilter.h"
 #include "script/runtimescriptvalue.h"
 #include "debug/out.h"
 #include "ac/dynobj/scriptstring.h"
+#include "main/graphics_mode.h"
+#include "gfx/gfx_util.h"
 
-using AGS::Common::Stream;
-
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 
 #if defined(BUILTIN_PLUGINS)
@@ -74,7 +76,6 @@ namespace BitmapHelper = AGS::Common::BitmapHelper;
 #endif // BUILTIN_PLUGINS
 
 #if defined(MAC_VERSION)
-extern char appDirectory[512];
 extern "C"
 {
     int osx_sys_question(AL_CONST char *msg, AL_CONST char *but1, AL_CONST char *but2);
@@ -94,8 +95,6 @@ extern "C"
 
 
 extern IGraphicsDriver *gfxDriver;
-extern int scrnwid,scrnhit;
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
 extern int mousex, mousey;
 extern int displayed_room;
 extern roomstruct thisroom;
@@ -111,14 +110,12 @@ extern ccInstance *gameinst, *roominst;
 extern CharacterCache *charcache;
 extern ObjectCache objcache[MAX_INIT_SPR];
 extern MoveList *mls;
-extern Bitmap *virtual_screen;
 extern int numlines;
 extern char lines[MAXLINE][200];
 extern color palette[256];
 extern int offsetx, offsety;
 extern PluginObjectReader pluginReaders[MAX_PLUGIN_OBJECT_READERS];
 extern int numPluginReaders;
-extern IAGSFontRenderer* fontRenderers[MAX_FONTS];
 extern RuntimeScriptValue GlobalReturnValue;
 extern ScriptString myScriptStringImpl;
 
@@ -169,7 +166,7 @@ const char* IAGSEngine::GetEngineVersion () {
     return get_engine_version();
 }
 void IAGSEngine::RegisterScriptFunction (const char*name, void*addy) {
-    ccAddExternalPluginFunction ((char*)name, addy);
+    ccAddExternalPluginFunction (name, addy);
 }
 const char* IAGSEngine::GetGraphicsDriverID()
 {
@@ -188,9 +185,6 @@ BITMAP *IAGSEngine::GetScreen ()
 }
 BITMAP *IAGSEngine::GetVirtualScreen () 
 {
-    if (!gfxDriver->UsesMemoryBackBuffer())
-        quit("!This plugin is not compatible with the Direct3D driver.");
-
 	// [IKM] Aaahh... this is very dangerous, but what can we do?
 	return (BITMAP*)gfxDriver->GetMemoryBackBuffer()->GetAllegroBitmap();
 }
@@ -242,24 +236,24 @@ int IAGSEngine::GetSavedData (char *buffer, int32 bufsize) {
 }
 void IAGSEngine::DrawText (int32 x, int32 y, int32 font, int32 color, char *text) 
 {
-    Common::Bitmap *ds = ::GetVirtualScreen();
+    Bitmap *ds = gfxDriver->GetMemoryBackBuffer();
     color_t text_color = ds->GetCompatibleColor(color);
     draw_and_invalidate_text(ds, x, y, font, text_color, text);
 }
 void IAGSEngine::GetScreenDimensions (int32 *width, int32 *height, int32 *coldepth) {
     if (width != NULL)
-        width[0] = scrnwid;
+        width[0] = play.viewport.GetWidth();
     if (height != NULL)
-        height[0] = scrnhit;
+        height[0] = play.viewport.GetHeight();
     if (coldepth != NULL)
-        coldepth[0] = final_col_dep;
+        coldepth[0] = scsystem.coldepth;
 }
 unsigned char ** IAGSEngine::GetRawBitmapSurface (BITMAP *bmp) {
     if (!is_linear_bitmap (bmp))
         quit("!IAGSEngine::GetRawBitmapSurface: invalid bitmap for access to surface");
     acquire_bitmap (bmp);
 
-	if (bmp == virtual_screen->GetAllegroBitmap())
+    if (bmp == gfxDriver->GetMemoryBackBuffer()->GetAllegroBitmap())
         plugins[this->pluginId].invalidatedRegion = 0;
 
     return bmp->line;
@@ -267,7 +261,7 @@ unsigned char ** IAGSEngine::GetRawBitmapSurface (BITMAP *bmp) {
 void IAGSEngine::ReleaseBitmapSurface (BITMAP *bmp) {
     release_bitmap (bmp);
 
-	if (bmp == virtual_screen->GetAllegroBitmap()) {
+    if (bmp == gfxDriver->GetMemoryBackBuffer()->GetAllegroBitmap()) {
         // plugin does not manaually invalidate stuff, so
         // we must invalidate the whole screen to be safe
         if (!plugins[this->pluginId].invalidatedRegion)
@@ -310,35 +304,38 @@ int IAGSEngine::FWrite (void *buffer, int32 len, int32 handle) {
     return fwrite (buffer, 1, len, (FILE*)handle);
 }
 void IAGSEngine::DrawTextWrapped (int32 xx, int32 yy, int32 wid, int32 font, int32 color, const char*text) {
-    int texthit = wgetfontheight(font);
+    // TODO: use generic function from the engine instead of having copy&pasted code here
+    int linespacing = getfontspacing_outlined(font);
 
     break_up_text_into_lines (wid, font, (char*)text);
 
-    Common::Bitmap *ds = ::GetVirtualScreen();
+    Bitmap *ds = gfxDriver->GetMemoryBackBuffer();
     color_t text_color = ds->GetCompatibleColor(color);
     multiply_up_coordinates((int*)&xx, (int*)&yy); // stupid! quick tweak
     for (int i = 0; i < numlines; i++)
-        draw_and_invalidate_text(ds, xx, yy + texthit*i, font, text_color, lines[i]);
+        draw_and_invalidate_text(ds, xx, yy + linespacing*i, font, text_color, lines[i]);
 }
 void IAGSEngine::SetVirtualScreen (BITMAP *bmp) {
 	// [IKM] Very, very dangerous :'(
+    // TODO: this won't work with hardware-accelerated renderers
     SetVirtualScreenRaw (bmp);
 }
 int IAGSEngine::LookupParserWord (const char *word) {
     return find_word_in_dictionary ((char*)word);
 }
 void IAGSEngine::BlitBitmap (int32 x, int32 y, BITMAP *bmp, int32 masked) {
-    wputblock_raw (::GetVirtualScreen(), x, y, bmp, masked);
+    wputblock_raw (gfxDriver->GetMemoryBackBuffer(), x, y, bmp, masked);
     invalidate_rect(x, y, x + bmp->w, y + bmp->h);
 }
 void IAGSEngine::BlitSpriteTranslucent(int32 x, int32 y, BITMAP *bmp, int32 trans) {
-    set_trans_blender(0, 0, 0, trans);
-    Common::Bitmap *ds = ::GetVirtualScreen();
-    // FIXME: call corresponding Graphics Blit
-	draw_trans_sprite(ds->GetAllegroBitmap(), bmp, x, y);
+    Bitmap wrap(bmp, true);
+    if (gfxDriver->UsesMemoryBackBuffer())
+        GfxUtil::DrawSpriteWithTransparency(gfxDriver->GetMemoryBackBuffer(), &wrap, x, y, trans);
+    else
+        GfxUtil::DrawSpriteBlend(gfxDriver->GetMemoryBackBuffer(), Point(x,y), &wrap, kBlendMode_Alpha, true, false, trans);
 }
 void IAGSEngine::BlitSpriteRotated(int32 x, int32 y, BITMAP *bmp, int32 angle) {
-    Common::Bitmap *ds = ::GetVirtualScreen();
+    Common::Bitmap *ds = gfxDriver->GetMemoryBackBuffer();
     // FIXME: call corresponding Graphics Blit
     rotate_sprite(ds->GetAllegroBitmap(), bmp, x, y, itofix(angle));
 }
@@ -445,6 +442,7 @@ AGSViewFrame *IAGSEngine::GetViewFrame (int32 view, int32 loop, int32 frame) {
 }
 int IAGSEngine::GetRawPixelColor (int32 color) {
     // Convert the standardized colour to the local gfx mode color
+    // TODO: this won't work with hardware-accelerated renderers
     int result;
     __my_setcolor(&result, color, ::GetVirtualScreen()->GetColorDepth());
 
@@ -487,7 +485,7 @@ void IAGSEngine::GetTextExtent (int32 font, const char *text, int32 *width, int3
         height[0] = wgettextheight ((char*)text, font);
 }
 void IAGSEngine::PrintDebugConsole (const char *text) {
-    DEBUG_CONSOLE("[PLUGIN] %s", text);
+    debug_script_log("[PLUGIN] %s", text);
     platform->WriteStdOut("[PLUGIN] %s", text);
 }
 int IAGSEngine::IsChannelPlaying (int32 channel) {
@@ -501,25 +499,28 @@ void IAGSEngine::PlaySoundChannel (int32 channel, int32 soundType, int32 volume,
         && (loop != 0))
         quit("IAGSEngine::PlaySoundChannel: streamed samples cannot loop");
 
+    // TODO: find out how engine was supposed to decide on where to load the sound from
+    AssetPath asset_name("", filename);
+
     if (soundType == PSND_WAVE)
-        newcha = my_load_wave (filename, volume, loop);
+        newcha = my_load_wave (asset_name, volume, loop);
     else if (soundType == PSND_MP3STREAM)
-        newcha = my_load_mp3 (filename, volume);
+        newcha = my_load_mp3 (asset_name, volume);
     else if (soundType == PSND_OGGSTREAM)
-        newcha = my_load_ogg (filename, volume);
+        newcha = my_load_ogg (asset_name, volume);
     else if (soundType == PSND_MP3STATIC)
-        newcha = my_load_static_mp3 (filename, volume, (loop != 0));
+        newcha = my_load_static_mp3 (asset_name, volume, (loop != 0));
     else if (soundType == PSND_OGGSTATIC)
-        newcha = my_load_static_ogg (filename, volume, (loop != 0));
+        newcha = my_load_static_ogg (asset_name, volume, (loop != 0));
     else if (soundType == PSND_MIDI) {
         if (midi_pos >= 0)
             quit("!IAGSEngine::PlaySoundChannel: MIDI already in use");
-        newcha = my_load_midi (filename, loop);
+        newcha = my_load_midi (asset_name, loop);
         newcha->set_volume (volume);
     }
 #ifndef PSP_NO_MOD_PLAYBACK
     else if (soundType == PSND_MOD) {
-        newcha = my_load_mod (filename, loop);
+        newcha = my_load_mod (asset_name, loop);
         newcha->set_volume (volume);
     }
 #endif
@@ -556,7 +557,7 @@ int IAGSEngine::GetFontType(int32 fontNum) {
     if ((fontNum < 0) || (fontNum >= game.numfonts))
         return FNT_INVALID;
 
-    if (fontRenderers[fontNum]->SupportsExtendedCharacters(fontNum))
+    if (font_supports_extended_characters(fontNum))
         return FNT_TTF;
 
     return FNT_SCI;
@@ -604,9 +605,7 @@ int IAGSEngine::CallGameScriptFunction(const char *name, int32 globalScript, int
     if (inside_script)
         return -300;
 
-    ccInstance *toRun = gameinst;
-    if (!globalScript)
-        toRun = roominst;
+    ccInstance *toRun = GetScriptInstanceByType(globalScript ? kScInstGame : kScInstRoom);
 
     RuntimeScriptValue params[3];
     params[0].SetPluginArgument(arg1);
@@ -650,40 +649,11 @@ void IAGSEngine::QueueGameScriptFunction(const char *name, int32 globalScript, i
         return;
     }
 
-    // queue it up, baby!
-    char scNameToRun[100];
-    if (globalScript) {
+    if (numArgs < 0 || numArgs > 2)
+        quit("IAGSEngine::QueueGameScriptFunction: invalid number of arguments");
 
-        if (numArgs == 0) {
-            strcpy(scNameToRun, "");
-        }
-        else if (numArgs == 1) {
-            strcpy(scNameToRun, "!");
-        }
-        else if (numArgs == 2) {
-            strcpy(scNameToRun, "#");
-        }
-        else
-            quit("IAGSEngine::QueueGameScriptFunction: invalid number of arguments");
-    }
-    else {
-        // room script
-        if (numArgs == 0) {
-            strcpy(scNameToRun, "|");
-        }
-        else if (numArgs == 1) {
-            strcpy(scNameToRun, "$");
-        }
-        else if (numArgs == 2) {
-            strcpy(scNameToRun, "%");
-        }
-        else
-            quit("IAGSEngine::QueueGameScriptFunction: invalid number of arguments");
-
-    }
-    strcat(scNameToRun, name);
-
-    curscript->run_another(scNameToRun, RuntimeScriptValue().SetPluginArgument(arg1), RuntimeScriptValue().SetPluginArgument(arg2));
+    curscript->run_another(name, globalScript ? kScInstGame : kScInstRoom, numArgs,
+        RuntimeScriptValue().SetPluginArgument(arg1), RuntimeScriptValue().SetPluginArgument(arg2));
 }
 
 int IAGSEngine::RegisterManagedObject(const void *object, IAGSScriptManagedObject *callback) {
@@ -748,7 +718,7 @@ int IAGSEngine::DecrementManagedObjectRefCount(const char *address) {
 }
 
 void IAGSEngine::SetMousePosition(int32 x, int32 y) {
-    filter->SetMousePosition(x, y);
+    Mouse::SetPosition(Point(x, y));
     RefreshMouse();
 }
 
@@ -781,7 +751,7 @@ int IAGSEngine::IsRunningUnderDebugger()
 
 void IAGSEngine::GetPathToFileInCompiledFolder(const char*fileName, char *buffer)
 {
-    get_current_dir_path(buffer, fileName);
+    get_install_dir_path(buffer, fileName);
 }
 
 void IAGSEngine::BreakIntoDebugger()
@@ -791,9 +761,7 @@ void IAGSEngine::BreakIntoDebugger()
 
 IAGSFontRenderer* IAGSEngine::ReplaceFontRenderer(int fontNumber, IAGSFontRenderer *newRenderer)
 {
-    IAGSFontRenderer* oldOne = fontRenderers[fontNumber];
-    fontRenderers[fontNumber] = newRenderer;
-    return oldOne;
+    return font_replace_renderer(fontNumber, newRenderer);
 }
 
 
@@ -943,56 +911,41 @@ bool pl_use_builtin_plugin(EnginePlugin* apl)
         }
     }
     
-    AGS::Common::Out::FPrint("No built-in plugin found. Plugin loading failed!");
+    AGS::Common::Debug::Printf("No built-in plugin found. Plugin loading failed!");
     return false;
 }
 
-void pl_read_plugins_from_disk (Stream *in) {
-    if (in->ReadInt32() != 1)
-        quit("ERROR: unable to load game, invalid version of plugin data");
-
-    numPlugins = in->ReadInt32();
-
-    if (numPlugins > MAXPLUGINS)
-        quit("Too many plugins used by this game");
-
-    for (int a = 0; a < numPlugins; a++) {
-        char pluginNameBuffer[200];
-        int datasize;
-        
-        // read the plugin name
-        fgetstring (pluginNameBuffer, in);
-        datasize = in->ReadInt32();
-
-        size_t name_len = strlen(pluginNameBuffer);
-        if (pluginNameBuffer[name_len - 1] == '!') {
-            // editor-only plugin, ignore it
-            in->Seek(Common::kSeekCurrent, datasize);
-            a--;
-            numPlugins--;
-            continue;
-        }
-
-        // just check for silly datasizes
-        if ((datasize < 0) || (datasize > 10247680))
-            quit("Too much plugin save data for this engine");
-
+Engine::GameInitError pl_register_plugins(const std::vector<Common::PluginInfo> &infos)
+{
+    numPlugins = 0;
+    for (size_t inf_index = 0; inf_index < infos.size(); ++inf_index)
+    {
+        const Common::PluginInfo &info = infos[inf_index];
+        String name = info.Name;
+        if (name.GetLast() == '!')
+            continue; // editor-only plugin, ignore it
+        if (numPlugins == MAXPLUGINS)
+            return kGameInitErr_TooManyPlugins;
         // AGS Editor currently saves plugin names in game data with
         // ".dll" extension appended; we need to take care of that
-        const char *name_ext = ".dll";
-        const size_t ext_len = strlen(name_ext);
-        if (name_len <= ext_len || name_len > PLUGIN_FILENAME_MAX + ext_len ||
-            stricmp(&pluginNameBuffer[name_len - ext_len], name_ext)) {
-            quitprintf("Plugin '%s' is not a valid AGS plugin because the filename is invalid.", pluginNameBuffer);
+        const String name_ext = ".dll";
+        if (name.GetLength() <= name_ext.GetLength() || name.GetLength() > PLUGIN_FILENAME_MAX + name_ext.GetLength() ||
+                name.CompareRightNoCase(name_ext, name_ext.GetLength())) {
+            return kGameInitErr_PluginNameInvalid;
         }
         // remove ".dll" from plugin's name
-        pluginNameBuffer[name_len - ext_len] = 0;
+        name.ClipRight(name_ext.GetLength());
 
-        // load the actual plugin from disk
-        EnginePlugin *apl = &plugins[a];
-        
-        strncpy(apl->filename, pluginNameBuffer, PLUGIN_FILENAME_MAX+1);
-        
+        EnginePlugin *apl = &plugins[numPlugins++];
+        // Copy plugin info
+        snprintf(apl->filename, sizeof(apl->filename), "%s", name.GetCStr());
+        if (info.DataLen)
+        {
+            apl->savedata = (char*)malloc(info.DataLen);
+            memcpy(apl->savedata, info.Data.get(), info.DataLen);
+        }
+        apl->savedatasize = info.DataLen;
+
         // Compatibility with the old SnowRain module
         if (stricmp(apl->filename, "ags_SnowRain20") == 0) {
             strcpy(apl->filename, "ags_snowrain");
@@ -1000,7 +953,7 @@ void pl_read_plugins_from_disk (Stream *in) {
 
         if (apl->library.Load(apl->filename))
         {
-          AGS::Common::Out::FPrint("Plugin loading succeeded, resolving imports...");
+          AGS::Common::Debug::Printf(kDbgMsg_Init, "Plugin '%s' loading succeeded, resolving imports...", apl->filename);
 
           if (apl->library.GetFunctionAddress("AGS_PluginV2") == NULL) {
               quitprintf("Plugin '%s' is an old incompatible version.", apl->filename);
@@ -1017,29 +970,36 @@ void pl_read_plugins_from_disk (Stream *in) {
         }
         else
         {
-          AGS::Common::Out::FPrint("Plugin loading failed, trying built-in plugins...");
+          AGS::Common::Debug::Printf("Plugin loading failed, trying built-in plugins...");
           if (!pl_use_builtin_plugin(apl))
           {
             // Plugin loading has failed at this point, try using built-in plugin function stubs
             if (RegisterPluginStubs((const char*)apl->filename))
-              AGS::Common::Out::FPrint("Placeholder functions for the plugin found.");
+              AGS::Common::Debug::Printf(kDbgMsg_Init, "Placeholder functions for the plugin '%s' found.", apl->filename);
             else
-              AGS::Common::Out::FPrint("No placeholder functions for the plugin found. The game might fail to load.");
+              AGS::Common::Debug::Printf(kDbgMsg_Init, "No placeholder functions for the plugin '%s' found. The game might fail to load.", apl->filename);
 
             continue;
           }
         }
 
-        if (datasize > 0) {
-            apl->savedata = (char*)malloc(datasize);
-            in->Read (apl->savedata, datasize);
-        }
-        apl->savedatasize = datasize;
-        apl->eiface.pluginId = a;
+        apl->eiface.pluginId = numPlugins - 1;
         apl->eiface.version = 24;
         apl->wantHook = 0;
-
         apl->available = true;
     }
+    return kGameInitErr_NoError;
+}
 
+bool pl_is_plugin_loaded(const char *pl_name)
+{
+    if (!pl_name)
+        return false;
+
+    for (int i = 0; i < numPlugins; ++i)
+    {
+        if (stricmp(pl_name, plugins[i].filename) == 0)
+            return plugins[i].available;
+    }
+    return false;
 }

@@ -16,6 +16,7 @@
 #include "ac/viewframe.h"
 #include "debug/debug_log.h"
 #include "media/audio/audio.h"
+#include "media/audio/soundclip.h"
 #include "ac/spritecache.h"
 #include "gfx/bitmap.h"
 #include "script/runtimescriptvalue.h"
@@ -28,9 +29,9 @@ using AGS::Common::Graphics;
 
 extern GameSetupStruct game;
 extern ViewStruct*views;
-extern int psp_is_old_datafile;
 extern SpriteCache spriteset;
 extern CCAudioClip ccDynamicAudioClip;
+extern SOUNDCLIP *channels[MAX_SOUND_CHANNELS+1];
 
 
 int ViewFrame_GetFlipped(ScriptViewFrame *svf) {
@@ -79,11 +80,11 @@ void ViewFrame_SetSound(ScriptViewFrame *svf, int newSound)
   else
   {
     // convert sound number to audio clip
-    ScriptAudioClip* clip = get_audio_clip_for_old_style_number(false, newSound);
+    ScriptAudioClip* clip = GetAudioClipForOldStyleNumber(game, false, newSound);
     if (clip == NULL)
       quitprintf("!SetFrameSound: audio clip aSound%d not found", newSound);
 
-    views[svf->view].loops[svf->loop].frames[svf->frame].sound = clip->id + (psp_is_old_datafile ? 0x10000000 : 0);
+    views[svf->view].loops[svf->loop].frames[svf->frame].sound = clip->id + (is_old_audio_system() ? 0x10000000 : 0);
   }
 }
 
@@ -105,18 +106,6 @@ int ViewFrame_GetFrame(ScriptViewFrame *svf) {
 
 //=============================================================================
 
-void allocate_memory_for_views(int viewCount)
-{
-    views = (ViewStruct*)calloc(sizeof(ViewStruct) * viewCount, 1);
-    game.viewNames = (char**)malloc(sizeof(char*) * viewCount);
-    game.viewNames[0] = (char*)malloc(MAXVIEWNAMELENGTH * viewCount);
-
-    for (int i = 1; i < viewCount; i++)
-    {
-        game.viewNames[i] = game.viewNames[0] + (MAXVIEWNAMELENGTH * i);
-    }
-}
-
 void precache_view(int view) 
 {
     if (view < 0) 
@@ -130,14 +119,15 @@ void precache_view(int view)
 
 // the specified frame has just appeared, see if we need
 // to play a sound or whatever
-void CheckViewFrame (int view, int loop, int frame) {
-    if (psp_is_old_datafile)
+void CheckViewFrame (int view, int loop, int frame, int sound_volume) {
+    ScriptAudioChannel *channel = NULL;
+    if (is_old_audio_system())
     {
         if (views[view].loops[loop].frames[frame].sound > 0)
         {
             if (views[view].loops[loop].frames[frame].sound < 0x10000000)
             {
-                ScriptAudioClip* clip = get_audio_clip_for_old_style_number(false, views[view].loops[loop].frames[frame].sound);
+                ScriptAudioClip* clip = GetAudioClipForOldStyleNumber(game, false, views[view].loops[loop].frames[frame].sound);
                 if (clip)
                     views[view].loops[loop].frames[frame].sound = clip->id + 0x10000000;
                 else
@@ -146,16 +136,19 @@ void CheckViewFrame (int view, int loop, int frame) {
                     return;
                 }
             }
-            play_audio_clip_by_index(views[view].loops[loop].frames[frame].sound - 0x10000000);
+            channel = play_audio_clip_by_index(views[view].loops[loop].frames[frame].sound - 0x10000000);
         }
     }
     else
     {
         if (views[view].loops[loop].frames[frame].sound >= 0) {
             // play this sound (eg. footstep)
-            play_audio_clip_by_index(views[view].loops[loop].frames[frame].sound);
+            channel = play_audio_clip_by_index(views[view].loops[loop].frames[frame].sound);
         }
     }
+    if (sound_volume != SCR_NO_VALUE && channel != NULL)
+        channels[channel->id]->set_volume_percent(channels[channel->id]->get_volume() * sound_volume / 100);
+    
 }
 
 // draws a view frame, flipped if appropriate

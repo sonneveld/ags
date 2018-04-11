@@ -23,17 +23,19 @@
 #include "ac/audiochannel.h"
 #include "ac/audioclip.h"
 #include "ac/gamesetup.h"
+#include "ac/path_helper.h"
 #include "media/audio/sound.h"
 #include "debug/debug_log.h"
 #include "debug/debugger.h"
 #include "ac/common.h"
+#include "ac/file.h"
 #include "ac/global_audio.h"
 #include "ac/roomstruct.h"
 #include <math.h>
 #include "util/stream.h"
 #include "core/assetmanager.h"
 
-using AGS::Common::Stream;
+using namespace AGS::Common;
 
 AGS::Engine::Mutex _audio_mutex;
 volatile bool _audio_doing_crossfade;
@@ -44,8 +46,6 @@ extern GameState play;
 extern roomstruct thisroom;
 extern CharacterInfo*playerchar;
 
-extern int psp_is_old_datafile;
-
 extern volatile int switching_away_from_game;
 
 #if !defined(IOS_VERSION) && !defined(PSP_VERSION) && !defined(ANDROID_VERSION)
@@ -53,8 +53,6 @@ volatile int psp_audio_multithreaded = 0;
 #endif
 
 ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
-CCAudioChannel ccDynamicAudio;
-CCAudioClip ccDynamicAudioClip;
 char acaudio_buffer[256];
 int reserved_channel_count = 0;
 
@@ -68,25 +66,6 @@ void calculate_reserved_channel_count()
         reservedChannels += game.audioClipTypes[i].reservedChannels;
     }
     reserved_channel_count = reservedChannels;
-}
-
-void register_audio_script_objects()
-{
-    int ee;
-    for (ee = 0; ee <= MAX_SOUND_CHANNELS; ee++) 
-    {
-        scrAudioChannel[ee].id = ee;
-        ccRegisterManagedObject(&scrAudioChannel[ee], &ccDynamicAudio);
-    }
-
-    for (ee = 0; ee < game.audioClipCount; ee++)
-    {
-        game.audioClips[ee].id = ee;
-        ccRegisterManagedObject(&game.audioClips[ee], &ccDynamicAudioClip);
-        ccAddExternalDynamicObject(game.audioClips[ee].scriptName, &game.audioClips[ee], &ccDynamicAudioClip);
-    }
-
-    calculate_reserved_channel_count();
 }
 
 void update_clip_default_volume(ScriptAudioClip *audioClip)
@@ -138,37 +117,6 @@ void stop_or_fade_out_channel(int fadeOutChannel, int fadeInChannel, ScriptAudio
     {
         stop_and_destroy_channel(fadeOutChannel);
     }
-}
-
-const char* get_audio_clip_file_name(ScriptAudioClip *clip)
-{
-    if (game.audioClips[clip->id].bundlingType == AUCL_BUNDLE_EXE)
-    {
-        strcpy(acaudio_buffer, game.audioClips[clip->id].fileName);
-        Stream *in = Common::AssetManager::OpenAsset(acaudio_buffer);
-        if (in != NULL)
-        {
-            // CHECKME: so, what was that? a file exists check?
-            delete in;
-            return &acaudio_buffer[0];
-        }
-    }
-    else
-    {
-        sprintf(acaudio_buffer, (psp_is_old_datafile ? "~music.vox~%s" : "~audio.vox~%s"), game.audioClips[clip->id].fileName);
-        PACKFILE *iii = pack_fopen(acaudio_buffer, "rb");
-        if (iii != NULL)
-        {
-            pack_fclose(iii);
-            return &acaudio_buffer[0];
-        }
-    }
-    sprintf(acaudio_buffer, "AudioCache\\%s", game.audioClips[clip->id].fileName);
-    if (exists(acaudio_buffer))
-    {
-        return &acaudio_buffer[0];
-    }
-    return NULL;
 }
 
 
@@ -231,8 +179,7 @@ bool is_audiotype_allowed_to_play(AudioFileType type)
 
 SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
 {
-    const char *clipFileName = get_audio_clip_file_name(audioClip);
-    if ((clipFileName == NULL) || !is_audiotype_allowed_to_play((AudioFileType)audioClip->fileType))
+    if (!is_audiotype_allowed_to_play((AudioFileType)audioClip->fileType))
     {
         return NULL;
     }
@@ -240,24 +187,25 @@ SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
     update_clip_default_volume(audioClip);
 
     SOUNDCLIP *soundClip = NULL;
+    AssetPath asset_name = get_audio_clip_assetpath(audioClip->bundlingType, audioClip->fileName);
     switch (audioClip->fileType)
     {
     case eAudioFileOGG:
-        soundClip = my_load_static_ogg(clipFileName, audioClip->defaultVolume, repeat);
+        soundClip = my_load_static_ogg(asset_name, audioClip->defaultVolume, repeat);
         break;
     case eAudioFileMP3:
-        soundClip = my_load_static_mp3(clipFileName, audioClip->defaultVolume, repeat);
+        soundClip = my_load_static_mp3(asset_name, audioClip->defaultVolume, repeat);
         break;
     case eAudioFileWAV:
     case eAudioFileVOC:
-        soundClip = my_load_wave(clipFileName, audioClip->defaultVolume, repeat);
+        soundClip = my_load_wave(asset_name, audioClip->defaultVolume, repeat);
         break;
     case eAudioFileMIDI:
-        soundClip = my_load_midi(clipFileName, repeat);
+        soundClip = my_load_midi(asset_name, repeat);
         break;
     case eAudioFileMOD:
 #ifndef PSP_NO_MOD_PLAYBACK
-        soundClip = my_load_mod(clipFileName, repeat);
+        soundClip = my_load_mod(asset_name, repeat);
 #else
         soundClip = NULL;
 #endif
@@ -267,19 +215,11 @@ SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
     }
     if (soundClip != NULL)
     {
-        soundClip->set_volume_origin(audioClip->defaultVolume);
+        soundClip->set_volume_percent(audioClip->defaultVolume);
         soundClip->soundType = audioClip->type;
         soundClip->sourceClip = audioClip;
     }
     return soundClip;
-}
-
-void recache_queued_clips_after_loading_save_game()
-{
-    for (int i = 0; i < play.new_music_queue_size; i++)
-    {
-        play.new_music_queue[i].cachedClip = NULL;
-    }
 }
 
 void audio_update_polled_stuff()
@@ -342,10 +282,17 @@ void audio_update_polled_stuff()
     }
 }
 
+// Applies a volume drop modifier to the clip, in accordance to its audio type
+void apply_volume_drop_to_clip(SOUNDCLIP *clip)
+{
+    int audiotype = ((ScriptAudioClip*)clip->sourceClip)->type;
+    clip->apply_volume_modifier(-(game.audioClipTypes[audiotype].volume_reduction_while_speech_playing * 255 / 100));
+}
+
 void queue_audio_clip_to_play(ScriptAudioClip *clip, int priority, int repeat)
 {
     if (play.new_music_queue_size >= MAX_QUEUED_MUSIC) {
-        DEBUG_CONSOLE("Too many queued music, cannot add %s", clip->scriptName);
+        debug_script_log("Too many queued music, cannot add %s", clip->scriptName);
         return;
     }
 
@@ -371,7 +318,7 @@ ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *cli
     }
     if (soundfx == NULL)
     {
-        DEBUG_CONSOLE("AudioClip.Play: unable to load sound file");
+        debug_script_log("AudioClip.Play: unable to load sound file");
         if (play.crossfading_in_channel == channel)
         {
             play.crossfading_in_channel = 0;
@@ -382,13 +329,13 @@ ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *cli
 
     if (play.crossfading_in_channel == channel)
     {
-        soundfx->set_volume_origin(0);
+        soundfx->set_volume_percent(0);
     }
 
     // Mute the audio clip if fast-forwarding the cutscene
     if (play.fast_forward) 
     {
-        soundfx->set_volume_override(0);
+        soundfx->set_mute(true);
 
         // CHECKME!!
         // [IKM] According to the 3.2.1 logic the clip will restore
@@ -398,14 +345,21 @@ ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *cli
         // channel for this audio type? It does not even check if
         // anything of this type is currently playing.
         if (game.audioClipTypes[clip->type].reservedChannels != 1)
-            soundfx->originalVolAsPercentage = 0;
+            soundfx->set_volume_percent(0);
     }
 
     if (soundfx->play_from(fromOffset) == 0)
     {
-        DEBUG_CONSOLE("AudioClip.Play: failed to play sound file");
+        debug_script_log("AudioClip.Play: failed to play sound file");
         return NULL;
     }
+
+    // Apply volume drop if any speech voice-over is currently playing
+    // NOTE: there is a confusing logic in sound clip classes, that they do not use
+    // any modifiers when begin playing, therefore we must apply this only after
+    // playback was started.
+    if (!play.fast_forward && channels[SCHAN_SPEECH])
+        apply_volume_drop_to_clip(soundfx);
 
     last_sound_played[channel] = -1;
     channels[channel] = soundfx;
@@ -428,6 +382,21 @@ void remove_clips_of_type_from_queue(int audioType)
     }
 }
 
+void update_queued_clips_volume(int audioType, int new_vol)
+{
+    for (int i = 0; i < play.new_music_queue_size; ++i)
+    {
+        // NOTE: if clip is uncached, the volume will be set from defaults when it is loaded
+        SOUNDCLIP *sndclip = play.new_music_queue[i].cachedClip;
+        if (sndclip)
+        {
+            ScriptAudioClip *clip = &game.audioClips[play.new_music_queue[i].audioClipIndex];
+            if (clip->type == audioType)
+                sndclip->set_volume_percent(new_vol);
+        }
+    }
+}
+
 ScriptAudioChannel* play_audio_clip(ScriptAudioClip *clip, int priority, int repeat, int fromOffset, bool queueIfNoChannel)
 {
     if (!queueIfNoChannel)
@@ -444,7 +413,7 @@ ScriptAudioChannel* play_audio_clip(ScriptAudioClip *clip, int priority, int rep
         if (queueIfNoChannel)
             queue_audio_clip_to_play(clip, priority, repeat);
         else
-            DEBUG_CONSOLE("AudioClip.Play: no channels available to interrupt PRI:%d TYPE:%d", priority, clip->type);
+            debug_script_log("AudioClip.Play: no channels available to interrupt PRI:%d TYPE:%d", priority, clip->type);
 
         return NULL;
     }
@@ -452,49 +421,13 @@ ScriptAudioChannel* play_audio_clip(ScriptAudioClip *clip, int priority, int rep
     return play_audio_clip_on_channel(channel, clip, priority, repeat, fromOffset);
 }
 
-void play_audio_clip_by_index(int audioClipIndex)
+ScriptAudioChannel* play_audio_clip_by_index(int audioClipIndex)
 {
     if ((audioClipIndex >= 0) && (audioClipIndex < game.audioClipCount))
-        AudioClip_Play(&game.audioClips[audioClipIndex], SCR_NO_VALUE, SCR_NO_VALUE);
+        return AudioClip_Play(&game.audioClips[audioClipIndex], SCR_NO_VALUE, SCR_NO_VALUE);
+    else 
+        return NULL;
 }
-
-bool unserialize_audio_script_object(int index, const char *objectType, const char *serializedData, int dataSize)
-{
-    if (strcmp(objectType, "AudioChannel") == 0)
-    {
-        ccDynamicAudio.Unserialize(index, serializedData, dataSize);
-    }
-    else if (strcmp(objectType, "AudioClip") == 0)
-    {
-        ccDynamicAudioClip.Unserialize(index, serializedData, dataSize);
-    }
-    else
-    {
-        return false;
-    }
-    return true;
-}
-
-ScriptAudioClip* get_audio_clip_for_old_style_number(bool isMusic, int indexNumber)
-{
-    char audioClipName[200];
-    if (isMusic)
-        sprintf(audioClipName, "aMusic%d", indexNumber);
-    else
-        sprintf(audioClipName, "aSound%d", indexNumber);
-
-    for (int bb = 0; bb < game.audioClipCount; bb++)
-    {
-        if (stricmp(game.audioClips[bb].scriptName, audioClipName) == 0)
-        {
-            return &game.audioClips[bb];
-        }
-    }
-
-    return NULL;
-}
-
-
 
 void stop_and_destroy_channel_ex(int chid, bool resetLegacyMusicSettings) {
     if ((chid < 0) || (chid > MAX_SOUND_CHANNELS))
@@ -535,7 +468,7 @@ int get_old_style_number_for_sound(int sound_number)
 {
     int audio_clip_id = 0;
 
-    if (psp_is_old_datafile)
+    if (is_old_audio_system())
     {
         // No sound assigned.
         if (sound_number < 1)
@@ -562,7 +495,7 @@ int get_old_style_number_for_sound(int sound_number)
 
 SOUNDCLIP *load_sound_clip_from_old_style_number(bool isMusic, int indexNumber, bool repeat)
 {
-    ScriptAudioClip* audioClip = get_audio_clip_for_old_style_number(isMusic, indexNumber);
+    ScriptAudioClip* audioClip = GetAudioClipForOldStyleNumber(game, isMusic, indexNumber);
 
     if (audioClip != NULL)
     {
@@ -612,14 +545,12 @@ void update_directional_sound_vol()
         if ((channels[chan] != NULL) && (channels[chan]->done == 0) &&
             (channels[chan]->xSource >= 0)) 
         {
-            channels[chan]->directionalVolModifier = 
+            channels[chan]->apply_directional_modifier(
                 get_volume_adjusted_for_distance(channels[chan]->vol, 
                 channels[chan]->xSource,
                 channels[chan]->ySource,
                 channels[chan]->maximumPossibleDistanceAway) -
-                channels[chan]->vol;
-
-            channels[chan]->set_volume(channels[chan]->vol);
+                channels[chan]->vol);
         }
     }
 }
@@ -855,17 +786,20 @@ void apply_volume_drop_modifier(bool applyModifier)
 {
     for (int i = 0; i < MAX_SOUND_CHANNELS; i++) 
     {
-        if ((channels[i] != NULL) && (channels[i]->done == 0) && (channels[i]->sourceClip != NULL))
+        if (channels[i] && channels[i]->done == 0 && channels[i]->sourceClip != NULL)
         {
             if (applyModifier)
-            {
-                int audioType = ((ScriptAudioClip*)channels[i]->sourceClip)->type;
-                channels[i]->apply_volume_modifier(-(game.audioClipTypes[audioType].volume_reduction_while_speech_playing * 255 / 100));
-            }
+                apply_volume_drop_to_clip(channels[i]);
             else
-                channels[i]->apply_volume_modifier(0);
+                channels[i]->apply_volume_modifier(0); // reset modifier
         }
     }
+}
+
+// Checks if speech voice-over is currently playing, and reapply volume drop to all other active clips
+void update_volume_drop_if_voiceover()
+{
+    apply_volume_drop_modifier(channels[SCHAN_SPEECH] != NULL);
 }
 
 extern volatile char want_exit;
@@ -1089,7 +1023,7 @@ ScriptAudioClip *get_audio_clip_for_music(int mnum)
 {
     if (mnum >= QUEUED_MUSIC_REPEAT)
         mnum -= QUEUED_MUSIC_REPEAT;
-    return get_audio_clip_for_old_style_number(true, mnum);
+    return GetAudioClipForOldStyleNumber(game, true, mnum);
 }
 
 SOUNDCLIP *load_music_from_disk(int mnum, bool doRepeat) {
@@ -1103,8 +1037,8 @@ SOUNDCLIP *load_music_from_disk(int mnum, bool doRepeat) {
 
     if ((loaded == NULL) && (mnum > 0)) 
     {
-        debug_log("Music %d not found",mnum);
-        DEBUG_CONSOLE("FAILED to load music %d", mnum);
+        debug_script_warn("Music %d not found",mnum);
+        debug_script_log("FAILED to load music %d", mnum);
     }
 
     return loaded;
@@ -1116,7 +1050,7 @@ void play_new_music(int mnum, SOUNDCLIP *music) {
         return;
 
     if ((play.cur_music_number == mnum) && (music == NULL)) {
-        DEBUG_CONSOLE("PlayMusic %d but already playing", mnum);
+        debug_script_log("PlayMusic %d but already playing", mnum);
         return;  // don't play the music if it's already playing
     }
 
@@ -1125,7 +1059,7 @@ void play_new_music(int mnum, SOUNDCLIP *music) {
         return;
 
     int useChannel = SCHAN_MUSIC;
-    DEBUG_CONSOLE("Playing music %d", mnum);
+    debug_script_log("Playing music %d", mnum);
 
     if (mnum<0) {
         stopmusic();

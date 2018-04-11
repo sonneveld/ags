@@ -19,8 +19,6 @@
 #define MAX_MAXSTRLEN 200
 #define MAXGLOBALVARS 50
 
-#define MAX_SCRIPT_MODULES 50
-
 #define INVALID_X  30000
 #define MAXGSVALUES 500
 #define MAXGLOBALSTRINGS 51
@@ -54,6 +52,8 @@ const int LegacyRoomVolumeFactor            = 30;
 #define IN_BACKGROUND  920
 #define FORWARDS       1062
 #define BACKWARDS      1063
+#define STOP_MOVING    1
+#define KEEP_MOVING    0
 
 #define SCR_NO_VALUE   31998
 #define SCR_COLOR_TRANSPARENT -1
@@ -135,8 +135,8 @@ const int LegacyRoomVolumeFactor            = 30;
 #define HWND long
 #endif
 
-#define BASEWIDTH usetup.base_width
-#define BASEHEIGHT usetup.base_height
+#define BASEWIDTH play.native_size.Width
+#define BASEHEIGHT play.native_size.Height
 #define TRANS_ALPHA_CHANNEL 20000
 #define TRANS_OPAQUE        20001
 #define TRANS_RUN_PLUGIN    20002

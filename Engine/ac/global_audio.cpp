@@ -14,16 +14,17 @@
 
 #include <stdio.h>
 #include "ac/common.h"
-#include "ac/file.h"
 #include "ac/game.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/gamestate.h"
 #include "ac/global_audio.h"
 #include "ac/lipsync.h"
+#include "ac/path_helper.h"
 #include "ac/roomstruct.h"
 #include "debug/debug_log.h"
 #include "debug/debugger.h"
+#include "main/engine.h"
 #include "media/audio/audio.h"
 #include "media/audio/sound.h"
 
@@ -31,7 +32,6 @@ extern GameSetup usetup;
 extern GameState play;
 extern GameSetupStruct game;
 extern roomstruct thisroom;
-extern char *speech_file;
 extern SpeechLipSyncLine *splipsync;
 extern int numLipLines, curLipLine, curLipLinePhoneme;
 
@@ -53,7 +53,7 @@ void PlayAmbientSound (int channel, int sndnum, int vol, int x, int y) {
     if ((vol < 1) || (vol > 255))
         quit("!PlayAmbientSound: volume must be 1 to 255");
 
-    ScriptAudioClip *aclip = get_audio_clip_for_old_style_number(false, sndnum);
+    ScriptAudioClip *aclip = GetAudioClipForOldStyleNumber(game, false, sndnum);
     if (aclip && !is_audiotype_allowed_to_play((AudioFileType)aclip->fileType))
         return;
 
@@ -68,12 +68,12 @@ void PlayAmbientSound (int channel, int sndnum, int vol, int x, int y) {
 
             SOUNDCLIP *asound = aclip ? load_sound_and_play(aclip, true) : NULL;
             if (asound == NULL) {
-                debug_log ("Cannot load ambient sound %d", sndnum);
-                DEBUG_CONSOLE("FAILED to load ambient sound %d", sndnum);
+                debug_script_warn ("Cannot load ambient sound %d", sndnum);
+                debug_script_log("FAILED to load ambient sound %d", sndnum);
                 return;
             }
 
-            DEBUG_CONSOLE("Playing ambient sound %d on channel %d", sndnum, channel);
+            debug_script_log("Playing ambient sound %d on channel %d", sndnum, channel);
             ambient[channel].channel = channel;
             channels[channel] = asound;
             channels[channel]->priority = 15;  // ambient sound higher priority than normal sfx
@@ -120,7 +120,7 @@ int PlaySoundEx(int val1, int channel) {
     if (debug_flags & DBG_NOSFX)
         return -1;
 
-    ScriptAudioClip *aclip = get_audio_clip_for_old_style_number(false, val1);
+    ScriptAudioClip *aclip = GetAudioClipForOldStyleNumber(game, false, val1);
     if (aclip && !is_audiotype_allowed_to_play((AudioFileType)aclip->fileType))
         return -1; // if sound is off, ignore it
 
@@ -142,7 +142,7 @@ int PlaySoundEx(int val1, int channel) {
     if (!psp_audio_multithreaded)
     {
         if ((last_sound_played[channel] == val1) && (channels[channel] != NULL)) {
-            DEBUG_CONSOLE("Playing sound %d on channel %d; cached", val1, channel);
+            debug_script_log("Playing sound %d on channel %d; cached", val1, channel);
             channels[channel]->restart();
             channels[channel]->set_volume (play.sound_volume);
             return channel;
@@ -151,14 +151,14 @@ int PlaySoundEx(int val1, int channel) {
 
     // free the old sound
     stop_and_destroy_channel (channel);
-    DEBUG_CONSOLE("Playing sound %d on channel %d", val1, channel);
+    debug_script_log("Playing sound %d on channel %d", val1, channel);
 
     last_sound_played[channel] = val1;
 
     SOUNDCLIP *soundfx = aclip ? load_sound_and_play(aclip, false) : NULL;
     if (soundfx == NULL) {
-        debug_log("Sound sample load failure: cannot load sound %d", val1);
-        DEBUG_CONSOLE("FAILED to load sound %d", val1);
+        debug_script_warn("Sound sample load failure: cannot load sound %d", val1);
+        debug_script_log("FAILED to load sound %d", val1);
         return -1;
     }
 
@@ -186,7 +186,7 @@ void SeekMIDIPosition (int position) {
         midi_seek (position);
     if (current_music_type == MUS_MIDI) {
         midi_seek(position);
-        DEBUG_CONSOLE("Seek MIDI position to %d", position);
+        debug_script_log("Seek MIDI position to %d", position);
     }
 }
 
@@ -231,7 +231,7 @@ int PlayMusicQueued(int musnum) {
     }
 
     if (play.music_queue_size >= MAX_QUEUED_MUSIC) {
-        DEBUG_CONSOLE("Too many queued music, cannot add %d", musnum);
+        debug_script_log("Too many queued music, cannot add %d", musnum);
         return 0;
     }
 
@@ -241,11 +241,11 @@ int PlayMusicQueued(int musnum) {
     }
 
     if (play.music_repeat) {
-        DEBUG_CONSOLE("Queuing music %d to loop", musnum);
+        debug_script_log("Queuing music %d to loop", musnum);
         musnum += QUEUED_MUSIC_REPEAT;
     }
     else {
-        DEBUG_CONSOLE("Queuing music %d", musnum);
+        debug_script_log("Queuing music %d", musnum);
     }
 
     play.music_queue[play.music_queue_size] = musnum;
@@ -269,12 +269,12 @@ void scr_StopMusic() {
 void SeekMODPattern(int patnum) {
     if (current_music_type == MUS_MOD && channels[SCHAN_MUSIC]) {
         channels[SCHAN_MUSIC]->seek (patnum);
-        DEBUG_CONSOLE("Seek MOD/XM to pattern %d", patnum);
+        debug_script_log("Seek MOD/XM to pattern %d", patnum);
     }
 }
 void SeekMP3PosMillis (int posn) {
     if (current_music_type) {
-        DEBUG_CONSOLE("Seek MP3/OGG to %d ms", posn);
+        debug_script_log("Seek MP3/OGG to %d ms", posn);
         if (crossFading && channels[crossFading])
             channels[crossFading]->seek (posn);
         else if (channels[SCHAN_MUSIC])
@@ -358,15 +358,14 @@ void PlayMP3File (const char *filename) {
     if (strlen(filename) >= PLAYMP3FILE_MAX_FILENAME_LEN)
         quit("!PlayMP3File: filename too long");
 
-    DEBUG_CONSOLE("PlayMP3File %s", filename);
+    debug_script_log("PlayMP3File %s", filename);
 
-    char pathToFile[MAX_PATH];
-    get_current_dir_path(pathToFile, filename);
+    AssetPath asset_name("", filename);
 
     int useChan = prepare_for_new_music ();
     bool doLoop = (play.music_repeat > 0);
 
-    if ((channels[useChan] = my_load_static_ogg(pathToFile, 150, doLoop)) != NULL) {
+    if ((channels[useChan] = my_load_static_ogg(asset_name, 150, doLoop)) != NULL) {
         channels[useChan]->play();
         current_music_type = MUS_OGG;
         play.cur_music_number = 1000;
@@ -374,7 +373,7 @@ void PlayMP3File (const char *filename) {
         if (filename != &play.playmp3file_name[0])
             strcpy (play.playmp3file_name, filename);
     }
-    else if ((channels[useChan] = my_load_static_mp3(pathToFile, 150, doLoop)) != NULL) {
+    else if ((channels[useChan] = my_load_static_mp3(asset_name, 150, doLoop)) != NULL) {
         channels[useChan]->play();
         current_music_type = MUS_MP3;
         play.cur_music_number = 1000;
@@ -383,7 +382,7 @@ void PlayMP3File (const char *filename) {
             strcpy (play.playmp3file_name, filename);
     }
     else
-        debug_log ("PlayMP3File: file '%s' not found or cannot play", filename);
+        debug_script_warn ("PlayMP3File: file '%s' not found or cannot play", filename);
 
     post_new_music_check(useChan);
 
@@ -404,7 +403,7 @@ void PlaySilentMIDI (int mnum) {
         quitprintf("!PlaySilentMIDI: failed to load aMusic%d", mnum);
     }
     channels[play.silent_midi_channel]->play();
-    channels[play.silent_midi_channel]->set_volume_origin(0);
+    channels[play.silent_midi_channel]->set_volume_percent(0);
 }
 
 void SetSpeechVolume(int newvol) {
@@ -439,7 +438,7 @@ void SetVoiceMode (int newmod) {
 
 int GetVoiceMode()
 {
-    return play.want_speech >= 0 ? play.want_speech : (-play.want_speech + 1);
+    return play.want_speech >= 0 ? play.want_speech : -(play.want_speech + 1);
 }
 
 int IsVoxAvailable() {
@@ -449,7 +448,7 @@ int IsVoxAvailable() {
 }
 
 int IsMusicVoxAvailable () {
-    return play.seperate_music_lib;
+    return play.separate_music_lib;
 }
 
 int play_speech(int charid,int sndid) {
@@ -458,40 +457,30 @@ int play_speech(int charid,int sndid) {
     // don't play speech if we're skipping a cutscene
     if (play.fast_forward)
         return 0;
-    if ((play.want_speech < 1) || (speech_file == NULL))
+    if ((play.want_speech < 1) || (speech_file.IsEmpty()))
         return 0;
 
     SOUNDCLIP *speechmp3;
-    /*  char finame[40]="~SPEECH.VOX~NARR";
-    if (charid >= 0)
-    strncpy(&finame[12],game.chars[charid].scrname,4);*/
-
-    char finame[40] = "~";
-    strcat(finame, get_filename(speech_file));
-    strcat(finame, "~");
+    String script_name;
 
     if (charid >= 0) {
         // append the first 4 characters of the script name to the filename
-        char theScriptName[5];
         if (game.chars[charid].scrname[0] == 'c')
-            strncpy(theScriptName, &game.chars[charid].scrname[1], 4);
+            script_name.SetString(&game.chars[charid].scrname[1], 4);
         else
-            strncpy(theScriptName, game.chars[charid].scrname, 4);
-        theScriptName[4] = 0;
-        strcat(finame, theScriptName);
+            script_name.SetString(game.chars[charid].scrname, 4);
     }
     else
-        strcat(finame, "NARR");
+        script_name = "NARR";
 
-    // append the speech number
-    sprintf(&finame[strlen(finame)],"%d",sndid);
+    // append the speech number and create voice file name
+    String voice_file = String::FromFormat("%s%d", script_name.GetCStr(), sndid);
 
     int ii;  // Compare the base file name to the .pam file name
-    char *basefnptr = strchr (&finame[4], '~') + 1;
     curLipLine = -1;  // See if we have voice lip sync for this line
     curLipLinePhoneme = -1;
     for (ii = 0; ii < numLipLines; ii++) {
-        if (stricmp(splipsync[ii].filename, basefnptr) == 0) {
+        if (stricmp(splipsync[ii].filename, voice_file) == 0) {
             curLipLine = ii;
             break;
         }
@@ -501,17 +490,18 @@ int play_speech(int charid,int sndid) {
     if (numLipLines > 0)
         game.options[OPT_LIPSYNCTEXT] = 0;
 
-    strcat (finame, ".WAV");
-    speechmp3 = my_load_wave (finame, play.speech_volume, 0);
+    String asset_name = voice_file;
+    asset_name.Append(".wav");
+    speechmp3 = my_load_wave(get_voice_over_assetpath(asset_name), play.speech_volume, 0);
 
     if (speechmp3 == NULL) {
-        strcpy (&finame[strlen(finame)-3], "ogg");
-        speechmp3 = my_load_ogg (finame, play.speech_volume);
+        asset_name.ReplaceMid(asset_name.GetLength() - 3, 3, "ogg");
+        speechmp3 = my_load_ogg(get_voice_over_assetpath(asset_name), play.speech_volume);
     }
 
     if (speechmp3 == NULL) {
-        strcpy (&finame[strlen(finame)-3], "mp3");
-        speechmp3 = my_load_mp3 (finame, play.speech_volume);
+        asset_name.ReplaceMid(asset_name.GetLength() - 3, 3, "mp3");
+        speechmp3 = my_load_mp3(get_voice_over_assetpath(asset_name), play.speech_volume);
     }
 
     if (speechmp3 != NULL) {
@@ -520,7 +510,7 @@ int play_speech(int charid,int sndid) {
     }
 
     if (speechmp3 == NULL) {
-        debug_log ("Speech load failure: '%s'",finame);
+        debug_script_warn("Speech load failure: '%s'", voice_file.GetCStr());
         curLipLine = -1;
         return 0;
     }

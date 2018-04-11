@@ -36,7 +36,7 @@
 #define FALSE 0
 #endif
 
-#include "ac/system.h"
+#include "ac/gamestate.h"
 #include "debug/out.h"
 #include "device/mousew32.h"
 #include "gfx/bitmap.h"
@@ -50,8 +50,8 @@
 
 #include "util/mutex.h"
 #include "util/mutex_lock.h"
-
 using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
@@ -69,12 +69,8 @@ int disable_mgetgraphpos = 0;
 char ignore_bounds = 0;
 extern char alpha_blend_cursor ;
 Bitmap *savebk = NULL, *mousecurs[MAXCURSORS];
-extern int vesa_xres, vesa_yres;
 extern color palette[256];
 extern volatile bool switched_away;
-
-
-IMouseGetPosCallback *callback = NULL;
 
 namespace Mouse
 {
@@ -93,7 +89,6 @@ namespace Mouse
     float SpeedUnit = 1.f;
     // Actual speed factor (cached)
     float Speed = 1.f;
-}
 
 /*
  Button tracking:
@@ -160,16 +155,14 @@ int get_mouse_b()
     return result;
 }
 
-void msetcallback(IMouseGetPosCallback *gpCallback) {
-  callback = gpCallback;
+    void AdjustPosition(int &x, int &y);
 }
 
 void mgraphconfine(int x1, int y1, int x2, int y2)
 {
-  Mouse::ControlRect = Rect(x1 + game_frame_x_offset, y1 + game_frame_y_offset,
-      x2 + game_frame_x_offset, y2 + game_frame_y_offset);
+  Mouse::ControlRect = Rect(x1, y1, x2, y2);
   set_mouse_range(Mouse::ControlRect.Left, Mouse::ControlRect.Top, Mouse::ControlRect.Right, Mouse::ControlRect.Bottom);
-  Out::FPrint("Mouse confined: (%d,%d)-(%d,%d) (%dx%d)",
+  Debug::Printf("Mouse confined: (%d,%d)-(%d,%d) (%dx%d)",
       Mouse::ControlRect.Left, Mouse::ControlRect.Top, Mouse::ControlRect.Right, Mouse::ControlRect.Bottom,
       Mouse::ControlRect.GetWidth(), Mouse::ControlRect.GetHeight());
 }
@@ -248,10 +241,6 @@ void mgetgraphpos()
     mousex = real_mouse_x;
     mousey = real_mouse_y;
 
-    // Convert to zero-based coordinates by subtracting left-top corner of the control frame
-    mousex -= Mouse::ControlRect.Left;
-    mousey -= Mouse::ControlRect.Top;
-
     if (!ignore_bounds &&
         (mousex < boundx1 || mousey < boundy1 || mousex > boundx2 || mousey > boundy2))
     {
@@ -261,8 +250,7 @@ void mgetgraphpos()
     }
 
     // Convert to virtual coordinates
-    if (callback)
-        callback->AdjustPosition(&mousex, &mousey);
+    Mouse::AdjustPosition(mousex, mousey);
 }
 
 void msetcursorlimit(int x1, int y1, int x2, int y2)
@@ -297,15 +285,15 @@ void domouse(int str)
   mousex -= hotx;
   mousey -= hoty;
 
-  if (mousex + poow >= vesa_xres)
-    poow = vesa_xres - mousex;
+  if (mousex + poow >= play.viewport.GetWidth())
+    poow = play.viewport.GetWidth() - mousex;
 
-  if (mousey + pooh >= vesa_yres)
-    pooh = vesa_yres - mousey;
+  if (mousey + pooh >= play.viewport.GetHeight())
+    pooh = play.viewport.GetHeight() - mousey;
 
   Bitmap *ds = GetVirtualScreen();
 
-  ds->SetClip(Rect(0, 0, vesa_xres - 1, vesa_yres - 1));
+  ds->SetClip(Rect(0, 0, play.viewport.GetWidth() - 1, play.viewport.GetHeight() - 1));
   if ((str == 0) & (mouseturnedon == TRUE)) {
     if ((mousex != smx) | (mousey != smy)) {    // the mouse has moved
       wputblock(ds, smx, smy, savebk, 0);
@@ -405,9 +393,9 @@ int misbuttondown(int buno)
 
 void msetgraphpos(int xa, int ya)
 {
-  real_mouse_x = xa + Mouse::ControlRect.Left;
-  real_mouse_y = ya + Mouse::ControlRect.Top;
-  position_mouse(real_mouse_x, real_mouse_y); // xa -= hotx; ya -= hoty;
+  real_mouse_x = xa;
+  real_mouse_y = ya;
+  position_mouse(real_mouse_x, real_mouse_y);
 }
 
 void msethotspot(int xx, int yy)
@@ -425,6 +413,30 @@ int minstalled()
   int nbuts = install_mouse();
   mgraphconfine(0, 0, 319, 199);  // use 320x200 co-ord system
   return nbuts;
+}
+
+void Mouse::AdjustPosition(int &x, int &y)
+{
+    x = GameScaling.X.UnScalePt(x) - play.viewport.Left;
+    y = GameScaling.Y.UnScalePt(y) - play.viewport.Top;
+}
+
+void Mouse::SetGraphicArea()
+{
+    Rect dst_r = GameScaling.ScaleRange(play.viewport);
+    mgraphconfine(dst_r.Left, dst_r.Top, dst_r.Right, dst_r.Bottom);
+}
+
+void Mouse::SetMoveLimit(const Rect &r)
+{
+    Rect src_r = OffsetRect(r, play.viewport.GetLT());
+    Rect dst_r = GameScaling.ScaleRange(src_r);
+    msetcursorlimit(dst_r.Left, dst_r.Top, dst_r.Right, dst_r.Bottom);
+}
+
+void Mouse::SetPosition(const Point p)
+{
+    msetgraphpos(GameScaling.X.ScalePt(p.X + play.viewport.Left), GameScaling.Y.ScalePt(p.Y + play.viewport.Top));
 }
 
 bool Mouse::IsLockedToWindow()

@@ -19,6 +19,7 @@
 #endif
 #include <errno.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include "util/file.h"
 #include "util/filestream.h"
 
@@ -26,6 +27,14 @@ namespace AGS
 {
 namespace Common
 {
+
+int File::GetFileSize(const String &filename)
+{
+    struct stat st;
+    if (stat(filename, &st) == 0)
+        return st.st_size;
+    return -1;
+}
 
 bool File::TestReadFile(const String &filename)
 {
@@ -36,6 +45,17 @@ bool File::TestReadFile(const String &filename)
         return true;
     }
     return false;
+}
+
+bool File::TestWriteFile(const String &filename)
+{
+    FILE *test_file = fopen(filename, "r+");
+    if (test_file)
+    {
+        fclose(test_file);
+        return true;
+    }
+    return TestCreateFile(filename);
 }
 
 bool File::TestCreateFile(const String &filename)
@@ -77,7 +97,7 @@ bool File::GetFileModesFromCMode(const String &cmode, FileOpenMode &open_mode, F
     // Default mode is open/read for safety reasons
     open_mode = kFile_Open;
     work_mode = kFile_Read;
-    for (int c = 0; c < cmode.GetLength(); ++c)
+    for (size_t c = 0; c < cmode.GetLength(); ++c)
     {
         if (read_base_mode)
         {
@@ -110,6 +130,34 @@ bool File::GetFileModesFromCMode(const String &cmode, FileOpenMode &open_mode, F
         }
     }
     return read_base_mode;
+}
+
+String File::GetCMode(FileOpenMode open_mode, FileWorkMode work_mode)
+{
+    String mode;
+    if (open_mode == kFile_Open)
+    {
+        if (work_mode == kFile_Read)
+            mode.AppendChar('r');
+        else if (work_mode == kFile_Write || work_mode == kFile_ReadWrite)
+            mode.Append("r+");
+    }
+    else if (open_mode == kFile_Create)
+    {
+        if (work_mode == kFile_Write)
+            mode.AppendChar('a');
+        else if (work_mode == kFile_Read || work_mode == kFile_ReadWrite)
+            mode.Append("a+");
+    }
+    else if (open_mode == kFile_CreateAlways)
+    {
+        if (work_mode == kFile_Write)
+            mode.AppendChar('w');
+        else if (work_mode == kFile_Read || work_mode == kFile_ReadWrite)
+            mode.Append("w+");
+    }
+    mode.AppendChar('b');
+    return mode;
 }
 
 Stream *File::OpenFile(const String &filename, FileOpenMode open_mode, FileWorkMode work_mode)

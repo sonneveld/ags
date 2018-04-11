@@ -13,7 +13,6 @@
 //=============================================================================
 
 #include "ac/display.h"
-#include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "font/agsfontrenderer.h"
 #include "font/fonts.h"
@@ -31,6 +30,7 @@
 #include "ac/screenoverlay.h"
 #include "ac/speech.h"
 #include "ac/string.h"
+#include "ac/system.h"
 #include "ac/topbarsettings.h"
 #include "debug/debug_log.h"
 #include "gui/guibutton.h"
@@ -47,9 +47,7 @@ namespace BitmapHelper = AGS::Common::BitmapHelper;
 
 extern GameState play;
 extern GameSetupStruct game;
-extern GUIMain *guis;
 extern int longestline;
-extern int scrnwid,scrnhit;
 extern Bitmap *virtual_screen;
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];
 extern volatile int timerloop;
@@ -59,29 +57,46 @@ extern int time_between_timers;
 extern int offsetx, offsety;
 extern int frames_per_second;
 extern int loops_per_character;
-extern IAGSFontRenderer* fontRenderers[MAX_FONTS];
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
 extern SpriteCache spriteset;
-extern DynamicArray<GUIButton> guibuts;
 
 int display_message_aschar=0;
-char *heightTestString = "ZHwypgfjqhkilIK";
 
 
 TopBarSettings topBar;
-int texthit;
+struct DisplayVars
+{
+    int lineheight;    // font's height of single line
+    int linespacing;   // font's line spacing
+    int fulltxtheight; // total height of all the text
+} disp;
 
 // Pass yy = -1 to find Y co-ord automatically
 // allowShrink = 0 for none, 1 for leftwards, 2 for rightwards
 // pass blocking=2 to create permanent overlay
 int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfont,int asspch, int isThought, int allowShrink, bool overlayPositionFixed) 
 {
+    const bool use_speech_textwindow = (asspch < 0) && (game.options[OPT_SPEECHTYPE] >= 2);
+    const bool use_thought_gui = (isThought) && (game.options[OPT_THOUGHTGUI] > 0);
+
     bool alphaChannel = false;
     char todis[STD_BUFFER_SIZE];
     snprintf(todis, STD_BUFFER_SIZE - 1, "%s", text);
+    int usingGui = -1;
+    if (use_speech_textwindow)
+	    usingGui = play.speech_textwindow_gui;
+    else if (use_thought_gui)
+	    usingGui = game.options[OPT_THOUGHTGUI];
+
+    int padding = get_textwindow_padding(usingGui);
+    int paddingScaled = get_fixed_pixel_size(padding);
+    int paddingDoubledScaled = get_fixed_pixel_size(padding * 2); // Just in case screen size does is not neatly divisible by 320x200
+
     ensure_text_valid_for_font(todis, usingfont);
-    break_up_text_into_lines(wii-6,usingfont,todis);
-    texthit = wgetfontheight(usingfont);
+    break_up_text_into_lines(wii-2*padding,usingfont,todis);
+    disp.lineheight = getfontheight_outlined(usingfont);
+    disp.linespacing= getfontspacing_outlined(usingfont);
+    disp.fulltxtheight = getheightoflines(usingfont, numlines);
 
     // AGS 2.x: If the screen is faded out, fade in again when displaying a message box.
     if (!asspch && (loaded_game_file_version <= kGameVersion_272))
@@ -116,21 +131,21 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
 
     if (xx == OVR_AUTOPLACE) ;
     // centre text in middle of screen
-    else if (yy<0) yy=(scrnhit/2-(numlines*texthit)/2)-3;
+    else if (yy<0) yy=play.viewport.GetHeight()/2-disp.fulltxtheight/2-padding;
     // speech, so it wants to be above the character's head
     else if (asspch > 0) {
-        yy-=numlines*texthit;
+        yy-=disp.fulltxtheight;
         if (yy < 5) yy=5;
         yy = adjust_y_for_guis (yy);
     }
 
-    if (longestline < wii - get_fixed_pixel_size(6)) {
+    if (longestline < wii - paddingDoubledScaled) {
         // shrink the width of the dialog box to fit the text
         int oldWid = wii;
         //if ((asspch >= 0) || (allowShrink > 0))
         // If it's not speech, or a shrink is allowed, then shrink it
         if ((asspch == 0) || (allowShrink > 0))
-            wii = longestline + get_fixed_pixel_size(6);
+            wii = longestline + paddingDoubledScaled;
 
         // shift the dialog box right to align it, if necessary
         if ((allowShrink == 2) && (xx >= 0))
@@ -144,18 +159,18 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
 
         xx = adjust_x_for_guis (xx, yy);
 
-        if (xx + wii >= scrnwid)
-            xx = (scrnwid - wii) - 5;
+        if (xx + wii >= play.viewport.GetWidth())
+            xx = (play.viewport.GetWidth() - wii) - 5;
     }
-    else if (xx<0) xx=scrnwid/2-wii/2;
+    else if (xx<0) xx=play.viewport.GetWidth()/2-wii/2;
 
-    int ee, extraHeight = get_fixed_pixel_size(6);
+    int ee, extraHeight = paddingDoubledScaled;
     Bitmap *ds = GetVirtualScreen();
     color_t text_color = ds->GetCompatibleColor(15);
     if (blocking < 2)
         remove_screen_overlay(OVER_TEXTMSG);
 
-    Bitmap *text_window_ds = BitmapHelper::CreateTransparentBitmap((wii > 0) ? wii : 2, numlines*texthit + extraHeight, final_col_dep);
+    Bitmap *text_window_ds = BitmapHelper::CreateTransparentBitmap((wii > 0) ? wii : 2, disp.fulltxtheight + extraHeight, System_GetColorDepth());
     SetVirtualScreen(text_window_ds);
 
     // inform draw_text_window to free the old bitmap
@@ -164,15 +179,13 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
     if ((strlen (todis) < 1) || (strcmp (todis, "  ") == 0) || (wii == 0)) ;
     // if it's an empty speech line, don't draw anything
     else if (asspch) { //text_color = ds->GetCompatibleColor(12);
-        int ttxleft = 0, ttxtop = get_fixed_pixel_size(3), oriwid = wii - 6;
-        int usingGui = -1, drawBackground = 0;
+        int ttxleft = 0, ttxtop = paddingScaled, oriwid = wii - padding * 2;
+        int drawBackground = 0;
 
-        if ((asspch < 0) && (game.options[OPT_SPEECHTYPE] >= 2)) {
-            usingGui = play.speech_textwindow_gui;
+        if (use_speech_textwindow) {
             drawBackground = 1;
         }
-        else if ((isThought) && (game.options[OPT_THOUGHTGUI] > 0)) {
-            usingGui = game.options[OPT_THOUGHTGUI];
+        else if (use_thought_gui) {
             // make it treat it as drawing inside a window now
             if (asspch > 0)
                 asspch = -asspch;
@@ -184,21 +197,21 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             draw_text_window_and_bar(&text_window_ds, wantFreeScreenop, &ttxleft, &ttxtop, &xx, &yy, &wii, &text_color, 0, usingGui);
             if (usingGui > 0)
             {
-                alphaChannel = guis[usingGui].is_alpha();
+                alphaChannel = guis[usingGui].HasAlphaChannel();
             }
         }
-        else if ((ShouldAntiAliasText()) && (final_col_dep >= 24))
+        else if ((ShouldAntiAliasText()) && (System_GetColorDepth() >= 24))
             alphaChannel = true;
 
         for (ee=0;ee<numlines;ee++) {
             //int ttxp=wii/2 - wgettextwidth_compensate(lines[ee], usingfont)/2;
-            int ttyp=ttxtop+ee*texthit;
+            int ttyp=ttxtop+ee*disp.linespacing;
             // asspch < 0 means that it's inside a text box so don't
             // centre the text
             if (asspch < 0) {
                 if ((usingGui >= 0) && 
                     ((game.options[OPT_SPEECHTYPE] >= 2) || (isThought)))
-                    text_color = text_window_ds->GetCompatibleColor(guis[usingGui].fgcol);
+                    text_color = text_window_ds->GetCompatibleColor(guis[usingGui].FgColor);
                 else
                     text_color = text_window_ds->GetCompatibleColor(-asspch);
 
@@ -212,18 +225,19 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
         }
     }
     else {
-        int xoffs,yoffs, oriwid = wii - 6;
+		
+        int xoffs,yoffs, oriwid = wii - padding * 2;
         draw_text_window_and_bar(&text_window_ds, wantFreeScreenop, &xoffs,&yoffs,&xx,&yy,&wii,&text_color);
 
         if (game.options[OPT_TWCUSTOM] > 0)
         {
-            alphaChannel = guis[game.options[OPT_TWCUSTOM]].is_alpha();
+            alphaChannel = guis[game.options[OPT_TWCUSTOM]].HasAlphaChannel();
         }
 
         adjust_y_coordinate_for_text(&yoffs, usingfont);
 
         for (ee=0;ee<numlines;ee++)
-            wouttext_aligned (text_window_ds, xoffs, yoffs + ee * texthit, oriwid, usingfont, text_color, lines[ee], play.text_align);
+            wouttext_aligned (text_window_ds, xoffs, yoffs + ee * disp.linespacing, oriwid, usingfont, text_color, lines[ee], play.text_align);
     }
 
     int ovrtype = OVER_TEXTMSG;
@@ -286,10 +300,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
                 if (skip_setting & SKIP_KEYPRESS)
                     break;
             }
-            while ((timerloop == 0) && (play.fast_forward == 0)) {
-                update_polled_stuff_if_runtime();
-                platform->YieldCPU();
-            }
+            PollUntilNextFrame();
             countdown--;
 
             if (channels[SCHAN_SPEECH] != NULL) {
@@ -331,7 +342,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             screenover[nse].y += offsety;
         }
 
-        do_main_cycle(UNTIL_NOOVERLAY,0);
+        GameLoopUntilEvent(UNTIL_NOOVERLAY,0);
     }
 
     play.messagetime=-1;
@@ -421,14 +432,14 @@ bool ShouldAntiAliasText() {
 void wouttext_outline(Common::Bitmap *ds, int xxp, int yyp, int usingfont, color_t text_color, const char*texx) {
     
     color_t outline_color = ds->GetCompatibleColor(play.speech_text_shadow);
-    if (game.fontoutline[usingfont] >= 0) {
+    if (get_font_outline(usingfont) >= 0) {
         // MACPORT FIX 9/6/5: cast
-        wouttextxy(ds, xxp, yyp, (int)game.fontoutline[usingfont], outline_color, texx);
+        wouttextxy(ds, xxp, yyp, (int)get_font_outline(usingfont), outline_color, texx);
     }
-    else if (game.fontoutline[usingfont] == FONT_OUTLINE_AUTO) {
+    else if (get_font_outline(usingfont) == FONT_OUTLINE_AUTO) {
         int outlineDist = 1;
 
-        if ((game.options[OPT_NOSCALEFNT] == 0) && (!fontRenderers[usingfont]->SupportsExtendedCharacters(usingfont))) {
+        if ((game.options[OPT_NOSCALEFNT] == 0) && (!font_supports_extended_characters(usingfont))) {
             // if it's a scaled up SCI font, move the outline out more
             outlineDist = get_fixed_pixel_size(1);
         }
@@ -460,28 +471,48 @@ void wouttext_aligned (Bitmap *ds, int usexp, int yy, int oriwid, int usingfont,
     wouttext_outline(ds, usexp, yy, usingfont, text_color, (char *)text);
 }
 
-int wgetfontheight(int font) {
-    int htof = wgettextheight(heightTestString, font);
-
+int get_outline_adjustment(int font)
+{
     // automatic outline fonts are 2 pixels taller
-    if (game.fontoutline[font] == FONT_OUTLINE_AUTO) {
+    if (get_font_outline(font) == FONT_OUTLINE_AUTO) {
         // scaled up SCI font, push outline further out
-        if ((game.options[OPT_NOSCALEFNT] == 0) && (!fontRenderers[font]->SupportsExtendedCharacters(font)))
-            htof += get_fixed_pixel_size(2);
+        if ((game.options[OPT_NOSCALEFNT] == 0) && (!font_supports_extended_characters(font)))
+            return get_fixed_pixel_size(2);
         // otherwise, just push outline by 1 pixel
         else
-            htof += 2;
+            return 2;
     }
+    return 0;
+}
 
-    return htof;
+int getfontheight_outlined(int font)
+{
+    return getfontheight(font) + get_outline_adjustment(font);
+}
+
+int getfontspacing_outlined(int font)
+{
+    return use_default_linespacing(font) ?
+        getfontheight_outlined(font) :
+        getfontlinespacing(font);
+}
+
+int getfontlinegap(int font)
+{
+    return getfontspacing_outlined(font) - getfontheight_outlined(font);
+}
+
+int getheightoflines(int font, int numlines)
+{
+    return getfontspacing_outlined(font) * (numlines - 1) + getfontheight_outlined(font);
 }
 
 int wgettextwidth_compensate(const char *tex, int font) {
     int wdof = wgettextwidth(tex, font);
 
-    if (game.fontoutline[font] == FONT_OUTLINE_AUTO) {
+    if (get_font_outline(font) == FONT_OUTLINE_AUTO) {
         // scaled up SCI font, push outline further out
-        if ((game.options[OPT_NOSCALEFNT] == 0) && (!fontRenderers[font]->SupportsExtendedCharacters(font)))
+        if ((game.options[OPT_NOSCALEFNT] == 0) && (!font_supports_extended_characters(font)))
             wdof += get_fixed_pixel_size(2);
         // otherwise, just push outline by 1 pixel
         else
@@ -504,7 +535,7 @@ void do_corner(Bitmap *ds, int sprn, int x, int y, int offx, int offy) {
 }
 
 int get_but_pic(GUIMain*guo,int indx) {
-    return guibuts[guo->objrefptr[indx] & 0x000ffff].pic;
+    return guibuts[guo->CtrlRefs[indx] & 0x000ffff].pic;
 }
 
 void draw_button_background(Bitmap *ds, int xx1,int yy1,int xx2,int yy2,GUIMain*iep) {
@@ -524,23 +555,23 @@ void draw_button_background(Bitmap *ds, int xx1,int yy1,int xx2,int yy2,GUIMain*
             // From the changelog of 2.62:
             //  - Fixed text windows getting a black background if colour 0 was
             //    specified, rather than being transparent.
-            if (iep->bgcol == 0)
-                iep->bgcol = 16;
+            if (iep->BgColor == 0)
+                iep->BgColor = 16;
         }
 
-        if (iep->bgcol >= 0) draw_color = ds->GetCompatibleColor(iep->bgcol);
+        if (iep->BgColor >= 0) draw_color = ds->GetCompatibleColor(iep->BgColor);
         else draw_color = ds->GetCompatibleColor(0); // black backrgnd behind picture
 
-        if (iep->bgcol > 0)
+        if (iep->BgColor > 0)
             ds->FillRect(Rect(xx1,yy1,xx2,yy2), draw_color);
 
         int leftRightWidth = spritewidth[get_but_pic(iep,4)];
         int topBottomHeight = spriteheight[get_but_pic(iep,6)];
-        if (iep->bgpic>0) {
+        if (iep->BgImage>0) {
             if ((loaded_game_file_version <= kGameVersion_272) // 2.xx
-                && (spriteset[iep->bgpic]->GetWidth() == 1)
-                && (spriteset[iep->bgpic]->GetHeight() == 1) 
-                && (*((unsigned int*)spriteset[iep->bgpic]->GetData()) == 0x00FF00FF))
+                && (spriteset[iep->BgImage]->GetWidth() == 1)
+                && (spriteset[iep->BgImage]->GetHeight() == 1) 
+                && (*((unsigned int*)spriteset[iep->BgImage]->GetData()) == 0x00FF00FF))
             {
                 // Don't draw fully transparent dummy GUI backgrounds
             }
@@ -560,10 +591,10 @@ void draw_button_background(Bitmap *ds, int xx1,int yy1,int xx2,int yy2,GUIMain*
                     bgoffsy = bgoffsyStart;
                     while (bgoffsy <= bgfinishy)
                     {
-                        draw_gui_sprite_v330(ds, iep->bgpic, bgoffsx, bgoffsy);
-                        bgoffsy += spriteheight[iep->bgpic];
+                        draw_gui_sprite_v330(ds, iep->BgImage, bgoffsx, bgoffsy);
+                        bgoffsy += spriteheight[iep->BgImage];
                     }
-                    bgoffsx += spritewidth[iep->bgpic];
+                    bgoffsx += spritewidth[iep->BgImage];
                 }
                 // return to normal clipping rectangle
                 ds->SetClip(Rect(0, 0, ds->GetWidth() - 1, ds->GetHeight() - 1));
@@ -591,7 +622,7 @@ int get_textwindow_border_width (int twgui) {
     if (twgui < 0)
         return 0;
 
-    if (!guis[twgui].is_textwindow())
+    if (!guis[twgui].IsTextWindow())
         quit("!GUI set as text window but is not actually a text window GUI");
 
     int borwid = spritewidth[get_but_pic(&guis[twgui], 4)] + 
@@ -605,10 +636,25 @@ int get_textwindow_top_border_height (int twgui) {
     if (twgui < 0)
         return 0;
 
-    if (!guis[twgui].is_textwindow())
+    if (!guis[twgui].IsTextWindow())
         quit("!GUI set as text window but is not actually a text window GUI");
 
     return spriteheight[get_but_pic(&guis[twgui], 6)];
+}
+
+// Get the padding for a text window
+// -1 for the game's custom text window
+int get_textwindow_padding(int ifnum) {
+    int result;
+
+    if (ifnum < 0)
+        ifnum = game.options[OPT_TWCUSTOM];
+    if (ifnum > 0 && ifnum < game.numgui)
+        result = guis[ifnum].Padding;
+    else
+        result = TEXTWINDOW_PADDING_DEFAULT;
+
+    return result;
 }
 
 void draw_text_window(Bitmap **text_window_ds, bool should_free_ds,
@@ -630,7 +676,7 @@ void draw_text_window(Bitmap **text_window_ds, bool should_free_ds,
     else {
         if (ifnum >= game.numgui)
             quitprintf("!Invalid GUI %d specified as text window (total GUIs: %d)", ifnum, game.numgui);
-        if (!guis[ifnum].is_textwindow())
+        if (!guis[ifnum].IsTextWindow())
             quit("!GUI set as text window but is not actually a text window GUI");
 
         int tbnum = get_but_pic(&guis[ifnum], 0);
@@ -639,18 +685,19 @@ void draw_text_window(Bitmap **text_window_ds, bool should_free_ds,
         xx[0]-=spritewidth[tbnum];
         yy[0]-=spriteheight[tbnum];
         if (ovrheight == 0)
-            ovrheight = numlines*texthit;
+            ovrheight = disp.fulltxtheight;
 
         if (should_free_ds)
             delete *text_window_ds;
-        *text_window_ds = BitmapHelper::CreateTransparentBitmap(wii[0],ovrheight+6+spriteheight[tbnum]*2,final_col_dep);
+        int padding = get_textwindow_padding(ifnum);
+        *text_window_ds = BitmapHelper::CreateTransparentBitmap(wii[0],ovrheight+(padding*2)+spriteheight[tbnum]*2,System_GetColorDepth());
         ds = SetVirtualScreen(*text_window_ds);
         int xoffs=spritewidth[tbnum],yoffs=spriteheight[tbnum];
         draw_button_background(ds, xoffs,yoffs,(ds->GetWidth() - xoffs) - 1,(ds->GetHeight() - yoffs) - 1,&guis[ifnum]);
         if (set_text_color)
-            *set_text_color = ds->GetCompatibleColor(guis[ifnum].fgcol);
-        xins[0]=xoffs+3;
-        yins[0]=yoffs+3;
+            *set_text_color = ds->GetCompatibleColor(guis[ifnum].FgColor);
+        xins[0]=xoffs+padding;
+        yins[0]=yoffs+padding;
     }
 
 }
@@ -664,7 +711,7 @@ void draw_text_window_and_bar(Bitmap **text_window_ds, bool should_free_ds,
         // top bar on the dialog window with character's name
         // create an enlarged window, then free the old one
         Bitmap *ds = *text_window_ds;
-        Bitmap *newScreenop = BitmapHelper::CreateBitmap(ds->GetWidth(), ds->GetHeight() + topBar.height, final_col_dep);
+        Bitmap *newScreenop = BitmapHelper::CreateBitmap(ds->GetWidth(), ds->GetHeight() + topBar.height, System_GetColorDepth());
         newScreenop->Blit(ds, 0, 0, 0, topBar.height, ds->GetWidth(), ds->GetHeight());
         delete *text_window_ds;
         *text_window_ds = newScreenop;

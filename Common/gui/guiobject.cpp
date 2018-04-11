@@ -19,13 +19,24 @@
 #include "ac/common.h"		// quit()
 #include "util/stream.h"
 
-using AGS::Common::Stream;
+using namespace AGS::Common;
+
+GUIObject::GUIObject()
+{
+  guin = objn = 0;
+  flags = 0;
+  x = y = 0;
+  wid = hit = 0;
+  zorder = 0;
+  activated = 0;
+  init();
+}
 
 void GUIObject::init() {
   int jj;
-  scriptName[0] = 0;
+  scriptName.Empty();;
   for (jj = 0; jj < MAX_GUIOBJ_EVENTS; jj++)
-    eventHandlers[jj][0] = 0;
+    eventHandlers[jj].Empty();
 }
 
 int GUIObject::IsDisabled() {
@@ -52,13 +63,13 @@ void GUIObject::ReadFromFile(Stream *in, GuiVersion gui_version)
   // MACPORT FIX: swap
   in->ReadArrayOfInt32((int32_t*)&flags, BASEGOBJ_SIZE);
   if (gui_version >= kGuiVersion_unkn_106)
-    fgetstring_limit(scriptName, in, MAX_GUIOBJ_SCRIPTNAME_LEN);
+    scriptName = String::FromStream(in);
   else
-    scriptName[0] = 0;
+    scriptName.Empty();
 
   int kk;
   for (kk = 0; kk < GetNumEvents(); kk++)
-    eventHandlers[kk][0] = 0;
+    eventHandlers[kk].Empty();
 
   if (gui_version >= kGuiVersion_unkn_108) {
     int numev = in->ReadInt32();
@@ -67,6 +78,6 @@ void GUIObject::ReadFromFile(Stream *in, GuiVersion gui_version)
 
     // read in the event handler names
     for (kk = 0; kk < numev; kk++)
-      fgetstring_limit(eventHandlers[kk], in, MAX_GUIOBJ_EVENTHANDLER_LEN + 1);
+      eventHandlers[kk] = String::FromStream(in);
   }
 }

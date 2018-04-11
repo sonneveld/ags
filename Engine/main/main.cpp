@@ -29,6 +29,7 @@
 #include "debug/agseditordebugger.h"
 #include "debug/debug_log.h"
 #include "debug/out.h"
+#include "main/config.h"
 #include "main/engine.h"
 #include "main/mainheader.h"
 #include "main/main.h"
@@ -42,11 +43,10 @@
 #include "test/test_all.h"
 #endif
 
-namespace Directory = AGS::Common::Directory;
-namespace Out       = AGS::Common::Out;
-namespace Path      = AGS::Common::Path;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
-char appDirectory[512]; // Needed for library loading
+String appDirectory; // Needed for library loading
 
 #ifdef MAC_VERSION
 extern "C"
@@ -81,9 +81,8 @@ extern char editor_debugger_instance_token[100];
 
 
 // Startup flags, set from parameters to engine
-char force_gfxfilter[50];
 int datafile_argv=0, change_to_game_dir = 0, force_window = 0;
-int override_start_room = 0, force_16bit = 0;
+int override_start_room = 0;
 bool justDisplayHelp = false;
 bool justDisplayVersion = false;
 bool justRunSetup = false;
@@ -133,11 +132,11 @@ void main_create_platform_driver()
 #define SVG_VERSION_FWCOMPAT_REVISION   1111
 
 // Current engine version
-AGS::Engine::Version EngineVersion;
+AGS::Common::Version EngineVersion;
 // Lowest savedgame version, accepted by this engine
-AGS::Engine::Version SavedgameLowestBackwardCompatVersion;
+AGS::Common::Version SavedgameLowestBackwardCompatVersion;
 // Lowest engine version, which would accept current savedgames
-AGS::Engine::Version SavedgameLowestForwardCompatVersion;
+AGS::Common::Version SavedgameLowestForwardCompatVersion;
 
 void main_init()
 {
@@ -190,9 +189,10 @@ void main_print_help() {
            "  --windowed                   Force display mode to windowed\n"
            "  --fullscreen                 Force display mode to fullscreen\n"
            "  --hicolor                    Downmix 32bit colors to 16bit\n"
-           "  --letterbox                  Enable letterbox mode\n"
-           "  --gfxfilter <filter>         Enable graphics filter. Available options:\n"
-           "                                 StdScale2, StdScale3, StdScale4, Hq2x or Hq3x\n"
+           "  --gfxfilter <filter> [<scaling>]\n"
+           "                               Request graphics filter. Available options:\n"
+           "                                 none, stdscale, hqx;\n"
+           "                                 scaling is specified by integer number\n"
            "  --log                        Enable program output to the log file\n"
            "  --no-log                     Disable program output to the log file,\n"
            "                                 overriding configuration file setting\n"
@@ -207,8 +207,6 @@ void main_print_help() {
 
 int main_process_cmdline(int argc,char*argv[])
 {
-    force_gfxfilter[0] = '\0';
-
     for (int ee=1;ee<argc;ee++) {
         if (stricmp(argv[ee],"--help") == 0 || stricmp(argv[ee],"/?") == 0 || stricmp(argv[ee],"-?") == 0)
         {
@@ -226,17 +224,25 @@ int main_process_cmdline(int argc,char*argv[])
         else if (stricmp(argv[ee],"-fullscreen") == 0 || stricmp(argv[ee],"--fullscreen") == 0)
             force_window = 2;
         else if (stricmp(argv[ee],"-hicolor") == 0 || stricmp(argv[ee],"--hicolor") == 0)
-            force_16bit = 1;
-        else if (stricmp(argv[ee],"-letterbox") == 0 || stricmp(argv[ee],"--letterbox") == 0)
-            usetup.prefer_letterbox = 1;
+            usetup.force_hicolor_mode = true;
         else if (stricmp(argv[ee],"-record") == 0)
             play.recording = 1;
         else if (stricmp(argv[ee],"-playback") == 0)
             play.playback = 1;
         else if ((stricmp(argv[ee],"-gfxfilter") == 0 || stricmp(argv[ee],"--gfxfilter") == 0) && (argc > ee + 1))
         {
-            strncpy(force_gfxfilter, argv[ee + 1], 49);
-            ee++;
+            // TODO: we make an assumption here that if user provides scaling factor,
+            // this factor means to be applied to windowed mode only.
+            usetup.Screen.Filter.ID = argv[++ee];
+            if (argc > ee + 1 && argv[ee + 1][0] != '-')
+            {
+                parse_scaling_option(argv[++ee], usetup.Screen.WinGameFrame);
+            }
+            else
+            {
+                usetup.Screen.WinGameFrame.ScaleDef = kFrame_MaxRound;
+            }
+            
         }
 #ifdef _DEBUG
         else if ((stricmp(argv[ee],"--startr") == 0) && (ee < argc-1)) {
@@ -287,6 +293,13 @@ int main_process_cmdline(int argc,char*argv[])
             force_window = 1;
             ee++;
         }
+        else if (stricmp(argv[ee], "--runfromide") == 0 && (argc > ee + 3))
+        {
+            usetup.install_dir = argv[ee + 1];
+            usetup.install_audio_dir = argv[ee + 2];
+            usetup.install_voice_dir = argv[ee + 3];
+            ee += 3;
+        }
         else if (stricmp(argv[ee],"--takeover")==0) {
             if (argc < ee+2)
                 break;
@@ -336,39 +349,45 @@ void main_init_crt_report()
 #endif
 }
 
-void change_to_directory_of_file(String path)
+#if defined (WINDOWS_VERSION)
+String GetPathInASCII(const String &path)
 {
-    if (Path::IsFile(path))
+    char ascii_buffer[MAX_PATH];
+    if (GetShortPathNameA(path, ascii_buffer, MAX_PATH) == 0)
     {
-        int slash_at = path.FindCharReverse('/');
-        if (slash_at > 0)
-        {
-            path.ClipMid(slash_at);
-        }
+        Debug::Printf(kDbgMsg_Error, "Unable to determine path: GetShortPathNameA failed.\nArg: %s", path.GetCStr());
+        return "";
     }
-    if (Path::IsDirectory(path))
-    {
-        Directory::SetCurrentDirectory(path);
-    }
+    return Path::MakeAbsolutePath(ascii_buffer);
 }
+#endif
 
 void main_set_gamedir(int argc,char*argv[])
 {
-    if ((loadSaveGameOnStartup != NULL) && (argv[0] != NULL))
+    appDirectory = Path::GetDirectoryPath(GetPathFromCmdArg(0));
+
+    if (datafile_argv > 0)
+    {
+        // If running data file pointed by command argument, change to that folder
+        Directory::SetCurrentDirectory(Path::GetDirectoryPath(GetPathFromCmdArg(datafile_argv)));
+    }
+    else if ((loadSaveGameOnStartup != NULL) && (argv[0] != NULL))
     {
         // When launched by double-clicking a save game file, the curdir will
         // be the save game folder unless we correct it
-        change_to_directory_of_file(GetPathFromCmdArg(0));
+        Directory::SetCurrentDirectory(appDirectory);
     }
-
-    getcwd(appDirectory, 512);
-
-    //if (change_to_game_dir == 1)  {
-    if (datafile_argv > 0) {
-        // If launched by double-clicking .AGS file, change to that
-        // folder; else change to this exe's folder
-        change_to_directory_of_file(GetPathFromCmdArg(datafile_argv));
+#if defined (WINDOWS_VERSION)
+    else
+    {
+        // It looks like Allegro library does not like ANSI (ACP) paths.
+        // When *not* working in U_UNICODE filepath mode, whenever it gets
+        // current directory for its own operations, it "fixes" it by
+        // substituting non-ASCII symbols with '^'.
+        // Here we explicitly set current directory to ASCII path.
+        Directory::SetCurrentDirectory(GetPathInASCII(Directory::GetCurrentDirectory()));
     }
+#endif
 }
 
 String GetPathFromCmdArg(int arg_index)
@@ -383,17 +402,17 @@ String GetPathFromCmdArg(int arg_index)
     // Hack for Windows in case there are unicode chars in the path.
     // The normal argv[] array has ????? instead of the unicode chars
     // and fails, so instead we manually get the short file name, which
-    // is always using ANSI chars.
+    // is always using ASCII chars.
     WCHAR short_path[MAX_PATH];
-    char ansi_buffer[MAX_PATH];
+    char ascii_buffer[MAX_PATH];
     LPCWSTR arg_path = wArgv[arg_index];
     if (GetShortPathNameW(arg_path, short_path, MAX_PATH) == 0)
     {
-        Out::FPrint("Unable to determine path: GetShortPathNameW failed.\nCommand line argument %i: %s", arg_index, global_argv[arg_index]);
+        Debug::Printf(kDbgMsg_Error, "Unable to determine path: GetShortPathNameW failed.\nCommand line argument %i: %s", arg_index, global_argv[arg_index]);
         return "";
     }
-    WideCharToMultiByte(CP_ACP, 0, short_path, -1, ansi_buffer, MAX_PATH, NULL, NULL);
-    path = ansi_buffer;
+    WideCharToMultiByte(CP_ACP, 0, short_path, -1, ascii_buffer, MAX_PATH, NULL, NULL);
+    path = ascii_buffer;
 #else
     path = global_argv[arg_index];
 #endif
@@ -472,8 +491,8 @@ int main(int argc,char*argv[]) {
         return 0;
     }
 
-    initialize_debug_system();
-    Out::FPrint(get_engine_string());
+    init_debug();
+    Debug::Printf(kDbgMsg_Init, get_engine_string());
 
     main_init_crt_report();
 
@@ -501,6 +520,4 @@ int main(int argc,char*argv[]) {
     }
 }
 
-#if !defined (DOS_VERSION)
 END_OF_MAIN()
-#endif

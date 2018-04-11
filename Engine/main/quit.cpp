@@ -16,7 +16,6 @@
 // Quit game procedure
 //
 
-#include "gfx/ali3d.h"
 #include "ac/cdaudio.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
@@ -29,7 +28,7 @@
 #include "debug/out.h"
 #include "font/fonts.h"
 #include "main/config.h"
-#include "main/graphics_mode.h"
+#include "main/engine.h"
 #include "main/main.h"
 #include "main/mainheader.h"
 #include "main/quit.h"
@@ -37,10 +36,10 @@
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
 #include "core/assetmanager.h"
+#include "plugin/plugin_engine.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-namespace Out = AGS::Common::Out;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern GameSetupStruct game;
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
@@ -54,8 +53,6 @@ extern char check_dynamic_sprites_at_exit;
 extern int editor_debugging_initialized;
 extern IAGSEditorDebugger *editor_debugger;
 extern int need_to_stop_cd;
-extern Bitmap *_old_screen;
-extern Bitmap *_sub_screen;
 extern int use_cdplayer;
 extern IGraphicsDriver *gfxDriver;
 
@@ -91,7 +88,7 @@ void quit_check_dynamic_sprites(QuitReason qreason)
             // have been deleted
             for (int i = 1; i < spriteset.elements; i++) {
                 if (game.spriteflags[i] & SPF_DYNAMICALLOC)
-                    debug_log("Dynamic sprite %d was never deleted", i);
+                    debug_script_warn("Dynamic sprite %d was never deleted", i);
             }
     }
 }
@@ -104,14 +101,9 @@ void quit_shutdown_platform(QuitReason qreason)
 
     our_eip = 9016;
 
-    platform->ShutdownPlugins();
+    pl_stop_plugins();
 
     quit_check_dynamic_sprites(qreason);
-
-    // allegro_exit assumes screen is correct
-	if (_old_screen) {
-		BitmapHelper::SetScreenBitmap( _old_screen );
-	}
 
     platform->FinishedUsingGraphicsMode();
 
@@ -191,13 +183,6 @@ QuitReason quit_check_for_error_state(const char *&qmsg, String &alertis)
     }
 }
 
-void quit_destroy_subscreen()
-{
-    // close graphics mode (Win) or return to text mode (DOS)
-    delete _sub_screen;
-	_sub_screen = NULL;
-}
-
 void quit_message_on_exit(const char *qmsg, String &alertis, QuitReason qreason)
 {
     // successful exit displays no messages (because Windoze closes the dos-box
@@ -213,9 +198,7 @@ void quit_message_on_exit(const char *qmsg, String &alertis, QuitReason qreason)
 
 void quit_release_data()
 {
-    // wipe all the interaction structs so they don't de-alloc the children twice
     resetRoomStatuses();
-    memset (&troom, 0, sizeof(RoomStatus));
 
     /*  _CrtMemState memstart;
     _CrtMemCheckpoint(&memstart);
@@ -301,15 +284,13 @@ void quit(const char *quitmsg)
     shutdown_font_renderer();
     our_eip = 9902;
 
-    quit_destroy_subscreen();
-
     our_eip = 9907;
 
     close_translation();
 
     our_eip = 9908;
 
-    graphics_mode_shutdown();
+    engine_shutdown_gfxmode();
 
     quit_message_on_exit(qmsg, alertis, qreason);
 
@@ -328,9 +309,9 @@ void quit(const char *quitmsg)
 
     proper_exit=1;
 
-    Out::FPrint("***** ENGINE HAS SHUTDOWN");
+    Debug::Printf(kDbgMsg_Init, "***** ENGINE HAS SHUTDOWN");
 
-    shutdown_debug_system();
+    shutdown_debug();
     free_globals();
 
     our_eip = 9904;

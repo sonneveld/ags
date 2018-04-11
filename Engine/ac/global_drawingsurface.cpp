@@ -27,11 +27,11 @@
 #include "font/fonts.h"
 #include "gui/guidefines.h"
 #include "ac/spritecache.h"
+#include "gfx/gfx_def.h"
 #include "gfx/gfx_util.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
-namespace GfxUtil = AGS::Engine::GfxUtil;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern Bitmap *raw_saved_screen;
 extern roomstruct thisroom;
@@ -64,7 +64,7 @@ void RawSaveScreen () {
 // and it gets freed on room exit anyway
 void RawRestoreScreen() {
     if (raw_saved_screen == NULL) {
-        debug_log("RawRestoreScreen: unable to restore, since the screen hasn't been saved previously.");
+        debug_script_warn("RawRestoreScreen: unable to restore, since the screen hasn't been saved previously.");
         return;
     }
     Bitmap *deston = thisroom.ebscene[play.bg_frame];
@@ -75,7 +75,7 @@ void RawRestoreScreen() {
 // Restores the backup bitmap, but tints it to the specified level
 void RawRestoreScreenTinted(int red, int green, int blue, int opacity) {
     if (raw_saved_screen == NULL) {
-        debug_log("RawRestoreScreenTinted: unable to restore, since the screen hasn't been saved previously.");
+        debug_script_warn("RawRestoreScreenTinted: unable to restore, since the screen hasn't been saved previously.");
         return;
     }
     if ((red < 0) || (green < 0) || (blue < 0) ||
@@ -83,7 +83,7 @@ void RawRestoreScreenTinted(int red, int green, int blue, int opacity) {
         (opacity < 1) || (opacity > 100))
         quit("!RawRestoreScreenTinted: invalid parameter. R,G,B must be 0-255, opacity 1-100");
 
-    DEBUG_CONSOLE("RawRestoreTinted RGB(%d,%d,%d) %d%%", red, green, blue, opacity);
+    debug_script_log("RawRestoreTinted RGB(%d,%d,%d) %d%%", red, green, blue, opacity);
 
     Bitmap *deston = thisroom.ebscene[play.bg_frame];
     tint_image(deston, raw_saved_screen, red, green, blue, opacity);
@@ -112,7 +112,7 @@ void RawDrawFrameTransparent (int frame, int translev) {
     {
         // Draw it transparently
         GfxUtil::DrawSpriteWithTransparency (RAW_SURFACE(), thisroom.ebscene[frame], 0, 0,
-            GfxUtil::Trans100ToAlpha255(translev));
+            GfxDef::Trans100ToAlpha255(translev));
     }
     invalidate_screen();
     mark_current_background_dirty();
@@ -146,7 +146,7 @@ void RawPrint (int xx, int yy, const char *text) {
     color_t text_color = play.raw_color;
     if ((RAW_SURFACE()->GetColorDepth() <= 8) && (play.raw_color > 255)) {
         text_color = RAW_SURFACE()->GetCompatibleColor(1);
-        debug_log ("RawPrint: Attempted to use hi-color on 256-col background");
+        debug_script_warn ("RawPrint: Attempted to use hi-color on 256-col background");
     }
     multiply_up_coordinates(&xx, &yy);
     wouttext_outline(RAW_SURFACE(), xx, yy, play.normal_font, text_color, text);
@@ -158,7 +158,7 @@ void RawPrint (int xx, int yy, const char *text) {
 }
 void RawPrintMessageWrapped (int xx, int yy, int wid, int font, int msgm) {
     char displbuf[3000];
-    int texthit = wgetfontheight(font);
+    int linespacing = getfontspacing_outlined(font);
     multiply_up_coordinates(&xx, &yy);
     wid = multiply_up_coordinate(wid);
 
@@ -171,7 +171,7 @@ void RawPrintMessageWrapped (int xx, int yy, int wid, int font, int msgm) {
     RAW_START();
     color_t text_color = play.raw_color;
     for (int i = 0; i < numlines; i++)
-        wouttext_outline(RAW_SURFACE(), xx, yy + texthit*i, font, text_color, lines[i]);
+        wouttext_outline(RAW_SURFACE(), xx, yy + linespacing*i, font, text_color, lines[i]);
     invalidate_screen();
     mark_current_background_dirty();
     RAW_END();
@@ -183,10 +183,10 @@ void RawDrawImageCore(int xx, int yy, int slot, int alpha) {
     RAW_START();
 
     if (spriteset[slot]->GetColorDepth() != RAW_SURFACE()->GetColorDepth()) {
-        debug_log("RawDrawImage: Sprite %d colour depth %d-bit not same as background depth %d-bit", slot, spriteset[slot]->GetColorDepth(), RAW_SURFACE()->GetColorDepth());
+        debug_script_warn("RawDrawImage: Sprite %d colour depth %d-bit not same as background depth %d-bit", slot, spriteset[slot]->GetColorDepth(), RAW_SURFACE()->GetColorDepth());
     }
 
-    draw_sprite_slot_support_alpha(RAW_SURFACE(), false, xx, yy, slot, alpha);
+    draw_sprite_slot_support_alpha(RAW_SURFACE(), false, xx, yy, slot, kBlendMode_Alpha, alpha);
     invalidate_screen();
     mark_current_background_dirty();
     RAW_END();
@@ -241,7 +241,7 @@ void RawDrawImageTransparent(int xx, int yy, int slot, int legacy_transparency) 
     // 100    => alpha 0
     // 1 - 99 => alpha 1 - 244
     // 
-    RawDrawImageTrans(xx, yy, slot, GfxUtil::LegacyTrans100ToAlpha255(legacy_transparency));
+    RawDrawImageTrans(xx, yy, slot, GfxDef::LegacyTrans100ToAlpha255(legacy_transparency));
 
     update_polled_stuff_if_runtime();  // this operation can be slow so stop music skipping
 }

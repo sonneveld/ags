@@ -20,13 +20,6 @@
 
 #include "util/geometry.h"
 
-#define POPUP_NONE      0
-#define POPUP_MOUSEY    1
-#define POPUP_SCRIPT    2
-#define POPUP_NOAUTOREM 3  // don't remove automatically during cutscene
-#define POPUP_NONEINITIALLYOFF 4   // normal GUI, initially off
-#define IFLG_TEXTWINDOW 1
-
 #define PAL_GAMEWIDE        0
 #define PAL_LOCKED          1
 #define PAL_BACKGROUND      2
@@ -78,7 +71,11 @@
 #define OPT_HIGHESTOPTION_330 OPT_SPRITEALPHA
 #define OPT_SAFEFILEPATHS   41
 #define OPT_HIGHESTOPTION_335 OPT_SAFEFILEPATHS
-#define OPT_HIGHESTOPTION   OPT_HIGHESTOPTION_335
+#define OPT_DIALOGOPTIONSAPI 42 // version of dialog options API (-1 for pre-3.4.0 API)
+#define OPT_BASESCRIPTAPI   43 // version of the Script API used to compile game script
+#define OPT_SCRIPTCOMPATLEV 44 // level of API compatibility used to compile game script
+#define OPT_RENDERATSCREENRES 45 // use the legacy D3D scaling that scales sprites at the (final) screen resolution
+#define OPT_HIGHESTOPTION   OPT_RENDERATSCREENRES
 #define OPT_NOMODMUSIC      98
 #define OPT_LIPSYNCTEXT     99
 #define PORTRAIT_LEFT       0
@@ -101,6 +98,7 @@
 #define FFLG_SIZEMASK 0x003f
 #define FONT_OUTLINE_AUTO -10
 #define MAX_FONT_SIZE 63
+#define DIALOG_OPTIONS_HIGHLIGHT_COLOR_DEFAULT  14 // Yellow
 
 #define MAXVIEWNAMELENGTH 15
 #define MAXLIPSYNCFRAMES  20
@@ -108,7 +106,6 @@
 #define MAX_SG_EXT_LENGTH 20
 #define MAX_SG_FOLDER_LEN 50
 
-#define MAX_DIALOG        500
 
 enum GameResolutionType
 {
@@ -121,6 +118,8 @@ enum GameResolutionType
     kGameResolution_640x480     = 4,
     kGameResolution_800x600     = 5,
     kGameResolution_1024x768    = 6,
+    kGameResolution_1280x720    = 7,
+    kGameResolution_Custom      = 8,
     kNumGameResolutions,
 
     kGameResolution_LastLoRes   = kGameResolution_320x240,
@@ -140,6 +139,32 @@ enum DialogOptionNumbering
     kDlgOptNoNumbering = -1,
     kDlgOptKeysOnly    =  0, // implicit key shortcuts
     kDlgOptNumbering   =  1  // draw option indices and use key shortcuts
+};
+
+// Version of the script api (OPT_BASESCRIPTAPI and OPT_SCRIPTCOMPATLEV).
+// If the existing script function meaning had changed, that may be
+// possible to find out which implementation to use by checking one of those
+// two options.
+// NOTE: please remember that those values are valid only for games made with
+// 3.4.0 final and above.
+enum ScriptAPIVersion
+{
+    kScriptAPI_v321 = 0,
+    kScriptAPI_v330 = 1,
+    kScriptAPI_v334 = 2,
+    kScriptAPI_v335 = 3,
+    kScriptAPI_v340 = 4,
+    kScriptAPI_v341 = 5,
+    kScriptAPI_Current = kScriptAPI_v341
+};
+
+// Determines whether the graphics renderer should scale sprites at the final
+// screen resolution, as opposed to native resolution
+enum RenderAtScreenRes
+{
+    kRenderAtScreenRes_UserDefined  = 0,
+    kRenderAtScreenRes_Enabled      = 1,
+    kRenderAtScreenRes_Disabled     = 2,
 };
 
 #endif // __AGS_CN_AC__GAMESTRUCTDEFINES_H

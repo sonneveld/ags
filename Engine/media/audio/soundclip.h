@@ -26,6 +26,12 @@
 extern volatile int psp_audio_multithreaded;
 extern volatile bool _audio_doing_crossfade;
 
+// TODO: one of the biggest problems with sound clips currently is that it
+// provides several methods of applying volume, which may ignore or override
+// each other, and does not shape a consistent interface.
+// Improving this situation is only possible with massive refactory of
+// sound clip use, taking backwards-compatible audio system in account.
+
 struct SOUNDCLIP
 {
     bool _destroyThis;
@@ -38,15 +44,13 @@ struct SOUNDCLIP
     int vol;
     // current relative volume, in percents
     int volAsPercentage;
-    // originalVolAsPercentage is used when there's a need to temporarily
-    // change and then restore the clip's relative volume (volAsPercentage)
-    int originalVolAsPercentage;
     // volModifier is used when there's a need to temporarily change and
     // the restore the clip's absolute volume (vol)
     int volModifier;
     int paused;
     int panning;
     int panningAsPercentage;
+    int speed; // speed of playback, in clip ms per real second
     int xSource, ySource;
     int maximumPossibleDistanceAway;
     int directionalVolModifier;
@@ -57,6 +61,8 @@ struct SOUNDCLIP
 
     virtual int poll() = 0;
     virtual void destroy() = 0;
+    // apply volume directly to playback; volume is given in units of 255
+    // NOTE: this completely ignores volAsPercentage and muted property
     virtual void set_volume(int) = 0;
     virtual void restart() = 0;
     virtual void seek(int) = 0;
@@ -70,49 +76,92 @@ struct SOUNDCLIP
     virtual int play_from(int position);
 
     virtual void set_panning(int newPanning);
+    virtual void set_speed(int) { /* not supported by default */ }
 
     virtual void pause();
     virtual void resume();
 
+    inline int get_speed() const
+    {
+        return speed;
+    }
+
+    // Gets clip's volume property, as percentage (0 - 100);
+    // note this may not be the real volume of playback (which could e.g. be muted)
     inline int get_volume() const
     {
-        return originalVolAsPercentage;
+        return volAsPercentage;
     }
 
-    inline void set_volume_origin(int volume)
+    inline bool is_muted() const
+    {
+        return muted;
+    }
+
+    // Sets the current volume property, as percentage (0 - 100).
+    inline void set_volume_percent(int volume)
     {
         volAsPercentage = volume;
-        originalVolAsPercentage = volume;
-        set_volume((volume * 255) / 100);
+        if (!muted)
+            set_volume((volume * 255) / 100);
     }
 
-    inline void set_volume_alternate(int vol_percent, int vol_absolute)
+    // Explicitly defines both percentage and absolute volume value,
+    // without calculating it from given percentage.
+    // NOTE: this overrides the mute
+    inline void set_volume_direct(int vol_percent, int vol_absolute)
     {
+        muted = false;
         volAsPercentage = vol_percent;
-        originalVolAsPercentage = vol_percent;
         set_volume(vol_absolute);
     }
 
-    inline void set_volume_override(int volume)
+    // Mutes sound clip, while preserving current volume property
+    // for the future reference; when unmuted, that property is
+    // used to restart previous volume.
+    inline void set_mute(bool enable)
     {
-        volAsPercentage = volume;
-        set_volume((volume * 255) / 100);
+        muted = enable;
+        if (enable)
+            set_volume(0);
+        else
+            set_volume((volAsPercentage * 255) / 100);
     }
 
-    inline void reset_volume_to_origin()
-    {
-        set_volume_origin(originalVolAsPercentage);
-    }
-
+    // Apply arbitrary permanent volume modifier, in absolute units (0 - 255);
+    // this is distinct value that is used in conjunction with current volume
+    // (can be both positive and negative).
     inline void apply_volume_modifier(int mod)
     {
         volModifier = mod;
-        // this forces implementation to recalculate absolute volume using new modifier
-        set_volume(vol);
+        adjust_volume();
     }
+
+    // Apply permanent directional volume modifier, in absolute units (0 - 255)
+    // this is distinct value that is used in conjunction with current volume
+    // (can be both positive and negative).
+    inline void apply_directional_modifier(int mod)
+    {
+        directionalVolModifier = mod;
+        adjust_volume();
+    }
+
+    virtual void adjust_volume() = 0;
 
     SOUNDCLIP();
     ~SOUNDCLIP();
+
+protected:
+    // mute mode overrides the volume; if set, any volume assigned is stored
+    // in properties, but not applied to playback itself
+    bool muted;
+
+    // helper function for calculating volume with applied modifiers
+    inline int get_final_volume() const
+    {
+        int final_vol = vol + volModifier + directionalVolModifier;
+        return final_vol >= 0 ? final_vol : 0;
+    }
 };
 
 

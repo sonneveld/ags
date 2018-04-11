@@ -8,8 +8,6 @@ using namespace System::Drawing;
 using namespace System::Drawing::Imaging;
 using namespace System::IO;
 
-extern void ConvertStringToCharArray(System::String^ clrString, char *textBuffer);
-
 namespace AGS
 {
 	namespace Native 
@@ -34,7 +32,9 @@ namespace AGS
 			void DrawGUI(int hDC, int x, int y, GUI^ gui, int scaleFactor, int selectedControl);
 			void DrawSprite(int hDC, int x, int y, int width, int height, int spriteNum);
 			void DrawSprite(int hDC, int x, int y, int spriteNum, bool flipImage);
-			void DrawFont(int hDC, int x, int y, int fontNum);
+			// Draws font char sheet on the provided context and returns the height of drawn object;
+			// may be called with hDC = 0 to get required height without drawing anything
+			int  DrawFont(int hDC, int x, int y, int width, int fontNum);
 			void DrawBlockOfColour(int hDC, int x, int y, int width, int height, int colourNum);
 			void DrawViewLoop(int hdc, ViewLoop^ loopToDraw, int x, int y, int size, int cursel);
 			Sprite^ SetSpriteFromBitmap(int spriteSlot, Bitmap^ bmp, int spriteImportMethod, bool remapColours, bool useRoomBackgroundColours, bool alphaChannel);
@@ -80,7 +80,6 @@ namespace AGS
 			void RenderBufferToHDC(int hDC) ;
 			String ^LoadRoomScript(String ^roomFileName);
 			void CompileScript(Script ^script, cli::array<String^> ^preProcessedScripts, Game ^game, bool isRoomScript);
-			void CompileGameToDTAFile(Game ^game, String^ fileName);
 			void CreateDataFile(cli::array<String^> ^fileList, long splitSize, String ^baseFileName, bool isGameEXE);
 			void CreateVOXFile(String ^fileName, cli::array<String^> ^fileList);
 			GameTemplate^ LoadTemplateFile(String ^fileName);
@@ -93,6 +92,7 @@ namespace AGS
       void UpdateFileVersionInfo(String ^fileToUpdate, cli::array<System::Byte> ^authorNameUnicode, cli::array<System::Byte> ^gameNameUnicode);
 			cli::array<unsigned char>^ TransformStringToBytes(String ^text);
 			bool HaveSpritesBeenModified();
+            Object^ GetNativeConstant(String ^name);
 		};
 
 		public ref class SourceCodeControl

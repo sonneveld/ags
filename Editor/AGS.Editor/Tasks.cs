@@ -169,6 +169,13 @@ namespace AGS.Editor
                     dialog.Script = RemoveAllLeadingSpacesFromLines(dialog.Script);
                 }
             }
+
+            if (xmlVersionIndex < 15)
+            {
+                game.DefaultSetup.SetDefaults();
+            }
+
+            game.SetScriptAPIForOldProject();
         }
 
         private string RemoveAllLeadingSpacesFromLines(string script)
@@ -205,6 +212,7 @@ namespace AGS.Editor
             string parameter = string.Empty;
             if (withDebugger)
             {
+                // debugger connection params
                 parameter = "--enabledebugger " + Factory.AGSEditor.Debugger.InstanceIdentifier;
             }
             else if (Factory.AGSEditor.Preferences.TestGameStyle == TestGameWindowStyle.Windowed)
@@ -216,6 +224,10 @@ namespace AGS.Editor
                 parameter = "-fullscreen";
             }
             _runningGameWithDebugger = withDebugger;
+            // custom game install directory (points to where all supplemental data files are)
+            // TODO: get audio and speech paths from a kind of shared config
+            parameter += " --runfromide " + Path.Combine(AGSEditor.OUTPUT_DIRECTORY, BuildTargetWindows.WINDOWS_DIRECTORY) +
+                         " " + AudioClip.AUDIO_CACHE_DIRECTORY + " " + "Speech";
 
             RunEXEFile(Path.Combine(AGSEditor.DEBUG_OUTPUT_DIRECTORY, Factory.AGSEditor.BaseGameFileName + ".exe"), parameter, true);
 
@@ -232,7 +244,9 @@ namespace AGS.Editor
             try
             {
                 string exeName = Factory.AGSEditor.BaseGameFileName + ".exe";
-                Directory.SetCurrentDirectory(AGSEditor.OUTPUT_DIRECTORY);
+                string exeDir = Path.Combine(AGSEditor.OUTPUT_DIRECTORY, BuildTargetWindows.WINDOWS_DIRECTORY);
+                Directory.CreateDirectory(exeDir); // creates Windows directory if it does not exist
+                Directory.SetCurrentDirectory(exeDir); // change into Windows directory to run setup
 
                 RunEXEFile(exeName, parameter, raiseEventOnExit);
             }
@@ -303,7 +317,7 @@ namespace AGS.Editor
             //            sb.AppendLine("#define AGS_MAX_CHARACTERS " + Game.MAX_CHARACTERS);
             sb.AppendLine("#define AGS_MAX_INV_ITEMS " + Game.MAX_INV_ITEMS);
             //            sb.AppendLine("#define AGS_MAX_GUIS " + Game.MAX_GUIS);
-            sb.AppendLine("#define AGS_MAX_CONTROLS_PER_GUI " + GUI.MAX_CONTROLS_PER_GUI);
+            sb.AppendLine("#define AGS_MAX_CONTROLS_PER_GUI " + GUI.LEGACY_MAX_CONTROLS_PER_GUI);
             //            sb.AppendLine("#define AGS_MAX_VIEWS " + Game.MAX_VIEWS);
             //            sb.AppendLine("#define AGS_MAX_LOOPS_PER_VIEW " + AGS.Types.View.MAX_LOOPS_PER_VIEW);
             //            sb.AppendLine("#define AGS_MAX_FRAMES_PER_LOOP " + ViewLoop.MAX_FRAMES_PER_LOOP);
@@ -439,14 +453,9 @@ namespace AGS.Editor
 
         private void AppendAudioClipsToHeader(StringBuilder sb, AudioClipFolder clips)
         {
-            foreach (AudioClip clip in clips.Items)
+            foreach (AudioClip clip in clips.AllItemsFlat)
             {
                 sb.AppendLine("import AudioClip " + clip.ScriptName + ";");
-            }
-
-            foreach (AudioClipFolder subFolder in clips.SubFolders)
-            {
-                AppendAudioClipsToHeader(sb, subFolder);
             }
         }
 

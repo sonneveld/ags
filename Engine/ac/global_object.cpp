@@ -13,7 +13,6 @@
 //=============================================================================
 
 #include <stdio.h>
-#include "gfx/ali3d.h"
 #include "ac/global_object.h"
 #include "ac/common.h"
 #include "ac/object.h"
@@ -38,9 +37,9 @@
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
-#include "gfx/gfx_util.h"
+#include "gfx/gfx_def.h"
 
-using AGS::Common::Bitmap;
+using namespace AGS::Common;
 
 #define OVERLAPPING_OBJECT 1000
 
@@ -105,13 +104,14 @@ void SetObjectTint(int obj, int red, int green, int blue, int opacity, int lumin
     if (!is_valid_object(obj))
         quit("!SetObjectTint: invalid object number specified");
 
-    DEBUG_CONSOLE("Set object %d tint RGB(%d,%d,%d) %d%%", obj, red, green, blue, opacity);
+    debug_script_log("Set object %d tint RGB(%d,%d,%d) %d%%", obj, red, green, blue, opacity);
 
     objs[obj].tint_r = red;
     objs[obj].tint_g = green;
     objs[obj].tint_b = blue;
     objs[obj].tint_level = opacity;
     objs[obj].tint_light = (luminance * 25) / 10;
+    objs[obj].flags &= ~OBJF_HASLIGHT;
     objs[obj].flags |= OBJF_HASTINT;
 }
 
@@ -119,18 +119,18 @@ void RemoveObjectTint(int obj) {
     if (!is_valid_object(obj))
         quit("!RemoveObjectTint: invalid object");
 
-    if (objs[obj].flags & OBJF_HASTINT) {
-        DEBUG_CONSOLE("Un-tint object %d", obj);
-        objs[obj].flags &= ~OBJF_HASTINT;
+    if (objs[obj].flags & (OBJF_HASTINT | OBJF_HASLIGHT)) {
+        debug_script_log("Un-tint object %d", obj);
+        objs[obj].flags &= ~(OBJF_HASTINT | OBJF_HASLIGHT);
     }
     else {
-        debug_log("RemoveObjectTint called but object was not tinted");
+        debug_script_warn("RemoveObjectTint called but object was not tinted");
     }
 }
 
 void SetObjectView(int obn,int vii) {
     if (!is_valid_object(obn)) quit("!SetObjectView: invalid object number specified");
-    DEBUG_CONSOLE("Object %d set to view %d", obn, vii);
+    debug_script_log("Object %d set to view %d", obn, vii);
     if ((vii < 1) || (vii > game.numviews)) {
         char buffer[150];
         sprintf (buffer, "!SetObjectView: invalid view number (You said %d, max is %d)", vii, game.numviews);
@@ -179,7 +179,7 @@ void SetObjectTransparency(int obn,int trans) {
     if (!is_valid_object(obn)) quit("!SetObjectTransparent: invalid object number specified");
     if ((trans < 0) || (trans > 100)) quit("!SetObjectTransparent: transparency value must be between 0 and 100");
 
-    objs[obn].transparent = GfxUtil::Trans100ToLegacyTrans255(trans);
+    objs[obn].transparent = GfxDef::Trans100ToLegacyTrans255(trans);
 }
 
 
@@ -220,7 +220,7 @@ void AnimateObjectEx(int obn,int loopn,int spdd,int rept, int direction, int blo
     if (views[objs[obn].view].loops[loopn].numFrames < 1)
         quit("!AnimateObject: no frames in the specified view loop");
 
-    DEBUG_CONSOLE("Obj %d start anim view %d loop %d, speed %d, repeat %d", obn, objs[obn].view+1, loopn, spdd, rept);
+    debug_script_log("Obj %d start anim view %d loop %d, speed %d, repeat %d", obn, objs[obn].view+1, loopn, spdd, rept);
 
     objs[obn].cycling = rept+1 + (direction * 10);
     objs[obn].loop=loopn;
@@ -236,7 +236,7 @@ void AnimateObjectEx(int obn,int loopn,int spdd,int rept, int direction, int blo
     CheckViewFrame (objs[obn].view, loopn, objs[obn].frame);
 
     if (blocking)
-        do_main_cycle(UNTIL_CHARIS0,(long)&objs[obn].cycling);
+        GameLoopUntilEvent(UNTIL_CHARIS0,(long)&objs[obn].cycling);
 }
 
 
@@ -266,7 +266,7 @@ void MergeObject(int obn) {
     //abuf = oldabuf;
     // mark the sprite as merged
     objs[obn].on = 2;
-    DEBUG_CONSOLE("Object %d merged into background", obn);
+    debug_script_log("Object %d merged into background", obn);
 }
 
 void StopObjectMoving(int objj) {
@@ -274,7 +274,7 @@ void StopObjectMoving(int objj) {
         quit("!StopObjectMoving: invalid object number");
     objs[objj].moving = 0;
 
-    DEBUG_CONSOLE("Object %d stop moving", objj);
+    debug_script_log("Object %d stop moving", objj);
 }
 
 void ObjectOff(int obn) {
@@ -282,7 +282,7 @@ void ObjectOff(int obn) {
     // don't change it if on == 2 (merged)
     if (objs[obn].on == 1) {
         objs[obn].on = 0;
-        DEBUG_CONSOLE("Object %d turned off", obn);
+        debug_script_log("Object %d turned off", obn);
         StopObjectMoving(obn);
     }
 }
@@ -291,7 +291,7 @@ void ObjectOn(int obn) {
     if (!is_valid_object(obn)) quit("!ObjectOn: invalid object specified");
     if (objs[obn].on == 0) {
         objs[obn].on = 1;
-        DEBUG_CONSOLE("Object %d turned on", obn);
+        debug_script_log("Object %d turned on", obn);
     }
 }
 
@@ -310,7 +310,7 @@ void SetObjectGraphic(int obn,int slott) {
 
     if (objs[obn].num != slott) {
         objs[obn].num = slott;
-        DEBUG_CONSOLE("Object %d graphic changed to slot %d", obn, slott);
+        debug_script_log("Object %d graphic changed to slot %d", obn, slott);
     }
     objs[obn].cycling=0;
     objs[obn].frame = 0;
@@ -479,14 +479,16 @@ int AreThingsOverlapping(int thing1, int thing2) {
     return 0;
 }
 
-int GetObjectProperty (int hss, const char *property) {
+int GetObjectProperty (int hss, const char *property)
+{
     if (!is_valid_object(hss))
         quit("!GetObjectProperty: invalid object");
-    return get_int_property (&thisroom.objProps[hss], property);
+    return get_int_property(thisroom.objProps[hss], croom->objProps[hss], property);
 }
 
-void GetObjectPropertyText (int item, const char *property, char *bufer) {
-    get_text_property (&thisroom.objProps[item], property, bufer);
+void GetObjectPropertyText (int item, const char *property, char *bufer)
+{
+    get_text_property(thisroom.objProps[item], croom->objProps[item], property, bufer);
 }
 
 Bitmap *GetObjectImage(int obj, int *isFlipped) 

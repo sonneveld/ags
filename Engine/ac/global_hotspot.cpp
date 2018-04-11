@@ -40,14 +40,14 @@ void DisableHotspot(int hsnum) {
     if ((hsnum<1) | (hsnum>=MAX_HOTSPOTS))
         quit("!DisableHotspot: invalid hotspot specified");
     croom->hotspot_enabled[hsnum]=0;
-    DEBUG_CONSOLE("Hotspot %d disabled", hsnum);
+    debug_script_log("Hotspot %d disabled", hsnum);
 }
 
 void EnableHotspot(int hsnum) {
     if ((hsnum<1) | (hsnum>=MAX_HOTSPOTS))
         quit("!EnableHotspot: invalid hotspot specified");
     croom->hotspot_enabled[hsnum]=1;
-    DEBUG_CONSOLE("Hotspot %d re-enabled", hsnum);
+    debug_script_log("Hotspot %d re-enabled", hsnum);
 }
 
 int GetHotspotPointX (int hotspot) {
@@ -137,9 +137,12 @@ void RunHotspotInteraction (int hotspothere, int mood) {
     evblocknum = oldblocknum;
 }
 
-int GetHotspotProperty (int hss, const char *property) {
-    return get_int_property (&thisroom.hsProps[hss], property);
+int GetHotspotProperty (int hss, const char *property)
+{
+    return get_int_property(thisroom.hsProps[hss], croom->hsProps[hss], property);
 }
-void GetHotspotPropertyText (int item, const char *property, char *bufer) {
-    get_text_property (&thisroom.hsProps[item], property, bufer);
+
+void GetHotspotPropertyText (int item, const char *property, char *bufer)
+{
+    get_text_property(thisroom.hsProps[item], croom->hsProps[item], property, bufer);
 }

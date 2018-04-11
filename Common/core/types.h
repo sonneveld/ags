@@ -28,6 +28,16 @@
 #define NULL 0
 #endif
 
+#ifndef FORCEINLINE
+#if defined(_MSC_VER)
+#define FORCEINLINE __forceinline
+#elif defined (__GNUC__)
+#define FORCEINLINE inline __attribute__((__always_inline__))
+#else
+#define FORCEINLINE inline
+#endif
+#endif
+
 #include <stddef.h>
 #if !defined (WINDOWS_VERSION)
 #include <stdint.h>
@@ -41,6 +51,12 @@
 #endif
 
 #if defined(WINDOWS_VERSION)
+#if defined(_MSC_VER) && (_MSC_VER >= 1600)
+
+#include <stdint.h>
+
+#else
+
 #define int8_t       signed char
 #define uint8_t      unsigned char
 #define int16_t      signed short
@@ -61,10 +77,19 @@
 #define _INTPTR_T_DEFINED
 #define _UINTPTR_T_DEFINED
 
+#endif // _MSC_VER >= 1600
+
 #endif // WINDOWS_VERSION
 
 
 #define fixed_t int32_t // fixed point type
 #define color_t int32_t
+
+// TODO: use distinct fixed point class
+enum
+{
+    kShift    = 16,
+    kUnit     = 1 << kShift
+};
 
 #endif // __AGS_CN_CORE__TYPES_H

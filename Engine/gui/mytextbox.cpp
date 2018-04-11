@@ -15,7 +15,6 @@
 #include <string.h>
 #include "util/wgt2allg.h"
 #include "font/fonts.h"
-#include "gfx/ali3d.h"
 #include "gui/mytextbox.h"
 #include "gui/guidialoginternaldefs.h"
 #include "gfx/bitmap.h"
@@ -27,7 +26,7 @@ extern GameSetup usetup;
 extern int windowbackgroundcolor;
 extern int cbuttfont;
 
-MyTextBox::MyTextBox(int xx, int yy, int wii, char *tee)
+MyTextBox::MyTextBox(int xx, int yy, int wii, const char *tee)
 {
     x = xx;
     y = yy;

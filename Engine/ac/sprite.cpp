@@ -12,31 +12,29 @@
 //
 //=============================================================================
 
-#include "gfx/ali3d.h"
 #include "ac/common.h"
-#include "ac/draw.h"            // USE_15BIT_FIX
+#include "ac/draw.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/sprite.h"
+#include "ac/system.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
+#include "plugin/plugin_engine.h"
 #include "ac/spritecache.h"
 #include "gfx/bitmap.h"
 #include "gfx/graphicsdriver.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern GameSetupStruct game;
-extern int scrnwid,scrnhit;
 extern int current_screen_resolution_multiplier;
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
 extern SpriteCache spriteset;
 extern int our_eip, eip_guinum, eip_guiobj;
 extern color palette[256];
 extern IGraphicsDriver *gfxDriver;
 extern AGSPlatformDriver *platform;
-extern int convert_16bit_bgr;
 
 void get_new_size_for_sprite (int ee, int ww, int hh, int &newwid, int &newhit) {
     newwid = ww * current_screen_resolution_multiplier;
@@ -79,7 +77,7 @@ void set_rgb_mask_using_alpha_channel(Bitmap *image)
 
 // from is a 32-bit RGBA image, to is a 15/16/24-bit destination image
 Bitmap *remove_alpha_channel(Bitmap *from) {
-    int depth = final_col_dep;
+    int depth = System_GetColorDepth();
 
     Bitmap *to = BitmapHelper::CreateBitmap(from->GetWidth(), from->GetHeight(),depth);
     int maskcol = to->GetMaskColor();
@@ -196,69 +194,16 @@ void initialize_sprite (int ee) {
         spritewidth[ee]=spriteset[ee]->GetWidth();
         spriteheight[ee]=spriteset[ee]->GetHeight();
 
-        int spcoldep = spriteset[ee]->GetColorDepth();
+        spriteset.set(ee, PrepareSpriteForUse(spriteset[ee], (game.spriteflags[ee] & SPF_ALPHACHANNEL) != 0));
 
-        if (((spcoldep > 16) && (final_col_dep <= 16)) ||
-            ((spcoldep == 16) && (final_col_dep > 16))) {
-                // 16-bit sprite in 32-bit game or vice versa - convert
-                // so that scaling and blit calls work properly
-                Bitmap *oldSprite = spriteset[ee];
-                Bitmap *newSprite;
-
-                if (game.spriteflags[ee] & SPF_ALPHACHANNEL)
-                    newSprite = remove_alpha_channel(oldSprite);
-                else {
-                    newSprite = BitmapHelper::CreateBitmapCopy(oldSprite, final_col_dep);
-                }
-                spriteset.set(ee, newSprite);
-                delete oldSprite;
-                spcoldep = final_col_dep;
-        }
-        else if ((spcoldep == 32) && (final_col_dep == 32))
-        {
-#if defined (AGS_INVERTED_COLOR_ORDER)
-            // PSP: Convert to BGR color order.
-            spriteset.set(ee, convert_32_to_32bgr(spriteset[ee]));
-#endif
-            if ((game.spriteflags[ee] & SPF_ALPHACHANNEL) != 0)
-            {
-                set_rgb_mask_using_alpha_channel(spriteset[ee]);
-            }
-        }
-
-#ifdef USE_15BIT_FIX
-        else if ((final_col_dep != game.color_depth*8) && (spcoldep == game.color_depth*8)) {
-            // running in 15-bit mode with a 16-bit game, convert sprites
-            Bitmap *oldsprite = spriteset[ee];
-
-            if (game.spriteflags[ee] & SPF_ALPHACHANNEL)
-                // 32-to-24 with alpha channel
-                spriteset.set (ee, remove_alpha_channel(oldsprite));
-            else
-                spriteset.set (ee, convert_16_to_15(oldsprite));
-
-            delete oldsprite;
-        }
-        if ((convert_16bit_bgr == 1) && (spriteset[ee]->GetColorDepth() == 16))
-            spriteset.set (ee, convert_16_to_16bgr (spriteset[ee]));
-#endif
-
-        if ((spcoldep == 8) && (final_col_dep > 8))
-            select_palette(palette);
-
-        spriteset.set(ee, gfxDriver->ConvertBitmapToSupportedColourDepth(spriteset[ee]));
-
-        if ((spcoldep == 8) && (final_col_dep > 8))
-            unselect_palette();
-
-        if (final_col_dep < 32) {
+        if (System_GetColorDepth() < 32) {
             game.spriteflags[ee] &= ~SPF_ALPHACHANNEL;
             // save the fact that it had one for the next time this
             // is re-loaded from disk
             game.spriteflags[ee] |= SPF_HADALPHACHANNEL;
         }
 
-        platform->RunPluginHooks(AGSE_SPRITELOAD, ee);
+        pl_run_plugin_hooks(AGSE_SPRITELOAD, ee);
         update_polled_stuff_if_runtime();
 
         our_eip = oldeip;

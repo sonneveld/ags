@@ -23,20 +23,57 @@
 namespace Math = AGS::Common::Math;
 
 #if defined (WINDOWS_VERSION)
-#define snprintf _snprintf
+#include "util/c99_snprintf.h"
 #endif
 
 enum FormatParseResult
 {
     kFormatParseNone,
     kFormatParseInvalid,
-    kFormatParseArgument,
     kFormatParseLiteralPercent,
+    kFormatParseArgInteger,
+    kFormatParseArgFloat,
+    kFormatParseArgString,
+    kFormatParseArgPointer,
+
+    kFormatParseArgFirst = kFormatParseArgInteger,
+    kFormatParseArgLast = kFormatParseArgPointer
 };
 
-const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format, const RuntimeScriptValue *args, int32_t argc)
+// Helper functions for getting parameter value either from script val array or va_list
+inline int GetArgInt(const RuntimeScriptValue *sc_args, va_list *varg_ptr, int arg_idx)
 {
-    if (!buffer)
+    if (varg_ptr)
+        return va_arg(*varg_ptr, int);
+    else
+        return sc_args[arg_idx].IValue;
+}
+
+inline float GetArgFloat(const RuntimeScriptValue *sc_args, va_list *varg_ptr, int arg_idx)
+{
+    // note that script variables store only floats, but va_list has floats promoted to double
+    if (varg_ptr)
+        return (float)va_arg(*varg_ptr, double);
+    else
+        return sc_args[arg_idx].FValue;
+}
+
+inline const char *GetArgPtr(const RuntimeScriptValue *sc_args, va_list *varg_ptr, int arg_idx)
+{
+    if (varg_ptr)
+        return va_arg(*varg_ptr, const char*);
+    else
+        return sc_args[arg_idx].Ptr;
+}
+
+
+// TODO: this implementation can be further optimised by either not calling
+// snprintf but formatting values ourselves, or by using some library method
+// that supports customizing, such as getting arguments in a custom way.
+const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format,
+                          const RuntimeScriptValue *sc_args, int32_t sc_argc, va_list *varg_ptr)
+{
+    if (!buffer || buf_length == 0)
     {
         cc_error("internal error in ScriptSprintf: buffer is null");
         return "";
@@ -46,7 +83,7 @@ const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format, c
         cc_error("internal error in ScriptSprintf: format string is null");
         return "";
     }
-    if (argc > 0 && !args)
+    if (!varg_ptr && sc_argc > 0 && !sc_args)
     {
         cc_error("internal error in ScriptSprintf: args pointer is null");
         return "";
@@ -69,191 +106,14 @@ const char *ScriptSprintf(char *buffer, size_t buf_length, const char *format, c
     char       *fmt_bufendptr = &fmtbuf[fmtbuf_size - 1];
 
     char       *out_ptr    = buffer;
-    const char *out_endptr = buffer + buf_length;
+    // save 1 character for null terminator
+    const char *out_endptr = buffer + buf_length - 1;
     const char *fmt_ptr    = format;
     int32_t    arg_idx     = 0;
 
     ptrdiff_t  avail_outbuf;
     int        snprintf_res;
     FormatParseResult fmt_done;
-
-    // Parse the format string, looking for argument placeholders
-    while (*fmt_ptr && out_ptr != out_endptr)
-    {
-        // Try to put argument into placeholder
-        if (*fmt_ptr == '%')
-        {
-            avail_outbuf = out_endptr - out_ptr;
-            fmt_bufptr = fmtbuf;
-            *(fmt_bufptr++) = '%';
-            snprintf_res = 0;
-            fmt_done = kFormatParseNone;
-            const RuntimeScriptValue *arg = arg_idx < argc ? &args[arg_idx] : NULL;
-
-            // Parse placeholder
-            while (*(++fmt_ptr) && fmt_done == kFormatParseNone && fmt_bufptr != fmt_bufendptr)
-            {
-                *(fmt_bufptr++) = *fmt_ptr;
-                switch (*fmt_ptr)
-                {
-                case 'd':
-                case 'i':
-                case 'o':
-                case 'u':
-                case 'x':
-                case 'X':
-                case 'c':
-                    // Print integer
-                    if (arg)
-                    {
-                        *fmt_bufptr = 0;
-                        snprintf_res = snprintf(out_ptr, avail_outbuf, fmtbuf, arg->IValue);
-                        fmt_done = kFormatParseArgument;
-                    }
-                    else
-                    {
-                        fmt_done = kFormatParseInvalid;
-                    }
-                    break;
-                case 'e':
-                case 'E':
-                case 'f':
-                case 'F':
-                case 'g':
-                case 'G':
-                case 'a':
-                case 'A':
-                    if (arg)
-                    {
-                        // Print float
-                        *fmt_bufptr = 0;
-                        snprintf_res = snprintf(out_ptr, avail_outbuf, fmtbuf, arg->FValue);
-                        fmt_done = kFormatParseArgument;
-                    }
-                    else
-                    {
-                        fmt_done = kFormatParseInvalid;
-                    }
-                    break;
-                case 's':
-                    if (arg && !arg->Ptr)
-                    {
-                        if (loaded_game_file_version < kGameVersion_320)
-                        {
-                            // print "(null)" into the placeholder;
-                            // NOTE: the behavior of printf("%s", 0) is undefined (MS version prints "(null)",
-                            // but there's no guarantee others will), therefore we shouldn't let snprintf do
-                            // all the job here.
-                            *fmt_bufptr = 0;
-                            strncpy(out_ptr, "(null)", avail_outbuf);
-                            snprintf_res = Math::Min<ptrdiff_t>(avail_outbuf, 6);
-                            fmt_done = kFormatParseArgument;
-                            break;
-                        }
-                        else
-                        {
-                            cc_error("ScriptSprintf: argument %d is expected to be a string, but it is null pointer", arg_idx);
-                            return "";
-                        }
-                    }
-                    else if (arg && arg->Ptr == buffer)
-                    {
-                        cc_error("ScriptSprintf: argument %d is a pointer to output buffer", arg_idx);
-                        return "";
-                    }
-                    // fall through intended ---
-                case 'p':
-                    // Print string, or pointer value
-                    if (arg)
-                    {
-                        *fmt_bufptr = 0;
-                        snprintf_res = snprintf(out_ptr, avail_outbuf, fmtbuf, arg->Ptr);
-                        fmt_done = kFormatParseArgument;
-                    }
-                    else
-                    {
-                        fmt_done = kFormatParseInvalid;
-                    }
-                    break;
-                case '%':
-                    // This may be a literal percent sign ('%%')
-                    if (fmt_bufptr - fmtbuf == 2)
-                    {
-                        fmt_done = kFormatParseLiteralPercent;
-                    }
-                    // ...Otherwise we reached the next placeholder
-                    else
-                    {
-                        fmt_ptr--;
-                        fmt_bufptr--;
-                        fmt_done = kFormatParseInvalid;
-                    }
-                    break;
-                }
-            }
-
-            if (fmt_done == kFormatParseArgument)
-            {
-                out_ptr += snprintf_res >= 0 ? snprintf_res : avail_outbuf;
-                arg_idx++;
-            }
-            else if (fmt_done == kFormatParseLiteralPercent)
-            {
-                *(out_ptr++) = '%';
-            }
-            // If placeholder was not valid, just copy stored format buffer as it is
-            else
-            {
-                size_t copy_len = Math::Min(Math::Min<ptrdiff_t>(fmt_bufptr - fmtbuf, fmtbuf_size - 1), avail_outbuf);
-                memcpy(out_ptr, fmtbuf, copy_len);
-                out_ptr += copy_len;
-            }
-        }
-        // If there's no placeholder, simply copy the character to output buffer
-        else
-        {
-            *(out_ptr++) = *(fmt_ptr++);
-        }
-    }
-
-    // Terminate the string
-    *out_ptr = 0;
-    return buffer;
-}
-
-const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, va_list &arg_ptr)
-{
-    if (!buffer)
-    {
-        cc_error("internal error in ScriptSprintf: buffer is null");
-        return "";
-    }
-    if (!format)
-    {
-        cc_error("internal error in ScriptSprintf: format string is null");
-        return "";
-    }
-
-    const size_t fmtbuf_size = 27;
-    char       fmtbuf[fmtbuf_size];
-    char       *fmt_bufptr;
-    char       *fmt_bufendptr = &fmtbuf[fmtbuf_size - 1];
-
-    char       *out_ptr    = buffer;
-    const char *out_endptr = buffer + buf_length;
-    const char *fmt_ptr    = format;
-    int32_t    arg_idx     = 0;
-
-    ptrdiff_t  avail_outbuf;
-    int        snprintf_res;
-    FormatParseResult fmt_done;
-
-    union VAR_ARG
-    {
-        int32_t     IValue;
-        float       FValue;
-        const char  *Ptr;
-    } arg;
 
     // Parse the format string, looking for argument placeholders
     while (*fmt_ptr && out_ptr != out_endptr)
@@ -280,11 +140,7 @@ const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, 
                 case 'x':
                 case 'X':
                 case 'c':
-                    // Print integer
-                    arg = va_arg(arg_ptr, VAR_ARG);
-                    *fmt_bufptr = 0;
-                    snprintf_res = snprintf(out_ptr, avail_outbuf, fmtbuf, arg.IValue);
-                    fmt_done = kFormatParseArgument;
+                    fmt_done = kFormatParseArgInteger;
                     break;
                 case 'e':
                 case 'E':
@@ -294,41 +150,13 @@ const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, 
                 case 'G':
                 case 'a':
                 case 'A':
-                    // Print float
-                    arg = va_arg(arg_ptr, VAR_ARG);
-                    *fmt_bufptr = 0;
-                    snprintf_res = snprintf(out_ptr, avail_outbuf, fmtbuf, arg.FValue);
-                    fmt_done = kFormatParseArgument;
+                    fmt_done = kFormatParseArgFloat;
+                    break;
+                case 'p':
+                    fmt_done = kFormatParseArgPointer;
                     break;
                 case 's':
-                    arg = va_arg(arg_ptr, VAR_ARG);
-                    if (!arg.Ptr)
-                    {
-                        if (loaded_game_file_version < kGameVersion_320)
-                        {
-                            *fmt_bufptr = 0;
-                            strncpy(out_ptr, "(null)", avail_outbuf);
-                            snprintf_res = Math::Min<ptrdiff_t>(avail_outbuf, 6);
-                            fmt_done = kFormatParseArgument;
-                            break;
-                        }
-                        else
-                        {
-                            cc_error("ScriptSprintf: argument %d is expected to be a string, but it is null pointer", arg_idx);
-                            return "";
-                        }
-                    }
-                    else if (arg.Ptr == buffer)
-                    {
-                        cc_error("ScriptSprintf: argument %d is a pointer to output buffer", arg_idx);
-                        return "";
-                    }
-                    // fall through intended ---
-                case 'p':
-                    // Print string, or pointer value
-                    *fmt_bufptr = 0;
-                    snprintf_res = snprintf(out_ptr, avail_outbuf, fmtbuf, arg.Ptr);
-                    fmt_done = kFormatParseArgument;
+                    fmt_done = kFormatParseArgString;
                     break;
                 case '%':
                     // This may be a literal percent sign ('%%')
@@ -347,22 +175,64 @@ const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *format, 
                 }
             }
 
-            if (fmt_done == kFormatParseArgument)
+            // Deal with the placeholder parsing results
+            if (fmt_done == kFormatParseLiteralPercent)
             {
-                out_ptr += snprintf_res >= 0 ? snprintf_res : avail_outbuf;
-                arg_idx++;
-            }
-            else if (fmt_done == kFormatParseLiteralPercent)
-            {
+                // literal percent sign
                 *(out_ptr++) = '%';
+                continue;
             }
-            // If placeholder was not valid, just copy stored format buffer as it is
-            else
+            else if (fmt_done >= kFormatParseArgFirst && fmt_done <= kFormatParseArgLast &&
+                (varg_ptr || arg_idx < sc_argc))
             {
-                size_t copy_len = Math::Min(Math::Min<ptrdiff_t>(fmt_bufptr - fmtbuf, fmtbuf_size - 1), avail_outbuf);
-                memcpy(out_ptr, fmtbuf, copy_len);
-                out_ptr += copy_len;
+                // Print the actual value
+                // NOTE: snprintf is called with avail_outbuf + 1 here, because we let it use our reserved
+                // character for null-terminator, in case we are at the end of the buffer
+                *fmt_bufptr = 0; // terminate the format buffer, we are going to use it
+                if (fmt_done == kFormatParseArgInteger)
+                    snprintf_res = snprintf(out_ptr, avail_outbuf + 1, fmtbuf, GetArgInt(sc_args, varg_ptr, arg_idx));
+                else if (fmt_done == kFormatParseArgFloat)
+                    snprintf_res = snprintf(out_ptr, avail_outbuf + 1, fmtbuf, GetArgFloat(sc_args, varg_ptr, arg_idx));
+                else
+                {
+                    const char *p = GetArgPtr(sc_args, varg_ptr, arg_idx);
+                    // Do extra checks for %s placeholder
+                    if (fmt_done == kFormatParseArgString && !p)
+                    {
+                        if (loaded_game_file_version < kGameVersion_320)
+                        {
+                            // explicitly put "(null)" into the placeholder
+                            p = "(null)";
+                        }
+                        else
+                        {
+                            cc_error("ScriptSprintf: argument %d is expected to be a string, but it is null pointer", arg_idx);
+                            return "";
+                        }
+                    }
+                    else if (fmt_done == kFormatParseArgString && p == buffer)
+                    {
+                        cc_error("ScriptSprintf: argument %d is a pointer to output buffer", arg_idx);
+                        return "";
+                    }
+                    snprintf_res = snprintf(out_ptr, avail_outbuf + 1, fmtbuf, p);
+                }
+
+                arg_idx++;
+                if (snprintf_res >= 0)
+                {
+                    // snprintf returns maximal number of characters, so limit it with buffer size
+                    out_ptr += Math::Min<ptrdiff_t>(snprintf_res, avail_outbuf);
+                    continue;
+                }
+                // -- pass further to invalid format case
             }
+            
+            // If format was not valid, or there are no available
+            // parameters, just copy stored format buffer as it is
+            size_t copy_len = Math::Min(Math::Min<ptrdiff_t>(fmt_bufptr - fmtbuf, fmtbuf_size - 1), avail_outbuf);
+            memcpy(out_ptr, fmtbuf, copy_len);
+            out_ptr += copy_len;
         }
         // If there's no placeholder, simply copy the character to output buffer
         else

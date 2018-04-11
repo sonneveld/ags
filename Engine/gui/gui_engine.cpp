@@ -19,6 +19,7 @@
 // Headers, as they are in acgui.cpp
 #pragma unmanaged
 #include "ac/game_version.h"
+#include "ac/system.h"
 #include "font/fonts.h"
 #include "gui/guimain.h"
 #include "gui/guibutton.h"
@@ -33,11 +34,11 @@
 #include "gfx/bitmap.h"
 #include "gfx/blender.h"
 
-using AGS::Common::Bitmap;
+using namespace Common;
 
 // For engine these are defined in ac.cpp
 extern int eip_guiobj;
-extern void replace_macro_tokens(char*,char*);
+extern void replace_macro_tokens(const char*,char*);
 
 // For engine these are defined in acfonts.cpp
 extern void ensure_text_valid_for_font(char *, int);
@@ -46,20 +47,20 @@ extern void ensure_text_valid_for_font(char *, int);
 extern SpriteCache spriteset; // in ac_runningame
 extern GameSetupStruct game;
 
-bool GUIMain::is_alpha() 
+bool GUIMain::HasAlphaChannel() const
 {
-    if (this->bgpic > 0)
+    if (this->BgImage > 0)
     {
         // alpha state depends on background image
-        return is_sprite_alpha(this->bgpic);
+        return is_sprite_alpha(this->BgImage);
     }
-    if (this->bgcol > 0)
+    if (this->BgColor > 0)
     {
         // not alpha transparent if there is a background color
         return false;
     }
     // transparent background, enable alpha blending
-    return final_col_dep >= 24 &&
+    return System_GetColorDepth() >= 24 &&
         // transparent background have alpha channel only since 3.2.0;
         // "classic" gui rendering mode historically had non-alpha transparent backgrounds
         // (3.2.0 broke the compatibility, now we restore it)
@@ -111,7 +112,7 @@ int get_eip_guiobj()
 
 bool outlineGuiObjects = false;
 
-void GUILabel::Draw_replace_macro_tokens(char *oritext, char *text)
+void GUILabel::Draw_replace_macro_tokens(char *oritext, const char *text)
 {
   replace_macro_tokens(flags & GUIF_TRANSLATED ? get_translation(text) : text, oritext);
   ensure_text_valid_for_font(oritext, font);
@@ -136,7 +137,7 @@ void GUITextBox::Draw_text_box_contents(Bitmap *ds, color_t text_color)
   if (!IsDisabled()) {
     // draw a cursor
     startx = wgettextwidth(text, font) + x + 3;
-    starty = y + 1 + wgettextheight("BigyjTEXT", font);
+    starty = y + 1 + getfontheight(font);
     ds->DrawRect(Rect(startx, starty, startx + get_fixed_pixel_size(5), starty + (get_fixed_pixel_size(1) - 1)), text_color);
   }
 }

@@ -23,6 +23,7 @@
 #include "ac/keycode.h"
 #include "ac/mouse.h"
 #include "ac/record.h"
+#include "game/savegame.h"
 #include "main/main.h"
 #include "media/audio/soundclip.h"
 #include "util/string_utils.h"
@@ -30,8 +31,8 @@
 #include "device/mousew32.h"
 #include "util/filestream.h"
 
-using AGS::Common::Stream;
-using AGS::Common::String;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern GameSetupStruct game;
 extern GameState play;
@@ -40,7 +41,6 @@ extern int mousex,mousey;
 extern unsigned int loopcounter,lastcounter;
 extern volatile unsigned long globalTimerCounter;
 extern SOUNDCLIP *channels[MAX_SOUND_CHANNELS+1];
-extern GFXFilter *filter;
 extern int pluginSimulatedClick;
 extern int displayed_room;
 extern char check_dynamic_sprites_at_exit;
@@ -101,7 +101,7 @@ int rec_getch () {
     }
     int result = my_readkey();
     if (play.recording) {
-        short buff[1] = {result};
+        short buff[1] = {static_cast<short>(result)};
         write_record_event (REC_GETCH, 1, buff);
     }
 
@@ -155,7 +155,7 @@ int rec_iskeypressed (int keycode) {
 
     if (play.recording) {
         if (toret != playback_keystate[keycode]) {
-            short buff[2] = {keycode, toret};
+            short buff[2] = {static_cast<short>(keycode), static_cast<short>(toret)};
             write_record_event (REC_KEYDOWN, 2, buff);
             playback_keystate[keycode] = toret;
         }
@@ -195,7 +195,7 @@ int rec_misbuttondown (int but) {
     int result = misbuttondown (but);
     if (play.recording) {
         if (result != recbutstate[but]) {
-            short buff[2] = {but, result};
+            short buff[2] = {static_cast<short>(but), static_cast<short>(result)};
             write_record_event (REC_MOUSEDOWN, 2, buff);
             recbutstate[but] = result;
         }
@@ -213,7 +213,7 @@ int rec_mgetbutton() {
             replay_last_second += 40;
         }
         if ((recordbuffer[recsize] == play.gamestep) && (recordbuffer[recsize + 1] == REC_MOUSECLICK)) {
-            filter->SetMousePosition(recordbuffer[recsize+3], recordbuffer[recsize+4]);
+            Mouse::SetPosition(Point(recordbuffer[recsize+3], recordbuffer[recsize+4]));
             disable_mgetgraphpos = 0;
             mgetgraphpos ();
             disable_mgetgraphpos = 1;
@@ -242,7 +242,7 @@ int rec_mgetbutton() {
 
     if (play.recording) {
         if (result >= 0) {
-            short buff[3] = {result, mousex, mousey};
+            short buff[3] = {static_cast<short>(result), static_cast<short>(mousex), static_cast<short>(mousey)};
             write_record_event (REC_MOUSECLICK, 3, buff);
         }
         if (loopcounter >= replay_last_second + 40) {
@@ -266,14 +266,14 @@ void rec_domouse (int what) {
             // don't divide down the co-ordinates, because we lose
             // the precision, and it might click the wrong thing
             // if eg. hi-res 71 -> 35 in record file -> 70 in playback
-            short buff[2] = {mousex, mousey};
+            short buff[2] = {static_cast<short>(mousex), static_cast<short>(mousey)};
             write_record_event (REC_MOUSEMOVE, 2, buff);
         }
         return;
     }
     else if ((play.playback) && (recordbuffer != NULL)) {
         if ((recordbuffer[recsize] == play.gamestep) && (recordbuffer[recsize + 1] == REC_MOUSEMOVE)) {
-            filter->SetMousePosition(recordbuffer[recsize+2], recordbuffer[recsize+3]);
+            Mouse::SetPosition(Point(recordbuffer[recsize+2], recordbuffer[recsize+3]));
             disable_mgetgraphpos = 0;
             if (what == DOMOUSE_NOCURSOR)
                 mgetgraphpos();
@@ -310,7 +310,7 @@ int check_mouse_wheel () {
     }
 
     if ((play.recording) && (result)) {
-        short buff[1] = {result};
+        short buff[1] = {static_cast<short>(result)};
         write_record_event (REC_MOUSEWHEEL, 1, buff);
     }
 
@@ -338,7 +338,7 @@ void start_recording() {
 
 void start_replay_record () {
     Stream *replay_s = Common::File::CreateFile(replayTempFile);
-    save_game_data (replay_s, NULL);
+    SaveGameState(replay_s);
     delete replay_s;
     start_recording();
     play.recording = 1;
@@ -466,7 +466,7 @@ void start_playback()
             if (replayver >= 3) {
                 int issave = in->ReadInt32();
                 if (issave) {
-                    if (restore_game_data (in, replayfile))
+                    if (RestoreGameState(in, kSvgVersion_321) != kSvgErr_NoError)
                         quit("!Error running replay... could be incorrect game version");
                     replay_last_second = loopcounter;
                 }
@@ -490,7 +490,7 @@ int my_readkey() {
 
     /*  char message[200];
     sprintf(message, "Scancode: %04X", gott);
-    Out::FPrint(message);*/
+    Debug::Printf(message);*/
 
     /*if ((scancode >= KEY_0_PAD) && (scancode <= KEY_9_PAD)) {
     // fix numeric pad keys if numlock is off (allegro 4.2 changed this behaviour)
@@ -557,7 +557,13 @@ int my_readkey() {
     }
 
     //sprintf(message, "Keypress: %d", gott);
-    //Out::FPrint(message);
+    //Debug::Printf(message);
 
     return gott;
+}
+
+void clear_input_buffer()
+{
+    while (rec_kbhit()) rec_getch();
+    while (mgetbutton() != NONE);
 }

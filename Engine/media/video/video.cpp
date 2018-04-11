@@ -12,45 +12,54 @@
 //
 //=============================================================================
 
+#include <stdio.h>
 #include "video.h"
-#include "gfx/ali3d.h"
 #include "apeg.h"
+#include "debug/debug_log.h"
+#include "debug/out.h"
+#include "ac/asset_helper.h"
 #include "ac/common.h"
 #include "ac/draw.h"
-#include "ac/file.h"
+#include "ac/game_version.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/gamestate.h"
-#include "ac/global_audio.h"
 #include "ac/global_display.h"
 #include "ac/mouse.h"
 #include "ac/record.h"
-#include "media/audio/audio.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ac/runtime_defines.h"
+#include "ac/system.h"
+#include "core/assetmanager.h"
 #include "gfx/bitmap.h"
 #include "gfx/ddb.h"
 #include "gfx/graphicsdriver.h"
+#include "media/audio/audio.h"
+#include "util/stream.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 
 extern GameSetupStruct game;
-extern GameState play;
 extern IGraphicsDriver *gfxDriver;
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
-extern int scrnwid,scrnhit;
 extern Bitmap *virtual_screen;
-
 extern int psp_video_framedrop;
 
+enum VideoPlaybackType
+{
+    kVideoNone,
+    kVideoFlic,
+    kVideoTheora
+};
+
+VideoPlaybackType video_type = kVideoNone;
 
 // FLIC player start
-Bitmap *fli_buffer;
+Bitmap *fli_buffer = NULL;
 short fliwidth,fliheight;
 int canabort=0, stretch_flc = 1;
 Bitmap *hicol_buf=NULL;
-IDriverDependantBitmap *fli_ddb;
-Bitmap *fli_target;
+IDriverDependantBitmap *fli_ddb = NULL;
+Bitmap *fli_target = NULL;
 int fliTargetWidth, fliTargetHeight;
 int check_if_user_input_should_cancel_video()
 {
@@ -69,8 +78,6 @@ int check_if_user_input_should_cancel_video()
 
 #if defined(WINDOWS_VERSION)
 int __cdecl fli_callback() {
-#elif defined(DOS_VERSION)
-int fli_callback(...) {
 #else
 extern "C" int fli_callback() {
 #endif
@@ -83,9 +90,9 @@ extern "C" int fli_callback() {
         usebuf=hicol_buf;
     }
     if (stretch_flc == 0)
-        fli_target->Blit(usebuf, 0,0,scrnwid/2-fliwidth/2,scrnhit/2-fliheight/2,scrnwid,scrnhit);
+        fli_target->Blit(usebuf, 0,0,play.viewport.GetWidth()/2-fliwidth/2,play.viewport.GetHeight()/2-fliheight/2,play.viewport.GetWidth(),play.viewport.GetHeight());
     else 
-        fli_target->StretchBlt(usebuf, RectWH(0,0,fliwidth,fliheight), RectWH(0,0,scrnwid,scrnhit));
+        fli_target->StretchBlt(usebuf, RectWH(0,0,fliwidth,fliheight), RectWH(0,0,play.viewport.GetWidth(),play.viewport.GetHeight()));
 
     gfxDriver->UpdateDDBFromBitmap(fli_ddb, fli_target, false);
     gfxDriver->DrawSprite(0, 0, fli_ddb);
@@ -94,9 +101,118 @@ extern "C" int fli_callback() {
     return check_if_user_input_should_cancel_video();
 }
 
+void play_flc_file(int numb,int playflags) {
+    color oldpal[256];
+
+    // AGS 2.x: If the screen is faded out, fade in again when playing a movie.
+    if (loaded_game_file_version <= kGameVersion_272)
+        play.screen_is_faded_out = 0;
+
+    if (play.fast_forward)
+        return;
+
+    get_palette_range(oldpal, 0, 255);
+
+    int clearScreenAtStart = 1;
+    canabort = playflags % 10;
+    playflags -= canabort;
+
+    if (canabort == 2) // convert to PlayVideo-compatible setting
+        canabort = 3;
+
+    if (playflags % 100 == 0)
+        stretch_flc = 1;
+    else
+        stretch_flc = 0;
+
+    if (playflags / 100)
+        clearScreenAtStart = 0;
+
+    String flicname = String::FromFormat("flic%d.flc", numb);
+    Stream *in = AssetManager::OpenAsset(flicname);
+    if (!in)
+    {
+        flicname.Format("flic%d.fli", numb);
+        in = AssetManager::OpenAsset(flicname);
+    }
+    if (!in)
+    {
+        debug_script_warn("FLIC animation flic%d.flc nor flic%d.fli not found", numb, numb);
+        return;
+    }
+
+    in->Seek(8);
+    fliwidth = in->ReadInt16();
+    fliheight = in->ReadInt16();
+    delete in;
+
+    if (game.color_depth > 1) {
+        hicol_buf=BitmapHelper::CreateBitmap(fliwidth,fliheight,System_GetColorDepth());
+        hicol_buf->Clear();
+    }
+    // override the stretch option if necessary
+    if ((fliwidth==play.viewport.GetWidth()) && (fliheight==play.viewport.GetHeight()))
+        stretch_flc = 0;
+    else if ((fliwidth > play.viewport.GetWidth()) || (fliheight > play.viewport.GetHeight()))
+        stretch_flc = 1;
+    fli_buffer=BitmapHelper::CreateBitmap(fliwidth,fliheight,8);
+    if (fli_buffer==NULL) quit("Not enough memory to play animation");
+    fli_buffer->Clear();
+
+    Bitmap *screen_bmp = BitmapHelper::GetScreenBitmap();
+
+    if (clearScreenAtStart) {
+        screen_bmp->Clear();
+        render_to_screen(screen_bmp, 0, 0);
+    }
+
+    video_type = kVideoFlic;
+    fli_target = BitmapHelper::CreateBitmap(screen_bmp->GetWidth(), screen_bmp->GetHeight(), System_GetColorDepth());
+    fli_ddb = gfxDriver->CreateDDBFromBitmap(fli_target, false, true);
+
+    // TODO: find a better solution.
+    // Make only Windows use play_fli_pf from the patched version of Allegro for now.
+    // Add more versions as their Allegro lib becomes patched too.
+    // Ports can still play FLI if separate file is put into game's directory.
+#if defined WINDOWS_VERSION
+    PACKFILE *pf = PackfileFromAsset(AssetPath("", flicname));
+    if (play_fli_pf(pf, (BITMAP*)fli_buffer->GetAllegroBitmap(), fli_callback)==FLI_ERROR)
+#else
+    if (play_fli(flicname, (BITMAP*)fli_buffer->GetAllegroBitmap(), 0, fli_callback)==FLI_ERROR)
+#endif
+    {
+        // This is not a fatal error that should prevent the game from continuing
+        Debug::Printf("FLI/FLC animation play error");
+    }
+#if defined WINDOWS_VERSION
+    pack_fclose(pf);
+#endif
+
+    video_type = kVideoNone;
+    delete fli_buffer;
+    fli_buffer = NULL;
+    // NOTE: the screen bitmap could change in the meanwhile, if the display mode has changed
+    screen_bmp = BitmapHelper::GetScreenBitmap();
+    screen_bmp->Clear();
+    set_palette_range(oldpal, 0, 255, 0);
+    render_to_screen(screen_bmp, 0, 0);
+
+    delete fli_target;
+    gfxDriver->DestroyDDB(fli_ddb);
+    fli_target = NULL;
+    fli_ddb = NULL;
+
+
+    delete hicol_buf;
+    hicol_buf=NULL;
+    //  SetVirtualScreen(screen); wputblock(0,0,backbuffer,0);
+    while (mgetbutton()!=NONE) ;
+    invalidate_screen();
+}
 
 // FLIC player end
 
+// Theora player begin
 // TODO: find a way to take Bitmap here?
 Bitmap gl_TheoraBuffer;
 int theora_playing_callback(BITMAP *theoraBuffer)
@@ -116,8 +232,8 @@ int theora_playing_callback(BITMAP *theoraBuffer)
     }
     if (stretch_flc) 
     {
-        drawAtX = scrnwid / 2 - fliTargetWidth / 2;
-        drawAtY = scrnhit / 2 - fliTargetHeight / 2;
+        drawAtX = play.viewport.GetWidth() / 2 - fliTargetWidth / 2;
+        drawAtY = play.viewport.GetHeight() / 2 - fliTargetHeight / 2;
         if (!gfxDriver->HasAcceleratedStretchAndFlip())
         {
             fli_target->StretchBlt(&gl_TheoraBuffer, RectWH(0, 0, gl_TheoraBuffer.GetWidth(), gl_TheoraBuffer.GetHeight()), 
@@ -129,14 +245,14 @@ int theora_playing_callback(BITMAP *theoraBuffer)
         else
         {
             gfxDriver->UpdateDDBFromBitmap(fli_ddb, &gl_TheoraBuffer, false);
-            fli_ddb->SetStretch(fliTargetWidth, fliTargetHeight);
+            fli_ddb->SetStretch(fliTargetWidth, fliTargetHeight, false);
         }
     }
     else
     {
         gfxDriver->UpdateDDBFromBitmap(fli_ddb, &gl_TheoraBuffer, false);
-        drawAtX = scrnwid / 2 - gl_TheoraBuffer.GetWidth() / 2;
-        drawAtY = scrnhit / 2 - gl_TheoraBuffer.GetHeight() / 2;
+        drawAtX = play.viewport.GetWidth() / 2 - gl_TheoraBuffer.GetWidth() / 2;
+        drawAtY = play.viewport.GetHeight() / 2 - gl_TheoraBuffer.GetHeight() / 2;
     }
 
     gfxDriver->DrawSprite(drawAtX, drawAtY, fli_ddb);
@@ -146,10 +262,73 @@ int theora_playing_callback(BITMAP *theoraBuffer)
     return check_if_user_input_should_cancel_video();
 }
 
-
-APEG_STREAM* get_theora_size(const char *fileName, int *width, int *height)
+//
+// Theora stream reader callbacks. We need these since we are creating PACKFILE
+// stream by our own rules, and APEG library does not provide means to supply
+// user's PACKFILE.
+//
+// Ironically, internally those callbacks will become a part of another
+// PACKFILE's vtable, of APEG's library, so that will be a PACKFILE reading
+// data using proxy PACKFILE through callback system...
+//
+class ApegStreamReader
 {
-    APEG_STREAM* oggVid = apeg_open_stream(fileName);
+public:
+    ApegStreamReader(const AssetPath path) : _path(path), _pf(NULL) {}
+    ~ApegStreamReader() { Close(); }
+
+    bool Open()
+    {
+        Close(); // PACKFILE cannot be rewinded, sadly
+        _pf = PackfileFromAsset(_path);
+        return _pf != NULL;
+    }
+
+    void Close()
+    {
+        if (_pf)
+            pack_fclose(_pf);
+        _pf = NULL;
+    }
+
+    int Read(void *buffer, int bytes)
+    {
+        return _pf ? pack_fread(buffer, bytes, _pf) : 0;
+    }
+
+    void Skip(int bytes)
+    {
+        if (_pf)
+            pack_fseek(_pf, bytes);
+    }
+
+private:
+    AssetPath _path; // path to the asset
+    PACKFILE *_pf;   // our stream
+};
+
+// Open stream for reading (return suggested cache buffer size).
+int apeg_stream_init(void *ptr)
+{
+    return ((ApegStreamReader*)ptr)->Open() ? F_BUF_SIZE : 0;
+}
+
+// Read requested number of bytes into provided buffer,
+// return actual number of bytes managed to read.
+int apeg_stream_read(void *buffer, int bytes, void *ptr)
+{
+    return ((ApegStreamReader*)ptr)->Read(buffer, bytes);
+}
+
+// Skip requested number of bytes
+void apeg_stream_skip(int bytes, void *ptr)
+{
+    ((ApegStreamReader*)ptr)->Skip(bytes);
+}
+
+APEG_STREAM* get_theora_size(ApegStreamReader &reader, int *width, int *height)
+{
+    APEG_STREAM* oggVid = apeg_open_stream_ex(&reader);
     if (oggVid != NULL)
     {
         apeg_get_video_size(oggVid, width, height);
@@ -165,29 +344,31 @@ APEG_STREAM* get_theora_size(const char *fileName, int *width, int *height)
 void calculate_destination_size_maintain_aspect_ratio(int vidWidth, int vidHeight, int *targetWidth, int *targetHeight)
 {
     float aspectRatioVideo = (float)vidWidth / (float)vidHeight;
-    float aspectRatioScreen = (float)scrnwid / (float)scrnhit;
+    float aspectRatioScreen = (float)play.viewport.GetWidth() / (float)play.viewport.GetHeight();
 
     if (aspectRatioVideo == aspectRatioScreen)
     {
-        *targetWidth = scrnwid;
-        *targetHeight = scrnhit;
+        *targetWidth = play.viewport.GetWidth();
+        *targetHeight = play.viewport.GetHeight();
     }
     else if (aspectRatioVideo > aspectRatioScreen)
     {
-        *targetWidth = scrnwid;
-        *targetHeight = (int)(((float)scrnwid / aspectRatioVideo) + 0.5f);
+        *targetWidth = play.viewport.GetWidth();
+        *targetHeight = (int)(((float)play.viewport.GetWidth() / aspectRatioVideo) + 0.5f);
     }
     else
     {
-        *targetHeight = scrnhit;
-        *targetWidth = (float)scrnhit * aspectRatioVideo;
+        *targetHeight = play.viewport.GetHeight();
+        *targetWidth = (float)play.viewport.GetHeight() * aspectRatioVideo;
     }
 
 }
 
 void play_theora_video(const char *name, int skip, int flags)
 {
-	apeg_set_display_depth(BitmapHelper::GetScreenBitmap()->GetColorDepth());
+    ApegStreamReader reader(AssetPath("", name));
+    apeg_set_stream_reader(apeg_stream_init, apeg_stream_read, apeg_stream_skip);
+    apeg_set_display_depth(BitmapHelper::GetScreenBitmap()->GetColorDepth());
     // we must disable length detection, otherwise it takes ages to start
     // playing if the file is large because it seeks through the whole thing
     apeg_disable_length_detection(TRUE);
@@ -200,7 +381,7 @@ void play_theora_video(const char *name, int skip, int flags)
     apeg_ignore_audio((flags >= 10) ? 1 : 0);
 
     int videoWidth, videoHeight;
-    APEG_STREAM *oggVid = get_theora_size(name, &videoWidth, &videoHeight);
+    APEG_STREAM *oggVid = get_theora_size(reader, &videoWidth, &videoHeight);
 
     if (videoWidth == 0)
     {
@@ -213,8 +394,7 @@ void play_theora_video(const char *name, int skip, int flags)
         stop_all_sound_and_music();
     }
 
-    fli_target = NULL;
-    //fli_buffer = BitmapHelper::CreateBitmap_(final_col_dep, videoWidth, videoHeight);
+    //fli_buffer = BitmapHelper::CreateBitmap_(scsystem.coldepth, videoWidth, videoHeight);
     calculate_destination_size_maintain_aspect_ratio(videoWidth, videoHeight, &fliTargetWidth, &fliTargetHeight);
 
     if ((fliTargetWidth == videoWidth) && (fliTargetHeight == videoHeight) && (stretch_flc))
@@ -225,7 +405,7 @@ void play_theora_video(const char *name, int skip, int flags)
 
     if ((stretch_flc) && (!gfxDriver->HasAcceleratedStretchAndFlip()))
     {
-        fli_target = BitmapHelper::CreateBitmap(scrnwid, scrnhit, final_col_dep);
+        fli_target = BitmapHelper::CreateBitmap(play.viewport.GetWidth(), play.viewport.GetHeight(), System_GetColorDepth());
         fli_target->Clear();
         fli_ddb = gfxDriver->CreateDDBFromBitmap(fli_target, false, true);
     }
@@ -238,47 +418,28 @@ void play_theora_video(const char *name, int skip, int flags)
 
     virtual_screen->Clear();
 
+    video_type = kVideoTheora;
     if (apeg_play_apeg_stream(oggVid, NULL, 0, theora_playing_callback) == APEG_ERROR)
     {
         Display("Error playing theora video '%s'", name);
     }
     apeg_close_stream(oggVid);
+    video_type = kVideoNone;
 
     //destroy_bitmap(fli_buffer);
     delete fli_target;
     gfxDriver->DestroyDDB(fli_ddb);
+    fli_target = NULL;
     fli_ddb = NULL;
     invalidate_screen();
 }
+// Theora player end
 
-void pause_sound_if_necessary_and_play_video(const char *name, int skip, int flags)
+void video_on_gfxmode_changed()
 {
-    int musplaying = play.cur_music_number, i;
-    int ambientWas[MAX_SOUND_CHANNELS];
-    for (i = 1; i < MAX_SOUND_CHANNELS; i++)
-        ambientWas[i] = ambient[i].channel;
-
-    if ((strlen(name) > 3) && (stricmp(&name[strlen(name) - 3], "ogv") == 0))
+    if (video_type == kVideoFlic)
     {
-        play_theora_video(name, skip, flags);
-    }
-    else
-    {
-        char videoFilePath[MAX_PATH];
-        get_current_dir_path(videoFilePath, name);
-
-        platform->PlayVideo(videoFilePath, skip, flags);
-    }
-
-    if (flags < 10) 
-    {
-        update_music_volume();
-        // restart the music
-        if (musplaying >= 0)
-            newmusic (musplaying);
-        for (i = 1; i < MAX_SOUND_CHANNELS; i++) {
-            if (ambientWas[i] > 0)
-                PlayAmbientSound(ambientWas[i], ambient[i].num, ambient[i].vol, ambient[i].x, ambient[i].y);
-        }
+        // If the FLIC video is playing, restore its palette
+        set_palette_range(fli_palette, 0, 255, 0);
     }
 }

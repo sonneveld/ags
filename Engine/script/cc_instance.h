@@ -19,6 +19,10 @@
 #ifndef __CC_INSTANCE_H
 #define __CC_INSTANCE_H
 
+#include "util/stdtr1compat.h"
+#include TR1INCLUDE(memory)
+#include TR1INCLUDE(unordered_map)
+
 #include "script/script_common.h"
 #include "script/cc_script.h"  // ccScript
 #include "script/nonblockingscriptfunction.h"
@@ -103,10 +107,12 @@ struct ScriptPosition
 struct ccInstance
 {
 public:
+    // TODO: change to std:: if moved to C++11
+    typedef stdtr1compat::unordered_map<int32_t, ScriptVariable> ScVarMap;
+    typedef stdtr1compat::shared_ptr<ScVarMap>                   PScVarMap;
+public:
     int32_t flags;
-    ScriptVariable *globalvars;
-    int num_globalvars;
-    int num_globalvar_slots;
+    PScVarMap globalvars;
     char *globaldata;
     int32_t globaldatasize;
     intptr_t *code;
@@ -126,7 +132,7 @@ public:
     RuntimeScriptValue registers[CC_NUM_REGISTERS];
     int32_t pc;                     // program counter
     int32_t line_number;            // source code line number
-    ccScript *instanceof;
+    PScript instanceof;
     int  loadedInstanceId;
     int  returnValue;
 
@@ -144,8 +150,8 @@ public:
     // returns the currently executing instance, or NULL if none
     static ccInstance *GetCurrentInstance(void);
     // create a runnable instance of the supplied script
-    static ccInstance *CreateFromScript(ccScript *script);
-    static ccInstance *CreateEx(ccScript * scri, ccInstance * joined);
+    static ccInstance *CreateFromScript(PScript script);
+    static ccInstance *CreateEx(PScript scri, ccInstance * joined);
 
     ccInstance();
     ~ccInstance();
@@ -158,33 +164,32 @@ public:
     void    AbortAndDestroy();
     
     // call an exported function in the script (2nd arg is number of params)
-    int     CallScriptFunction(char *funcname, int32_t num_params, RuntimeScriptValue *params);
-    void    DoRunScriptFuncCantBlock(NonBlockingScriptFunction* funcToRun, bool *hasTheFunc);
-    int     PrepareTextScript(char**tsname);
+    int     CallScriptFunction(const char *funcname, int32_t num_params, const RuntimeScriptValue *params);
+    bool    DoRunScriptFuncCantBlock(NonBlockingScriptFunction* funcToRun, bool hasTheFunc);
+    int     PrepareTextScript(const char **tsname);
     int     Run(int32_t curpc);
-    int     RunScriptFunctionIfExists(char*tsname,int numParam, RuntimeScriptValue *params);
-    int     RunTextScript(char*tsname);
-    int     RunTextScriptIParam(char*tsname, RuntimeScriptValue &iparam);
-    int     RunTextScript2IParam(char*tsname,RuntimeScriptValue &iparam, RuntimeScriptValue &param2);
+    int     RunScriptFunctionIfExists(const char *tsname, int numParam, const RuntimeScriptValue *params);
+    int     RunTextScript(const char *tsname);
+    int     RunTextScriptIParam(const char *tsname, const RuntimeScriptValue &iparam);
+    int     RunTextScript2IParam(const char *tsname, const RuntimeScriptValue &iparam, const RuntimeScriptValue &param2);
     
     void    GetCallStack(char *buffer, int maxLines);
     void    GetScriptName(char *curScrName);
     void    GetScriptPosition(ScriptPosition &script_pos);
     // get the address of an exported variable in the script
-    RuntimeScriptValue GetSymbolAddress(char *);
+    RuntimeScriptValue GetSymbolAddress(const char *symname);
     void    DumpInstruction(const ScriptOperation &op);
 
 protected:
-    bool    _Create(ccScript * scri, ccInstance * joined);
+    bool    _Create(PScript scri, ccInstance * joined);
     // free the memory associated with the instance
     void    Free();
 
-    bool    ResolveScriptImports(ccScript * scri);
-    bool    CreateGlobalVars(ccScript * scri);
-    bool    TryAddGlobalVar(const ScriptVariable &glvar);
-    ScriptVariable *FindGlobalVar(int32_t var_addr, int *pindex = NULL);
-    void    AddGlobalVar(const ScriptVariable &glvar, int at_index);
-    bool    CreateRuntimeCodeFixups(ccScript * scri);
+    bool    ResolveScriptImports(PScript scri);
+    bool    CreateGlobalVars(PScript scri);
+    bool    AddGlobalVar(const ScriptVariable &glvar);
+    ScriptVariable *FindGlobalVar(int32_t var_addr);
+    bool    CreateRuntimeCodeFixups(PScript scri);
 	//bool    ReadOperation(ScriptOperation &op, int32_t at_pc);
 
     // Runtime fixups

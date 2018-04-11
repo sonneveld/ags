@@ -12,6 +12,7 @@
 //
 //=============================================================================
 
+#include <algorithm>
 #include "aastr.h"
 #include "ac/common.h"
 #include "util/compress.h"
@@ -37,8 +38,10 @@
 #include "ac/roomstruct.h"
 #include "ac/runtime_defines.h"
 #include "ac/screenoverlay.h"
+#include "ac/sprite.h"
 #include "ac/spritelistentry.h"
 #include "ac/string.h"
+#include "ac/system.h"
 #include "ac/viewframe.h"
 #include "ac/viewport.h"
 #include "ac/walkablearea.h"
@@ -52,13 +55,15 @@
 #include "media/audio/soundclip.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
+#include "plugin/plugin_engine.h"
 #include "ac/spritecache.h"
-#include "gfx/ddb.h"
 #include "gfx/gfx_util.h"
 #include "gfx/graphicsdriver.h"
+#include "gfx/ali3dexception.h"
+#include "gfx/blender.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 #if defined(ANDROID_VERSION)
 #include <sys/stat.h>
@@ -75,8 +80,7 @@ extern GameSetup usetup;
 extern GameSetupStruct game;
 extern GameState play;
 extern int current_screen_resolution_multiplier;
-extern int scrnwid,scrnhit;
-extern int final_scrn_wid,final_scrn_hit,final_col_dep, game_frame_y_offset;
+extern int convert_16bit_bgr;
 extern ScriptSystem scsystem;
 extern AGSPlatformDriver *platform;
 extern roomstruct thisroom;
@@ -102,7 +106,6 @@ extern ObjectCache objcache[MAX_INIT_SPR];
 extern int displayed_room;
 extern CharacterExtras *charextra;
 extern CharacterInfo*playerchar;
-extern GUIMain*guis;
 extern int eip_guinum;
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];
 extern int numscreenover;
@@ -155,16 +158,13 @@ Bitmap *_old_screen=NULL;
 Bitmap *_sub_screen=NULL;
 
 int offsetx = 0, offsety = 0;
+int wasShakingScreen = 0;
 
 IDriverDependantBitmap* roomBackgroundBmp = NULL;
 
 
-#define MAX_SPRITES_ON_SCREEN 76
-SpriteListEntry sprlist[MAX_SPRITES_ON_SCREEN];
-int sprlistsize=0;
-#define MAX_THINGS_TO_DRAW 125
-SpriteListEntry thingsToDrawList[MAX_THINGS_TO_DRAW];
-int thingsToDrawSize = 0;
+std::vector<SpriteListEntry> sprlist;
+std::vector<SpriteListEntry> thingsToDrawList;
 
 //GUIMain dummygui;
 //GUIButton dummyguicontrol;
@@ -209,6 +209,7 @@ void setpal() {
 
 
 #ifdef USE_15BIT_FIX
+
 extern "C" {
     AL_FUNC(GFX_VTABLE *, _get_vtable, (int color_depth));
 }
@@ -220,14 +221,14 @@ Bitmap *convert_16_to_15(Bitmap *iii) {
 
     if (iii->GetColorDepth() > 16) {
         // we want a 32-to-24 conversion
-        Bitmap *tempbl = BitmapHelper::CreateBitmap(iwid,ihit,final_col_dep);
-        if (final_col_dep < 24) {
+        Bitmap *tempbl = BitmapHelper::CreateBitmap(iwid,ihit,System_GetColorDepth());
+        if (System_GetColorDepth() < 24) {
             // 32-to-16
             tempbl->Blit(iii, 0, 0, 0, 0, iwid, ihit);
             return tempbl;
         }
 
-        GFX_VTABLE *vtable = _get_vtable(final_col_dep);
+        GFX_VTABLE *vtable = _get_vtable(System_GetColorDepth());
         if (vtable == NULL) {
             quit("unable to get 24-bit bitmap vtable");
         }
@@ -346,7 +347,85 @@ Bitmap *convert_32_to_32bgr(Bitmap *tempbl) {
     return tempbl;
 }
 
+// We actually may need to do some of these conversions even when using
+// D3D and OpenGL rendering, because certain raw drawing operations
+// are still performed by software Allegro methods.
+//
+// TODO: find out if we may safely move software-driver only related parts
+// to ALSoftwareGraphicsDriver::ConvertBitmapToSupportedColourDepth()
+//
+Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
+{
+    const bool software_driver = !gfxDriver->HasAcceleratedStretchAndFlip();
+    const int bmp_col_depth = bitmap->GetColorDepth();
+    const int sys_col_depth = System_GetColorDepth();
+    const int game_col_depth = game.color_depth * 8;
+    Bitmap *new_bitmap = bitmap;
 
+    if ((bmp_col_depth == 32) && (sys_col_depth == 32))
+    {
+#if defined (AGS_INVERTED_COLOR_ORDER)
+        // PSP: Convert to BGR color order.
+        if (software_driver)
+            new_bitmap = convert_32_to_32bgr(bitmap);
+#endif
+        if (has_alpha) // this adjustment is probably needed for DrawingSurface ops
+            set_rgb_mask_using_alpha_channel(new_bitmap);
+    }
+
+    if (((bmp_col_depth > 16) && (sys_col_depth <= 16)) ||
+        ((bmp_col_depth == 16) && (sys_col_depth > 16)))
+    {
+            // 16-bit sprite in 32-bit game or vice versa - convert
+            // so that scaling and blit calls work properly
+            if (has_alpha) // 32-bit source only
+                new_bitmap = remove_alpha_channel(bitmap);
+            else if (software_driver) // non-software drivers do this on their own
+                new_bitmap = BitmapHelper::CreateBitmapCopy(bitmap, sys_col_depth);
+    }
+#ifdef USE_15BIT_FIX
+    // TODO: review this later, it may also happen e.g. when running 32-bit game in 24-bit mode
+    // This is software driver only fix
+    else if (software_driver && (sys_col_depth != game_col_depth) && (bmp_col_depth == game_col_depth))
+    {
+        // running in 15-bit mode with a 16-bit game, convert sprites
+        if (has_alpha)
+            // 32-to-24 with alpha channel
+            new_bitmap = remove_alpha_channel(bitmap);
+        else
+            new_bitmap = convert_16_to_15(bitmap);
+    }
+    else if (software_driver && (convert_16bit_bgr == 1) && (bmp_col_depth == 16))
+    {
+        new_bitmap = convert_16_to_16bgr(bitmap);
+    }
+#endif
+    return new_bitmap;
+}
+
+Bitmap *ReplaceBitmapWithSupportedFormat(Bitmap *bitmap)
+{
+    Bitmap *new_bitmap = gfxDriver->ConvertBitmapToSupportedColourDepth(bitmap);
+    if (new_bitmap != bitmap)
+        delete bitmap;
+    return new_bitmap;
+}
+
+Bitmap *PrepareSpriteForUse(Bitmap* bitmap, bool has_alpha)
+{
+    bool must_switch_palette = bitmap->GetColorDepth() == 8 && System_GetColorDepth() > 8;
+    if (must_switch_palette)
+        select_palette(palette);
+
+    Bitmap *new_bitmap = AdjustBitmapForUseWithDisplayMode(bitmap, has_alpha);
+    if (new_bitmap != bitmap)
+        delete bitmap;
+    new_bitmap = ReplaceBitmapWithSupportedFormat(new_bitmap);
+
+    if (must_switch_palette)
+        unselect_palette();
+    return new_bitmap;
+}
 
 
 
@@ -454,14 +533,28 @@ int IRSpan::mergeSpan(int tx1, int tx2) {
     return 1;
 }
 
-void init_invalid_regions(int scrnHit) {
+void init_invalid_regions(int scrnHit)
+{
+    if (_dirtyRowSize != scrnHit)
+    {
+        destroy_invalid_regions();
+        dirtyRow = new IRRow[scrnHit];
+    }
+
     numDirtyRegions = WHOLESCREENDIRTY;
-    dirtyRow = (IRRow*)malloc(sizeof(IRRow) * scrnHit);
     memset(dirtyRow, 0, sizeof(IRRow) * scrnHit);
 
     for (int e = 0; e < scrnHit; e++)
         dirtyRow[e].numSpans = 0;
     _dirtyRowSize = scrnHit;
+}
+
+void destroy_invalid_regions()
+{
+    delete [] dirtyRow;
+    dirtyRow = 0;
+    _dirtyRowSize = 0;
+    numDirtyRegions = 0;
 }
 
 void update_invalid_region(Bitmap *ds, int x, int y, Bitmap *src) {
@@ -480,7 +573,7 @@ void update_invalid_region(Bitmap *ds, int x, int y, Bitmap *src) {
         if ((srcdepth == ds->GetColorDepth()) && (ds->IsMemoryBitmap())) {
             int bypp = src->GetBPP();
             // do the fast copy
-            for (i = 0; i < scrnhit; i++) {
+            for (i = 0; i < play.viewport.GetHeight(); i++) {
                 const uint8_t *src_scanline = src->GetScanLine(i + y);
                 uint8_t *dst_scanline = ds->GetScanLineForWriting(i);
                 const IRRow &dirty_row = dirtyRow[i];
@@ -494,11 +587,11 @@ void update_invalid_region(Bitmap *ds, int x, int y, Bitmap *src) {
         else {
             // do the fast copy
             int rowsInOne;
-            for (i = 0; i < scrnhit; i++) {
+            for (i = 0; i < play.viewport.GetHeight(); i++) {
                 rowsInOne = 1;
 
                 // if there are rows with identical masks, do them all in one go
-                while ((i+rowsInOne < scrnhit) && (memcmp(&dirtyRow[i], &dirtyRow[i+rowsInOne], sizeof(IRRow)) == 0))
+                while ((i+rowsInOne < play.viewport.GetHeight()) && (memcmp(&dirtyRow[i], &dirtyRow[i+rowsInOne], sizeof(IRRow)) == 0))
                     rowsInOne++;
 
                 const IRRow &dirty_row = dirtyRow[i];
@@ -561,10 +654,10 @@ void invalidate_rect(int x1, int y1, int x2, int y2) {
 
     int a;
 
-    if (x1 >= scrnwid) x1 = scrnwid-1;
-    if (y1 >= scrnhit) y1 = scrnhit-1;
-    if (x2 >= scrnwid) x2 = scrnwid-1;
-    if (y2 >= scrnhit) y2 = scrnhit-1;
+    if (x1 >= play.viewport.GetWidth()) x1 = play.viewport.GetWidth()-1;
+    if (y1 >= play.viewport.GetHeight()) y1 = play.viewport.GetHeight()-1;
+    if (x2 >= play.viewport.GetWidth()) x2 = play.viewport.GetWidth()-1;
+    if (y2 >= play.viewport.GetHeight()) y2 = play.viewport.GetHeight()-1;
     if (x1 < 0) x1 = 0;
     if (y1 < 0) y1 = 0;
     if (x2 < 0) x2 = 0;
@@ -583,7 +676,7 @@ void invalidate_rect(int x1, int y1, int x2, int y2) {
 
     numDirtyBytes += (x2 - x1) * (y2 - y1);
 
-    if (numDirtyBytes > (scrnwid * scrnhit) / 2)
+    if (numDirtyBytes > (play.viewport.GetWidth() * play.viewport.GetHeight()) / 2)
     numDirtyRegions = WHOLESCREENDIRTY;
     else {*/
     numDirtyRegions++;
@@ -657,21 +750,7 @@ void invalidate_sprite(int x1, int y1, IDriverDependantBitmap *pic) {
 
 void draw_and_invalidate_text(Bitmap *ds, int x1, int y1, int font, color_t text_color, const char *text) {
     wouttext_outline(ds, x1, y1, font, text_color, (char*)text);
-    invalidate_rect(x1, y1, x1 + wgettextwidth_compensate(text, font), y1 + wgetfontheight(font) + get_fixed_pixel_size(1));
-}
-
-void wouttext_reverseifnecessary(Bitmap *ds, int x, int y, int font, color_t text_color, char *text) {
-    char *backwards = NULL;
-    char *otext = text;
-    if (game.options[OPT_RIGHTLEFTWRITE]) {
-        backwards = reverse_text(text);
-        otext = backwards;
-    }
-
-    wouttext_outline(ds, x, y, font, text_color, otext);
-
-    if (backwards)
-        free(backwards);
+    invalidate_rect(x1, y1, x1 + wgettextwidth_compensate(text, font), y1 + getfontheight_outlined(font) + get_fixed_pixel_size(1));
 }
 
 void invalidate_screen() {
@@ -686,22 +765,6 @@ void mark_current_background_dirty()
     current_background_is_dirty = true;
 }
 
-int get_screen_y_adjustment(Bitmap *checkFor) {
-
-	if ((BitmapHelper::GetScreenBitmap() == _sub_screen) && (checkFor->GetHeight() < final_scrn_hit))
-        return game_frame_y_offset;
-
-    return 0;
-}
-
-int get_screen_x_adjustment(Bitmap *checkFor) {
-
-	if ((BitmapHelper::GetScreenBitmap() == _sub_screen) && (checkFor->GetWidth() < final_scrn_wid))
-        return (final_scrn_wid - checkFor->GetWidth()) / 2;
-
-    return 0;
-}
-
 void render_black_borders(int atx, int aty)
 {
     if (!gfxDriver->UsesMemoryBackBuffer())
@@ -709,16 +772,16 @@ void render_black_borders(int atx, int aty)
         if (aty > 0)
         {
             // letterbox borders
-            blankImage->SetStretch(final_scrn_wid, aty);
+            blankImage->SetStretch(game.size.Width, aty, false);
             gfxDriver->DrawSprite(-atx, -aty, blankImage);
-            gfxDriver->DrawSprite(-atx, scrnhit, blankImage);
+            gfxDriver->DrawSprite(0, play.viewport.GetHeight(), blankImage);
         }
         if (atx > 0)
         {
             // sidebar borders for widescreen
-            blankSidebarImage->SetStretch(atx, scrnhit);
+            blankSidebarImage->SetStretch(atx, play.viewport.GetHeight(), false);
             gfxDriver->DrawSprite(-atx, 0, blankSidebarImage);
-            gfxDriver->DrawSprite(scrnwid, 0, blankSidebarImage);
+            gfxDriver->DrawSprite(play.viewport.GetWidth(), 0, blankSidebarImage);
         }
     }
 }
@@ -726,10 +789,13 @@ void render_black_borders(int atx, int aty)
 
 void render_to_screen(Bitmap *toRender, int atx, int aty) {
 
-    atx += get_screen_x_adjustment(toRender);
-    aty += get_screen_y_adjustment(toRender);
+    atx += play.viewport.Left;
+    aty += play.viewport.Top;
     gfxDriver->SetRenderOffset(atx, aty);
 
+    // For software renderer, need to blacken upper part of the game frame when shaking screen moves image down
+    if (aty > 0 && wasShakingScreen && gfxDriver->UsesMemoryBackBuffer())
+        gfxDriver->ClearRectangle(play.viewport.Left, play.viewport.Top, play.viewport.GetWidth() - 1, aty, NULL);
     render_black_borders(atx, aty);
 
     gfxDriver->DrawSprite(AGSE_FINALSCREENDRAW, 0, NULL);
@@ -744,7 +810,7 @@ void render_to_screen(Bitmap *toRender, int atx, int aty) {
 
     // only vsync in full screen mode, it makes things worse
     // in a window
-    gfxDriver->EnableVsyncBeforeRender((scsystem.vsync > 0) && (!usetup.windowed));
+    gfxDriver->EnableVsyncBeforeRender((scsystem.vsync > 0) && (!scsystem.windowed));
 
     bool succeeded = false;
     while (!succeeded)
@@ -773,10 +839,10 @@ void render_to_screen(Bitmap *toRender, int atx, int aty) {
 
 void clear_letterbox_borders() {
 
-    if (multiply_up_coordinate(thisroom.height) < final_scrn_hit) {
+    if (multiply_up_coordinate(thisroom.height) < game.size.Height) {
         // blank out any traces in borders left by a full-screen room
-        gfxDriver->ClearRectangle(0, 0, _old_screen->GetWidth() - 1, game_frame_y_offset - 1, NULL);
-        gfxDriver->ClearRectangle(0, final_scrn_hit - game_frame_y_offset, _old_screen->GetWidth() - 1, final_scrn_hit - 1, NULL);
+        gfxDriver->ClearRectangle(0, 0, _old_screen->GetWidth() - 1, play.viewport.Top - 1, NULL);
+        gfxDriver->ClearRectangle(0, play.viewport.Bottom + 1, _old_screen->GetWidth() - 1, game.size.Height - 1, NULL);
     }
 
 }
@@ -788,7 +854,6 @@ void write_screen() {
     if (play.fast_forward)
         return;
 
-    static int wasShakingScreen = 0;
     bool clearScreenBorders = false;
     int at_yp = 0;
 
@@ -821,7 +886,7 @@ void draw_screen_callback()
 {
     construct_virtual_screen(false);
 
-    render_black_borders(get_screen_x_adjustment(virtual_screen), get_screen_y_adjustment(virtual_screen));
+    render_black_borders(play.viewport.Left, play.viewport.Top);
 }
 
 
@@ -838,23 +903,20 @@ void putpixel_compensate (Bitmap *ds, int xx,int yy, int col) {
 
 
 
-void draw_sprite_support_alpha(Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, Bitmap *image, bool src_has_alpha, int alpha)
+void draw_sprite_support_alpha(Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, Bitmap *image, bool src_has_alpha,
+                               BlendMode blend_mode, int alpha)
 {
     if (alpha <= 0)
-    {
         return;
-    }
 
-    const bool use_new_sprite_alpha_blending =
-        (game.options[OPT_SPRITEALPHA] == kSpriteAlphaRender_Improved) && ds_has_alpha;
-
-    if (src_has_alpha &&
-        (use_new_sprite_alpha_blending || alpha == 0xFF))
+    if (game.options[OPT_SPRITEALPHA] == kSpriteAlphaRender_Improved)
     {
-        if (use_new_sprite_alpha_blending)
-           set_argb2argb_alpha_blender(alpha);
-        else
-            set_alpha_blender();
+        GfxUtil::DrawSpriteBlend(ds, Point(xpos, ypos), image, blend_mode, ds_has_alpha, src_has_alpha, alpha);
+    }
+    // Backwards-compatible drawing
+    else if (src_has_alpha && alpha == 0xFF)
+    {
+        set_alpha_blender();
         ds->TransBlendBlt(image, xpos, ypos);
     }
     else
@@ -863,13 +925,14 @@ void draw_sprite_support_alpha(Bitmap *ds, bool ds_has_alpha, int xpos, int ypos
     }
 }
 
-void draw_sprite_slot_support_alpha(Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, int src_slot, int alpha)
+void draw_sprite_slot_support_alpha(Bitmap *ds, bool ds_has_alpha, int xpos, int ypos, int src_slot,
+                                    BlendMode blend_mode, int alpha)
 {
-    draw_sprite_support_alpha(ds, ds_has_alpha, xpos, ypos, spriteset[src_slot], (game.spriteflags[src_slot] & SPF_ALPHACHANNEL) != 0, alpha);
+    draw_sprite_support_alpha(ds, ds_has_alpha, xpos, ypos, spriteset[src_slot], (game.spriteflags[src_slot] & SPF_ALPHACHANNEL) != 0,
+        blend_mode, alpha);
 }
 
 
-// Avoid freeing and reallocating the memory if possible
 IDriverDependantBitmap* recycle_ddb_bitmap(IDriverDependantBitmap *bimp, Bitmap *source, bool hasAlpha) {
     if (bimp != NULL) {
         // same colour depth, width and height -> reuse
@@ -1044,63 +1107,52 @@ void sort_out_char_sprite_walk_behind(int actspsIndex, int xx, int yy, int basel
 }
 
 void clear_draw_list() {
-    thingsToDrawSize = 0;
+    thingsToDrawList.clear();
 }
 void add_thing_to_draw(IDriverDependantBitmap* bmp, int x, int y, int trans, bool alphaChannel) {
-    thingsToDrawList[thingsToDrawSize].pic = NULL;
-    thingsToDrawList[thingsToDrawSize].bmp = bmp;
-    thingsToDrawList[thingsToDrawSize].x = x;
-    thingsToDrawList[thingsToDrawSize].y = y;
-    thingsToDrawList[thingsToDrawSize].transparent = trans;
-    thingsToDrawList[thingsToDrawSize].hasAlphaChannel = alphaChannel;
-    thingsToDrawSize++;
-    if (thingsToDrawSize >= MAX_THINGS_TO_DRAW - 1)
-        quit("add_thing_to_draw: too many things added");
+    SpriteListEntry sprite;
+    sprite.pic = NULL;
+    sprite.bmp = bmp;
+    sprite.x = x;
+    sprite.y = y;
+    sprite.transparent = trans;
+    sprite.hasAlphaChannel = alphaChannel;
+    thingsToDrawList.push_back(sprite);
 }
 
 // the sprite list is an intermediate list used to order 
 // objects and characters by their baselines before everything
 // is added to the Thing To Draw List
 void clear_sprite_list() {
-    sprlistsize=0;
+    sprlist.clear();
 }
 void add_to_sprite_list(IDriverDependantBitmap* spp, int xx, int yy, int baseline, int trans, int sprNum, bool isWalkBehind) {
 
+    if (spp == NULL)
+        quit("add_to_sprite_list: attempted to draw NULL sprite");
     // completely invisible, so don't draw it at all
     if (trans == 255)
         return;
 
+    SpriteListEntry sprite;
     if ((sprNum >= 0) && ((game.spriteflags[sprNum] & SPF_ALPHACHANNEL) != 0))
-        sprlist[sprlistsize].hasAlphaChannel = true;
+        sprite.hasAlphaChannel = true;
     else
-        sprlist[sprlistsize].hasAlphaChannel = false;
+        sprite.hasAlphaChannel = false;
 
-    sprlist[sprlistsize].bmp = spp;
-    sprlist[sprlistsize].baseline = baseline;
-    sprlist[sprlistsize].x=xx;
-    sprlist[sprlistsize].y=yy;
-    sprlist[sprlistsize].transparent=trans;
+    sprite.bmp = spp;
+    sprite.baseline = baseline;
+    sprite.x=xx;
+    sprite.y=yy;
+    sprite.transparent=trans;
 
     if (walkBehindMethod == DrawAsSeparateSprite)
-        sprlist[sprlistsize].takesPriorityIfEqual = !isWalkBehind;
+        sprite.takesPriorityIfEqual = !isWalkBehind;
     else
-        sprlist[sprlistsize].takesPriorityIfEqual = isWalkBehind;
+        sprite.takesPriorityIfEqual = isWalkBehind;
 
-    sprlistsize++;
-
-    if (sprlistsize >= MAX_SPRITES_ON_SCREEN)
-        quit("Too many sprites have been added to the sprite list. There is a limit of 75 objects and characters being visible at the same time. You may want to reconsider your design since you have over 75 objects/characters visible at once.");
-
-    if (spp == NULL)
-        quit("add_to_sprite_list: attempted to draw NULL sprite");
+    sprlist.push_back(sprite);
 }
-
-#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(WINDOWS_VERSION)
-extern int psp_gfx_smoothing;
-extern int psp_gfx_scaling;
-extern int psp_gfx_renderer;
-extern int psp_gfx_super_sampling;
-#endif
 
 void repair_alpha_channel(Bitmap *dest, Bitmap *bgpic)
 {
@@ -1121,65 +1173,47 @@ void repair_alpha_channel(Bitmap *dest, Bitmap *bgpic)
 
 
 // used by GUI renderer to draw images
-void draw_gui_sprite(Bitmap *ds, int picc, int xx, int yy, bool use_alpha) 
+void draw_gui_sprite(Bitmap *ds, int pic, int x, int y, bool use_alpha, BlendMode blend_mode) 
 {
-    if ((use_alpha) && 
-        (game.options[OPT_NEWGUIALPHA] != kGuiAlphaRender_Classic) &&
-        (ds->GetColorDepth() == 32))
-    {
-        if (game.spriteflags[picc] & SPF_ALPHACHANNEL)
-        {
-            if (game.options[OPT_NEWGUIALPHA] == kGuiAlphaRender_MultiplyTranslucenceSrcBlend)
-            {
-                set_argb2argb_alpha_blender();
-            }
-            else
-            {
-                set_additive_alpha_blender();
-            }
-        }
-        else
-        {
-            set_opaque_alpha_blender();
-        }
+    Bitmap *sprite = spriteset[pic];
+    const bool ds_has_alpha  = ds->GetColorDepth() == 32;
+    const bool src_has_alpha = (game.spriteflags[pic] & SPF_ALPHACHANNEL) != 0;
 
-        ds->TransBlendBlt(spriteset[picc], xx, yy);
+    if (use_alpha && game.options[OPT_NEWGUIALPHA] == kGuiAlphaRender_Improved)
+    {
+        GfxUtil::DrawSpriteBlend(ds, Point(x, y), sprite, blend_mode, ds_has_alpha, src_has_alpha);
+    }
+    // Backwards-compatible drawing
+    else if (use_alpha && ds_has_alpha && game.options[OPT_NEWGUIALPHA] == kGuiAlphaRender_AdditiveAlpha)
+    {
+        if (src_has_alpha)
+            set_additive_alpha_blender();
+        else
+            set_opaque_alpha_blender();
+        ds->TransBlendBlt(sprite, x, y);
     }
     else
     {
-        GfxUtil::DrawSpriteWithTransparency(ds, spriteset[picc], xx, yy);
+        GfxUtil::DrawSpriteWithTransparency(ds, sprite, x, y);
     }
 }
 
-void draw_gui_sprite_v330(Bitmap *ds, int pic, int x, int y, bool use_alpha)
+void draw_gui_sprite_v330(Bitmap *ds, int pic, int x, int y, bool use_alpha, BlendMode blend_mode)
 {
-    draw_gui_sprite(ds, pic, x, y, use_alpha && (loaded_game_file_version >= kGameVersion_330));
+    draw_gui_sprite(ds, pic, x, y, use_alpha && (loaded_game_file_version >= kGameVersion_330), blend_mode);
 }
 
 // function to sort the sprites into baseline order
-extern "C" int compare_listentries(const void *elem1, const void *elem2) {
-    SpriteListEntry *e1, *e2;
-    e1 = (SpriteListEntry*)elem1;
-    e2 = (SpriteListEntry*)elem2;
-
-    if (e1->baseline == e2->baseline) 
+bool spritelistentry_less(const SpriteListEntry &e1, const SpriteListEntry &e2)
+{
+    if (e1.baseline == e2.baseline) 
     { 
-        if (e1->takesPriorityIfEqual)
-            return 1;
-        if (e2->takesPriorityIfEqual)
-            return -1;
-
-        // Trying to make the order of equal elements reproducible across
-        // different libc implementations here
-#if defined WINDOWS_VERSION
-        return -1;
-#else
-        return 1;
-#endif
+        if (e1.takesPriorityIfEqual)
+            return false;
+        if (e2.takesPriorityIfEqual)
+            return true;
     }
-
-    // returns >0 if e1 is lower down, <0 if higher, =0 if the same
-    return e1->baseline - e2->baseline;
+    return e1.baseline < e2.baseline;
 }
 
 
@@ -1199,16 +1233,14 @@ void draw_sprite_list() {
         }
     }
 
-    // 2.60.672 - convert horrid bubble sort to use qsort instead
-    qsort(sprlist, sprlistsize, sizeof(SpriteListEntry), compare_listentries);
+    std::sort(sprlist.begin(), sprlist.end(), spritelistentry_less);
 
     clear_draw_list();
 
     add_thing_to_draw(NULL, AGSE_PRESCREENDRAW, 0, TRANS_RUN_PLUGIN, false);
 
     // copy the sorted sprites into the Things To Draw list
-    thingsToDrawSize += sprlistsize;
-    memcpy(&thingsToDrawList[1], sprlist, sizeof(SpriteListEntry) * sprlistsize);
+    thingsToDrawList.insert(thingsToDrawList.end(), sprlist.begin(), sprlist.end());
 }
 
 // Avoid freeing and reallocating the memory if possible
@@ -1277,31 +1309,37 @@ void get_local_tint(int xpp, int ypp, int nolight,
             light_level = thisroom.regionLightLevel[0];
             tint_level = thisroom.regionTintLevel[0];
         }
+
+        int tint_sat = (tint_level >> 24) & 0xFF;
         if ((game.color_depth == 1) || ((tint_level & 0x00ffffff) == 0) ||
-            ((tint_level & TINT_IS_ENABLED) == 0))
+            (tint_sat == 0))
             tint_level = 0;
 
         if (tint_level) {
             tint_red = (unsigned char)(tint_level & 0x000ff);
             tint_green = (unsigned char)((tint_level >> 8) & 0x000ff);
             tint_blue = (unsigned char)((tint_level >> 16) & 0x000ff);
-            tint_amount = light_level;
-            // older versions of the editor had a bug - work around it
-            if (tint_amount < 0)
-                tint_amount = 50;
-            /*red = ((red + 100) * 25) / 20;
-            grn = ((grn + 100) * 25) / 20;
-            blu = ((blu + 100) * 25) / 20;*/
+            tint_amount = tint_sat;
+            tint_light = light_level;
         }
 
-        if (play.rtint_level > 0) {
-            // override with room tint
-            tint_level = 1;
-            tint_red = play.rtint_red;
-            tint_green = play.rtint_green;
-            tint_blue = play.rtint_blue;
-            tint_amount = play.rtint_level;
-            tint_light = play.rtint_light;
+        if (play.rtint_enabled)
+        {
+            if (play.rtint_level > 0)
+            {
+                // override with room tint
+                tint_red = play.rtint_red;
+                tint_green = play.rtint_green;
+                tint_blue = play.rtint_blue;
+                tint_amount = play.rtint_level;
+                tint_light = play.rtint_light;
+            }
+            else
+            {
+                // override with room light level
+                tint_amount = 0;
+                light_level = play.rtint_light;
+            }
         }
     }
 
@@ -1333,7 +1371,7 @@ void apply_tint_or_light(int actspsindex, int light_level,
  }
 
  // we can only do tint/light if the colour depths match
- if (final_col_dep == actsps[actspsindex]->GetColorDepth()) {
+ if (System_GetColorDepth() == actsps[actspsindex]->GetColorDepth()) {
      Bitmap *oldwas;
      // if the caller supplied a source bitmap, ->Blit from it
      // (used as a speed optimisation where possible)
@@ -1518,6 +1556,8 @@ int construct_object_gfx(int aa, int *drawnWidth, int *drawnHeight, bool alwaysU
     objs[aa].last_width = sprwidth;
     objs[aa].last_height = sprheight;
 
+    tint_red = tint_green = tint_blue = tint_level = tint_light = light_level = 0;
+
     if (objs[aa].flags & OBJF_HASTINT) {
         // object specific tint, use it
         tint_red = objs[aa].tint_r;
@@ -1526,6 +1566,10 @@ int construct_object_gfx(int aa, int *drawnWidth, int *drawnHeight, bool alwaysU
         tint_level = objs[aa].tint_level;
         tint_light = objs[aa].tint_light;
         light_level = 0;
+    }
+    else if (objs[aa].flags & OBJF_HASLIGHT)
+    {
+        light_level = objs[aa].tint_light;
     }
     else {
         // get the ambient or region tint
@@ -1738,7 +1782,7 @@ void tint_image (Bitmap *ds, Bitmap *srcimg, int red, int grn, int blu, int ligh
 
     if ((srcimg->GetColorDepth() != ds->GetColorDepth()) ||
         (srcimg->GetColorDepth() <= 8)) {
-            debug_log("Image tint failed - images must both be hi-color");
+            debug_script_warn("Image tint failed - images must both be hi-color");
             // the caller expects something to have been copied
             ds->Blit(srcimg, 0, 0, 0, 0, srcimg->GetWidth(), srcimg->GetHeight());
             return;
@@ -1816,8 +1860,6 @@ void prepare_characters_for_drawing() {
         // sort out the stretching if required
         onarea = get_walkable_area_at_character (aa);
         our_eip = 332;
-        light_level = 0;
-        tint_amount = 0;
 
         if (chin->flags & CHF_MANUALSCALING)  // character ignores scaling
             zoom_level = charextra[aa].zoom;
@@ -1831,6 +1873,8 @@ void prepare_characters_for_drawing() {
 
         charextra[aa].zoom = zoom_level;
 
+        tint_red = tint_green = tint_blue = tint_amount = tint_light = light_level = 0;
+
         if (chin->flags & CHF_HASTINT) {
             // object specific tint, use it
             tint_red = charextra[aa].tint_r;
@@ -1839,6 +1883,10 @@ void prepare_characters_for_drawing() {
             tint_amount = charextra[aa].tint_level;
             tint_light = charextra[aa].tint_light;
             light_level = 0;
+        }
+        else if (chin->flags & CHF_HASLIGHT)
+        {
+            light_level = charextra[aa].tint_light;
         }
         else {
             get_local_tint(chin->x, chin->y, chin->flags & CHF_NOLIGHTING,
@@ -2138,8 +2186,8 @@ void draw_fps()
 
     if (fpsDisplay == NULL)
     {
-        fpsDisplay = BitmapHelper::CreateBitmap(get_fixed_pixel_size(100), (wgetfontheight(FONT_SPEECH) + get_fixed_pixel_size(5)), final_col_dep);
-        fpsDisplay = gfxDriver->ConvertBitmapToSupportedColourDepth(fpsDisplay);
+        fpsDisplay = BitmapHelper::CreateBitmap(get_fixed_pixel_size(100), (getfontheight_outlined(FONT_SPEECH) + get_fixed_pixel_size(5)), System_GetColorDepth());
+        fpsDisplay = ReplaceBitmapWithSupportedFormat(fpsDisplay);
     }
     fpsDisplay->ClearTransparent();
     //Bitmap *oldAbuf = ds;
@@ -2157,7 +2205,7 @@ void draw_fps()
     else
         gfxDriver->UpdateDDBFromBitmap(ddb, fpsDisplay, false);
 
-    int yp = scrnhit - fpsDisplay->GetHeight();
+    int yp = play.viewport.GetHeight() - fpsDisplay->GetHeight();
 
     gfxDriver->DrawSprite(1, yp, ddb);
     invalidate_sprite(1, yp, ddb);
@@ -2173,12 +2221,12 @@ void draw_screen_overlay() {
 
     add_thing_to_draw(NULL, AGSE_PREGUIDRAW, 0, TRANS_RUN_PLUGIN, false);
 
-    // draw overlays, except text boxes
+    // draw overlays, except text boxes and portraits
     for (gg=0;gg<numscreenover;gg++) {
         // complete overlay draw in non-transparent mode
         if (screenover[gg].type == OVER_COMPLETE)
             add_thing_to_draw(screenover[gg].bmp, screenover[gg].x, screenover[gg].y, TRANS_OPAQUE, false);
-        else if (screenover[gg].type != OVER_TEXTMSG) {
+        else if (screenover[gg].type != OVER_TEXTMSG && screenover[gg].type != OVER_PICTURE) {
             int tdxp, tdyp;
             get_overlay_position(gg, &tdxp, &tdyp);
             add_thing_to_draw(screenover[gg].bmp, tdxp, tdyp, 0, screenover[gg].hasAlphaChannel);
@@ -2208,7 +2256,7 @@ void draw_screen_overlay() {
             //Bitmap *abufwas = ds;
             guis_need_update = 0;
             for (aa=0;aa<game.numgui;aa++) {
-                if (guis[aa].on<1) continue;
+                if (!guis[aa].IsVisible()) continue;
 
                 if (guibg[aa] == NULL)
                     recreate_guibg_image(&guis[aa]);
@@ -2218,18 +2266,18 @@ void draw_screen_overlay() {
                 guibg[aa]->ClearTransparent();
                 //ds = guibg[aa];
                 our_eip = 372;
-                guis[aa].draw_at(guibg[aa], 0,0);
+                guis[aa].DrawAt(guibg[aa], 0,0);
                 our_eip = 373;
 
                 bool isAlpha = false;
-                if (guis[aa].is_alpha()) 
+                if (guis[aa].HasAlphaChannel()) 
                 {
                     isAlpha = true;
 
-                    if ((game.options[OPT_NEWGUIALPHA] == kGuiAlphaRender_Classic) && (guis[aa].bgpic > 0))
+                    if ((game.options[OPT_NEWGUIALPHA] == kGuiAlphaRender_Classic) && (guis[aa].BgImage > 0))
                     {
                         // old-style (pre-3.0.2) GUI alpha rendering
-                        repair_alpha_channel(guibg[aa], spriteset[guis[aa].bgpic]);
+                        repair_alpha_channel(guibg[aa], spriteset[guis[aa].BgImage]);
                     }
                 }
 
@@ -2249,27 +2297,27 @@ void draw_screen_overlay() {
         // Draw the GUIs
         for (gg = 0; gg < game.numgui; gg++) {
             aa = play.gui_draw_order[gg];
-            if (guis[aa].on < 1) continue;
+            if (!guis[aa].IsVisible()) continue;
 
             // Don't draw GUI if "GUIs Turn Off When Disabled"
             if ((game.options[OPT_DISABLEOFF] == 3) &&
                 (all_buttons_disabled > 0) &&
-                (guis[aa].popup != POPUP_NOAUTOREM))
+                (guis[aa].PopupStyle != kGUIPopupNoAutoRemove))
                 continue;
 
-            add_thing_to_draw(guibgbmp[aa], guis[aa].x, guis[aa].y, guis[aa].transparency, guis[aa].is_alpha());
+            add_thing_to_draw(guibgbmp[aa], guis[aa].X, guis[aa].Y, guis[aa].Transparency, guis[aa].HasAlphaChannel());
 
             // only poll if the interface is enabled (mouseovers should not
             // work while in Wait state)
             if (IsInterfaceEnabled())
-                guis[aa].poll();
+                guis[aa].Poll();
         }
     }
 
-    // draw text boxes (so that they appear over GUIs)
+    // draw speech and portraits (so that they appear over GUIs)
     for (gg=0;gg<numscreenover;gg++) 
     {
-        if (screenover[gg].type == OVER_TEXTMSG) 
+        if (screenover[gg].type == OVER_TEXTMSG || screenover[gg].type == OVER_PICTURE)
         {
             int tdxp, tdyp;
             get_overlay_position(gg, &tdxp, &tdyp);
@@ -2286,7 +2334,7 @@ void put_sprite_list_on_screen()
 
     SpriteListEntry *thisThing;
 
-    for (int i = 0; i < thingsToDrawSize; ++i)
+    for (size_t i = 0; i < thingsToDrawList.size(); ++i)
     {
         thisThing = &thingsToDrawList[i];
 
@@ -2332,17 +2380,6 @@ void draw_misc_info()
 
     Bitmap *ds = GetVirtualScreen();
 
-    /*
-    if (channels[SCHAN_SPEECH] != NULL) {
-
-    char tbuffer[60];
-    sprintf(tbuffer,"mpos: %d", channels[SCHAN_SPEECH]->get_pos_ms());
-    write_log(tbuffer);
-    int yp = scrnhit - (wgetfontheight(FONT_SPEECH) + 25 * symult);
-    ds->SetTextColor(14);
-    draw_and_invalidate_text(1, yp, FONT_SPEECH,tbuffer);
-    }*/
-
     color_t text_color;
     if (play.recording) {
         // Flash "REC" while recording
@@ -2371,12 +2408,12 @@ bool GfxDriverNullSpriteCallback(int x, int y)
         // if no room loaded, various stuff won't be initialized yet
         return 1;
     }
-    return (platform->RunPluginHooks(x, y) != 0);
+    return (pl_run_plugin_hooks(x, y) != 0);
 }
 
 void GfxDriverOnInitCallback(void *data)
 {
-    platform->RunPluginInitGfxHooks(gfxDriver->GetDriverID(), data);
+    pl_run_plugin_init_gfx_hooks(gfxDriver->GetDriverID(), data);
 }
 
 
@@ -2441,25 +2478,24 @@ void update_screen() {
     {
         //int otextc = ds->GetTextColor();
         int ypp = 1;
-        int txtheight = wgetfontheight(0);
-        int barheight = (DEBUG_CONSOLE_NUMLINES - 1) * txtheight + 4;
+        int txtspacing= getfontspacing_outlined(0);
+        int barheight = getheightoflines(0, DEBUG_CONSOLE_NUMLINES - 1) + 4;
 
         if (debugConsoleBuffer == NULL)
         {
-            debugConsoleBuffer = BitmapHelper::CreateBitmap(scrnwid, barheight,final_col_dep);
-            debugConsoleBuffer = gfxDriver->ConvertBitmapToSupportedColourDepth(debugConsoleBuffer);
+            debugConsoleBuffer = BitmapHelper::CreateBitmap(play.viewport.GetWidth(), barheight,System_GetColorDepth());
+            debugConsoleBuffer = ReplaceBitmapWithSupportedFormat(debugConsoleBuffer);
         }
 
         //Bitmap *ds = GetVirtualScreen();
         //push_screen(ds);
         //ds = debugConsoleBuffer;
         color_t draw_color = debugConsoleBuffer->GetCompatibleColor(15);
-        debugConsoleBuffer->FillRect(Rect (0, 0, scrnwid - 1, barheight), draw_color);
+        debugConsoleBuffer->FillRect(Rect (0, 0, play.viewport.GetWidth() - 1, barheight), draw_color);
         color_t text_color = debugConsoleBuffer->GetCompatibleColor(16);
         for (int jj = first_debug_line; jj != last_debug_line; jj = (jj + 1) % DEBUG_CONSOLE_NUMLINES) {
-            wouttextxy(debugConsoleBuffer, 1, ypp, 0, text_color, debug_line[jj].text);
-            wouttextxy(debugConsoleBuffer, scrnwid - get_fixed_pixel_size(40), ypp, 0, text_color, debug_line[jj].script);
-            ypp += txtheight;
+            wouttextxy(debugConsoleBuffer, 1, ypp, 0, text_color, debug_line[jj]);
+            ypp += txtspacing;
         }
         //buf_graphics.text_color = otextc;
         //ds = pop_screen();
@@ -2535,8 +2571,9 @@ void construct_virtual_screen(bool fullRedraw)
     Bitmap *ds = GetVirtualScreen();
 
     gfxDriver->UseSmoothScaling(IS_ANTIALIAS_SPRITES);
+    gfxDriver->RenderSpritesAtScreenResolution(usetup.RenderAtScreenRes);
 
-    platform->RunPluginHooks(AGSE_PRERENDER, 0);
+    pl_run_plugin_hooks(AGSE_PRERENDER, 0);
 
     if (displayed_room >= 0) {
 

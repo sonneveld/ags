@@ -13,11 +13,14 @@
 //=============================================================================
 
 #define USE_CLIB
+#include "aldumb.h"
+#include "ac/asset_helper.h"
 #include "ac/file.h"
 #include "ac/common.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/global_file.h"
+#include "ac/path_helper.h"
 #include "ac/runtime_defines.h"
 #include "ac/string.h"
 #include "debug/debug_log.h"
@@ -26,33 +29,15 @@
 #include "platform/base/agsplatformdriver.h"
 #include "util/stream.h"
 #include "core/assetmanager.h"
+#include "core/asset.h"
+#include "main/engine.h"
 #include "main/game_file.h"
 #include "util/directory.h"
 #include "util/path.h"
 #include "util/string.h"
+#include "util/string_utils.h"
 
 using namespace AGS::Common;
-
-#if defined (AGS_RUNTIME_PATCH_ALLEGRO)
-#include <dlfcn.h>
-#endif // AGS_RUNTIME_PATCH_ALLEGRO
-
-
-// ***** EXTERNS ****
-
-// override packfile functions to allow it to load from our
-// custom CLIB datafiles
-extern "C" {
-	PACKFILE*_my_temppack;
-#if ALLEGRO_DATE > 19991010
-#define PFO_PARAM const char *
-#else
-#define PFO_PARAM char *
-#endif
-#if !defined(AGS_RUNTIME_PATCH_ALLEGRO)
-	extern PACKFILE *__old_pack_fopen(PFO_PARAM,PFO_PARAM);
-#endif
-}
 
 extern GameSetup usetup;
 extern GameSetupStruct game;
@@ -60,6 +45,16 @@ extern char saveGameDirectory[260];
 extern AGSPlatformDriver *platform;
 
 extern int MAXSTRLEN;
+
+// TODO: the asset path configuration should certainly be revamped at some
+// point, with uniform method of configuring auxiliary paths and packages.
+
+// Installation directory, may contain absolute or relative path
+String installDirectory;
+// Installation directory, containing audio files
+String installAudioDirectory;
+// Installation directory, containing voice-over files
+String installVoiceDirectory;
 
 // object-based File routines
 
@@ -176,6 +171,12 @@ int File_ReadRawInt(sc_File *fil) {
   return FileReadRawInt(fil->handle);
 }
 
+int File_Seek(sc_File *fil, int offset, int origin)
+{
+    Stream *in = get_valid_file_stream_from_handle(fil->handle, "File.Seek");
+    return (int)in->Seek(offset, (StreamSeek)origin);
+}
+
 int File_GetEOF(sc_File *fil) {
   if (fil->handle <= 0)
     return 1;
@@ -188,98 +189,16 @@ int File_GetError(sc_File *fil) {
   return FileIsError(fil->handle);
 }
 
-//=============================================================================
-
-// [IKM] NOTE: this function is used only by few media/audio units
-// TODO: find a way to hide allegro behind some interface/wrapper function
-#if ALLEGRO_DATE > 19991010
-PACKFILE *pack_fopen(const char *filnam1, const char *modd1) {
-#else
-PACKFILE *pack_fopen(char *filnam1, char *modd1) {
-#endif
-  char  *filnam = (char *)filnam1;
-  char  *modd = (char *)modd1;
-  int   needsetback = 0;
-
-  if (filnam[0] == '~') {
-    // ~ signals load from specific data file, not the main default one
-    char gfname[80];
-    int ii = 0;
-    
-    filnam++;
-    while (filnam[0]!='~') {
-      gfname[ii] = filnam[0];
-      filnam++;
-      ii++;
-    }
-    filnam++;
-    // MACPORT FIX 9/6/5: changed from NULL TO '\0'
-    gfname[ii] = '\0';
-/*    char useloc[250];
-#ifdef LINUX_VERSION || defined MAC_VERSION
-    sprintf(useloc,"%s/%s",usetup.data_files_dir,gfname);
-#else
-    sprintf(useloc,"%s\\%s",usetup.data_files_dir,gfname);
-#endif
-    Common::AssetManager::SetDataFile(useloc);*/
-    
-    char *libname = ci_find_file(usetup.data_files_dir, gfname);
-    if (Common::AssetManager::SetDataFile(libname) != Common::kAssetNoError)
-    {
-      // Hack for running in Debugger
-      free(libname);
-      libname = ci_find_file("Compiled", gfname);
-      Common::AssetManager::SetDataFile(libname);
-    }
-    free(libname);
-    
-    needsetback = 1;
-  }
-
-  // if the file exists, override the internal file
-  bool file_exists = Common::File::TestReadFile(filnam);
-
-#if defined(AGS_RUNTIME_PATCH_ALLEGRO)
-  static PACKFILE * (*__old_pack_fopen)(PFO_PARAM, PFO_PARAM) = NULL;
-  if(!__old_pack_fopen) {
-    __old_pack_fopen = (PACKFILE* (*)(PFO_PARAM, PFO_PARAM))dlsym(RTLD_NEXT, "pack_fopen");
-    if(!__old_pack_fopen) {
-      // Looks like we're linking statically to allegro...
-      // Let's see if it has been patched
-      __old_pack_fopen = (PACKFILE* (*)(PFO_PARAM, PFO_PARAM))dlsym(RTLD_DEFAULT, "__allegro_pack_fopen");
-      if(!__old_pack_fopen) {
-        fprintf(stderr, "If you're linking statically to allegro, you need to apply this patch to allegro:\n"
-        "https://sourceforge.net/tracker/?func=detail&aid=3302567&group_id=5665&atid=355665\n");
-        exit(1);
-      }
-    }
-  }
-#endif
-
-  if ((Common::AssetManager::GetAssetOffset(filnam)<1) || (file_exists)) {
-    if (needsetback) Common::AssetManager::SetDataFile(game_file_name);
-    return __old_pack_fopen(filnam, modd);
-  } 
-  else {
-    _my_temppack=__old_pack_fopen(Common::AssetManager::GetLibraryForAsset(filnam), modd);
-    if (_my_temppack == NULL)
-      quitprintf("pack_fopen: unable to change datafile: not found: %s", Common::AssetManager::GetLibraryForAsset(filnam).GetCStr());
-
-    pack_fseek(_my_temppack,Common::AssetManager::GetAssetOffset(filnam));
-    
-#if ALLEGRO_DATE < 20050101
-    _my_temppack->todo=Common::AssetManager::GetAssetSize(filnam);
-#else
-    _my_temppack->normal.todo = Common::AssetManager::GetAssetSize(filnam);
-#endif
-
-    if (needsetback)
-      Common::AssetManager::SetDataFile(game_file_name);
-    return _my_temppack;
-  }
+int File_GetPosition(sc_File *fil)
+{
+    if (fil->handle <= 0)
+        return -1;
+    Stream *stream = get_valid_file_stream_from_handle(fil->handle, "File.Position");
+    // TODO: a problem is that AGS script does not support unsigned or long int
+    return (int)stream->GetPosition();
 }
 
-// end packfile functions
+//=============================================================================
 
 
 const String GameInstallRootToken    = "$INSTALLDIR$";
@@ -346,11 +265,9 @@ String MakeSpecialSubDir(const String &sp_dir)
 
 String MakeAppDataPath()
 {
-    String app_data_path;
-    if (usetup.user_data_dir.IsEmpty())
+    String app_data_path = usetup.shared_data_dir;
+    if (app_data_path.IsEmpty())
         app_data_path = MakeSpecialSubDir(PathOrCurDir(platform->GetAllUsersDataDirectory()));
-    else
-        app_data_path.Format("%s/AppData", usetup.user_data_dir.GetCStr());
     Directory::CreateDirectory(app_data_path);
     app_data_path.AppendChar('/');
     return app_data_path;
@@ -364,7 +281,7 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
     bool is_absolute = !is_relative_filename(orig_sc_path);
     if (is_absolute && !read_only)
     {
-        debug_log("Attempt to access file '%s' denied (cannot write to absolute path)", orig_sc_path.GetCStr());
+        debug_script_warn("Attempt to access file '%s' denied (cannot write to absolute path)", orig_sc_path.GetCStr());
         return false;
     }
 
@@ -383,11 +300,12 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
     {
         if (!read_only)
         {
-            debug_log("Attempt to access file '%s' denied (cannot write to game installation directory)",
+            debug_script_warn("Attempt to access file '%s' denied (cannot write to game installation directory)",
                 sc_path.GetCStr());
             return false;
         }
-        parent_dir = get_current_dir();
+        parent_dir = get_install_dir();
+        parent_dir.AppendChar('/');
         child_path = sc_path.Mid(GameInstallRootToken.GetLength());
     }
     else if (sc_path.CompareLeft(GameSavedgamesDirToken, GameSavedgamesDirToken.GetLength()) == 0)
@@ -417,18 +335,18 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
         parent_dir = MakeAppDataPath();
         // Set alternate non-remapped "unsafe" path for read-only operations
         if (read_only)
-            alt_path = String::FromFormat("%s%s", get_current_dir().GetCStr(), sc_path.GetCStr());
+            alt_path = String::FromFormat("%s/%s", get_install_dir().GetCStr(), sc_path.GetCStr());
 
         // For games made in the safe-path-aware versions of AGS, report a warning
         // if the unsafe path is used for write operation
         if (!read_only && game.options[OPT_SAFEFILEPATHS])
         {
-            debug_log("Attempt to access file '%s' denied (cannot write to game installation directory);\nPath will be remapped to the app data directory: '%s'",
+            debug_script_warn("Attempt to access file '%s' denied (cannot write to game installation directory);\nPath will be remapped to the app data directory: '%s'",
                 sc_path.GetCStr(), parent_dir.GetCStr());
         }
     }
 
-    if (child_path[0] == '\\' || child_path[0] == '/')
+    if (child_path[0u] == '\\' || child_path[0u] == '/')
         child_path.ClipLeft(1);
 
     path = String::FromFormat("%s%s", parent_dir.GetCStr(), child_path.GetCStr());
@@ -437,7 +355,7 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
     {
         if (!Path::IsSameOrSubDir(parent_dir, path))
         {
-            debug_log("Attempt to access file '%s' denied (outside of game directory)", sc_path.GetCStr());
+            debug_script_warn("Attempt to access file '%s' denied (outside of game directory)", sc_path.GetCStr());
             path = "";
             return false;
         }
@@ -445,31 +363,164 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
     return true;
 }
 
-
-String get_current_dir()
+bool LocateAsset(const AssetPath &path, AssetLocation &loc)
 {
-    if (use_compiled_folder_as_current_dir)
-        return "Compiled/";
-    return "./";
+    String assetlib = path.first;
+    String assetname = path.second;
+    bool needsetback = false;
+    // Change to the different library, if required
+    // TODO: teaching AssetManager to register multiple libraries simultaneously
+    // will let us skip this step, and also make this operation much faster.
+    if (!assetlib.IsEmpty() && assetlib.CompareNoCase(game_file_name) != 0)
+    {
+        AssetManager::SetDataFile(find_assetlib(assetlib));
+        needsetback = true;
+    }
+    bool res = AssetManager::GetAssetLocation(assetname, loc);
+    if (needsetback)
+        AssetManager::SetDataFile(game_file_name);
+    return res;
 }
 
-void get_current_dir_path(char* buffer, const char *fileName)
+PACKFILE *PackfileFromAsset(const AssetPath &path)
 {
-    if (use_compiled_folder_as_current_dir)
+    AssetLocation loc;
+    if (LocateAsset(path, loc))
     {
-        sprintf(buffer, "Compiled\\%s", fileName);
+        PACKFILE *pf = pack_fopen(loc.FileName, File::GetCMode(kFile_Open, kFile_Read));
+        if (pf)
+        {
+            pack_fseek(pf, loc.Offset);
+            pf->normal.todo = loc.Size;
+        }
+        return pf;
     }
+    return NULL;
+}
+
+DUMBFILE *DUMBfileFromAsset(const AssetPath &path)
+{
+    PACKFILE *pf = PackfileFromAsset(path);
+    if (pf)
+        return dumbfile_open_packfile(pf);
+    return NULL;
+}
+
+bool DoesAssetExistInLib(const AssetPath &assetname)
+{
+    bool needsetback = false;
+    // Change to the different library, if required
+    // TODO: teaching AssetManager to register multiple libraries simultaneously
+    // will let us skip this step, and also make this operation much faster.
+    if (!assetname.first.IsEmpty() && assetname.first.CompareNoCase(game_file_name) != 0)
+    {
+        AssetManager::SetDataFile(find_assetlib(assetname.first));
+        needsetback = true;
+    }
+    bool res = AssetManager::DoesAssetExist(assetname.second);
+    if (needsetback)
+        AssetManager::SetDataFile(game_file_name);
+    return res;
+}
+
+void set_install_dir(const String &path, const String &audio_path, const String &voice_path)
+{
+    if (path.IsEmpty())
+        installDirectory = ".";
     else
+        installDirectory = Path::MakePathNoSlash(path);
+    if (audio_path.IsEmpty())
+        installAudioDirectory = ".";
+    else
+        installAudioDirectory = Path::MakePathNoSlash(audio_path);
+    if (voice_path.IsEmpty())
+        installVoiceDirectory = ".";
+    else
+        installVoiceDirectory = Path::MakePathNoSlash(voice_path);
+}
+
+String get_install_dir()
+{
+    return installDirectory;
+}
+
+String get_audio_install_dir()
+{
+    return installAudioDirectory;
+}
+
+String get_voice_install_dir()
+{
+    return installVoiceDirectory;
+}
+
+void get_install_dir_path(char* buffer, const char *fileName)
+{
+    sprintf(buffer, "%s/%s", installDirectory.GetCStr(), fileName);
+}
+
+String find_assetlib(const String &filename)
+{
+    String libname = free_char_to_string( ci_find_file(usetup.data_files_dir, filename) );
+    if (AssetManager::IsDataFile(libname))
+        return libname;
+    if (Path::ComparePaths(usetup.data_files_dir, installDirectory) != 0)
     {
-        strcpy(buffer, fileName);
+      // Hack for running in Debugger
+      libname = free_char_to_string( ci_find_file(installDirectory, filename) );
+      if (AssetManager::IsDataFile(libname))
+        return libname;
     }
+    return "";
+}
+
+Stream *find_open_asset(const String &filename)
+{
+    Stream *asset_s = Common::AssetManager::OpenAsset(filename);
+    if (!asset_s && Path::ComparePaths(usetup.data_files_dir, installDirectory) != 0) 
+    {
+        // Just in case they're running in Debug, try standalone file in compiled folder
+        asset_s = ci_fopen(String::FromFormat("%s/%s", installDirectory.GetCStr(), filename.GetCStr()));
+    }
+    return asset_s;
+}
+
+AssetPath get_audio_clip_assetpath(int bundling_type, const String &filename)
+{
+    // Special case is explicitly defined audio directory, which should be
+    // tried first regardless of bundling type.
+    if (Path::ComparePaths(usetup.data_files_dir, installAudioDirectory) != 0)
+    {
+        String filepath = String::FromFormat("%s/%s", installAudioDirectory.GetCStr(), filename.GetCStr());
+        if (Path::IsFile(filepath))
+            return AssetPath("", filepath);
+    }
+
+    if (bundling_type == AUCL_BUNDLE_EXE)
+        return AssetPath(game_file_name, filename);
+    else if (bundling_type == AUCL_BUNDLE_VOX)
+        return AssetPath(is_old_audio_system() ? "music.vox" : "audio.vox", filename);
+    return AssetPath();
+}
+
+AssetPath get_voice_over_assetpath(const String &filename)
+{
+    // Special case is explicitly defined voice-over directory, which should be
+    // tried first.
+    if (Path::ComparePaths(usetup.data_files_dir, installVoiceDirectory) != 0)
+    {
+        String filepath = String::FromFormat("%s/%s", installVoiceDirectory.GetCStr(), filename.GetCStr());
+        if (Path::IsFile(filepath))
+            return AssetPath("", filepath);
+    }
+    return AssetPath(speech_file, filename);
 }
 
 ScriptFileHandle valid_handles[MAX_OPEN_SCRIPT_FILES + 1];
 // [IKM] NOTE: this is not precisely the number of files opened at this moment,
 // but rather maximal number of handles that were used simultaneously during game run
 int num_open_script_files = 0;
-ScriptFileHandle *check_valid_file_handle_ptr(Common::Stream *stream_ptr, const char *operation_name)
+ScriptFileHandle *check_valid_file_handle_ptr(Stream *stream_ptr, const char *operation_name)
 {
   if (stream_ptr)
   {
@@ -614,6 +665,11 @@ RuntimeScriptValue Sc_File_WriteString(void *self, const RuntimeScriptValue *par
     API_OBJCALL_VOID_POBJ(sc_File, File_WriteString, const char);
 }
 
+RuntimeScriptValue Sc_File_Seek(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT_PINT2(sc_File, File_Seek);
+}
+
 // int (sc_File *fil)
 RuntimeScriptValue Sc_File_GetEOF(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
@@ -624,6 +680,11 @@ RuntimeScriptValue Sc_File_GetEOF(void *self, const RuntimeScriptValue *params, 
 RuntimeScriptValue Sc_File_GetError(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
     API_OBJCALL_INT(sc_File, File_GetError);
+}
+
+RuntimeScriptValue Sc_File_GetPosition(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(sc_File, File_GetPosition);
 }
 
 
@@ -644,8 +705,10 @@ void RegisterFileAPI()
     ccAddExternalObjectFunction("File::WriteRawChar^1",     Sc_File_WriteRawChar);
     ccAddExternalObjectFunction("File::WriteRawLine^1",     Sc_File_WriteRawLine);
     ccAddExternalObjectFunction("File::WriteString^1",      Sc_File_WriteString);
+    ccAddExternalObjectFunction("File::Seek^2",             Sc_File_Seek);
     ccAddExternalObjectFunction("File::get_EOF",            Sc_File_GetEOF);
     ccAddExternalObjectFunction("File::get_Error",          Sc_File_GetError);
+    ccAddExternalObjectFunction("File::get_Position",       Sc_File_GetPosition);
 
     /* ----------------------- Registering unsafe exports for plugins -----------------------*/
 

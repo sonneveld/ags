@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
@@ -47,6 +49,8 @@ namespace AGS.Types
         private string[] _globalMessages;
         private Character _playerCharacter;
         private Settings _settings;
+        private RuntimeSetup _defaultSetup;
+        private WorkspaceState _workspaceState;
         private PaletteEntry[] _palette;
         private SpriteFolder _sprites;
         private ViewFolders _views;
@@ -80,6 +84,8 @@ namespace AGS.Types
             _rooms = new UnloadedRoomFolders(UnloadedRoomFolder.MAIN_UNLOADED_ROOM_FOLDER_NAME);
             _oldInteractionVariables = new List<OldInteractionVariable>();
             _settings = new Settings();
+            _defaultSetup = new RuntimeSetup(_settings);
+            _workspaceState = new WorkspaceState();
             _palette = new PaletteEntry[PALETTE_SIZE];
             _sprites = new SpriteFolder("Main");
             _views = new ViewFolders("Main");
@@ -176,6 +182,16 @@ namespace AGS.Types
         public Settings Settings
         {
             get { return _settings; }
+        }
+
+        public RuntimeSetup DefaultSetup
+        {
+            get { return _defaultSetup; }
+        }
+
+        public WorkspaceState WorkspaceState
+        {
+            get { return _workspaceState; }
         }
 
         public PaletteEntry[] Palette
@@ -376,7 +392,7 @@ namespace AGS.Types
         {
             get
             {
-                return Utilities.GetGameResolutionHeight(_settings.Resolution);
+                return _settings.CustomResolution.Height;
             }
         }
 
@@ -388,7 +404,7 @@ namespace AGS.Types
         {
             get
             {
-                return Utilities.GetGameResolutionWidth(_settings.Resolution);
+                return _settings.CustomResolution.Width;
             }
         }
 
@@ -529,8 +545,7 @@ namespace AGS.Types
         {
             get
             {
-                if ((_settings.Resolution == GameResolutions.R320x200) ||
-                    (_settings.Resolution == GameResolutions.R320x240))
+                if (_settings.LowResolution)
                 {
                     return 2;
                 }
@@ -597,6 +612,7 @@ namespace AGS.Types
             writer.WriteStartElement("Game");
 
             _settings.ToXml(writer);
+            _defaultSetup.ToXml(writer);
 
             _lipSync.ToXml(writer);
 
@@ -725,6 +741,13 @@ namespace AGS.Types
             node = node.SelectSingleNode("Game");
 
             _settings.FromXml(node);
+
+            if (node.SelectSingleNode(_defaultSetup.GetType().Name) != null)
+            {
+                // Only for >= 3.4.1
+                _defaultSetup.FromXml(node);
+            }
+
             _lipSync.FromXml(node);
             _propertySchema.FromXml(node);
 
@@ -1074,14 +1097,56 @@ namespace AGS.Types
             SetPaletteFromRawPAL(rawPalette, true);
         }
 
+        public void SetScriptAPIForOldProject()
+        {
+            System.Version firstCompatibleVersion = new System.Version("3.4.0");
+            System.Version firstVersionWithHighestConst = new System.Version("3.4.1");
+            // Try to find corresponding ScriptAPI for older version game project that did not have such setting
+            System.Version projectVersion = _savedXmlEditorVersion != null ? Utilities.TryParseVersion(_savedXmlEditorVersion) : null;
+
+            if (projectVersion == null)
+            {
+                _settings.ScriptCompatLevel = ScriptAPIVersion.v321;
+            }
+            else
+            {
+                if (projectVersion < firstCompatibleVersion)
+                {
+                    // Devise the API version from enum values Description attribute
+                    // and find the first version equal or higher than project's one.
+                    Type t = typeof(ScriptAPIVersion);
+                    string[] names = Enum.GetNames(t);
+                    foreach (string n in names)
+                    {
+                        FieldInfo fi = t.GetField(n);
+                        DescriptionAttribute[] attributes =
+                          (DescriptionAttribute[])fi.GetCustomAttributes(
+                          typeof(DescriptionAttribute), false);
+                        if (attributes.Length == 0)
+                            continue;
+                        System.Version v = new System.Version(attributes[0].Description);
+                        if (projectVersion <= v)
+                        {
+                            _settings.ScriptCompatLevel = (ScriptAPIVersion)Enum.Parse(t, n);
+                            break;
+                        }
+                    }
+                }
+                if (projectVersion < firstVersionWithHighestConst && _settings.ScriptAPIVersion == ScriptAPIVersion.v340)
+                {
+                    // Convert API 3.4.0 into Highest constant if the game was made in AGS 3.4.0
+                    _settings.ScriptAPIVersion = ScriptAPIVersion.Highest;
+                }
+            }
+        }
+
         /// <summary>
         /// WARNING: Only call this if an old game has just been loaded
         /// in, otherwise all sizes will get doubled!!!
         /// </summary>
         public void ConvertCoordinatesToNativeResolution()
         {
-            if ((_settings.Resolution == GameResolutions.R320x200) ||
-                (_settings.Resolution == GameResolutions.R320x240))
+            if (_settings.LowResolution)
             {
                 // No conversion necessary -- already at native res
                 return;

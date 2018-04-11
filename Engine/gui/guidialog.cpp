@@ -14,7 +14,6 @@
 
 #include <stdio.h>
 #include "gui/guidialog.h"
-#include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "ac/draw.h"
 #include "ac/game.h"
@@ -25,21 +24,18 @@
 #include "gfx/bitmap.h"
 #include "gfx/graphicsdriver.h"
 
-using AGS::Common::String;
-using AGS::Common::Bitmap;
+using namespace AGS::Common;
+using namespace AGS::Engine;
 
 extern IGraphicsDriver *gfxDriver;
 extern GameSetup usetup;
 
 // from ac_game
 extern char saveGameDirectory[260];
-extern char saveGameSuffix[MAX_SG_EXT_LENGTH + 1];
 
-// from gui/cscidialog
-extern Bitmap *windowBuffer;
-extern int windowPosX, windowPosY, windowPosWidth, windowPosHeight;
-extern Bitmap *windowBuffer;
-extern IDriverDependantBitmap *dialogBmp;
+int windowPosX, windowPosY, windowPosWidth, windowPosHeight;
+Bitmap *windowBuffer;
+IDriverDependantBitmap *dialogBmp;
 
 #define MAXSAVEGAMES 20
 DisplayProperties dispp;
@@ -55,8 +51,35 @@ char buff[200];
 int myscrnwid = 320, myscrnhit = 200;
 
 
+void prepare_gui_screen(int x, int y, int width, int height, bool opaque)
+{
+    clear_gui_screen();
+    windowPosX = x;
+    windowPosY = y;
+    windowPosWidth = width;
+    windowPosHeight = height;
+    if (windowBuffer)
+    {
+        windowBuffer = recycle_bitmap(windowBuffer, windowPosWidth, windowPosHeight, windowBuffer->GetColorDepth(), !opaque);
+    }
+    else
+    {
+        windowBuffer = BitmapHelper::CreateBitmap(windowPosWidth, windowPosHeight, GetVirtualScreen()->GetColorDepth());
+        windowBuffer = ReplaceBitmapWithSupportedFormat(windowBuffer);
+    }
+    dialogBmp = recycle_ddb_bitmap(dialogBmp, windowBuffer, false);
+}
 
-void refresh_screen()
+void clear_gui_screen()
+{
+    if (dialogBmp)
+        gfxDriver->DestroyDDB(dialogBmp);
+    dialogBmp = NULL;
+    delete windowBuffer;
+    windowBuffer = NULL;
+}
+
+void refresh_gui_screen()
 {
     Bitmap *ds = GetVirtualScreen();
     windowBuffer->Blit(ds, windowPosX, windowPosY, 0, 0, windowPosWidth, windowPosHeight);
@@ -265,7 +288,7 @@ void preparesavegamelist(int ctrllist)
   _getcwd(curdir, 255);
 
   char searchPath[260];
-  sprintf(searchPath, "%s""agssave.*%s", saveGameDirectory, saveGameSuffix);
+  sprintf(searchPath, "%s""agssave.*%s", saveGameDirectory, saveGameSuffix.GetCStr());
 
   int don = al_findfirst(searchPath, &ffb, -1);
   while (!don) {
@@ -321,7 +344,7 @@ void preparesavegamelist(int ctrllist)
   }
 }
 
-void enterstringwindow(char *prompttext, char *stouse)
+void enterstringwindow(const char *prompttext, char *stouse)
 {
   int boxleft = 60, boxtop = 80;
   int wantCancel = 0;
@@ -442,7 +465,7 @@ int roomSelectorWindow(int currentRoom, int numRooms, int*roomNumbers, char**roo
   return toret;
 }
 
-int myscimessagebox(char *lpprompt, char *btn1, char *btn2)
+int myscimessagebox(const char *lpprompt, char *btn1, char *btn2)
 {
     Bitmap *ds = GetVirtualScreen();
     int windl = CSCIDrawWindow(ds, 80, 80, 240 - 80, 120 - 80);

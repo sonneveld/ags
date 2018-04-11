@@ -13,28 +13,32 @@
 //=============================================================================
 
 #include "ac/common.h"
-#include "gfx/ali3d.h"
 #include "media/audio/audiodefines.h"
 #include "ac/draw.h"
 #include "ac/gamesetup.h"
+#include "ac/gamesetupstruct.h"
 #include "ac/gamestate.h"
 #include "ac/mouse.h"
 #include "ac/string.h"
 #include "ac/system.h"
 #include "ac/dynobj/scriptsystem.h"
 #include "debug/debug_log.h"
+#include "main/engine.h"
 #include "main/main.h"
 #include "media/audio/soundclip.h"
 #include "gfx/graphicsdriver.h"
 #include "ac/dynobj/cc_audiochannel.h"
+#include "main/graphics_mode.h"
+#include "ac/global_debug.h"
 
+using namespace AGS::Engine;
+
+extern GameSetupStruct game;
 extern GameSetup usetup;
 extern GameState play;
 extern SOUNDCLIP *channels[MAX_SOUND_CHANNELS+1];
 extern ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
 extern ScriptSystem scsystem;
-extern int scrnwid,scrnhit;
 extern IGraphicsDriver *gfxDriver;
 extern CCAudioChannel ccDynamicAudio;
 extern volatile bool switched_away;
@@ -45,27 +49,48 @@ bool System_HasInputFocus()
 }
 
 int System_GetColorDepth() {
-    return final_col_dep;
+    return scsystem.coldepth;
 }
 
 int System_GetOS() {
     return scsystem.os;
 }
 
+// [IKM] 2014-09-21
+// IMPORTANT NOTE on System.ScreenWidth and System.ScreenHeight:
+// It appears that in AGS these properties were not defining actual window size
+// in pixels, but rather game frame size, which could include black borders,
+// in 'native' (unscaled) pixels. This was due the specifics of how graphics
+// modes were implemented in previous versions.
+// 
+// Quote from the old manual:
+// "Returns the actual screen width that the game is running at. If a graphic
+//  filter is in use, the resolution returned will be that before any
+//  stretching by the filter has been applied. If widescreen side borders are
+//  enabled, the screen width reported will include the size of these borders."
+//
+// The key words are "the resolution returned will be that BEFORE any
+// stretching by the filter has been applied".
+//
+// Since now the letterbox and pillarbox borders are handled by graphics
+// renderer and are not part of the game anymore, these properties should
+// return strictly native game size. This is required for backwards
+// compatibility.
+//
 int System_GetScreenWidth() {
-    return final_scrn_wid;
+    return game.size.Width;
 }
 
 int System_GetScreenHeight() {
-    return final_scrn_hit;
+    return game.size.Height;
 }
 
 int System_GetViewportHeight() {
-    return divide_down_coordinate(scrnhit);
+    return divide_down_coordinate(play.viewport.GetHeight());
 }
 
 int System_GetViewportWidth() {
-    return divide_down_coordinate(scrnwid);
+    return divide_down_coordinate(play.viewport.GetWidth());
 }
 
 const char *System_GetVersion() {
@@ -108,13 +133,18 @@ int System_GetVsync() {
 }
 
 void System_SetVsync(int newValue) {
-    scsystem.vsync = newValue;
+    if(stricmp(gfxDriver->GetDriverID(), "D3D9") != 0)
+        scsystem.vsync = newValue;
 }
 
 int System_GetWindowed() {
-    if (usetup.windowed)
-        return 1;
-    return 0;
+    return scsystem.windowed;
+}
+
+void System_SetWindowed(int windowed)
+{
+    if (windowed != scsystem.windowed)
+        engine_try_switch_windowed_gfxmode();
 }
 
 int System_GetSupportsGammaControl() {
@@ -130,7 +160,7 @@ void System_SetGamma(int newValue) {
         quitprintf("!System.Gamma: value must be between 0-200 (not %d)", newValue);
 
     if (play.gamma_adjustment != newValue) {
-        DEBUG_CONSOLE("Gamma control set to %d", newValue);
+        debug_script_log("Gamma control set to %d", newValue);
         play.gamma_adjustment = newValue;
 
         if (gfxDriver->SupportsGammaControl())
@@ -173,9 +203,26 @@ void System_SetVolume(int newvol)
     {
         if ((channels[i] != NULL) && (channels[i]->done == 0)) 
         {
-            channels[i]->set_volume(channels[i]->vol);
+            channels[i]->adjust_volume();
         }
     }
+}
+
+const char* System_GetRuntimeInfo()
+{
+    String runtimeInfo = GetRuntimeInfo();
+
+    return CreateNewScriptString(runtimeInfo.GetCStr());
+}
+
+int System_GetRenderAtScreenResolution()
+{
+    return usetup.RenderAtScreenRes;
+}
+
+void System_SetRenderAtScreenResolution(int enable)
+{
+    usetup.RenderAtScreenRes = enable != 0;
 }
 
 //=============================================================================
@@ -322,11 +369,33 @@ RuntimeScriptValue Sc_System_SetVsync(const RuntimeScriptValue *params, int32_t 
     API_SCALL_VOID_PINT(System_SetVsync);
 }
 
-// int ()
 RuntimeScriptValue Sc_System_GetWindowed(const RuntimeScriptValue *params, int32_t param_count)
 {
     API_SCALL_INT(System_GetWindowed);
 }
+
+RuntimeScriptValue Sc_System_SetWindowed(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_VOID_PINT(System_SetWindowed);
+}
+
+// const char *()
+RuntimeScriptValue Sc_System_GetRuntimeInfo(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_OBJ(const char, myScriptStringImpl, System_GetRuntimeInfo);
+}
+
+RuntimeScriptValue Sc_System_GetRenderAtScreenResolution(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_INT(System_GetRenderAtScreenResolution);
+}
+
+RuntimeScriptValue Sc_System_SetRenderAtScreenResolution(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_VOID_PINT(System_SetRenderAtScreenResolution);
+}
+
+
 
 
 void RegisterSystemAPI()
@@ -342,6 +411,9 @@ void RegisterSystemAPI()
     ccAddExternalStaticFunction("System::get_NumLock",              Sc_System_GetNumLock);
     ccAddExternalStaticFunction("System::set_NumLock",              Sc_System_SetNumLock);
     ccAddExternalStaticFunction("System::get_OperatingSystem",      Sc_System_GetOS);
+    ccAddExternalStaticFunction("System::get_RenderAtScreenResolution", Sc_System_GetRenderAtScreenResolution);
+    ccAddExternalStaticFunction("System::set_RenderAtScreenResolution", Sc_System_SetRenderAtScreenResolution);
+    ccAddExternalStaticFunction("System::get_RuntimeInfo",          Sc_System_GetRuntimeInfo);
     ccAddExternalStaticFunction("System::get_ScreenHeight",         Sc_System_GetScreenHeight);
     ccAddExternalStaticFunction("System::get_ScreenWidth",          Sc_System_GetScreenWidth);
     ccAddExternalStaticFunction("System::get_ScrollLock",           Sc_System_GetScrollLock);
@@ -355,6 +427,7 @@ void RegisterSystemAPI()
     ccAddExternalStaticFunction("System::get_VSync",                Sc_System_GetVsync);
     ccAddExternalStaticFunction("System::set_VSync",                Sc_System_SetVsync);
     ccAddExternalStaticFunction("System::get_Windowed",             Sc_System_GetWindowed);
+    ccAddExternalStaticFunction("System::set_Windowed",             Sc_System_SetWindowed);
 
     /* ----------------------- Registering unsafe exports for plugins -----------------------*/
 
@@ -368,6 +441,7 @@ void RegisterSystemAPI()
     ccAddExternalFunctionForPlugin("System::get_NumLock",              (void*)System_GetNumLock);
     ccAddExternalFunctionForPlugin("System::set_NumLock",              (void*)System_SetNumLock);
     ccAddExternalFunctionForPlugin("System::get_OperatingSystem",      (void*)System_GetOS);
+    ccAddExternalFunctionForPlugin("System::get_RuntimeInfo",          (void*)System_GetRuntimeInfo);
     ccAddExternalFunctionForPlugin("System::get_ScreenHeight",         (void*)System_GetScreenHeight);
     ccAddExternalFunctionForPlugin("System::get_ScreenWidth",          (void*)System_GetScreenWidth);
     ccAddExternalFunctionForPlugin("System::get_ScrollLock",           (void*)System_GetScrollLock);

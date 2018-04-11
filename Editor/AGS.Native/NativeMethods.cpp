@@ -7,23 +7,28 @@ Copyright (c) 2006-2010 Chris Jones
 The AGS Editor Source Code is provided under the Artistic License 2.0,
 see the license.txt for details.
 */
+#include "agsnative.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdlib.h>
 #include "NativeMethods.h"
-#include "util/string.h"
+#include "NativeUtils.h"
+#include "game/plugininfo.h"
+#include "util/multifilelib.h"
 
 using namespace System::Runtime::InteropServices;
 
 extern bool initialize_native();
 extern void shutdown_native();
-extern AGS::Types::Game^ load_old_game_dta_file(const char *fileName);
+extern AGS::Types::Game^ import_compiled_game_dta(const char *fileName);
 extern void free_old_game_data();
 extern AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad);
 extern void save_crm_file(Room ^roomToSave);
 extern const char* import_sci_font(const char*fnn,int fslot);
 extern bool reload_font(int curFont);
-extern void drawFontAt (int hdc, int fontnum, int x,int y);
+// Draws font char sheet on the provided context and returns the height of drawn object;
+// may be called with hdc = 0 to get required height without drawing anything
+extern int drawFontAt (int hdc, int fontnum, int x, int y, int width);
 extern Dictionary<int, Sprite^>^ load_sprite_dimensions();
 extern void drawGUI(int hdc, int x,int y, GUI^ gui, int scaleFactor, int selectedControl);
 extern void drawSprite(int hdc, int x,int y, int spriteNum, bool flipImage);
@@ -81,46 +86,38 @@ extern void transform_string(char *text);
 extern bool enable_greyed_out_masks;
 extern bool spritesModified;
 
-char editorVersionNumber[50];
+AGSString editorVersionNumber;
 
-void ConvertStringToCharArray(System::String^ clrString, char *textBuffer)
-{
-	char* stringPointer = (char*)Marshal::StringToHGlobalAnsi(clrString).ToPointer();
-	
-	strcpy(textBuffer, stringPointer);
-
-  Marshal::FreeHGlobal(IntPtr(stringPointer));
-}
-
-void ConvertFileNameToCharArray(System::String^ clrString, char *textBuffer)
-{
-  ConvertStringToCharArray(clrString, textBuffer);
-  if (strchr(textBuffer, '?') != NULL)
-  {
-    throw gcnew AGSEditorException(String::Format("Filename contains invalid unicode characters: {0}", clrString));
-  }
-}
-
-void ConvertStringToNativeString(System::String^ clrString, AGS::Common::String &destStr)
+AGSString ConvertStringToNativeString(System::String^ clrString)
 {
     char* stringPointer = (char*)Marshal::StringToHGlobalAnsi(clrString).ToPointer();
-
-    destStr = stringPointer;
-
+    AGSString str = stringPointer;
     Marshal::FreeHGlobal(IntPtr(stringPointer));
+    return str;
 }
 
-void ConvertStringToCharArray(System::String^ clrString, char *textBuffer, int maxLength)
+AGSString ConvertFileNameToNativeString(System::String^ clrString)
 {
-	if (clrString->Length >= maxLength) 
-	{
-		throw gcnew AGSEditorException(String::Format("String is too long: {0} (max length={1})", clrString, maxLength - 1));
-	}
-	char* stringPointer = (char*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(clrString).ToPointer();
-	
-	strcpy(textBuffer, stringPointer);
+    AGSString str = ConvertStringToNativeString(clrString);
+    if (str.FindChar('?') != -1)
+        throw gcnew AGSEditorException(String::Format("Filename contains invalid unicode characters: {0}", clrString));
+    return str;
+}
 
+void ConvertStringToCharArray(System::String^ clrString, char *buf, size_t buf_len)
+{
+    char* stringPointer = (char*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(clrString).ToPointer();
+    size_t ansi_len = min(strlen(stringPointer) + 1, buf_len);
+    memcpy(buf, stringPointer, ansi_len);
+    buf[ansi_len - 1] = 0;
     System::Runtime::InteropServices::Marshal::FreeHGlobal(IntPtr(stringPointer));
+}
+
+void ConvertFileNameToCharArray(System::String^ clrString, char *buf, size_t buf_len)
+{
+    ConvertStringToCharArray(clrString, buf, buf_len);
+    if (strchr(buf, '?') != NULL)
+        throw gcnew AGSEditorException(String::Format("Filename contains invalid unicode characters: {0}", clrString));
 }
 
 namespace AGS
@@ -130,7 +127,7 @@ namespace AGS
 		NativeMethods::NativeMethods(String ^editorVersion)
 		{
 			lastPaletteSet = nullptr;
-			ConvertStringToCharArray(editorVersion, editorVersionNumber);
+			editorVersionNumber = ConvertStringToNativeString(editorVersion);
 		}
 
 		void NativeMethods::Initialize()
@@ -182,9 +179,9 @@ namespace AGS
 			drawSprite(hDC, x, y, spriteNum, flipImage);
 		}
 
-		void NativeMethods::DrawFont(int hDC, int x, int y, int fontNum)
+		int NativeMethods::DrawFont(int hDC, int x, int y, int width, int fontNum)
 		{
-			drawFontAt(hDC, fontNum, x, y);
+			return drawFontAt(hDC, fontNum, x, y, width);
 		}
 
 		void NativeMethods::DrawSprite(int hDC, int x, int y, int width, int height, int spriteNum)
@@ -213,9 +210,8 @@ namespace AGS
 
 		void NativeMethods::ImportSCIFont(String ^fileName, int fontSlot) 
 		{
-			char fileNameBuf[MAX_PATH];
-      ConvertFileNameToCharArray(fileName, fileNameBuf);
-			const char *errorMsg = import_sci_font(fileNameBuf, fontSlot);
+			AGSString fileNameAnsi = ConvertFileNameToNativeString(fileName);
+			const char *errorMsg = import_sci_font(fileNameAnsi, fontSlot);
 			if (errorMsg != NULL) 
 			{
 				throw gcnew AGSEditorException(gcnew String(errorMsg));
@@ -407,11 +403,8 @@ namespace AGS
 
 		AGS::Types::Game^ NativeMethods::ImportOldGameFile(String^ fileName)
 		{
-			char fileNameBuf[MAX_PATH];
-			ConvertFileNameToCharArray(fileName, fileNameBuf);
-
-			Game ^game = load_old_game_dta_file(fileNameBuf);
-
+			AGSString fileNameAnsi = ConvertFileNameToNativeString(fileName);
+			Game ^game = import_compiled_game_dta(fileNameAnsi);
 			return game;
 		}
 
@@ -527,12 +520,11 @@ namespace AGS
 
     BaseTemplate^ NativeMethods::LoadTemplateFile(String ^fileName, bool isRoomTemplate)
     {
-      char fileNameBuf[MAX_PATH];
-			ConvertFileNameToCharArray(fileName, fileNameBuf);
+      AGSString fileNameAnsi = ConvertFileNameToNativeString(fileName);
       char *iconDataBuffer = NULL;
       long iconDataSize = 0;
 
-      int success = load_template_file(fileNameBuf, &iconDataBuffer, &iconDataSize, isRoomTemplate);
+      int success = load_template_file(fileNameAnsi, &iconDataBuffer, &iconDataSize, isRoomTemplate);
 			if (success) 
 			{
 				Icon ^icon = nullptr;
@@ -576,10 +568,8 @@ namespace AGS
 
 		void NativeMethods::ExtractTemplateFiles(String ^templateFileName) 
 		{
-			char fileNameBuf[MAX_PATH];
-			ConvertFileNameToCharArray(templateFileName, fileNameBuf);
-
-			if (!extract_template_files(fileNameBuf))
+			AGSString fileNameAnsi = ConvertFileNameToNativeString(templateFileName);
+			if (!extract_template_files(fileNameAnsi))
 			{
 				throw gcnew AGSEditorException("Unable to extract template files.");
 			}
@@ -587,10 +577,9 @@ namespace AGS
 
 		void NativeMethods::ExtractRoomTemplateFiles(String ^templateFileName, int newRoomNumber) 
 		{
-			char fileNameBuf[MAX_PATH];
-			ConvertFileNameToCharArray(templateFileName, fileNameBuf);
+			AGSString fileNameAnsi = ConvertFileNameToNativeString(templateFileName);
 
-			if (!extract_room_template_files(fileNameBuf, newRoomNumber))
+			if (!extract_room_template_files(fileNameAnsi, newRoomNumber))
 			{
 				throw gcnew AGSEditorException("Unable to extract template files.");
 			}
@@ -621,5 +610,135 @@ namespace AGS
 		{
 			return spritesModified;
 		}
+
+        /// <summary>
+        /// Allows the Editor to reuse constants from the native code. If a constant required by the Editor
+        /// is not also required by the Engine, then it should instead by moved into AGS.Types (AGS.Native
+        /// references the AGS.Types assembly). Note that this method returns only System::Int32 and
+        /// System::String objects -- it is up to the user to determine if the value should be used as a
+        /// smaller integral type (additional casting may be required to cast to a non-int integral type).
+        /// </summary>
+        Object^ NativeMethods::GetNativeConstant(String ^name)
+        {
+            if (name == nullptr) return nullptr;
+            if (name->Equals("GAME_FILE_SIG")) return gcnew String(game_file_sig);
+            if (name->Equals("GAME_DATA_VERSION_CURRENT")) return (int)kGameVersion_Current;
+            if (name->Equals("MAX_GUID_LENGTH")) return MAX_GUID_LENGTH;
+            if (name->Equals("MAX_SG_EXT_LENGTH")) return MAX_SG_EXT_LENGTH;
+            if (name->Equals("MAX_SG_FOLDER_LEN")) return MAX_SG_FOLDER_LEN;
+            if (name->Equals("MAX_SCRIPT_NAME_LEN")) return MAX_SCRIPT_NAME_LEN;
+            if (name->Equals("FFLG_SIZEMASK")) return FFLG_SIZEMASK;
+            if (name->Equals("IFLG_STARTWITH")) return IFLG_STARTWITH;
+            if (name->Equals("MCF_ANIMMOVE")) return MCF_ANIMMOVE;
+            if (name->Equals("MCF_STANDARD")) return MCF_STANDARD;
+            if (name->Equals("MCF_HOTSPOT")) return MCF_HOTSPOT;
+            if (name->Equals("CHF_MANUALSCALING")) return CHF_MANUALSCALING;
+            if (name->Equals("CHF_NOINTERACT")) return CHF_NOINTERACT;
+            if (name->Equals("CHF_NODIAGONAL")) return CHF_NODIAGONAL;
+            if (name->Equals("CHF_NOLIGHTING")) return CHF_NOLIGHTING;
+            if (name->Equals("CHF_NOTURNING")) return CHF_NOTURNING;
+            if (name->Equals("CHF_NOBLOCKING")) return CHF_NOBLOCKING;
+            if (name->Equals("CHF_SCALEMOVESPEED")) return CHF_SCALEMOVESPEED;
+            if (name->Equals("CHF_SCALEVOLUME")) return CHF_SCALEVOLUME;
+            if (name->Equals("CHF_ANTIGLIDE")) return CHF_ANTIGLIDE;
+            if (name->Equals("DFLG_ON")) return DFLG_ON;
+            if (name->Equals("DFLG_NOREPEAT")) return DFLG_NOREPEAT;
+            if (name->Equals("DTFLG_SHOWPARSER")) return DTFLG_SHOWPARSER;
+            if (name->Equals("FONT_OUTLINE_AUTO")) return FONT_OUTLINE_AUTO;
+            if (name->Equals("MAX_FONTS")) return MAX_FONTS;
+            if (name->Equals("MAX_SPRITES")) return MAX_SPRITES;
+            if (name->Equals("MAX_CURSOR")) return MAX_CURSOR;
+            if (name->Equals("MAX_PARSER_WORD_LENGTH")) return MAX_PARSER_WORD_LENGTH;
+            if (name->Equals("MAX_INV")) return MAX_INV;
+            if (name->Equals("MAXLIPSYNCFRAMES")) return MAXLIPSYNCFRAMES;
+            if (name->Equals("MAXGLOBALMES")) return MAXGLOBALMES;
+            if (name->Equals("MAXTOPICOPTIONS")) return MAXTOPICOPTIONS;
+            if (name->Equals("UNIFORM_WALK_SPEED")) return UNIFORM_WALK_SPEED;
+            if (name->Equals("GAME_RESOLUTION_CUSTOM")) return (int)kGameResolution_Custom;
+            if (name->Equals("MAXMULTIFILES")) return MAXMULTIFILES;
+            if (name->Equals("RAND_SEED_SALT")) return Common::MFLUtil::EncryptionRandSeed;
+            if (name->Equals("CHUNKSIZE")) return CHUNKSIZE;
+            if (name->Equals("CLIB_END_SIGNATURE")) return gcnew String(Common::MFLUtil::TailSig);
+            if (name->Equals("MAX_FILENAME_LENGTH")) return MAX_FILENAME_LENGTH;
+            if (name->Equals("SPRSET_NAME")) return gcnew String(sprsetname);
+            if (name->Equals("SPF_640x400")) return SPF_640x400;
+            if (name->Equals("SPF_ALPHACHANNEL")) return SPF_ALPHACHANNEL;
+            if (name->Equals("PASSWORD_ENC_STRING"))
+            {
+                int len = (int)strlen(passwencstring);
+                array<System::Byte>^ bytes = gcnew array<System::Byte>(len);
+                System::Runtime::InteropServices::Marshal::Copy( IntPtr( ( char* ) passwencstring ), bytes, 0, len );
+                return bytes;
+            }
+            if (name->Equals("LOOPFLAG_RUNNEXTLOOP")) return LOOPFLAG_RUNNEXTLOOP;
+            if (name->Equals("VFLG_FLIPSPRITE")) return VFLG_FLIPSPRITE;
+            if (name->Equals("GUIMAGIC")) return GUIMAGIC;
+            if (name->Equals("SAVEBUFFERSIZE")) return PLUGIN_SAVEBUFFERSIZE;
+            if (name->Equals("GUIMAIN_NOCLICK")) return (int)Common::kGUIMain_NoClick;
+            if (name->Equals("GUIF_CLIP")) return GUIF_CLIP;
+            if (name->Equals("GUIF_TRANSLATED")) return GUIF_TRANSLATED;
+            if (name->Equals("GLF_NOBORDER")) return GLF_NOBORDER;
+            if (name->Equals("GLF_NOARROWS")) return GLF_NOARROWS;
+            if (name->Equals("GUI_POPUP_MODAL")) return (int)Common::kGUIPopupModal;
+            if (name->Equals("GUIMAIN_TEXTWINDOW")) return (int)Common::kGUIMain_TextWindow;
+            if (name->Equals("GUIMAIN_LEGACYTEXTWINDOW")) return (int)Common::kGUIMain_LegacyTextWindow;
+            if (name->Equals("GTF_NOBORDER")) return GTF_NOBORDER;
+            if (name->Equals("MAX_GUILABEL_TEXT_LEN")) return MAX_GUILABEL_TEXT_LEN;
+            if (name->Equals("GOBJ_BUTTON")) return (int)Common::kGUIButton;
+            if (name->Equals("GOBJ_LABEL")) return (int)Common::kGUILabel;
+            if (name->Equals("GOBJ_INVENTORY")) return (int)Common::kGUIInvWindow;
+            if (name->Equals("GOBJ_SLIDER")) return (int)Common::kGUISlider;
+            if (name->Equals("GOBJ_TEXTBOX")) return (int)Common::kGUITextBox;
+            if (name->Equals("GOBJ_LISTBOX")) return (int)Common::kGUIListBox;
+            if (name->Equals("TEXTWINDOW_PADDING_DEFAULT")) return TEXTWINDOW_PADDING_DEFAULT;
+            if (name->Equals("GUI_VERSION_CURRENT")) return (int)kGuiVersion_Current;
+            if (name->Equals("CUSTOM_PROPERTY_SCHEMA_VERSION")) return (int)AGS::Common::kPropertyVersion_Current;
+            if (name->Equals("OPT_DEBUGMODE")) return OPT_DEBUGMODE;
+            if (name->Equals("OPT_WALKONLOOK")) return OPT_WALKONLOOK;
+            if (name->Equals("OPT_DIALOGIFACE")) return OPT_DIALOGIFACE;
+            if (name->Equals("OPT_ANTIGLIDE")) return OPT_ANTIGLIDE;
+            if (name->Equals("OPT_TWCUSTOM")) return OPT_TWCUSTOM;
+            if (name->Equals("OPT_DIALOGGAP")) return OPT_DIALOGGAP;
+            if (name->Equals("OPT_NOSKIPTEXT")) return OPT_NOSKIPTEXT;
+            if (name->Equals("OPT_DISABLEOFF")) return OPT_DISABLEOFF;
+            if (name->Equals("OPT_ALWAYSSPCH")) return OPT_ALWAYSSPCH;
+            if (name->Equals("OPT_SPEECHTYPE")) return OPT_SPEECHTYPE;
+            if (name->Equals("OPT_PIXPERFECT")) return OPT_PIXPERFECT;
+            if (name->Equals("OPT_NOWALKMODE")) return OPT_NOWALKMODE;
+            if (name->Equals("OPT_LETTERBOX")) return OPT_LETTERBOX;
+            if (name->Equals("OPT_FIXEDINVCURSOR")) return OPT_FIXEDINVCURSOR;
+            if (name->Equals("OPT_NOSCALEFNT")) return OPT_NOSCALEFNT;
+            if (name->Equals("OPT_SPLITRESOURCES")) return OPT_SPLITRESOURCES;
+            if (name->Equals("OPT_ROTATECHARS")) return OPT_ROTATECHARS;
+            if (name->Equals("OPT_FADETYPE")) return OPT_FADETYPE;
+            if (name->Equals("OPT_HANDLEINVCLICKS")) return OPT_HANDLEINVCLICKS;
+            if (name->Equals("OPT_MOUSEWHEEL")) return OPT_MOUSEWHEEL;
+            if (name->Equals("OPT_DIALOGNUMBERED")) return OPT_DIALOGNUMBERED;
+            if (name->Equals("OPT_DIALOGUPWARDS")) return OPT_DIALOGUPWARDS;
+            if (name->Equals("OPT_ANTIALIASFONTS")) return OPT_ANTIALIASFONTS;
+            if (name->Equals("OPT_THOUGHTGUI")) return OPT_THOUGHTGUI;
+            if (name->Equals("OPT_TURNTOFACELOC")) return OPT_TURNTOFACELOC;
+            if (name->Equals("OPT_RIGHTLEFTWRITE")) return OPT_RIGHTLEFTWRITE;
+            if (name->Equals("OPT_DUPLICATEINV")) return OPT_DUPLICATEINV;
+            if (name->Equals("OPT_SAVESCREENSHOT")) return OPT_SAVESCREENSHOT;
+            if (name->Equals("OPT_PORTRAITSIDE")) return OPT_PORTRAITSIDE;
+            if (name->Equals("OPT_STRICTSCRIPTING")) return OPT_STRICTSCRIPTING;
+            if (name->Equals("OPT_LEFTTORIGHTEVAL")) return OPT_LEFTTORIGHTEVAL;
+            if (name->Equals("OPT_COMPRESSSPRITES")) return OPT_COMPRESSSPRITES;
+            if (name->Equals("OPT_STRICTSTRINGS")) return OPT_STRICTSTRINGS;
+            if (name->Equals("OPT_NEWGUIALPHA")) return OPT_NEWGUIALPHA;
+            if (name->Equals("OPT_RUNGAMEDLGOPTS")) return OPT_RUNGAMEDLGOPTS;
+            if (name->Equals("OPT_NATIVECOORDINATES")) return OPT_NATIVECOORDINATES;
+            if (name->Equals("OPT_GLOBALTALKANIMSPD")) return OPT_GLOBALTALKANIMSPD;
+            if (name->Equals("OPT_SPRITEALPHA")) return OPT_SPRITEALPHA;
+            if (name->Equals("OPT_SAFEFILEPATHS")) return OPT_SAFEFILEPATHS;
+            if (name->Equals("OPT_DIALOGOPTIONSAPI")) return OPT_DIALOGOPTIONSAPI;
+            if (name->Equals("OPT_BASESCRIPTAPI")) return OPT_BASESCRIPTAPI;
+            if (name->Equals("OPT_SCRIPTCOMPATLEV")) return OPT_SCRIPTCOMPATLEV;
+            if (name->Equals("OPT_RENDERATSCREENRES")) return OPT_RENDERATSCREENRES;
+            if (name->Equals("OPT_LIPSYNCTEXT")) return OPT_LIPSYNCTEXT;
+			if (name->Equals("MAX_PLUGINS")) return MAX_PLUGINS;
+            return nullptr;
+        }
 	}
 }

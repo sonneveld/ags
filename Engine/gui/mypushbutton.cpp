@@ -14,7 +14,6 @@
 
 #include <string.h>
 #include "util/wgt2allg.h"
-#include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "ac/mouse.h"
 #include "ac/record.h"
@@ -34,7 +33,7 @@ extern int windowbackgroundcolor, pushbuttondarkcolor;
 extern int pushbuttonlightcolor;
 extern int cbuttfont;
 
-MyPushButton::MyPushButton(int xx, int yy, int wi, int hi, char *tex)
+MyPushButton::MyPushButton(int xx, int yy, int wi, int hi, const char *tex)
 {                             //wlevel=2;
     x = xx;
     y = yy;
@@ -80,7 +79,7 @@ int MyPushButton::pressedon()
     while (mbutrelease(LEFT) == 0) {
         timerloop = 0;
         wasstat = state;
-        next_iteration();
+        NextIteration();
         state = mouseisinarea();
         // stop mp3 skipping if button held down
         update_polled_stuff_if_runtime();
@@ -92,7 +91,7 @@ int MyPushButton::pressedon()
 
         //      domouse(0);
 
-        refresh_screen();
+        refresh_gui_screen();
 
         while (timerloop == 0) ;
     }

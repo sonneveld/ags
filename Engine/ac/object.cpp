@@ -13,7 +13,6 @@
 //=============================================================================
 
 #include "ac/object.h"
-#include "gfx/ali3d.h"
 #include "ac/common.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/draw.h"
@@ -27,17 +26,18 @@
 #include "ac/roomstruct.h"
 #include "ac/runtime_defines.h"
 #include "ac/string.h"
+#include "ac/system.h"
 #include "ac/walkablearea.h"
 #include "debug/debug_log.h"
 #include "main/game_run.h"
 #include "ac/route_finder.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
-#include "gfx/gfx_util.h"
+#include "gfx/gfx_def.h"
 #include "script/runtimescriptvalue.h"
 #include "ac/dynobj/cc_object.h"
 
-using AGS::Common::Bitmap;
+using namespace AGS::Common;
 
 
 extern ScriptObject scrObj[MAX_INIT_SPR];
@@ -45,7 +45,6 @@ extern RoomStatus*croom;
 extern RoomObject*objs;
 extern roomstruct thisroom;
 extern ObjectCache objcache[MAX_INIT_SPR];
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
 extern MoveList *mls;
 extern GameSetupStruct game;
 extern Bitmap *walkable_areas_temp;
@@ -90,7 +89,7 @@ int Object_GetTransparency(ScriptObject *objj) {
     if (!is_valid_object(objj->id))
         quit("!Object.Transparent: invalid object number specified");
 
-    return GfxUtil::LegacyTrans255ToTrans100(objs[objj->id].transparent);
+    return GfxDef::LegacyTrans255ToTrans100(objs[objj->id].transparent);
 }
 
 void Object_SetBaseline(ScriptObject *objj, int basel) {
@@ -195,6 +194,57 @@ int Object_GetMoving(ScriptObject *objj) {
     return IsObjectMoving(objj->id);
 }
 
+bool Object_HasExplicitLight(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_light();
+}
+
+bool Object_HasExplicitTint(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_tint();
+}
+
+int Object_GetLightLevel(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_light() ? objs[obj->id].tint_light : 0;
+}
+
+void Object_SetLightLevel(ScriptObject *objj, int light_level)
+{
+    int obj = objj->id;
+    if (!is_valid_object(obj))
+        quit("!SetObjectTint: invalid object number specified");
+
+    objs[obj].tint_light = light_level;
+    objs[obj].flags &= ~OBJF_HASTINT;
+    objs[obj].flags |= OBJF_HASLIGHT;
+}
+
+int Object_GetTintRed(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_tint() ? objs[obj->id].tint_r : 0;
+}
+
+int Object_GetTintGreen(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_tint() ? objs[obj->id].tint_g : 0;
+}
+
+int Object_GetTintBlue(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_tint() ? objs[obj->id].tint_b : 0;
+}
+
+int Object_GetTintSaturation(ScriptObject *obj)
+{
+     return objs[obj->id].has_explicit_tint() ? objs[obj->id].tint_level : 0;
+}
+
+int Object_GetTintLuminance(ScriptObject *obj)
+{
+    return objs[obj->id].has_explicit_tint() ? ((objs[obj->id].tint_light * 10) / 25) : 0;
+}
+
 void Object_SetPosition(ScriptObject *objj, int xx, int yy) {
     SetObjectPosition(objj->id, xx, yy);
 }
@@ -218,6 +268,15 @@ const char* Object_GetName_New(ScriptObject *objj) {
     return CreateNewScriptString(get_translation(thisroom.objectnames[objj->id]));
 }
 
+bool Object_IsInteractionAvailable(ScriptObject *oobj, int mood) {
+
+    play.check_interaction_only = 1;
+    RunObjectInteraction(oobj->id, mood);
+    int ciwas = play.check_interaction_only;
+    play.check_interaction_only = 0;
+    return (ciwas == 2);
+}
+
 void Object_Move(ScriptObject *objj, int x, int y, int speed, int blocking, int direct) {
     if ((direct == ANYWHERE) || (direct == 1))
         direct = 1;
@@ -229,7 +288,7 @@ void Object_Move(ScriptObject *objj, int x, int y, int speed, int blocking, int 
     move_object(objj->id, x, y, speed, direct);
 
     if ((blocking == BLOCKING) || (blocking == 1))
-        do_main_cycle(UNTIL_SHORTIS0,(long)&objs[objj->id].moving);
+        GameLoopUntilEvent(UNTIL_SHORTIS0,(long)&objs[objj->id].moving);
     else if ((blocking != IN_BACKGROUND) && (blocking != 0))
         quit("Object.Move: invalid BLOCKING paramter");
 }
@@ -326,7 +385,7 @@ void move_object(int objj,int tox,int toy,int spee,int ignwal) {
         return;
     }
 
-    DEBUG_CONSOLE("Object %d start move to %d,%d", objj, tox, toy);
+    debug_script_log("Object %d start move to %d,%d", objj, tox, toy);
 
     int objX = convert_to_low_res(objs[objj].x);
     int objY = convert_to_low_res(objs[objj].y);
@@ -336,7 +395,7 @@ void move_object(int objj,int tox,int toy,int spee,int ignwal) {
     set_route_move_speed(spee, spee);
     set_color_depth(8);
     int mslot=find_route(objX, objY, tox, toy, prepare_walkable_areas(-1), objj+1, 1, ignwal);
-    set_color_depth(final_col_dep);
+    set_color_depth(System_GetColorDepth());
     if (mslot>0) {
         objs[objj].moving = mslot;
         mls[mslot].direct = ignwal;
@@ -360,8 +419,20 @@ int Object_GetProperty (ScriptObject *objj, const char *property) {
 void Object_GetPropertyText(ScriptObject *objj, const char *property, char *bufer) {
     GetObjectPropertyText(objj->id, property, bufer);
 }
-const char* Object_GetTextProperty(ScriptObject *objj, const char *property) {
-    return get_text_property_dynamic_string(&thisroom.objProps[objj->id], property);
+
+const char* Object_GetTextProperty(ScriptObject *objj, const char *property)
+{
+    return get_text_property_dynamic_string(thisroom.objProps[objj->id], croom->objProps[objj->id], property);
+}
+
+bool Object_SetProperty(ScriptObject *objj, const char *property, int value)
+{
+    return set_int_property(croom->objProps[objj->id], property, value);
+}
+
+bool Object_SetTextProperty(ScriptObject *objj, const char *property, const char *value)
+{
+    return set_text_property(croom->objProps[objj->id], property, value);
 }
 
 void get_object_blocking_rect(int objid, int *x1, int *y1, int *width, int *y2) {
@@ -500,10 +571,25 @@ RuntimeScriptValue Sc_Object_GetTextProperty(void *self, const RuntimeScriptValu
     API_OBJCALL_OBJ_POBJ(ScriptObject, const char, myScriptStringImpl, Object_GetTextProperty, const char);
 }
 
+RuntimeScriptValue Sc_Object_SetProperty(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL_POBJ_PINT(ScriptObject, Object_SetProperty, const char);
+}
+
+RuntimeScriptValue Sc_Object_SetTextProperty(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL_POBJ2(ScriptObject, Object_SetTextProperty, const char, const char);
+}
+
 // void (ScriptObject *objj)
 RuntimeScriptValue Sc_Object_MergeIntoBackground(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
     API_OBJCALL_VOID(ScriptObject, Object_MergeIntoBackground);
+}
+
+RuntimeScriptValue Sc_Object_IsInteractionAvailable(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL_PINT(ScriptObject, Object_IsInteractionAvailable);
 }
 
 // void (ScriptObject *objj, int x, int y, int speed, int blocking, int direct)
@@ -522,6 +608,51 @@ RuntimeScriptValue Sc_Object_RemoveTint(void *self, const RuntimeScriptValue *pa
 RuntimeScriptValue Sc_Object_RunInteraction(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
     API_OBJCALL_VOID_PINT(ScriptObject, Object_RunInteraction);
+}
+
+RuntimeScriptValue Sc_Object_HasExplicitLight(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL(ScriptObject, Object_HasExplicitLight);
+}
+
+RuntimeScriptValue Sc_Object_HasExplicitTint(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL(ScriptObject, Object_HasExplicitTint);
+}
+
+RuntimeScriptValue Sc_Object_GetLightLevel(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptObject, Object_GetLightLevel);
+}
+
+RuntimeScriptValue Sc_Object_SetLightLevel(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT(ScriptObject, Object_SetLightLevel);
+}
+
+RuntimeScriptValue Sc_Object_GetTintBlue(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptObject, Object_GetTintBlue);
+}
+
+RuntimeScriptValue Sc_Object_GetTintGreen(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptObject, Object_GetTintGreen);
+}
+
+RuntimeScriptValue Sc_Object_GetTintRed(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptObject, Object_GetTintRed);
+}
+
+RuntimeScriptValue Sc_Object_GetTintSaturation(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptObject, Object_GetTintSaturation);
+}
+
+RuntimeScriptValue Sc_Object_GetTintLuminance(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptObject, Object_GetTintLuminance);
 }
 
 // void (ScriptObject *objj, int xx, int yy)
@@ -756,10 +887,14 @@ void RegisterObjectAPI()
     ccAddExternalObjectFunction("Object::GetProperty^1",            Sc_Object_GetProperty);
     ccAddExternalObjectFunction("Object::GetPropertyText^2",        Sc_Object_GetPropertyText);
     ccAddExternalObjectFunction("Object::GetTextProperty^1",        Sc_Object_GetTextProperty);
+    ccAddExternalObjectFunction("Object::SetProperty^2",            Sc_Object_SetProperty);
+    ccAddExternalObjectFunction("Object::SetTextProperty^2",        Sc_Object_SetTextProperty);
+    ccAddExternalObjectFunction("Object::IsInteractionAvailable^1", Sc_Object_IsInteractionAvailable);
     ccAddExternalObjectFunction("Object::MergeIntoBackground^0",    Sc_Object_MergeIntoBackground);
     ccAddExternalObjectFunction("Object::Move^5",                   Sc_Object_Move);
     ccAddExternalObjectFunction("Object::RemoveTint^0",             Sc_Object_RemoveTint);
     ccAddExternalObjectFunction("Object::RunInteraction^1",         Sc_Object_RunInteraction);
+    ccAddExternalObjectFunction("Object::SetLightLevel^1",          Sc_Object_SetLightLevel);
     ccAddExternalObjectFunction("Object::SetPosition^2",            Sc_Object_SetPosition);
     ccAddExternalObjectFunction("Object::SetView^3",                Sc_Object_SetView);
     ccAddExternalObjectFunction("Object::StopAnimating^0",          Sc_Object_StopAnimating);
@@ -800,6 +935,16 @@ void RegisterObjectAPI()
     ccAddExternalObjectFunction("Object::set_X",                    Sc_Object_SetX);
     ccAddExternalObjectFunction("Object::get_Y",                    Sc_Object_GetY);
     ccAddExternalObjectFunction("Object::set_Y",                    Sc_Object_SetY);
+
+    ccAddExternalObjectFunction("Object::get_HasExplicitLight",     Sc_Object_HasExplicitLight);
+    ccAddExternalObjectFunction("Object::get_HasExplicitTint",      Sc_Object_HasExplicitTint);
+    ccAddExternalObjectFunction("Object::get_LightLevel",           Sc_Object_GetLightLevel);
+    ccAddExternalObjectFunction("Object::set_LightLevel",           Sc_Object_SetLightLevel);
+    ccAddExternalObjectFunction("Object::get_TintBlue",             Sc_Object_GetTintBlue);
+    ccAddExternalObjectFunction("Object::get_TintGreen",            Sc_Object_GetTintGreen);
+    ccAddExternalObjectFunction("Object::get_TintRed",              Sc_Object_GetTintRed);
+    ccAddExternalObjectFunction("Object::get_TintSaturation",       Sc_Object_GetTintSaturation);
+    ccAddExternalObjectFunction("Object::get_TintLuminance",        Sc_Object_GetTintLuminance);
 
     /* ----------------------- Registering unsafe exports for plugins -----------------------*/
 

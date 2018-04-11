@@ -14,6 +14,7 @@
 
 #include "ac/button.h"
 #include "ac/common.h"
+#include "ac/gui.h"
 #include "ac/view.h"
 #include "ac/gamesetupstruct.h"
 #include "ac/global_translation.h"
@@ -25,7 +26,6 @@
 
 extern GameSetupStruct game;
 extern ViewStruct*views;
-extern GUIMain*guis;
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
 
 // *** BUTTON FUNCTIONS
@@ -50,7 +50,7 @@ void Button_Animate(GUIButton *butt, int view, int loop, int speed, int repeat) 
     if (numAnimButs >= MAX_ANIMATING_BUTTONS)
         quit("!AnimateButton: too many animating GUI buttons at once");
 
-    int buttonId = guis[guin].objrefptr[objn] & 0x000ffff;
+    int buttonId = guis[guin].CtrlRefs[objn] & 0x000ffff;
 
     guibuts[buttonId].pushedpic = 0;
     guibuts[buttonId].overpic = 0;
@@ -128,7 +128,7 @@ int Button_GetMouseOverGraphic(GUIButton *butt) {
 }
 
 void Button_SetMouseOverGraphic(GUIButton *guil, int slotn) {
-    DEBUG_CONSOLE("GUI %d Button %d mouseover set to slot %d", guil->guin, guil->objn, slotn);
+    debug_script_log("GUI %d Button %d mouseover set to slot %d", guil->guin, guil->objn, slotn);
 
     if ((guil->isover != 0) && (guil->ispushed == 0))
         guil->usepic = slotn;
@@ -143,7 +143,7 @@ int Button_GetNormalGraphic(GUIButton *butt) {
 }
 
 void Button_SetNormalGraphic(GUIButton *guil, int slotn) {
-    DEBUG_CONSOLE("GUI %d Button %d normal set to slot %d", guil->guin, guil->objn, slotn);
+    debug_script_log("GUI %d Button %d normal set to slot %d", guil->guin, guil->objn, slotn);
     // normal pic - update if mouse is not over, or if there's no overpic
     if (((guil->isover == 0) || (guil->overpic < 1)) && (guil->ispushed == 0))
         guil->usepic = slotn;
@@ -161,7 +161,7 @@ int Button_GetPushedGraphic(GUIButton *butt) {
 }
 
 void Button_SetPushedGraphic(GUIButton *guil, int slotn) {
-    DEBUG_CONSOLE("GUI %d Button %d pushed set to slot %d", guil->guin, guil->objn, slotn);
+    debug_script_log("GUI %d Button %d pushed set to slot %d", guil->guin, guil->objn, slotn);
 
     if (guil->ispushed)
         guil->usepic = slotn;
@@ -235,17 +235,56 @@ void StopButtonAnimation(int idxn) {
     }
 }
 
-void FindAndRemoveButtonAnimation(int guin, int objn) {
-
-    for (int ii = 0; ii < numAnimButs; ii++) {
-        if ((animbuts[ii].ongui == guin) && (animbuts[ii].onguibut == objn)) {
-            StopButtonAnimation(ii);
-            ii--;
-        }
-
+// Returns the index of the AnimatingGUIButton object corresponding to the
+// given button ID; returns -1 if no such animation exists
+int FindAnimatedButton(int guin, int objn)
+{
+    for (int i = 0; i < numAnimButs; ++i)
+    {
+        if (animbuts[i].ongui == guin && animbuts[i].onguibut == objn)
+            return i;
     }
+    return -1;
+}
+
+void FindAndRemoveButtonAnimation(int guin, int objn)
+{
+    int idx = FindAnimatedButton(guin, objn);
+    if (idx >= 0)
+        StopButtonAnimation(idx);
 }
 // ** end animating buttons code
+
+void Button_Click(GUIButton *butt, int mbut)
+{
+    process_interface_click(butt->guin, butt->objn, mbut);
+}
+
+bool Button_IsAnimating(GUIButton *butt)
+{
+    return FindAnimatedButton(butt->guin, butt->objn) >= 0;
+}
+
+// NOTE: in correspondance to similar functions for Character & Object,
+// GetView returns (view index + 1), while GetLoop and GetFrame return
+// zero-based index and 0 in case of no animation.
+int Button_GetAnimView(GUIButton *butt)
+{
+    int idx = FindAnimatedButton(butt->guin, butt->objn);
+    return idx >= 0 ? animbuts[idx].view + 1 : 0;
+}
+
+int Button_GetAnimLoop(GUIButton *butt)
+{
+    int idx = FindAnimatedButton(butt->guin, butt->objn);
+    return idx >= 0 ? animbuts[idx].loop : 0;
+}
+
+int Button_GetAnimFrame(GUIButton *butt)
+{
+    int idx = FindAnimatedButton(butt->guin, butt->objn);
+    return idx >= 0 ? animbuts[idx].frame : 0;
+}
 
 //=============================================================================
 //
@@ -362,26 +401,56 @@ RuntimeScriptValue Sc_Button_SetTextColor(void *self, const RuntimeScriptValue *
     API_OBJCALL_VOID_PINT(GUIButton, Button_SetTextColor);
 }
 
+RuntimeScriptValue Sc_Button_Click(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT(GUIButton, Button_Click);
+}
+
+RuntimeScriptValue Sc_Button_GetAnimating(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL(GUIButton, Button_IsAnimating);
+}
+
+RuntimeScriptValue Sc_Button_GetFrame(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(GUIButton, Button_GetAnimFrame);
+}
+
+RuntimeScriptValue Sc_Button_GetLoop(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(GUIButton, Button_GetAnimLoop);
+}
+
+RuntimeScriptValue Sc_Button_GetView(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(GUIButton, Button_GetAnimView);
+}
+
 void RegisterButtonAPI()
 {
     ccAddExternalObjectFunction("Button::Animate^4",            Sc_Button_Animate);
-	ccAddExternalObjectFunction("Button::GetText^1",            Sc_Button_GetText);
-	ccAddExternalObjectFunction("Button::SetText^1",            Sc_Button_SetText);
-	ccAddExternalObjectFunction("Button::get_ClipImage",        Sc_Button_GetClipImage);
-	ccAddExternalObjectFunction("Button::set_ClipImage",        Sc_Button_SetClipImage);
-	ccAddExternalObjectFunction("Button::get_Font",             Sc_Button_GetFont);
-	ccAddExternalObjectFunction("Button::set_Font",             Sc_Button_SetFont);
-	ccAddExternalObjectFunction("Button::get_Graphic",          Sc_Button_GetGraphic);
-	ccAddExternalObjectFunction("Button::get_MouseOverGraphic", Sc_Button_GetMouseOverGraphic);
-	ccAddExternalObjectFunction("Button::set_MouseOverGraphic", Sc_Button_SetMouseOverGraphic);
-	ccAddExternalObjectFunction("Button::get_NormalGraphic",    Sc_Button_GetNormalGraphic);
-	ccAddExternalObjectFunction("Button::set_NormalGraphic",    Sc_Button_SetNormalGraphic);
-	ccAddExternalObjectFunction("Button::get_PushedGraphic",    Sc_Button_GetPushedGraphic);
-	ccAddExternalObjectFunction("Button::set_PushedGraphic",    Sc_Button_SetPushedGraphic);
-	ccAddExternalObjectFunction("Button::get_Text",             Sc_Button_GetText_New);
-	ccAddExternalObjectFunction("Button::set_Text",             Sc_Button_SetText);
-	ccAddExternalObjectFunction("Button::get_TextColor",        Sc_Button_GetTextColor);
-	ccAddExternalObjectFunction("Button::set_TextColor",        Sc_Button_SetTextColor);
+    ccAddExternalObjectFunction("Button::Click^1",              Sc_Button_Click);
+    ccAddExternalObjectFunction("Button::GetText^1",            Sc_Button_GetText);
+    ccAddExternalObjectFunction("Button::SetText^1",            Sc_Button_SetText);
+    ccAddExternalObjectFunction("Button::get_Animating",        Sc_Button_GetAnimating);
+    ccAddExternalObjectFunction("Button::get_ClipImage",        Sc_Button_GetClipImage);
+    ccAddExternalObjectFunction("Button::set_ClipImage",        Sc_Button_SetClipImage);
+    ccAddExternalObjectFunction("Button::get_Font",             Sc_Button_GetFont);
+    ccAddExternalObjectFunction("Button::set_Font",             Sc_Button_SetFont);
+    ccAddExternalObjectFunction("Button::get_Frame",            Sc_Button_GetFrame);
+    ccAddExternalObjectFunction("Button::get_Graphic",          Sc_Button_GetGraphic);
+    ccAddExternalObjectFunction("Button::get_Loop",             Sc_Button_GetLoop);
+    ccAddExternalObjectFunction("Button::get_MouseOverGraphic", Sc_Button_GetMouseOverGraphic);
+    ccAddExternalObjectFunction("Button::set_MouseOverGraphic", Sc_Button_SetMouseOverGraphic);
+    ccAddExternalObjectFunction("Button::get_NormalGraphic",    Sc_Button_GetNormalGraphic);
+    ccAddExternalObjectFunction("Button::set_NormalGraphic",    Sc_Button_SetNormalGraphic);
+    ccAddExternalObjectFunction("Button::get_PushedGraphic",    Sc_Button_GetPushedGraphic);
+    ccAddExternalObjectFunction("Button::set_PushedGraphic",    Sc_Button_SetPushedGraphic);
+    ccAddExternalObjectFunction("Button::get_Text",             Sc_Button_GetText_New);
+    ccAddExternalObjectFunction("Button::set_Text",             Sc_Button_SetText);
+    ccAddExternalObjectFunction("Button::get_TextColor",        Sc_Button_GetTextColor);
+    ccAddExternalObjectFunction("Button::set_TextColor",        Sc_Button_SetTextColor);
+    ccAddExternalObjectFunction("Button::get_View",             Sc_Button_GetView);
 
     /* ----------------------- Registering unsafe exports for plugins -----------------------*/
 

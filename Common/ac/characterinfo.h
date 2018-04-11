@@ -39,6 +39,7 @@ using namespace AGS; // FIXME later
 #define CHF_AWAITINGMOVE    0x8000   // engine only
 #define CHF_MOVENOTWALK     0x10000   // engine only - do not do walk anim
 #define CHF_ANTIGLIDE       0x20000
+#define CHF_HASLIGHT        0x40000
 // Speechcol is no longer part of the flags as of v2.5
 #define OCHF_SPEECHCOL      0xff000000
 #define OCHF_SPEECHCOLSHIFT 24
@@ -87,10 +88,16 @@ struct CharacterInfo {
     int get_blocking_top();    // return Y - BlockingHeight/2
     int get_blocking_bottom(); // return Y + BlockingHeight/2
 
+    inline bool has_explicit_light() const { return (flags & CHF_HASLIGHT) != 0; }
+    inline bool has_explicit_tint()  const { return (flags & CHF_HASTINT) != 0; }
+
 	// [IKM] 2012-06-28: I still have to pass char_index to some of those functions
 	// either because they use it to set some variables with it,
 	// or because they pass it further to other functions, that are called from various places
 	// and it would be too much to change them all simultaneously
+    //
+    // [IKM] 2016-08-26: these methods should NOT be in CharacterInfo class,
+    // bit in distinct runtime character class!
 	void UpdateMoveAndAnim(int &char_index, CharacterExtras *chex, int &numSheep, int *followingAsSheep);
 	void UpdateFollowingExactlyCharacter();
 

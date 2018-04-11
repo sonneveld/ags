@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <allegro.h>
 #include <xalleg.h>
-#include "gfx/ali3d.h"
 #include "ac/runtime_defines.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
@@ -67,6 +66,8 @@ struct AGSLinux : AGSPlatformDriver {
   virtual void Delay(int millis);
   virtual void DisplayAlert(const char*, ...);
   virtual const char *GetUserSavedgamesDirectory();
+  virtual const char *GetUserConfigDirectory();
+  virtual const char *GetUserGlobalConfigDirectory();
   virtual const char *GetAppOutputDirectory();
   virtual unsigned long GetDiskFreeSpaceMB();
   virtual const char* GetNoMouseErrorString();
@@ -156,6 +157,16 @@ const char *AGSLinux::GetUserSavedgamesDirectory()
 {
   DetermineAppOutputDirectory();
   return LinuxOutputDirectory;
+}
+
+const char *AGSLinux::GetUserConfigDirectory()
+{
+  return GetUserSavedgamesDirectory();
+}
+
+const char *AGSLinux::GetUserGlobalConfigDirectory()
+{
+  return GetUserSavedgamesDirectory();
 }
 
 const char *AGSLinux::GetAppOutputDirectory()

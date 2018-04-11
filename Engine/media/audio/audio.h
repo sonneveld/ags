@@ -26,12 +26,10 @@
 struct SOUNDCLIP;
 
 void        calculate_reserved_channel_count();
-void        register_audio_script_objects();
 void        update_clip_default_volume(ScriptAudioClip *audioClip);
 void        start_fading_in_new_track_if_applicable(int fadeInChannel, ScriptAudioClip *newSound);
 void        move_track_to_crossfade_channel(int currentChannel, int crossfadeSpeed, int fadeInChannel, ScriptAudioClip *newSound);
 void        stop_or_fade_out_channel(int fadeOutChannel, int fadeInChannel = -1, ScriptAudioClip *newSound = NULL);
-const char *get_audio_clip_file_name(ScriptAudioClip *clip);
 int         find_free_audio_channel(ScriptAudioClip *clip, int priority, bool interruptEqualPriority);
 SOUNDCLIP*  load_sound_clip(ScriptAudioClip *audioClip, bool repeat);
 void        recache_queued_clips_after_loading_save_game();
@@ -39,11 +37,11 @@ void        audio_update_polled_stuff();
 void        queue_audio_clip_to_play(ScriptAudioClip *clip, int priority, int repeat);
 ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *clip, int priority, int repeat, int fromOffset, SOUNDCLIP *cachedClip = NULL);
 void        remove_clips_of_type_from_queue(int audioType);
+void        update_queued_clips_volume(int audioType, int new_vol);
+// Checks if speech voice-over is currently playing, and reapply volume drop to all other active clips
+void        update_volume_drop_if_voiceover();
 ScriptAudioChannel* play_audio_clip(ScriptAudioClip *clip, int priority, int repeat, int fromOffset, bool queueIfNoChannel);
-void        play_audio_clip_by_index(int audioClipIndex);
-void        register_audio_script_functions();
-bool        unserialize_audio_script_object(int index, const char *objectType, const char *serializedData, int dataSize);
-ScriptAudioClip* get_audio_clip_for_old_style_number(bool isMusic, int indexNumber);
+ScriptAudioChannel* play_audio_clip_by_index(int audioClipIndex);
 void        stop_and_destroy_channel_ex(int chid, bool resetLegacyMusicSettings);
 void        stop_and_destroy_channel (int chid);
 

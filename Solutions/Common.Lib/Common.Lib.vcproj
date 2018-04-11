@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Windows\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;ALLEGRO_NO_ASM;WINDOWS_VERSION;DISABLE_MPEG_AUDIO"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -108,7 +108,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Windows\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;ALLEGRO_NO_ASM"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -173,7 +173,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Windows\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;ALLEGRO_NO_ASM;NO_MP3_PLAYER"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;NO_MP3_PLAYER"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -238,7 +238,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Windows\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO;ALLEGRO_NO_ASM"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -301,7 +301,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\Common;..\..\Common\libinclude;..\..\Windows\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;ALLEGRO_NO_ASM;WINDOWS_VERSION;DISABLE_MPEG_AUDIO"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_WINDOWS;VS2005;_CRT_SECURE_NO_WARNINGS;ALLEGRO_STATICLINK;WINDOWS_VERSION;DISABLE_MPEG_AUDIO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -356,11 +356,15 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Common\ac\characterinfo.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Common\ac\common.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\Common\ac\customproperties.cpp"
+					RelativePath="..\..\Common\ac\dialogtopic.cpp"
 					>
 				</File>
 				<File
@@ -372,7 +376,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\Common\ac\interaction.cpp"
+					RelativePath="..\..\Common\ac\inventoryiteminfo.cpp"
 					>
 				</File>
 				<File
@@ -416,15 +420,15 @@
 				Name="font"
 				>
 				<File
-					RelativePath="..\..\Common\font\agsfontrenderer.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\Common\font\fonts.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\..\Common\font\ttffontrenderer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\font\wfnfont.cpp"
 					>
 				</File>
 				<File
@@ -496,6 +500,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Common\util\geometry.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Common\util\ini_util.cpp"
 					>
 				</File>
@@ -544,6 +552,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Common\util\version.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Common\util\wgt2allg.cpp"
 					>
 				</File>
@@ -576,7 +588,7 @@
 				Name="debug"
 				>
 				<File
-					RelativePath="..\..\Common\debug\out.cpp"
+					RelativePath="..\..\Common\debug\debugmanager.cpp"
 					>
 				</File>
 			</Filter>
@@ -601,6 +613,22 @@
 				</File>
 				<File
 					RelativePath="..\..\Common\core\assetmanager.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="game"
+				>
+				<File
+					RelativePath="..\..\Common\game\customproperties.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\game\interactions.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\game\main_game_file.cpp"
 					>
 				</File>
 			</Filter>
@@ -634,10 +662,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\Common\ac\customproperties.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\Common\ac\dialogtopic.h"
 					>
 				</File>
@@ -655,10 +679,6 @@
 				</File>
 				<File
 					RelativePath="..\..\Common\ac\gamestructdefines.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\Common\ac\interaction.h"
 					>
 				</File>
 				<File
@@ -730,6 +750,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Common\font\wfnfont.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Common\font\wfnfontrenderer.h"
 					>
 				</File>
@@ -737,10 +761,6 @@
 			<Filter
 				Name="gui"
 				>
-				<File
-					RelativePath="..\..\Common\gui\dynamicarray.h"
-					>
-				</File>
 				<File
 					RelativePath="..\..\Common\gui\guibutton.h"
 					>
@@ -787,6 +807,10 @@
 				</File>
 				<File
 					RelativePath="..\..\Common\util\bbop.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\util\c99_snprintf.h"
 					>
 				</File>
 				<File
@@ -850,11 +874,19 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Common\util\stdtr1compat.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Common\util\stream.h"
 					>
 				</File>
 				<File
 					RelativePath="..\..\Common\util\string.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\util\string_types.h"
 					>
 				</File>
 				<File
@@ -879,6 +911,10 @@
 				</File>
 				<File
 					RelativePath="..\..\Common\util\textwriter.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\util\version.h"
 					>
 				</File>
 				<File
@@ -942,11 +978,15 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\Common\debug\debugmanager.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\Common\debug\out.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\Common\debug\outputtarget.h"
+					RelativePath="..\..\Common\debug\outputhandler.h"
 					>
 				</File>
 			</Filter>
@@ -961,12 +1001,36 @@
 					RelativePath="..\..\Common\gfx\bitmap.h"
 					>
 				</File>
+				<File
+					RelativePath="..\..\common\gfx\gfx_def.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="api"
 				>
 				<File
 					RelativePath="..\..\Common\api\stream_api.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="game"
+				>
+				<File
+					RelativePath="..\..\Common\game\customproperties.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\game\interactions.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\game\main_game_file.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\Common\game\plugininfo.h"
 					>
 				</File>
 			</Filter>

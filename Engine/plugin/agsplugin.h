@@ -16,17 +16,7 @@
 //
 // #define THIS_IS_THE_PLUGIN beforehand if including from the plugin
 //
-//-----------------------------------------------------------------------------
-// [IKM] 2012-04-06
-//
-// A NOTE ON BITMAP CLASS
-//
-// We cannot use Bitmap in the plugin interfaces right so because that would
-// break backwards-compatiblity with previously created plugins. Bitmap may
-// only be used internally, in the IAGSEngine implementation, in a very limited
-// fashion.
-//
-//-----------------------------------------------------------------------------
+//=============================================================================
 
 #ifndef _AGS_PLUGIN_H
 #define _AGS_PLUGIN_H
@@ -51,8 +41,6 @@ typedef char BITMAP;
 #endif
 
 // If not using windows.h, define HWND
-// ac.cpp does #define HWND long, so this comes down to typedef int long;
-// need to catch that as well
 #if !defined(_WINDOWS_) && !defined(HWND)
 typedef int HWND;
 #endif
@@ -81,8 +69,6 @@ typedef int HWND;
 #define MASK_HOTSPOT    3
 // MASK_REGIONS is interface version 11 and above only
 #define MASK_REGIONS    4
-
-#define PLUGIN_FILENAME_MAX (49)
 
 // **** WARNING: DO NOT ALTER THESE CLASSES IN ANY WAY!
 // **** CHANGING THE ORDER OF THE FUNCTIONS OR ADDING ANY VARIABLES
@@ -295,7 +281,6 @@ public:
   virtual void Unserialize(int key, const char *serializedData, int dataSize) = 0;
 };
 
-// WARNING: this interface must correspond to IAGSFontRenderer declared in the Common
 class IAGSFontRenderer {
 public:
   virtual bool LoadFromDisk(int fontNumber, int fontSize) = 0;
@@ -534,7 +519,7 @@ public:
   AGSIFUNC(int)    IsRunningUnderDebugger();
   // tells the engine to break into the debugger when the next line of script is run
   AGSIFUNC(void)   BreakIntoDebugger();
-  // fills buffer with either fileName or Compiled\fileName, as appropriate
+  // fills buffer with <install dir>\fileName, as appropriate
   AGSIFUNC(void)   GetPathToFileInCompiledFolder(const char* fileName, char* buffer);
 
   // *** BELOW ARE INTERFACE VERSION 23 AND ABOVE ONLY
@@ -573,29 +558,5 @@ DLLEXPORT void   AGS_EngineInitGfx(const char* driverID, void *data);
 DLLEXPORT int    AGS_PluginV2 ( ) { return 1; }
 
 #endif // THIS_IS_THE_PLUGIN
-
-namespace AGS { namespace Common { class Stream; }}
-using namespace AGS; // FIXME later
-
-void pl_stop_plugins();
-void pl_startup_plugins();
-int  pl_run_plugin_hooks (int event, long data);
-void pl_run_plugin_init_gfx_hooks(const char *driverName, void *data);
-int  pl_run_plugin_debug_hooks (const char *scriptfile, int linenum);
-void pl_read_plugins_from_disk (Common::Stream *in);
-
-//  Initial implementation for apps to register their own inbuilt plugins
-
-struct InbuiltPluginDetails {
-    char      filename[PLUGIN_FILENAME_MAX+1];
-    void      (*engineStartup) (IAGSEngine *);
-    void      (*engineShutdown) ();
-    int       (*onEvent) (int, int);
-    void      (*initGfxHook) (const char *driverName, void *data);
-    int       (*debugHook) (const char * whichscript, int lineNumber, int reserved);
-};
-
-// Register a builtin plugin.
-int pl_register_builtin_plugin(InbuiltPluginDetails const &details);
 
 #endif

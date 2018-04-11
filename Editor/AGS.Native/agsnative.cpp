@@ -7,21 +7,20 @@ extern bool Scintilla_RegisterClasses(void *hInstance);
 extern int Scintilla_LinkLexers();
 
 int antiAliasFonts = 0;
-#define SAVEBUFFERSIZE 5120
 bool ShouldAntiAliasText() { return (antiAliasFonts != 0); }
 
 int mousex, mousey;
+#include "agsnative.h"
 #include "util/wgt2allg.h"
 #include "util/misc.h"
 #include "ac/spritecache.h"
 #include "ac/actiontype.h"
-#include "ac/common.h"
 #include "ac/roomstruct.h"
 #include "ac/scriptmodule.h"
-#include "ac/view.h"
-#include "ac/dialogtopic.h"
 #include "ac/gamesetupstruct.h"
 #include "font/fonts.h"
+#include "game/main_game_file.h"
+#include "game/plugininfo.h"
 #include "gui/guimain.h"
 #include "gui/guiinv.h"
 #include "gui/guibutton.h"
@@ -30,15 +29,24 @@ int mousex, mousey;
 #include "gui/guilistbox.h"
 #include "gui/guislider.h"
 #include "util/compress.h"
+#include "util/string_types.h"
 #include "util/string_utils.h"    // fputstring, etc
 #include "util/alignedstream.h"
 #include "util/filestream.h"
 #include "gfx/bitmap.h"
 #include "core/assetmanager.h"
+#include "NativeUtils.h"
 
 using AGS::Common::AlignedStream;
 using AGS::Common::Stream;
+namespace AGSProps = AGS::Common::Properties;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
+namespace AGSProps = AGS::Common::Properties;
+using AGS::Common::GUIMain;
+using AGS::Common::Interaction;
+using AGS::Common::InteractionCommand;
+using AGS::Common::InteractionCommandList;
+typedef AGS::Common::String AGSString;
 
 //-----------------------------------------------------------------------------
 // [IKM] 2012-09-07
@@ -96,9 +104,8 @@ GameDataVersion loaded_game_file_version = kGameVersion_Current;
 int numScriptModules;
 ScriptModule* scModules = NULL;
 DialogTopic *dialog;
-char*dlgscript[MAX_DIALOG];
-GUIMain *guis;
-ViewStruct272 *oldViews;
+std::vector<Common::String> dlgscript;
+std::vector<GUIMain> guis;
 ViewStruct *newViews;
 int numNewViews = 0;
 
@@ -110,7 +117,7 @@ int BaseColorDepth;
 bool reload_font(int curFont);
 void drawBlockScaledAt(int hdc, Common::Bitmap *todraw ,int x, int y, int scaleFactor);
 // this is to shut up the linker, it's used by CSRUN.CPP
-void write_log(char *) { }
+void write_log(const char *) { }
 
 void GUIInv::Draw(Common::Bitmap *ds) {
   color_t draw_color = ds->GetCompatibleColor(15);
@@ -542,7 +549,7 @@ int load_template_file(const char *fileName, char **iconDataBuffer, long *iconDa
 	    Stream *inpu = Common::AssetManager::OpenAsset((char*)old_editor_main_game_file);
 	    if (inpu != NULL) 
 	    {
-		    inpu->Seek(Common::kSeekCurrent, 30);
+		    inpu->Seek(30);
 		    int gameVersion = inpu->ReadInt32();
 		    delete inpu;
 		    if (gameVersion != 32)
@@ -625,7 +632,7 @@ void wputblock_stretch(Common::Bitmap *g, int xpt,int ypt,Common::Bitmap *tblock
   else g->StretchBlt(tblock,RectWH(xpt,ypt,nsx,nsy), Common::kBitmap_Transparency);
 }
 
-void draw_gui_sprite(Common::Bitmap *g, int sprnum, int atxp, int atyp, bool use_alpha) {
+void draw_gui_sprite(Common::Bitmap *g, int sprnum, int atxp, int atyp, bool use_alpha, Common::BlendMode blend_mode) {
   Common::Bitmap *blptr = get_sprite(sprnum);
   Common::Bitmap *towrite=blptr;
   int needtofree=0, main_color_depth = thisgame.color_depth * 8;
@@ -972,7 +979,7 @@ const char* import_sci_font(const char*fnn,int fslot) {
     delete iii;
     return "Not a valid SCI font file";
   }
-  iii->Seek(Common::kSeekCurrent,3);
+  iii->Seek(3);
   if (iii->ReadInt16()!=0x80) {
     delete iii; 
 	  return "Invalid SCI font"; 
@@ -995,7 +1002,7 @@ const char* import_sci_font(const char*fnn,int fslot) {
       unlink(wgtfontname);
       return "Invalid character found in file";
     }
-    iii->Seek(Common::kSeekBegin,theiroffs[aa]+2);
+    iii->Seek(theiroffs[aa]+2, Common::kSeekBegin);
     int wwi=iii->ReadByte()-1;
     int hhi=iii->ReadByte();
     coffsets[aa]=ooo->GetPosition();
@@ -1014,12 +1021,13 @@ const char* import_sci_font(const char*fnn,int fslot) {
   ooo->WriteArrayOfInt16(&coffsets[0],0x80);
   delete ooo;
   ooo=Common::File::OpenFile(wgtfontname,Common::kFile_Open,Common::kFile_ReadWrite);
-  ooo->Seek(Common::kSeekBegin,15);
+  ooo->Seek(15, Common::kSeekBegin);
   ooo->WriteInt16(tableat); 
   delete ooo;
   delete iii;
   wfreefont(fslot);
-  if (!wloadfont_size(fslot, 0))
+  FontInfo fi;
+  if (!wloadfont_size(fslot, fi))
   {
     return "Unable to load converted WFN file";
   }
@@ -1027,12 +1035,11 @@ const char* import_sci_font(const char*fnn,int fslot) {
 }
 
 
-#define FONTGRIDSIZE 18*blockSize
-void drawFontAt (int hdc, int fontnum, int x,int y) {
+int drawFontAt (int hdc, int fontnum, int x, int y, int width) {
   
-  if (fontnum >= thisgame.numfonts) 
+  if (fontnum >= thisgame.numfonts)
   {
-	  return;
+    return 0;
   }
 
   update_font_sizes();
@@ -1041,16 +1048,35 @@ void drawFontAt (int hdc, int fontnum, int x,int y) {
   int blockSize = (!thisgame.IsHiRes()) ? 1 : 2;
   antiAliasFonts = thisgame.options[OPT_ANTIALIASFONTS];
 
+  int char_height = thisgame.fontflags[fontnum] & FFLG_SIZEMASK;
+  int grid_size   = max(10, char_height);
+  int grid_margin = max(4, grid_size / 4);
+  grid_size += grid_margin * 2;
+  grid_size *= blockSize;
+  int first_char = 0;
+  int num_chars  = 256;
+  int padding = 5;
+
+  if (doubleSize > 1)
+      width /= 2;
+  int chars_per_row = max(1, (width - (padding * 2)) / grid_size);
+  int height = (num_chars / chars_per_row + 1) * grid_size + padding * 2;
+
+  if (!hdc)
+    return height * doubleSize;
+
   // we can't antialias font because changing col dep to 16 here causes
   // it to crash ... why?
-  Common::Bitmap *tempblock = Common::BitmapHelper::CreateBitmap(FONTGRIDSIZE*10, FONTGRIDSIZE*10, 8);
+  Common::Bitmap *tempblock = Common::BitmapHelper::CreateBitmap(width, height, 8);
   tempblock->Fill(0);
-  //Common::Bitmap *abufwas = abuf;
-  //abuf = tempblock;
-  color_t text_color = tempblock->GetCompatibleColor(15);
-  for (int aa=0;aa<96;aa++)
-    wgtprintf(tempblock, 5+(aa%10)*FONTGRIDSIZE,5+(aa/10)*FONTGRIDSIZE, fontnum, text_color, "%c",aa+32);
-  //abuf = abufwas;
+  color_t text_color = tempblock->GetCompatibleColor(15); // fixed white color
+  for (int c = first_char; c < num_chars; ++c)
+  {
+    wgtprintf(tempblock,
+                padding + (c % chars_per_row) * grid_size + grid_margin,
+                padding + (c / chars_per_row) * grid_size + grid_margin,
+                fontnum, text_color, "%c", c);
+  }
 
   if (doubleSize > 1) 
     drawBlockDoubleAt(hdc, tempblock, x, y);
@@ -1058,6 +1084,7 @@ void drawFontAt (int hdc, int fontnum, int x,int y) {
     drawBlock((HDC)hdc, tempblock, x, y);
    
   delete tempblock;
+  return height * doubleSize;
 }
 
 void proportionalDraw (int newwid, int sprnum, int*newx, int*newy) {
@@ -1195,7 +1222,8 @@ void NewInteractionCommand::remove ()
 */
 
 void new_font () {
-  wloadfont_size(thisgame.numfonts, 0);
+  FontInfo fi;
+  wloadfont_size(thisgame.numfonts, fi);
   thisgame.fontflags[thisgame.numfonts] = 0;
   thisgame.fontoutline[thisgame.numfonts] = -1;
   thisgame.numfonts++;
@@ -1286,7 +1314,7 @@ void drawSpriteStretch(int hdc, int x, int y, int width, int height, int spriteN
 
 void drawGUIAt (int hdc, int x,int y,int x1,int y1,int x2,int y2, int scaleFactor) {
 
-  if ((tempgui.wid < 1) || (tempgui.hit < 1))
+  if ((tempgui.Width < 1) || (tempgui.Height < 1))
     return;
 
   //update_font_sizes();
@@ -1295,12 +1323,12 @@ void drawGUIAt (int hdc, int x,int y,int x1,int y1,int x2,int y2, int scaleFacto
     dsc_want_hires = 1;
   }
 
-  Common::Bitmap *tempblock = Common::BitmapHelper::CreateBitmap(tempgui.wid, tempgui.hit, thisgame.color_depth*8);
+  Common::Bitmap *tempblock = Common::BitmapHelper::CreateBitmap(tempgui.Width, tempgui.Height, thisgame.color_depth*8);
   tempblock->Clear(tempblock->GetMaskColor ());
   //Common::Bitmap *abufWas = abuf;
   //abuf = tempblock;
 
-  tempgui.draw_at (tempblock, 0, 0);
+  tempgui.DrawAt (tempblock, 0, 0);
 
   dsc_want_hires = 0;
 
@@ -1413,59 +1441,18 @@ bool reload_font(int curFont)
 {
   wfreefont(curFont);
 
-  int fsize = thisgame.fontflags[curFont] & FFLG_SIZEMASK;
+  FontInfo fi;
+  fi.SizePt = thisgame.fontflags[curFont] & FFLG_SIZEMASK;
   // if the font is designed for 640x400, half it
   if (thisgame.options[OPT_NOSCALEFNT]) {
     if (!thisgame.IsHiRes())
-      fsize /= 2;
+      fi.SizePt /= 2;
   }
   else if (thisgame.IsHiRes()) {
     // designed for 320x200, double it up
-    fsize *= 2;
+    fi.SizePt *= 2;
   }
-  return wloadfont_size(curFont, fsize);
-}
-
-void load_script_modules_compiled(Stream *inn) {
-
-  numScriptModules = inn->ReadInt32();
-  scModules = (ScriptModule*)realloc(scModules, sizeof(ScriptModule) * numScriptModules);
-  for (int i = 0; i < numScriptModules; i++) {
-    scModules[i].init();
-    scModules[i].compiled = ccScript::CreateFromStream(inn);
-  }
-
-}
-
-void read_dialogs(Stream*iii, int filever, bool encrypted) {
-  int bb;
-  dialog = (DialogTopic*)malloc(sizeof(DialogTopic) * thisgame.numdialog);
-  iii->ReadArray(&dialog[0],sizeof(DialogTopic),thisgame.numdialog);
-  for (bb=0;bb<thisgame.numdialog;bb++) {
-    if (dialog[bb].optionscripts!=NULL) {
-      dialog[bb].optionscripts=(unsigned char*)malloc(dialog[bb].codesize+10);
-      iii->Read(&dialog[bb].optionscripts[0],dialog[bb].codesize);
-    }
-    int lenof=iii->ReadInt32();
-    if (lenof<=1) { iii->ReadByte();
-      dlgscript[bb]=NULL;
-      continue;
-    }
-    // add a large buffer because it will get added to if another option is added
-    dlgscript[bb]=(char*)malloc(lenof + 20000);
-    iii->Read(dlgscript[bb],lenof);
-    if (encrypted)
-      decrypt_text(dlgscript[bb]);
-  }
-  char stringbuffer[1000];
-  for (bb=0;bb<thisgame.numdlgmessage;bb++) {
-    if ((filever >= 26) && (encrypted))
-      read_string_decrypt(iii, stringbuffer);
-    else
-      fgetstring(stringbuffer, iii);
-
-    // don't actually do anything with the dlgmessage (it's an obsolete compiled artefact)
-  }
+  return wloadfont_size(curFont, fi);
 }
 
 bool reset_sprite_file() {
@@ -1476,224 +1463,71 @@ bool reset_sprite_file() {
   return true;
 }
 
-#define MAX_PLUGINS 40
-struct PluginData 
-{
-	char filename[50];
-	char data[SAVEBUFFERSIZE];
-	int dataSize;
-};
-PluginData thisgamePlugins[MAX_PLUGINS];
+Common::PluginInfo thisgamePlugins[MAX_PLUGINS];
 int numThisgamePlugins = 0;
 
-void write_plugins_to_disk (Stream *ooo) {
-  int a;
-  // version of plugin saving format
-  ooo->WriteInt32 (1);
-  ooo->WriteInt32 (numThisgamePlugins);
-  
-  for (a = 0; a < numThisgamePlugins; a++) {
-      fputstring(thisgamePlugins[a].filename, ooo);
-      
-      int savesize = thisgamePlugins[a].dataSize;
-      
-      if ((savesize > SAVEBUFFERSIZE) || (savesize < 0)) {
-		  MessageBox(NULL, "Plugin tried to write too much data to game file.", "", MB_OK);
-        savesize = 0;
-      }
-
-      ooo->WriteInt32 (savesize);
-      if (savesize > 0)
-        ooo->Write (&thisgamePlugins[a].data[0], savesize);
-  }
-}
-
-const char * read_plugins_from_disk (Stream *iii) {
-  if (iii->ReadInt32() != 1) {
-    return "ERROR: unable to load game, invalid version of plugin data";
-  }
-
-  numThisgamePlugins = iii->ReadInt32();
-
-  for (int a = 0; a < numThisgamePlugins; a++) {
-    // read the plugin name
-    fgetstring (thisgamePlugins[a].filename, iii);
-    int datasize = iii->ReadInt32();
-    if (datasize > SAVEBUFFERSIZE) {
-      return "Invalid plugin save data format, plugin data is lost";
+const char *init_game_after_import(const AGS::Common::LoadedGameEntities &ents, GameDataVersion data_ver)
+{
+    dlgscript = ents.OldDialogSources;
+    numNewViews = thisgame.numviews;
+    numScriptModules = (int)ents.ScriptModules.size();
+    scModules = (ScriptModule*)realloc(scModules, sizeof(ScriptModule) * numScriptModules);
+    for (int i = 0; i < numScriptModules; i++)
+    {
+        scModules[i].init();
+        scModules[i].compiled = ents.ScriptModules[i];
     }
-    // we don't care if it's an editor-only plugin or not
-    if (thisgamePlugins[a].filename[strlen(thisgamePlugins[a].filename) - 1] == '!')
-		thisgamePlugins[a].filename[strlen(thisgamePlugins[a].filename) - 1] = 0;
 
-	thisgamePlugins[a].dataSize = datasize;
-	if (datasize > 0)
-	  iii->Read (thisgamePlugins[a].data, datasize);
-  }
-  return NULL;
-}
+    numThisgamePlugins = (int)ents.PluginInfos.size();
+    for (int i = 0; i < numThisgamePlugins; ++i)
+    {
+        thisgamePlugins[i] = ents.PluginInfos[i];
+        // we don't care if it's an editor-only plugin or not
+        if (thisgamePlugins[i].Name.GetLast() == '!')
+            thisgamePlugins[i].Name.ClipRight(1);
+    }
 
-void allocate_memory_for_views(int viewCount)
-{
-  numNewViews = 0;
-	oldViews = (ViewStruct272*)calloc(sizeof(ViewStruct272) * viewCount, 1);
-  newViews = (ViewStruct*)calloc(sizeof(ViewStruct) * viewCount, 1);
-  thisgame.viewNames = (char**)malloc(sizeof(char*) * viewCount);
-  thisgame.viewNames[0] = (char*)calloc(MAXVIEWNAMELENGTH * viewCount, 1);
+    for (int i = 0; i < thisgame.numgui; ++i)
+    {
+        guis[i].RebuildArray();
+    }
 
-  for (int i = 1; i < viewCount; i++)
-  {
-    thisgame.viewNames[i] = thisgame.viewNames[0] + (MAXVIEWNAMELENGTH * i);
-  }
-}
+    // reset colour 0, it's possible for it to get corrupted
+    palette[0].r = 0;
+    palette[0].g = 0;
+    palette[0].b = 0;
+    set_palette_range(palette, 0, 255, 0);
 
-void ReadGameSetupStructBase_Aligned(Stream *in)
-{
-    GameSetupStructBase *gameBase = (GameSetupStructBase *)&thisgame;
-    AlignedStream align_s(in, Common::kAligned_Read);
-    gameBase->ReadFromFile(&align_s);
+    if (!reset_sprite_file())
+        return "The sprite file could not be loaded. Ensure that all your game files are intact and not corrupt. The game may require a newer version of AGS.";
+
+    for (int i = 0; i < MAX_FONTS; ++i)
+        wfreefont(i);
+    for (int i = 0; i < thisgame.numfonts; ++i)
+        reload_font(i);
+
+    update_abuf_coldepth();
+    spritesModified = false;
+    thisgame.filever = data_ver;
+    return NULL;
 }
 
 const char *load_dta_file_into_thisgame(const char *fileName)
 {
-  int bb;
-  Stream*iii=Common::File::OpenFileRead(fileName);
-  if (iii == NULL)
-    return "Unable to open file";
-
-  char buffer[40];
-  iii->Read(buffer,30);
-  buffer[30]=0;
-  if (strcmp(buffer,game_file_sig)!=0) {
-    delete iii;
-    return "File contains invalid data and is not an AGS game.";
-  }
-  int filever = iii->ReadInt32();
-  if (filever != 32) 
-  {
-	  delete iii;
-	  return "This game was saved by an old version of AGS. This version of the editor can only import games saved with AGS 2.72.";
-  }
-
-  loaded_game_file_version = (GameDataVersion)filever;
-
-  // skip required engine version
-  int stlen = iii->ReadInt32();
-  iii->Seek(Common::kSeekCurrent, stlen);
-
-  ReadGameSetupStructBase_Aligned(iii);
-
-  iii->Read(&thisgame.fontflags[0], thisgame.numfonts);
-  iii->Read(&thisgame.fontoutline[0], thisgame.numfonts);
-
-  int numSprites = iii->ReadInt32();
-  memset(&thisgame.spriteflags[0], 0, MAX_SPRITES);
-  iii->Read(&thisgame.spriteflags[0], numSprites);
-  iii->ReadArray(&thisgame.invinfo[0], sizeof(InventoryItemInfo), thisgame.numinvitems);
-  iii->ReadArray(&thisgame.mcurs[0], sizeof(MouseCursor), thisgame.numcursors);
-
-  thisgame.intrChar = (NewInteraction**)calloc(thisgame.numcharacters, sizeof(NewInteraction*));
-  for (bb = 0; bb < thisgame.numcharacters; bb++) {
-    thisgame.intrChar[bb] = deserialize_new_interaction (iii);
-  }
-  for (bb = 0; bb < thisgame.numinvitems; bb++) {
-    delete thisgame.intrInv[bb];
-    thisgame.intrInv[bb] = deserialize_new_interaction (iii);
-  }
-
-  numGlobalVars = iii->ReadInt32();
-  iii->ReadArray (&globalvars[0], sizeof (InteractionVariable), numGlobalVars);
-
-  if (thisgame.load_dictionary) {
-    thisgame.dict = (WordsDictionary*)malloc(sizeof(WordsDictionary));
-    read_dictionary (thisgame.dict, iii);
-  }
-
-  thisgame.globalscript = NULL;
-
-  if (thisgame.load_compiled_script)
-    thisgame.compiled_script = ccScript::CreateFromStream(iii);
-
-  load_script_modules_compiled(iii);
-
-  allocate_memory_for_views(thisgame.numviews);
-  iii->ReadArray (&oldViews[0], sizeof(ViewStruct272), thisgame.numviews);
-
-  thisgame.chars = (CharacterInfo*)calloc(sizeof(CharacterInfo) * thisgame.numcharacters, 1);
-  iii->ReadArray(&thisgame.chars[0],sizeof(CharacterInfo),thisgame.numcharacters);
-
-  iii->ReadArray (&thisgame.lipSyncFrameLetters[0][0], 20, 50);
-
-  for (bb=0;bb<MAXGLOBALMES;bb++) {
-    if (!thisgame.load_messages[bb]) continue;
-    thisgame.messages[bb]=(char*)malloc(500);
-    read_string_decrypt(iii, thisgame.messages[bb]);
-  }
-  delete [] thisgame.load_messages;
-  thisgame.load_messages = NULL;
-
-  read_dialogs(iii, filever, true);
-  read_gui(iii,&guis[0],&thisgame, &guis);
-  const char *pluginError = read_plugins_from_disk (iii);
-  if (pluginError != NULL) return pluginError;
-
-  thisgame.charProps = (CustomProperties*)calloc(thisgame.numcharacters, sizeof(CustomProperties));
-
-  for (bb = 0; bb < thisgame.numcharacters; bb++)
-    thisgame.charProps[bb].reset();
-  for (bb = 0; bb < MAX_INV; bb++)
-    thisgame.invProps[bb].reset();
-
-  if (thisgame.propSchema.UnSerialize (iii))
-    return "unable to deserialize prop schema";
-
-  int errors = 0;
-
-  for (bb = 0; bb < thisgame.numcharacters; bb++)
-    errors += thisgame.charProps[bb].UnSerialize (iii);
-  for (bb = 0; bb < thisgame.numinvitems; bb++)
-    errors += thisgame.invProps[bb].UnSerialize (iii);
-
-  if (errors > 0)
-    return "errors encountered reading custom props";
-
-  for (bb = 0; bb < thisgame.numviews; bb++)
-    fgetstring_limit(thisgame.viewNames[bb], iii, MAXVIEWNAMELENGTH);
-
-  for (bb = 0; bb < thisgame.numinvitems; bb++)
-    fgetstring_limit(thisgame.invScriptNames[bb], iii, MAX_SCRIPT_NAME_LEN);
-
-  for (bb = 0; bb < thisgame.numdialog; bb++)
-    fgetstring_limit(thisgame.dialogScriptNames[bb], iii, MAX_SCRIPT_NAME_LEN);
-
-  delete iii;
-
-  for (bb = 0; bb < thisgame.numgui; bb++)
-  {
-	  guis[bb].rebuild_array();
-  }
-
-  // reset colour 0, it's possible for it to get corrupted
-  palette[0].r = 0;
-  palette[0].g = 0;
-  palette[0].b = 0;
-  set_palette_range(palette, 0, 255, 0);
-
-  if (!reset_sprite_file())
-    return "The sprite file could not be loaded. Ensure that all your game files are intact and not corrupt. The game may require a newer version of AGS.";
-
-  for (bb=0;bb<MAX_FONTS;bb++) {
-    wfreefont(bb);
-  }
-  for (bb=0;bb<thisgame.numfonts;bb++) {
-    reload_font (bb);
-  }
-
-  update_abuf_coldepth();
-  spritesModified = false;
-
-  thisgame.filever = filever;
-  return NULL;
+    AGS::Common::MainGameSource src;
+    AGS::Common::LoadedGameEntities ents(thisgame, dialog, newViews);
+    MainGameFileError load_err = AGS::Common::OpenMainGameFile(fileName, src);
+    if (load_err == Common::kMGFErr_NoError)
+    {
+        load_err = AGS::Common::ReadGameData(ents, src.InputStream.get(), src.DataVersion);
+        if (load_err == Common::kMGFErr_NoError)
+            load_err = AGS::Common::UpdateGameData(ents, src.DataVersion);
+    }
+    if (load_err != Common::kMGFErr_NoError)
+    {
+        return AGS::Common::GetMainGameFileErrorText(load_err);
+    }
+    return init_game_after_import(ents, src.DataVersion);
 }
 
 void free_script_module(int index) {
@@ -1703,8 +1537,7 @@ void free_script_module(int index) {
   free(scModules[index].description);
   free(scModules[index].script);
   free(scModules[index].scriptHeader);
-  delete scModules[index].compiled;
-  scModules[index].compiled = NULL;
+  scModules[index].compiled.reset();
 }
 
 void free_script_modules() {
@@ -1726,13 +1559,7 @@ void free_old_game_data()
 	  if (dialog[bb].optionscripts != NULL)
 		  free(dialog[bb].optionscripts);
   }
-  if (thisgame.charProps != NULL)
-  {
-    for (bb = 0; bb < thisgame.numcharacters; bb++)
-      thisgame.charProps[bb].reset();
-    free(thisgame.charProps);
-    thisgame.charProps = NULL;
-  }
+  thisgame.charProps.clear();
   if (thisgame.intrChar != NULL)
   {
     for (bb = 0; bb < thisgame.numcharacters; bb++)
@@ -1749,11 +1576,9 @@ void free_old_game_data()
     }
     newViews[bb].Dispose();
   }
-  free(thisgame.viewNames[0]);
-  free(thisgame.viewNames);
-  free(oldViews);
+  thisgame.viewNames.clear();
   free(newViews);
-  free(guis);
+  guis.clear();
   free(thisgame.chars);
   thisgame.dict->free_memory();
   free(thisgame.dict);
@@ -2002,10 +1827,8 @@ void save_room(const char *files, roomstruct rstruc) {
   rfh.WriteFromFile(opty);
 
   if (rfh.version >= 5) {
-    long blsii = 0;
-
     opty->WriteByte(BLOCKTYPE_MAIN);
-    opty->WriteInt32(blsii);
+    opty->WriteInt32(0);
   }
 
   opty->WriteInt32(rstruc.bytes_per_pixel);  // colour depth bytes per pixel
@@ -2015,12 +1838,13 @@ void save_room(const char *files, roomstruct rstruc) {
   opty->WriteInt32(rstruc.numhotspots);
   opty->WriteArray(&rstruc.hswalkto[0], sizeof(_Point), rstruc.numhotspots);
   for (f = 0; f < rstruc.numhotspots; f++)
-  {
-	  fputstring(rstruc.hotspotnames[f], opty);
-  }
+    Common::StrUtil::WriteString(rstruc.hotspotnames[f], opty);
 
+  // TODO: checking version here makes little sense now because save_room does not 
+  // properly support export to lower data version
   if (rfh.version >= 24)
-    opty->WriteArray(&rstruc.hotspotScriptNames[0], MAX_SCRIPT_NAME_LEN, rstruc.numhotspots);
+    for (f = 0; f < rstruc.numhotspots; f++)
+      Common::StrUtil::WriteString(rstruc.hotspotScriptNames[f], opty);
 
   opty->WriteInt32(rstruc.numwalkareas);
   opty->WriteArray(&rstruc.wallpoints[0], sizeof(PolyPoints), rstruc.numwalkareas);
@@ -2119,9 +1943,9 @@ void save_room(const char *files, roomstruct rstruc) {
     opty = ci_fopen(files, Common::kFile_Open, Common::kFile_ReadWrite);
     lee = opty->GetLength()-7;
 
-    opty->Seek(Common::kSeekBegin, 3);
+    opty->Seek(3, Common::kSeekBegin);
     opty->WriteInt32(lee);
-    opty->Seek(Common::kSeekEnd, 0);
+    opty->Seek(0, Common::kSeekEnd);
 
     if (rstruc.scripts != NULL) {
       int hh;
@@ -2152,24 +1976,46 @@ void save_room(const char *files, roomstruct rstruc) {
       rstruc.compiled_script->Write(opty);
      
       wasat = opty->GetPosition();
-      opty->Seek(Common::kSeekBegin, leeat);
+      opty->Seek(leeat, Common::kSeekBegin);
       lee = (wasat - leeat) - 4;
       opty->WriteInt32(lee);
-      opty->Seek(Common::kSeekEnd, 0);
+      opty->Seek(0, Common::kSeekEnd);
     }
 
     if (rstruc.numsprs > 0) {
+      // TODO: need generic algorithm to write block sizes back after their contents are written
+      long  leeat, wasat;
+
       opty->WriteByte(BLOCKTYPE_OBJECTNAMES);
-      lee=rstruc.numsprs * MAXOBJNAMELEN + 1;
+      lee = 0;
+      leeat = opty->GetPosition();
       opty->WriteInt32(lee);
+
       opty->WriteByte(rstruc.numsprs);
-      opty->WriteArray(&rstruc.objectnames[0][0], MAXOBJNAMELEN, rstruc.numsprs);
+      for (int i = 0; i < rstruc.numsprs; ++i)
+        Common::StrUtil::WriteString(rstruc.objectnames[i], opty);
+
+      wasat = opty->GetPosition();
+      opty->Seek(leeat, Common::kSeekBegin);
+      lee = (wasat - leeat) - sizeof(int32_t);
+      opty->WriteInt32(lee);
+      opty->Seek(0, Common::kSeekEnd);
+
 
       opty->WriteByte(BLOCKTYPE_OBJECTSCRIPTNAMES);
-      lee = rstruc.numsprs * MAX_SCRIPT_NAME_LEN + 1;
+      lee = 0;
+      leeat = opty->GetPosition();
       opty->WriteInt32(lee);
+
       opty->WriteByte(rstruc.numsprs);
-      opty->WriteArray(&rstruc.objectscriptnames[0][0], MAX_SCRIPT_NAME_LEN, rstruc.numsprs);
+      for (int i = 0; i < rstruc.numsprs; ++i)
+        Common::StrUtil::WriteString(rstruc.objectscriptnames[i], opty);
+
+      wasat = opty->GetPosition();
+      opty->Seek(leeat, Common::kSeekBegin);
+      lee = (wasat - leeat) - sizeof(int32_t);
+      opty->WriteInt32(lee);
+      opty->Seek(0, Common::kSeekEnd);
     }
 
     long lenpos, lenis;
@@ -2195,9 +2041,9 @@ void save_room(const char *files, roomstruct rstruc) {
 
       opty = ci_fopen(const_cast<char*>(files), Common::kFile_Open, Common::kFile_ReadWrite);
       lenis = (curoffs - lenpos) - 4;
-      opty->Seek(Common::kSeekBegin, lenpos);
+      opty->Seek(lenpos, Common::kSeekBegin);
       opty->WriteInt32(lenis);
-      opty->Seek(Common::kSeekEnd, 0);
+      opty->Seek(0, Common::kSeekEnd);
     }
 
     // Write custom properties
@@ -2206,16 +2052,16 @@ void save_room(const char *files, roomstruct rstruc) {
     lenis = 0;
     opty->WriteInt32(lenis);
     opty->WriteInt32 (1);  // Version 1 of properties block
-    rstruc.roomProps.Serialize (opty);
+    AGSProps::WriteValues(rstruc.roomProps, opty);
     for (gg = 0; gg < rstruc.numhotspots; gg++)
-      rstruc.hsProps[gg].Serialize (opty);
+      AGSProps::WriteValues(rstruc.hsProps[gg], opty);
     for (gg = 0; gg < rstruc.numsprs; gg++)
-      rstruc.objProps[gg].Serialize (opty);
+      AGSProps::WriteValues(rstruc.objProps[gg], opty);
 
     lenis = (opty->GetPosition() - lenpos) - 4;
-    opty->Seek(Common::kSeekBegin, lenpos);
+    opty->Seek(lenpos, Common::kSeekBegin);
     opty->WriteInt32(lenis);
-    opty->Seek(Common::kSeekEnd, 0);
+    opty->Seek(0, Common::kSeekEnd);
 
 
     // Write EOF block
@@ -2266,8 +2112,6 @@ void save_room_file(const char*rtsa)
 namespace MFLUtil = AGS::Common::MFLUtil;
 
 #define MAX_FILES 10000
-#define MAXMULTIFILES 25
-#define MAX_FILENAME_LENGTH 100
 #define MAX_DATAFILENAME_LENGTH 50
 struct MultiFileLibNew {
   char data_filenames[MAXMULTIFILES][MAX_DATAFILENAME_LENGTH];
@@ -2323,7 +2167,6 @@ void write_clib_header(Stream*wout) {
 }
 
 
-#define CHUNKSIZE 256000
 int copy_file_across(Stream*inlibb,Stream*coppy,long leftforthis) {
   int success = 1;
   char*diskbuffer=(char*)malloc(CHUNKSIZE+10);
@@ -2345,82 +2188,70 @@ int copy_file_across(Stream*inlibb,Stream*coppy,long leftforthis) {
   return success;
 }
 
-const char* make_old_style_data_file(const char* dataFileName, int numfile, char * const*filenames)
+// TODO: upgrade this "old style data file" to "new style data file" (would require engine update too)
+void make_old_style_data_file(const AGSString &dataFileName, const std::vector<AGSString> &filenames)
 {
-  const char *errorMsg = NULL;
-  int a;
-  int passwmod = 20;
-  long *filesizes = (long*)malloc(4*numfile);
-  char**writefname = (char**)malloc(4*numfile);
-  writefname[0]=(char*)malloc(14*numfile);
+    const int passwmod = 20;
+    std::vector<int32_t> filesizes(filenames.size());
+    std::vector<AGSString> writefname(filenames.size());
+    size_t numfile = filenames.size();
 
-  for (a=0;a<numfile;a++) {
-    if (a>0) writefname[a]=&writefname[0][a*13];
-	if (strrchr(filenames[a], '\\') != NULL)
-		strcpy(writefname[a], strrchr(filenames[a], '\\') + 1);
-	else if (strrchr(filenames[a], '/') != NULL)
-		strcpy(writefname[a], strrchr(filenames[a], '/') + 1);
-	else
-		strcpy(writefname[a],filenames[a]);
-
-	if (strlen(writefname[a]) > 12)
+    for (size_t fi = 0; fi < numfile; ++fi)
     {
-		char buffer[500];
-		sprintf(buffer, "Filename too long: %s", writefname[a]);
-		free(filesizes);
-		free(writefname);
-		ThrowManagedException(buffer);
+        writefname[fi] = get_filename(filenames[fi]);
+
+        if (strlen(writefname[fi]) > 12)
+            ThrowManagedException(AGSString::FromFormat("Filename too long (limit is 12 chars): '%s'", writefname[fi].GetCStr()));
+        int filesize = Common::File::GetFileSize(filenames[fi]);
+        if (filesize < 0)
+            ThrowManagedException(AGSString::FromFormat("Unable to retrieve file size: '%s'", writefname[fi].GetCStr()));
+        filesizes[fi] = filesize;
+
+        for (size_t c = 0; c < writefname[fi].GetLength(); ++c)
+            writefname[fi].SetAt(c, writefname[fi][c] + passwmod);
     }
 
-    Stream*ddd = Common::File::OpenFileRead(filenames[a]);
-    if (ddd==NULL) { 
-      filesizes[a] = 0;
-      continue;
+    // Write the header
+    Stream *wout = Common::File::CreateFile(dataFileName);
+    if (!wout)
+        ThrowManagedException(AGSString::FromFormat("Failed to open data file for writing: '%s'", dataFileName.GetCStr()));
+    wout->Write(MFLUtil::HeadSig, MFLUtil::HeadSig.GetLength());
+    wout->WriteByte(6);  // version
+    wout->WriteByte(passwmod);  // password modifier
+    wout->WriteByte(0);  // reserved
+    wout->WriteInt16((int16_t)numfile);
+    for (int i = 0; i < 13; ++i) wout->WriteByte(0);  // the password
+    for (size_t i = 0; i < numfile; ++i)
+        writefname[i].WriteCount(wout, 13);
+    for (size_t i = 0; i < numfile; ++i)
+        wout->WriteInt32(filesizes[i]);
+    wout->WriteByteCount(0, 2 * numfile);  // comp.ratio
+
+    // now copy the data
+    AGSString err_msg;
+    for (size_t i = 0; i < numfile; ++i)
+    {
+        Stream *in = Common::File::OpenFileRead(filenames[i]);
+        if (!in)
+        {
+            err_msg.Format("Unable to open asset file for reading: '%s'", filenames[i].GetCStr());
+            break;
+        }
+        int res = copy_file_across(in, wout, filesizes[i]);
+        delete in;
+        if (res < 1)
+        {
+            err_msg.Format("Error writing asset into package, possibly disk full: '%s'", filenames[i].GetCStr());
+            break;
+        }
     }
-    filesizes[a] = ddd->GetLength();
-    delete ddd;
+    delete wout;
 
-    for (int bb = 0; writefname[a][bb] != 0; bb++)
-      writefname[a][bb] += passwmod;
-  }
-  // write the header
-  Stream*wout=Common::File::CreateFile(dataFileName);
-  wout->Write(MFLUtil::HeadSig, MFLUtil::HeadSig.GetLength());
-  wout->WriteByte(6);  // version
-  wout->WriteByte(passwmod);  // password modifier
-  wout->WriteByte(0);  // reserved
-  wout->WriteInt16(numfile);
-  for (a=0;a<13;a++) wout->WriteByte(0);  // the password
-  wout->WriteArray(&writefname[0][0],13,numfile);
-  wout->WriteArrayOfInt32((int32_t*)&filesizes[0],numfile);
-  for (a=0;a<2*numfile;a++) wout->WriteByte(0);  // comp.ratio
-
-  // now copy the data
-  for (a=0;a<numfile;a++) {
-
-	Stream*iii = Common::File::OpenFileRead(filenames[a]);
-    if (iii==NULL) {
-      errorMsg = "unable to add one of the files to data file.";
-      continue;
+    if (!err_msg.IsEmpty())
+    {
+        unlink(dataFileName);
+        ThrowManagedException(err_msg);
     }
-    if (copy_file_across(iii,wout,filesizes[a]) < 1) {
-      errorMsg = "Error writing file: possibly disk full";
-      delete iii;
-      break;
-    }
-    delete iii;
-  }
-  delete wout;
-  free(filesizes);
-  free(writefname[0]);
-  free(writefname);
-
-  if (errorMsg != NULL) 
-  {
-	unlink(dataFileName);
-  }
-
-  return errorMsg;
 }
 
 Stream* find_file_in_path(char *buffer, const char *fileName)
@@ -2612,7 +2443,7 @@ const char* make_data_file(int numFiles, char * const*fileNames, long splitSize,
   }
 
   wout = Common::File::OpenFile(firstDataFileFullPath, Common::kFile_Open, Common::kFile_ReadWrite);
-  wout->Seek(Common::kSeekBegin, mainHeaderOffset);
+  wout->Seek(mainHeaderOffset, Common::kSeekBegin);
   write_clib_header(wout);
   delete wout;
   return NULL;
@@ -2636,10 +2467,6 @@ public ref class TempDataStorage
 public:
 	static Room ^RoomBeingSaved;
 };
-
-void ConvertStringToCharArray(System::String^ clrString, char *textBuffer);
-void ConvertStringToCharArray(System::String^ clrString, char *textBuffer, int maxLength);
-void ConvertStringToNativeString(System::String^ clrString, Common::String &destStr);
 
 void ThrowManagedException(const char *message) 
 {
@@ -2734,9 +2561,21 @@ void UpdateSpriteFlags(SpriteFolder ^folder)
 	}
 }
 
+void SetGameResolution(Game ^game)
+{
+    // For backwards compatibility, save letterbox-by-design games as having non-custom resolution
+    thisgame.options[OPT_LETTERBOX] = game->Settings->LetterboxMode;
+    if (game->Settings->LetterboxMode)
+        thisgame.SetDefaultResolution((GameResolutionType)game->Settings->LegacyLetterboxResolution);
+    else
+        thisgame.SetCustomResolution(::Size(game->Settings->CustomResolution.Width, game->Settings->CustomResolution.Height));
+}
+
 void GameUpdated(Game ^game) {
+  // TODO: this function may get called when only one item is added/removed or edited;
+  // probably it would be best to split it up into several callbacks at some point.
   thisgame.color_depth = (int)game->Settings->ColorDepth;
-  thisgame.default_resolution = (GameResolutionType)game->Settings->Resolution;
+  SetGameResolution(game);
 
   thisgame.options[OPT_NOSCALEFNT] = game->Settings->FontsForHiRes;
   thisgame.options[OPT_ANTIALIASFONTS] = game->Settings->AntiAliasFonts;
@@ -2759,12 +2598,14 @@ void GameUpdated(Game ^game) {
     }
   }
 
+  // Reload native fonts and update font information in the managed component
   thisgame.numfonts = game->Fonts->Count;
   for (int i = 0; i < thisgame.numfonts; i++) 
   {
 	  thisgame.fontflags[i] &= ~FFLG_SIZEMASK;
 	  thisgame.fontflags[i] |= game->Fonts[i]->PointSize;
 	  reload_font(i);
+	  game->Fonts[i]->Height = getfontheight(i);
   }
 }
 
@@ -3236,35 +3077,36 @@ void ConvertGUIToBinaryFormat(GUI ^guiObj, GUIMain *gui)
   NormalGUI^ normalGui = dynamic_cast<NormalGUI^>(guiObj);
   if (normalGui)
   {
-	ConvertStringToCharArray(normalGui->OnClick, gui->clickEventHandler, 20);
-	gui->x = normalGui->Left;
-	gui->y = normalGui->Top;
-	gui->wid = normalGui->Width;
-	gui->hit = normalGui->Height;
-	gui->flags = (normalGui->Clickable) ? 0 : GUIF_NOCLICK;
-    gui->popupyp = normalGui->PopupYPos;
-    gui->popup = (int)normalGui->Visibility;
-    gui->zorder = normalGui->ZOrder;
-	gui->vtext[0] = 0;
-    gui->fgcol = normalGui->BorderColor;
+	gui->OnClickHandler = ConvertStringToNativeString(normalGui->OnClick);
+	gui->X = normalGui->Left;
+	gui->Y = normalGui->Top;
+	gui->Width = normalGui->Width;
+	gui->Height = normalGui->Height;
+    gui->Flags = (normalGui->Clickable) ? 0 : Common::kGUIMain_NoClick;
+    gui->PopupAtMouseY = normalGui->PopupYPos;
+    gui->PopupStyle = (Common::GUIPopupStyle)normalGui->Visibility;
+    gui->ZOrder = normalGui->ZOrder;
+    gui->FgColor = normalGui->BorderColor;
     gui->SetTransparencyAsPercentage(normalGui->Transparency);
   }
   else
   {
     TextWindowGUI^ twGui = dynamic_cast<TextWindowGUI^>(guiObj);
-	gui->wid = 200;
-	gui->hit = 100;
-    gui->flags = 0;
-	gui->popup = POPUP_SCRIPT;
-	gui->vtext[0] = GUI_TEXTWINDOW;
-  gui->fgcol = twGui->TextColor;
+	gui->Width = 200;
+	gui->Height = 100;
+    gui->Flags = Common::kGUIMain_TextWindow;
+    gui->PopupStyle = Common::kGUIPopupModal;
+	gui->Padding = twGui->Padding;
+    gui->FgColor = twGui->TextColor;
   }
-  gui->bgcol = guiObj->BackgroundColor;
-  gui->bgpic = guiObj->BackgroundImage;
+  gui->BgColor = guiObj->BackgroundColor;
+  gui->BgImage = guiObj->BackgroundImage;
   
-  ConvertStringToCharArray(guiObj->Name, gui->name);
+  gui->Name = ConvertStringToNativeString(guiObj->Name);
 
-  gui->numobjs = 0;
+  gui->ControlCount = 0;
+  gui->CtrlRefs.resize(guiObj->Controls->Count);
+  gui->Controls.resize(guiObj->Controls->Count);
 
   for each (GUIControl^ control in guiObj->Controls)
   {
@@ -3277,6 +3119,7 @@ void ConvertGUIToBinaryFormat(GUI ^guiObj, GUIMain *gui)
 	  AGS::Types::GUITextWindowEdge^ textwindowedge = dynamic_cast<AGS::Types::GUITextWindowEdge^>(control);
 	  if (button)
 	  {
+          guibuts.push_back(::GUIButton());
 		  guibuts[numguibuts].textcol = button->TextColor;
 		  guibuts[numguibuts].font = button->Font;
 		  guibuts[numguibuts].pic = button->Image;
@@ -3288,15 +3131,16 @@ void ConvertGUIToBinaryFormat(GUI ^guiObj, GUIMain *gui)
 		  guibuts[numguibuts].lclickdata = button->NewModeNumber;
 		  guibuts[numguibuts].flags = (button->ClipImage) ? GUIF_CLIP : 0;
 		  ConvertStringToCharArray(button->Text, guibuts[numguibuts].text, 50);
-		  ConvertStringToCharArray(button->OnClick, guibuts[numguibuts].eventHandlers[0], MAX_GUIOBJ_EVENTHANDLER_LEN + 1);
+		  guibuts[numguibuts].eventHandlers[0] = ConvertStringToNativeString(button->OnClick);
 		  
-		  gui->objrefptr[gui->numobjs] = (GOBJ_BUTTON << 16) | numguibuts;
-		  gui->objs[gui->numobjs] = &guibuts[numguibuts];
-		  gui->numobjs++;
+          gui->CtrlRefs[gui->ControlCount] = (Common::kGUIButton << 16) | numguibuts;
+		  gui->Controls[gui->ControlCount] = &guibuts[numguibuts];
+		  gui->ControlCount++;
 		  numguibuts++;
 	  }
 	  else if (label)
 	  {
+          guilabels.push_back(::GUILabel());
 		  guilabels[numguilabels].textcol = label->TextColor;
 		  guilabels[numguilabels].font = label->Font;
 		  guilabels[numguilabels].align = (int)label->TextAlignment;
@@ -3305,27 +3149,29 @@ void ConvertGUIToBinaryFormat(GUI ^guiObj, GUIMain *gui)
 		  ConvertStringToCharArray(label->Text, textBuffer, MAX_GUILABEL_TEXT_LEN);
 		  guilabels[numguilabels].SetText(textBuffer);
 
-		  gui->objrefptr[gui->numobjs] = (GOBJ_LABEL << 16) | numguilabels;
-		  gui->objs[gui->numobjs] = &guilabels[numguilabels];
-		  gui->numobjs++;
+		  gui->CtrlRefs[gui->ControlCount] = (Common::kGUILabel << 16) | numguilabels;
+		  gui->Controls[gui->ControlCount] = &guilabels[numguilabels];
+		  gui->ControlCount++;
 		  numguilabels++;
 	  }
 	  else if (textbox)
 	  {
+          guitext.push_back(::GUITextBox());
 		  guitext[numguitext].textcol = textbox->TextColor;
 		  guitext[numguitext].font = textbox->Font;
 		  guitext[numguitext].flags = 0;
 		  guitext[numguitext].exflags = (textbox->ShowBorder) ? 0 : GTF_NOBORDER;
 		  guitext[numguitext].text[0] = 0;
-		  ConvertStringToCharArray(textbox->OnActivate, guitext[numguitext].eventHandlers[0], MAX_GUIOBJ_EVENTHANDLER_LEN + 1);
+		  guitext[numguitext].eventHandlers[0] = ConvertStringToNativeString(textbox->OnActivate);
 
-		  gui->objrefptr[gui->numobjs] = (GOBJ_TEXTBOX << 16) | numguitext;
-		  gui->objs[gui->numobjs] = &guitext[numguitext];
-		  gui->numobjs++;
+		  gui->CtrlRefs[gui->ControlCount] = (Common::kGUITextBox << 16) | numguitext;
+		  gui->Controls[gui->ControlCount] = &guitext[numguitext];
+		  gui->ControlCount++;
 		  numguitext++;
 	  }
 	  else if (listbox)
 	  {
+          guilist.push_back(::GUIListBox());
 		  guilist[numguilist].textcol = listbox->TextColor;
 		  guilist[numguilist].font = listbox->Font;
 		  guilist[numguilist].backcol = listbox->SelectedTextColor;
@@ -3334,64 +3180,67 @@ void ConvertGUIToBinaryFormat(GUI ^guiObj, GUIMain *gui)
           guilist[numguilist].flags = listbox->Translated ? GUIF_TRANSLATED : 0;
 		  guilist[numguilist].exflags = (listbox->ShowBorder) ? 0 : GLF_NOBORDER;
 		  guilist[numguilist].exflags |= (listbox->ShowScrollArrows) ? 0 : GLF_NOARROWS;
-		  ConvertStringToCharArray(listbox->OnSelectionChanged, guilist[numguilist].eventHandlers[0], MAX_GUIOBJ_EVENTHANDLER_LEN + 1);
+		  guilist[numguilist].eventHandlers[0] = ConvertStringToNativeString(listbox->OnSelectionChanged);
 
-		  gui->objrefptr[gui->numobjs] = (GOBJ_LISTBOX << 16) | numguilist;
-		  gui->objs[gui->numobjs] = &guilist[numguilist];
-		  gui->numobjs++;
+		  gui->CtrlRefs[gui->ControlCount] = (Common::kGUIListBox << 16) | numguilist;
+		  gui->Controls[gui->ControlCount] = &guilist[numguilist];
+		  gui->ControlCount++;
 		  numguilist++;
 	  }
 	  else if (slider)
 	  {
+          guislider.push_back(::GUISlider());
 		  guislider[numguislider].min = slider->MinValue;
 		  guislider[numguislider].max = slider->MaxValue;
 		  guislider[numguislider].value = slider->Value;
 		  guislider[numguislider].handlepic = slider->HandleImage;
 		  guislider[numguislider].handleoffset = slider->HandleOffset;
 		  guislider[numguislider].bgimage = slider->BackgroundImage;
-		  ConvertStringToCharArray(slider->OnChange, guislider[numguislider].eventHandlers[0], MAX_GUIOBJ_EVENTHANDLER_LEN + 1);
+		  guislider[numguislider].eventHandlers[0] = ConvertStringToNativeString(slider->OnChange);
 
-		  gui->objrefptr[gui->numobjs] = (GOBJ_SLIDER << 16) | numguislider;
-		  gui->objs[gui->numobjs] = &guislider[numguislider];
-		  gui->numobjs++;
+		  gui->CtrlRefs[gui->ControlCount] = (Common::kGUISlider << 16) | numguislider;
+		  gui->Controls[gui->ControlCount] = &guislider[numguislider];
+		  gui->ControlCount++;
 		  numguislider++;
 	  }
 	  else if (invwindow)
 	  {
+          guiinv.push_back(::GUIInv());
 		  guiinv[numguiinv].charId = invwindow->CharacterID;
 		  guiinv[numguiinv].itemWidth = invwindow->ItemWidth;
 		  guiinv[numguiinv].itemHeight = invwindow->ItemHeight;
 
-		  gui->objrefptr[gui->numobjs] = (GOBJ_INVENTORY << 16) | numguiinv;
-		  gui->objs[gui->numobjs] = &guiinv[numguiinv];
-		  gui->numobjs++;
+		  gui->CtrlRefs[gui->ControlCount] = (Common::kGUIInvWindow << 16) | numguiinv;
+		  gui->Controls[gui->ControlCount] = &guiinv[numguiinv];
+		  gui->ControlCount++;
 		  numguiinv++;
 	  }
 	  else if (textwindowedge)
 	  {
+          guibuts.push_back(::GUIButton());
 		  guibuts[numguibuts].pic = textwindowedge->Image;
 		  guibuts[numguibuts].usepic = guibuts[numguibuts].pic;
 		  guibuts[numguibuts].flags = 0;
 		  guibuts[numguibuts].text[0] = 0;
 		  
-		  gui->objrefptr[gui->numobjs] = (GOBJ_BUTTON << 16) | numguibuts;
-		  gui->objs[gui->numobjs] = &guibuts[numguibuts];
-		  gui->numobjs++;
+		  gui->CtrlRefs[gui->ControlCount] = (Common::kGUIButton << 16) | numguibuts;
+		  gui->Controls[gui->ControlCount] = &guibuts[numguibuts];
+		  gui->ControlCount++;
 		  numguibuts++;
 	  }
 
-	  GUIObject *newObj = gui->objs[gui->numobjs - 1];
+	  GUIObject *newObj = gui->Controls[gui->ControlCount - 1];
 	  newObj->x = control->Left;
 	  newObj->y = control->Top;
 	  newObj->wid = control->Width;
 	  newObj->hit = control->Height;
 	  newObj->objn = control->ID;
 	  newObj->zorder = control->ZOrder;
-	  ConvertStringToCharArray(control->Name, newObj->scriptName, MAX_GUIOBJ_SCRIPTNAME_LEN + 1);
+	  newObj->scriptName = ConvertStringToNativeString(control->Name);
   }
 
-  gui->rebuild_array();
-  gui->resort_zorder();
+  gui->RebuildArray();
+  gui->ResortZOrder();
 }
 
 void drawGUI(int hdc, int x,int y, GUI^ guiObj, int scaleFactor, int selectedControl) {
@@ -3401,10 +3250,16 @@ void drawGUI(int hdc, int x,int y, GUI^ guiObj, int scaleFactor, int selectedCon
   numguilist = 0;
   numguislider = 0;
   numguiinv = 0;
+  guibuts.resize(0);
+  guilabels.resize(0);
+  guitext.resize(0);
+  guilist.resize(0);
+  guislider.resize(0);
+  guiinv.resize(0);
 
   ConvertGUIToBinaryFormat(guiObj, &tempgui);
 
-  tempgui.highlightobj = selectedControl;
+  tempgui.HighlightCtrl = selectedControl;
 
   drawGUIAt(hdc, x, y, -1, -1, -1, -1, scaleFactor);
 }
@@ -3425,29 +3280,27 @@ Dictionary<int, Sprite^>^ load_sprite_dimensions()
 	return sprites;
 }
 
-void ConvertCustomProperties(AGS::Types::CustomProperties ^insertInto, ::CustomProperties *propToConvert)
+void ConvertCustomProperties(AGS::Types::CustomProperties ^insertInto, AGS::Common::StringIMap *propToConvert)
 {
-	for (int j = 0; j < propToConvert->numProps; j++) 
+    for (AGS::Common::StringIMap::const_iterator it = propToConvert->begin();
+         it != propToConvert->end(); ++it)
 	{
 		CustomProperty ^newProp = gcnew CustomProperty();
-		newProp->Name = gcnew String(propToConvert->propName[j]);
-		newProp->Value = gcnew String(propToConvert->propVal[j]);
+		newProp->Name = gcnew String(it->first);
+		newProp->Value = gcnew String(it->second);
 		insertInto->PropertyValues->Add(newProp->Name, newProp);
 	}
 }
 
-void CompileCustomProperties(AGS::Types::CustomProperties ^convertFrom, ::CustomProperties *compileInto)
+void CompileCustomProperties(AGS::Types::CustomProperties ^convertFrom, AGS::Common::StringIMap *compileInto)
 {
-	compileInto->reset();
-	int j = 0;
-	char propName[200];
-	char propVal[MAX_CUSTOM_PROPERTY_VALUE_LENGTH];
+	compileInto->clear();
 	for each (String ^key in convertFrom->PropertyValues->Keys)
 	{
-		ConvertStringToCharArray(convertFrom->PropertyValues[key]->Name, propName, 200);
-		ConvertStringToCharArray(convertFrom->PropertyValues[key]->Value, propVal, MAX_CUSTOM_PROPERTY_VALUE_LENGTH);
-		compileInto->addProperty(propName, propVal);
-		j++;
+        AGS::Common::String name, value;
+		name = ConvertStringToNativeString(convertFrom->PropertyValues[key]->Name);
+		value = ConvertStringToNativeString(convertFrom->PropertyValues[key]->Value);
+		(*compileInto)[name] = value;
 	}
 }
 
@@ -3467,9 +3320,9 @@ const char *GetCharacterScriptName(int charid, AGS::Types::Game ^game)
 	return charScriptNameBuf;
 }
 
-void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionCommand *intrcmd, String^ scriptFuncPrefix, AGS::Types::Game ^game, int *runScriptCount, bool *onlyIfInvWasUseds, int commandOffset) 
+void ConvertInteractionToScript(System::Text::StringBuilder ^sb, InteractionCommand *intrcmd, String^ scriptFuncPrefix, AGS::Types::Game ^game, int *runScriptCount, bool *onlyIfInvWasUseds, int commandOffset) 
 {
-  if (intrcmd->type != 1)
+  if (intrcmd->Type != 1)
   {
     // if another type of interaction, we definately can't optimise
     // away the wrapper function
@@ -3480,18 +3333,18 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
     runScriptCount[0]++;
   }
 
-  if (intrcmd->type != 20)
+  if (intrcmd->Type != 20)
   {
 	  *onlyIfInvWasUseds = false;
   }
 
-	switch (intrcmd->type)
+	switch (intrcmd->Type)
 	{
 	case 0:
 		break;
 	case 1:  // Run Script
 		sb->Append(scriptFuncPrefix);
-		sb->Append(System::Convert::ToChar(intrcmd->data[0].val + 'a'));
+		sb->Append(System::Convert::ToChar(intrcmd->Data[0].Value + 'a'));
 		sb->AppendLine("();");
 		break;
 	case 3: // Add Score
@@ -3533,24 +3386,24 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 	case 47: // IF player has been in room
 		// For these, the sample script code will work
 		{
-		String ^scriptCode = gcnew String(actions[intrcmd->type].textscript);
+		String ^scriptCode = gcnew String(actions[intrcmd->Type].textscript);
 		if ((*onlyIfInvWasUseds) && (commandOffset > 0))
 		{
 			scriptCode = String::Concat("else ", scriptCode);
 		}
-		scriptCode = scriptCode->Replace("$$1", (gcnew Int32(intrcmd->data[0].val))->ToString() );
-		scriptCode = scriptCode->Replace("$$2", (gcnew Int32(intrcmd->data[1].val))->ToString() );
-		scriptCode = scriptCode->Replace("$$3", (gcnew Int32(intrcmd->data[2].val))->ToString() );
-		scriptCode = scriptCode->Replace("$$4", (gcnew Int32(intrcmd->data[3].val))->ToString() );
+		scriptCode = scriptCode->Replace("$$1", (gcnew Int32(intrcmd->Data[0].Value))->ToString() );
+		scriptCode = scriptCode->Replace("$$2", (gcnew Int32(intrcmd->Data[1].Value))->ToString() );
+		scriptCode = scriptCode->Replace("$$3", (gcnew Int32(intrcmd->Data[2].Value))->ToString() );
+		scriptCode = scriptCode->Replace("$$4", (gcnew Int32(intrcmd->Data[3].Value))->ToString() );
 		sb->AppendLine(scriptCode);
 		}
 		break;
 	case 34: // animate character
 		{
 		char scriptCode[100];
-		int charID = intrcmd->data[0].val;
-		int loop = intrcmd->data[1].val;
-		int speed = intrcmd->data[2].val;
+		int charID = intrcmd->Data[0].Value;
+		int loop = intrcmd->Data[1].Value;
+		int speed = intrcmd->Data[2].Value;
 		sprintf(scriptCode, "%s.Animate(%d, %d, eOnce, eBlock);", GetCharacterScriptName(charID, game), loop, speed);
 		sb->AppendLine(gcnew String(scriptCode));
 		}
@@ -3558,10 +3411,10 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 	case 35: // quick animation
 		{
 		char scriptCode[300];
-		int charID = intrcmd->data[0].val;
-		int view = intrcmd->data[1].val;
-		int loop = intrcmd->data[2].val;
-		int speed = intrcmd->data[3].val;
+		int charID = intrcmd->Data[0].Value;
+		int view = intrcmd->Data[1].Value;
+		int loop = intrcmd->Data[2].Value;
+		int speed = intrcmd->Data[3].Value;
 		sprintf(scriptCode, "%s.LockView(%d);\n"
 							"%s.Animate(%d, %d, eOnce, eBlock);\n"
 							"%s.UnlockView();",
@@ -3574,45 +3427,45 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 	case 14: // Move Object
 		{
 		char scriptCode[100];
-		int objID = intrcmd->data[0].val;
-		int x = intrcmd->data[1].val;
-		int y = intrcmd->data[2].val;
-		int speed = intrcmd->data[3].val;
-		sprintf(scriptCode, "object[%d].Move(%d, %d, %d, %s);", objID, x, y, speed, (intrcmd->data[4].val) ? "eBlock" : "eNoBlock");
+		int objID = intrcmd->Data[0].Value;
+		int x = intrcmd->Data[1].Value;
+		int y = intrcmd->Data[2].Value;
+		int speed = intrcmd->Data[3].Value;
+		sprintf(scriptCode, "object[%d].Move(%d, %d, %d, %s);", objID, x, y, speed, (intrcmd->Data[4].Value) ? "eBlock" : "eNoBlock");
 		sb->AppendLine(gcnew String(scriptCode));
 		}
 		break;
 	case 19: // Move Character
 		{
 		char scriptCode[100];
-		int charID = intrcmd->data[0].val;
-		int x = intrcmd->data[1].val;
-		int y = intrcmd->data[2].val;
-		sprintf(scriptCode, "%s.Walk(%d, %d, %s);", GetCharacterScriptName(charID, game), x, y, (intrcmd->data[3].val) ? "eBlock" : "eNoBlock");
+		int charID = intrcmd->Data[0].Value;
+		int x = intrcmd->Data[1].Value;
+		int y = intrcmd->Data[2].Value;
+		sprintf(scriptCode, "%s.Walk(%d, %d, %s);", GetCharacterScriptName(charID, game), x, y, (intrcmd->Data[3].Value) ? "eBlock" : "eNoBlock");
 		sb->AppendLine(gcnew String(scriptCode));
 		}
 		break;
 	case 18: // Animate Object
 		{
 		char scriptCode[100];
-		int objID = intrcmd->data[0].val;
-		int loop = intrcmd->data[1].val;
-		int speed = intrcmd->data[2].val;
-		sprintf(scriptCode, "object[%d].Animate(%d, %d, %s, eNoBlock);", objID, loop, speed, (intrcmd->data[3].val) ? "eRepeat" : "eOnce");
+		int objID = intrcmd->Data[0].Value;
+		int loop = intrcmd->Data[1].Value;
+		int speed = intrcmd->Data[2].Value;
+		sprintf(scriptCode, "object[%d].Animate(%d, %d, %s, eNoBlock);", objID, loop, speed, (intrcmd->Data[3].Value) ? "eRepeat" : "eOnce");
 		sb->AppendLine(gcnew String(scriptCode));
 		}
 		break;
 	case 23: // IF variable set to value
 		{
 		char scriptCode[100];
-		int valueToCheck = intrcmd->data[1].val;
-		if ((game == nullptr) || (intrcmd->data[0].val >= game->OldInteractionVariables->Count))
+		int valueToCheck = intrcmd->Data[1].Value;
+		if ((game == nullptr) || (intrcmd->Data[0].Value >= game->OldInteractionVariables->Count))
 		{
-			sprintf(scriptCode, "if (__INTRVAL$%d$ == %d) {", intrcmd->data[0].val, valueToCheck);
+			sprintf(scriptCode, "if (__INTRVAL$%d$ == %d) {", intrcmd->Data[0].Value, valueToCheck);
 		}
 		else
 		{
-			OldInteractionVariable^ variableToCheck = game->OldInteractionVariables[intrcmd->data[0].val];
+			OldInteractionVariable^ variableToCheck = game->OldInteractionVariables[intrcmd->Data[0].Value];
 			sprintf(scriptCode, "if (%s == %d) {", variableToCheck->ScriptName, valueToCheck);
 		}
 		sb->AppendLine(gcnew String(scriptCode));
@@ -3621,14 +3474,14 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 	case 33: // Set variable
 		{
 		char scriptCode[100];
-		int valueToCheck = intrcmd->data[1].val;
-		if ((game == nullptr) || (intrcmd->data[0].val >= game->OldInteractionVariables->Count))
+		int valueToCheck = intrcmd->Data[1].Value;
+		if ((game == nullptr) || (intrcmd->Data[0].Value >= game->OldInteractionVariables->Count))
 		{
-			sprintf(scriptCode, "__INTRVAL$%d$ = %d;", intrcmd->data[0].val, valueToCheck);
+			sprintf(scriptCode, "__INTRVAL$%d$ = %d;", intrcmd->Data[0].Value, valueToCheck);
 		}
 		else
 		{
-			OldInteractionVariable^ variableToCheck = game->OldInteractionVariables[intrcmd->data[0].val];
+			OldInteractionVariable^ variableToCheck = game->OldInteractionVariables[intrcmd->Data[0].Value];
 			sprintf(scriptCode, "%s = %d;", variableToCheck->ScriptName, valueToCheck);
 		}
 		sb->AppendLine(gcnew String(scriptCode));
@@ -3637,11 +3490,11 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 	case 12: // Change Room
 		{
 		char scriptCode[200];
-		int room = intrcmd->data[0].val;
+		int room = intrcmd->Data[0].Value;
 		sprintf(scriptCode, "player.ChangeRoomAutoPosition(%d", room);
-		if (intrcmd->data[1].val > 0) 
+		if (intrcmd->Data[1].Value > 0) 
 		{
-			sprintf(&scriptCode[strlen(scriptCode)], ", %d", intrcmd->data[1].val);
+			sprintf(&scriptCode[strlen(scriptCode)], ", %d", intrcmd->Data[1].Value);
 		}
 		strcat(scriptCode, ");");
 		sb->AppendLine(gcnew String(scriptCode));
@@ -3649,7 +3502,7 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 		break;
 	case 2: // Add Score On First Execution
 		{
-		  int points = intrcmd->data[0].val;
+		  int points = intrcmd->Data[0].Value;
       String^ newGuid = System::Guid::NewGuid().ToString();
       String^ scriptCode = String::Format("if (Game.DoOnceOnly(\"{0}\"))", newGuid);
       scriptCode = String::Concat(scriptCode, " {\n  ");
@@ -3663,22 +3516,22 @@ void ConvertInteractionToScript(System::Text::StringBuilder ^sb, NewInteractionC
 	}
 }
 
-void ConvertInteractionCommandList(System::Text::StringBuilder^ sb, NewInteractionCommandList *cmdList, String^ scriptFuncPrefix, AGS::Types::Game^ game, int *runScriptCount, int targetTypeForUnhandledEvent) 
+void ConvertInteractionCommandList(System::Text::StringBuilder^ sb, InteractionCommandList *cmdList, String^ scriptFuncPrefix, AGS::Types::Game^ game, int *runScriptCount, int targetTypeForUnhandledEvent) 
 {
 	bool onlyIfInvWasUseds = true;
 
-	for (int cmd = 0; cmd < cmdList->numCommands; cmd++)
+    for (size_t cmd = 0; cmd < cmdList->Cmds.size(); cmd++)
 	{
-		ConvertInteractionToScript(sb, &cmdList->command[cmd], scriptFuncPrefix, game, runScriptCount, &onlyIfInvWasUseds, cmd);
-		if (cmdList->command[cmd].get_child_list() != NULL) 
+		ConvertInteractionToScript(sb, &cmdList->Cmds[cmd], scriptFuncPrefix, game, runScriptCount, &onlyIfInvWasUseds, cmd);
+		if (cmdList->Cmds[cmd].Children.get() != NULL) 
 		{
-			ConvertInteractionCommandList(sb, cmdList->command[cmd].get_child_list(), scriptFuncPrefix, game, runScriptCount, targetTypeForUnhandledEvent);
+			ConvertInteractionCommandList(sb, cmdList->Cmds[cmd].Children.get(), scriptFuncPrefix, game, runScriptCount, targetTypeForUnhandledEvent);
 			sb->AppendLine("}");
 		}
 	}
 
 	if ((onlyIfInvWasUseds) && (targetTypeForUnhandledEvent > 0) && 
-		(cmdList->numCommands > 0))
+		(cmdList->Cmds.size() > 0))
 	{
 		sb->AppendLine("else {");
 		sb->AppendLine(String::Format(" unhandled_event({0}, 3);", targetTypeForUnhandledEvent));
@@ -3688,31 +3541,31 @@ void ConvertInteractionCommandList(System::Text::StringBuilder^ sb, NewInteracti
 
 void CopyInteractions(AGS::Types::Interactions ^destination, ::InteractionScripts *source)
 {
-	if (source->numEvents > destination->ScriptFunctionNames->Length) 
+    if (source->ScriptFuncNames.size() > (size_t)destination->ScriptFunctionNames->Length) 
 	{
 		throw gcnew AGS::Types::AGSEditorException("Invalid interaction funcs: too many interaction events");
 	}
 
-	for (int i = 0; i < source->numEvents; i++) 
+	for (size_t i = 0; i < source->ScriptFuncNames.size(); i++) 
 	{
-		destination->ScriptFunctionNames[i] = gcnew String(source->scriptFuncNames[i]);
+		destination->ScriptFunctionNames[i] = gcnew String(source->ScriptFuncNames[i]);
 	}
 }
 
-void ConvertInteractions(AGS::Types::Interactions ^interactions, ::NewInteraction *intr, String^ scriptFuncPrefix, AGS::Types::Game ^game, int targetTypeForUnhandledEvent)
+void ConvertInteractions(AGS::Types::Interactions ^interactions, Interaction *intr, String^ scriptFuncPrefix, AGS::Types::Game ^game, int targetTypeForUnhandledEvent)
 {
-	if (intr->numEvents > interactions->ScriptFunctionNames->Length) 
+	if (intr->Events.size() > (size_t)interactions->ScriptFunctionNames->Length) 
 	{
 		throw gcnew AGS::Types::AGSEditorException("Invalid interaction data: too many interaction events");
 	}
 
-	for (int i = 0; i < intr->numEvents; i++) 
+	for (size_t i = 0; i < intr->Events.size(); i++) 
 	{
-		if (intr->response[i] != NULL) 
+        if (intr->Events[i].Response.get() != NULL) 
 		{
       int runScriptCount = 0;
 			System::Text::StringBuilder^ sb = gcnew System::Text::StringBuilder();
-			ConvertInteractionCommandList(sb, intr->response[i], scriptFuncPrefix, game, &runScriptCount, targetTypeForUnhandledEvent);
+			ConvertInteractionCommandList(sb, intr->Events[i].Response.get(), scriptFuncPrefix, game, &runScriptCount, targetTypeForUnhandledEvent);
       if (runScriptCount == 1)
       {
         sb->Append("$$SINGLE_RUN_SCRIPT$$");
@@ -3722,7 +3575,12 @@ void ConvertInteractions(AGS::Types::Interactions ^interactions, ::NewInteractio
 	}
 }
 
-Game^ load_old_game_dta_file(const char *fileName)
+// Load compiled game's main data file and use it to create AGS::Types::Game.
+// TODO: originally this function was meant import strictly 2.72 games;
+// although technically it can now load game files of any version, more work is
+// required to properly fill in editor's Game object's fields depending on
+// which version is being loaded.
+Game^ import_compiled_game_dta(const char *fileName)
 {
 	const char *errorMsg = load_dta_file_into_thisgame(fileName);
     loaded_game_file_version = kGameVersion_Current;
@@ -3763,7 +3621,7 @@ Game^ load_old_game_dta_file(const char *fileName)
     game->Settings->NumberDialogOptions = (thisgame.options[OPT_DIALOGNUMBERED] != 0) ? DialogOptionsNumbering::Normal : DialogOptionsNumbering::KeyShortcutsOnly;
 	game->Settings->PixelPerfect = (thisgame.options[OPT_PIXPERFECT] != 0);
 	game->Settings->PlaySoundOnScore = thisgame.options[OPT_SCORESOUND];
-	game->Settings->Resolution = (GameResolutions)thisgame.default_resolution;
+	game->Settings->Resolution = (GameResolutions)thisgame.GetDefaultResolution();
 	game->Settings->RoomTransition = (RoomTransitionStyle)thisgame.options[OPT_FADETYPE];
 	game->Settings->SaveScreenshots = (thisgame.options[OPT_SAVESCREENSHOT] != 0);
 	game->Settings->SkipSpeech = (SkipSpeechStyle)thisgame.options[OPT_NOSKIPTEXT];
@@ -3778,6 +3636,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 	game->Settings->WhenInterfaceDisabled = (InterfaceDisabledAction)thisgame.options[OPT_DISABLEOFF];
 	game->Settings->UniqueID = thisgame.uniqueid;
   game->Settings->SaveGameFolderName = gcnew String(thisgame.gamename);
+  game->Settings->RenderAtScreenResolution = (RenderAtScreenResolution)thisgame.options[OPT_RENDERATSCREENRES];
 
 	game->Settings->InventoryHotspotMarker->DotColor = thisgame.hotdot;
 	game->Settings->InventoryHotspotMarker->CrosshairColor = thisgame.hotdotouter;
@@ -3811,20 +3670,21 @@ Game^ load_old_game_dta_file(const char *fileName)
 
 	for (i = 0; i < numThisgamePlugins; i++) 
 	{
-		cli::array<System::Byte> ^pluginData = gcnew cli::array<System::Byte>(thisgamePlugins[i].dataSize);
-		for (int j = 0; j < thisgamePlugins[i].dataSize; j++) 
+		cli::array<System::Byte> ^pluginData = gcnew cli::array<System::Byte>(thisgamePlugins[i].DataLen);
+		const char *data_ptr = thisgamePlugins[i].Data.get();
+		for (size_t j = 0; j < thisgamePlugins[i].DataLen; j++) 
 		{
-			pluginData[j] = thisgamePlugins[i].data[j];
+			pluginData[j] = data_ptr[j];
 		}
 		
-		AGS::Types::Plugin ^plugin = gcnew AGS::Types::Plugin(gcnew String(thisgamePlugins[i].filename), pluginData);
+		AGS::Types::Plugin ^plugin = gcnew AGS::Types::Plugin(gcnew String(thisgamePlugins[i].Name), pluginData);
 		game->Plugins->Add(plugin);
 	}
 
 	for (i = 0; i < numGlobalVars; i++)
 	{
 		OldInteractionVariable ^intVar;
-		intVar = gcnew OldInteractionVariable(gcnew String(globalvars[i].name), globalvars[i].value);
+		intVar = gcnew OldInteractionVariable(gcnew String(globalvars[i].Name), globalvars[i].Value);
 		game->OldInteractionVariables->Add(intVar);
 	}
 	
@@ -3835,28 +3695,21 @@ Game^ load_old_game_dta_file(const char *fileName)
 		view->Name = gcnew String(thisgame.viewNames[i]);
 		view->ID = i + 1;
 
-		for (int j = 0; j < oldViews[i].numloops; j++) 
+		for (int j = 0; j < newViews[i].numLoops; j++) 
 		{
 			ViewLoop^ newLoop = gcnew ViewLoop();
 			newLoop->ID = j;
+			newLoop->RunNextLoop = newViews[i].loops[j].flags & LOOPFLAG_RUNNEXTLOOP;
 
-			for (int k = 0; k < oldViews[i].numframes[j]; k++) 
+			for (int k = 0; k < newViews[i].loops[j].numFrames; k++) 
 			{
-				if (oldViews[i].frames[j][k].pic == -1) 
-				{
-					newLoop->RunNextLoop = true;
-				}
-				else 
-				{
-					AGS::Types::ViewFrame^ newFrame = gcnew AGS::Types::ViewFrame();
-					newFrame->ID = k;
-					newFrame->Flipped = (oldViews[i].frames[j][k].flags & VFLG_FLIPSPRITE);
-					newFrame->Image = oldViews[i].frames[j][k].pic;
-					newFrame->Sound = oldViews[i].frames[j][k].sound;
-					newFrame->Delay = oldViews[i].frames[j][k].speed;
-
-					newLoop->Frames->Add(newFrame);
-				}
+				AGS::Types::ViewFrame^ newFrame = gcnew AGS::Types::ViewFrame();
+				newFrame->ID = k;
+				newFrame->Flipped = (newViews[i].loops[j].frames[k].flags & VFLG_FLIPSPRITE);
+				newFrame->Image = newViews[i].loops[j].frames[k].pic;
+				newFrame->Sound = newViews[i].loops[j].frames[k].sound;
+				newFrame->Delay = newViews[i].loops[j].frames[k].speed;
+				newLoop->Frames->Add(newFrame);
 			}
 			
 			view->Loops->Add(newLoop);
@@ -4026,58 +3879,58 @@ Game^ load_old_game_dta_file(const char *fileName)
 		game->InventoryItems->Add(invItem);
 	}
 
-	//AGS::Types::CustomPropertySchema ^schema = gcnew AGS::Types::CustomPropertySchema();
-	for (i = 0; i < thisgame.propSchema.numProps; i++) 
+    for (AGS::Common::PropertySchema::const_iterator it = thisgame.propSchema.begin();
+         it != thisgame.propSchema.end(); ++it)
 	{
 		CustomPropertySchemaItem ^schemaItem = gcnew CustomPropertySchemaItem();
-		schemaItem->Name = gcnew String(thisgame.propSchema.propName[i]);
-		schemaItem->Description = gcnew String(thisgame.propSchema.propDesc[i]);
-		schemaItem->DefaultValue = gcnew String(thisgame.propSchema.defaultValue[i]);
-		schemaItem->Type = (AGS::Types::CustomPropertyType)thisgame.propSchema.propType[i];
+		schemaItem->Name = gcnew String(it->second.Name);
+		schemaItem->Description = gcnew String(it->second.Description);
+		schemaItem->DefaultValue = gcnew String(it->second.DefaultValue);
+		schemaItem->Type = (AGS::Types::CustomPropertyType)it->second.Type;
 
 		game->PropertySchema->PropertyDefinitions->Add(schemaItem);
 	}
 
 	for (i = 0; i < thisgame.numgui; i++)
 	{
-		guis[i].rebuild_array();
-	    guis[i].resort_zorder();
+		guis[i].RebuildArray();
+	    guis[i].ResortZOrder();
 
 		GUI^ newGui;
-		if (guis[i].is_textwindow()) 
+		if (guis[i].IsTextWindow()) 
 		{
 			newGui = gcnew TextWindowGUI();
 			newGui->Controls->Clear();  // we'll add our own edges
-      ((TextWindowGUI^)newGui)->TextColor = guis[i].fgcol;
+      ((TextWindowGUI^)newGui)->TextColor = guis[i].FgColor;
 		}
 		else 
 		{
 			newGui = gcnew NormalGUI();
-			((NormalGUI^)newGui)->Clickable = ((guis[i].flags & GUIF_NOCLICK) == 0);
-			((NormalGUI^)newGui)->Top = guis[i].y;
-			((NormalGUI^)newGui)->Left = guis[i].x;
-			((NormalGUI^)newGui)->Width = (guis[i].wid > 0) ? guis[i].wid : 1;
-			((NormalGUI^)newGui)->Height = (guis[i].hit > 0) ? guis[i].hit : 1;
-			((NormalGUI^)newGui)->PopupYPos = guis[i].popupyp;
-			((NormalGUI^)newGui)->Visibility = (GUIVisibility)guis[i].popup;
-			((NormalGUI^)newGui)->ZOrder = guis[i].zorder;
-			((NormalGUI^)newGui)->OnClick = gcnew String(guis[i].clickEventHandler);
-      ((NormalGUI^)newGui)->BorderColor = guis[i].fgcol;
+			((NormalGUI^)newGui)->Clickable = ((guis[i].Flags & Common::kGUIMain_NoClick) == 0);
+			((NormalGUI^)newGui)->Top = guis[i].Y;
+			((NormalGUI^)newGui)->Left = guis[i].X;
+			((NormalGUI^)newGui)->Width = (guis[i].Width > 0) ? guis[i].Width : 1;
+			((NormalGUI^)newGui)->Height = (guis[i].Height > 0) ? guis[i].Height : 1;
+			((NormalGUI^)newGui)->PopupYPos = guis[i].PopupAtMouseY;
+			((NormalGUI^)newGui)->Visibility = (GUIVisibility)guis[i].PopupStyle;
+			((NormalGUI^)newGui)->ZOrder = guis[i].ZOrder;
+			((NormalGUI^)newGui)->OnClick = gcnew String(guis[i].OnClickHandler);
+      ((NormalGUI^)newGui)->BorderColor = guis[i].FgColor;
 		}
-		newGui->BackgroundColor = guis[i].bgcol;
-		newGui->BackgroundImage = guis[i].bgpic;
+		newGui->BackgroundColor = guis[i].BgColor;
+		newGui->BackgroundImage = guis[i].BgImage;
 		newGui->ID = i;
-		newGui->Name = gcnew String(guis[i].name);
+		newGui->Name = gcnew String(guis[i].Name);
 
-		for (int j = 0; j < guis[i].numobjs; j++)
+		for (int j = 0; j < guis[i].ControlCount; j++)
 		{
-			GUIObject* curObj = guis[i].objs[j];
+			GUIObject* curObj = guis[i].Controls[j];
 			GUIControl ^newControl = nullptr;
-			switch (guis[i].objrefptr[j] >> 16)
+			switch (guis[i].CtrlRefs[j] >> 16)
 			{
-			case GOBJ_BUTTON:
+			case Common::kGUIButton:
 				{
-				if (guis[i].is_textwindow())
+				if (guis[i].IsTextWindow())
 				{
 					AGS::Types::GUITextWindowEdge^ edge = gcnew AGS::Types::GUITextWindowEdge();
 					::GUIButton *copyFrom = (::GUIButton*)curObj;
@@ -4103,7 +3956,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 				}
 				break;
 				}
-			case GOBJ_LABEL:
+			case Common::kGUILabel:
 				{
 				AGS::Types::GUILabel^ newLabel = gcnew AGS::Types::GUILabel();
 				::GUILabel *copyFrom = (::GUILabel*)curObj;
@@ -4114,7 +3967,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 				newLabel->Text = gcnew String(copyFrom->GetText());
 				break;
 				}
-			case GOBJ_TEXTBOX:
+			case Common::kGUITextBox:
 				{
 				  AGS::Types::GUITextBox^ newTextbox = gcnew AGS::Types::GUITextBox();
 				  ::GUITextBox *copyFrom = (::GUITextBox*)curObj;
@@ -4126,7 +3979,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 				  newTextbox->OnActivate = gcnew String(copyFrom->eventHandlers[0]);
 				  break;
 				}
-			case GOBJ_LISTBOX:
+			case Common::kGUIListBox:
 				{
 				  AGS::Types::GUIListBox^ newListbox = gcnew AGS::Types::GUIListBox();
 				  ::GUIListBox *copyFrom = (::GUIListBox*)curObj;
@@ -4142,7 +3995,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 				  newListbox->OnSelectionChanged = gcnew String(copyFrom->eventHandlers[0]);
 				  break;
 				}
-			case GOBJ_SLIDER:
+			case Common::kGUISlider:
 				{
 				  AGS::Types::GUISlider^ newSlider = gcnew AGS::Types::GUISlider();
 				  ::GUISlider *copyFrom = (::GUISlider*)curObj;
@@ -4156,7 +4009,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 				  newSlider->OnChange = gcnew String(copyFrom->eventHandlers[0]);
 				  break;
 				}
-			case GOBJ_INVENTORY:
+			case Common::kGUIInvWindow:
 				{
 					AGS::Types::GUIInventory^ invwindow = gcnew AGS::Types::GUIInventory();
 				    ::GUIInv *copyFrom = (::GUIInv*)curObj;
@@ -4167,7 +4020,7 @@ Game^ load_old_game_dta_file(const char *fileName)
 					break;
 				}
 			default:
-				throw gcnew AGSEditorException("Unknown control type found: " + (guis[i].objrefptr[j] >> 16));
+				throw gcnew AGSEditorException("Unknown control type found: " + (guis[i].CtrlRefs[j] >> 16));
 			}
 			newControl->Width = (curObj->wid > 0) ? curObj->wid : 1;
 			newControl->Height = (curObj->hit > 0) ? curObj->hit : 1;
@@ -4189,10 +4042,9 @@ Game^ load_old_game_dta_file(const char *fileName)
 
 System::String ^load_room_script(System::String ^fileName)
 {
-	char roomFileNameBuffer[MAX_PATH];
-	ConvertStringToCharArray(fileName, roomFileNameBuffer);
+    AGSString roomFileName = ConvertFileNameToNativeString(fileName);
 
-	Stream *opty = Common::AssetManager::OpenAsset(roomFileNameBuffer);
+	Stream *opty = Common::AssetManager::OpenAsset(roomFileName);
 	if (opty == NULL) throw gcnew AGSEditorException("Unable to open room file");
 
 	short version = opty->ReadInt16();
@@ -4233,7 +4085,7 @@ System::String ^load_room_script(System::String ^fileName)
 		}
 		else 
 		{
-			opty->Seek(Common::kSeekCurrent, blockLen);
+			opty->Seek(blockLen);
 		}
 	}
 
@@ -4249,10 +4101,9 @@ int GetCurrentlyLoadedRoomNumber()
 
 AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
 {
-	char roomFileNameBuffer[MAX_PATH];
-	ConvertStringToCharArray(roomToLoad->FileName, roomFileNameBuffer);
+    AGSString roomFileName = ConvertFileNameToNativeString(roomToLoad->FileName);
 
-	const char *errorMsg = load_room_file(roomFileNameBuffer);
+	const char *errorMsg = load_room_file(roomFileName);
 	if (errorMsg != NULL) 
 	{
 		throw gcnew AGSEditorException(gcnew String(errorMsg));
@@ -4290,7 +4141,7 @@ AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
 	for (i = 0; i < thisroom.numLocalVars; i++)
 	{
 		OldInteractionVariable ^intVar;
-		intVar = gcnew OldInteractionVariable(gcnew String(thisroom.localvars[i].name), thisroom.localvars[i].value);
+		intVar = gcnew OldInteractionVariable(gcnew String(thisroom.localvars[i].Name), thisroom.localvars[i].Value);
 		room->OldInteractionVariables->Add(intVar);
 	}
 
@@ -4330,6 +4181,8 @@ AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
     if (thisroom.wasversion <= kRoomVersion_300a)
       obj->StartY += GetSpriteHeight(thisroom.sprs[i].sprnum);
 		obj->Visible = (thisroom.sprs[i].on != 0);
+		obj->Clickable = ((thisroom.objectFlags[i] & OBJF_NOINTERACT) == 0);
+		obj->Locked = ((thisroom.objectFlags[i] & OBJF_LOCKED) != 0);
 		obj->Baseline = thisroom.objbaseline[i];
 		obj->Name = gcnew String(jibbledScriptName);
 		obj->Description = gcnew String(thisroom.objectnames[i]);
@@ -4357,7 +4210,7 @@ AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
 		hotspot->ID = i;
 		hotspot->Description = gcnew String(thisroom.hotspotnames[i]);
 		hotspot->Name = (gcnew String(thisroom.hotspotScriptNames[i]))->Trim();
-		hotspot->WalkToPoint = Point(thisroom.hswalkto[i].x, thisroom.hswalkto[i].y);
+        hotspot->WalkToPoint = System::Drawing::Point(thisroom.hswalkto[i].x, thisroom.hswalkto[i].y);
 		ConvertCustomProperties(hotspot->Properties, &thisroom.hsProps[i]);
 
 		if (thisroom.wasversion < kRoomVersion_300a)
@@ -4401,12 +4254,21 @@ AGS::Types::Room^ load_crm_file(UnloadedRoom ^roomToLoad)
 	{
 		RoomRegion ^area = room->Regions[i];
 		area->ID = i;
-		area->UseColourTint = ((thisroom.regionTintLevel[i] & TINT_IS_ENABLED) != 0);
-		area->LightLevel = thisroom.regionLightLevel[i] + 100;
+		// NOTE: Region's light level value exposed in editor is always 100 units higher,
+		// for compatibility with older versions of the editor.
+		// TODO: probably we could remove this behavior? Need to consider possible compat mode
+		area->LightLevel = thisroom.get_region_lightlevel(i) + 100;
+		area->UseColourTint = thisroom.has_region_tint(i);
 		area->BlueTint = (thisroom.regionTintLevel[i] >> 16) & 0x00ff;
 		area->GreenTint = (thisroom.regionTintLevel[i] >> 8) & 0x00ff;
 		area->RedTint = thisroom.regionTintLevel[i] & 0x00ff;
-		area->TintSaturation = (thisroom.regionLightLevel[i] > 0) ? thisroom.regionLightLevel[i] : 50;
+		// Set saturation's and luminance's default values in the editor if it is disabled in room data
+		int saturation = (thisroom.regionTintLevel[i] >> 24) & 0xFF;
+		area->TintSaturation = (saturation > 0 && area->UseColourTint) ? saturation :
+			Utilities::GetDefaultValue(area->GetType(), "TintSaturation", 0);
+		int luminance = thisroom.get_region_tintluminance(i);
+		area->TintLuminance = area->UseColourTint ? luminance :
+			Utilities::GetDefaultValue(area->GetType(), "TintLuminance", 0);
 
 		if (thisroom.wasversion < kRoomVersion_300a)
 		{
@@ -4470,7 +4332,7 @@ void save_crm_file(Room ^room)
 	{
 		RoomMessage ^newMessage = room->Messages[i];
 		thisroom.message[i] = (char*)malloc(newMessage->Text->Length + 1);
-		ConvertStringToCharArray(newMessage->Text, thisroom.message[i]);
+		ConvertStringToCharArray(newMessage->Text, thisroom.message[i], newMessage->Text->Length + 1);
 		if (newMessage->ShowAsSpeech)
 		{
 			thisroom.msgi[i].displayas = newMessage->CharacterID + 1;
@@ -4488,17 +4350,19 @@ void save_crm_file(Room ^room)
 	for (int i = 0; i < thisroom.numsprs; i++) 
 	{
 		RoomObject ^obj = room->Objects[i];
-		ConvertStringToCharArray(obj->Name, thisroom.objectscriptnames[i]);
+		thisroom.objectscriptnames[i] = ConvertStringToNativeString(obj->Name);
 
 		thisroom.sprs[i].sprnum = obj->Image;
 		thisroom.sprs[i].x = obj->StartX;
 		thisroom.sprs[i].y = obj->StartY;
 		thisroom.sprs[i].on = obj->Visible;
 		thisroom.objbaseline[i] = obj->Baseline;
-		ConvertStringToCharArray(obj->Description, thisroom.objectnames[i], 30);
+		thisroom.objectnames[i] = ConvertStringToNativeString(obj->Description);
 		thisroom.objectFlags[i] = 0;
 		if (obj->UseRoomAreaScaling) thisroom.objectFlags[i] |= OBJF_USEROOMSCALING;
 		if (obj->UseRoomAreaLighting) thisroom.objectFlags[i] |= OBJF_USEREGIONTINTS;
+		if (!obj->Clickable) thisroom.objectFlags[i] |= OBJF_NOINTERACT;
+		if (obj->Locked) thisroom.objectFlags[i] |= OBJF_LOCKED;
 		CompileCustomProperties(obj->Properties, &thisroom.objProps[i]);
 	}
 
@@ -4506,13 +4370,8 @@ void save_crm_file(Room ^room)
 	for (int i = 0; i < thisroom.numhotspots; i++) 
 	{
 		RoomHotspot ^hotspot = room->Hotspots[i];
-        if (thisroom.hotspotnames[i])
-        {
-            free(thisroom.hotspotnames[i]);
-        }
-		thisroom.hotspotnames[i] = (char*)malloc(hotspot->Description->Length + 1);
-		ConvertStringToCharArray(hotspot->Description, thisroom.hotspotnames[i]);
-		ConvertStringToCharArray(hotspot->Name, thisroom.hotspotScriptNames[i], 20);
+		thisroom.hotspotnames[i] = ConvertStringToNativeString(hotspot->Description);
+		thisroom.hotspotScriptNames[i] = ConvertStringToNativeString(hotspot->Name);
 		thisroom.hswalkto[i].x = hotspot->WalkToPoint.X;
 		thisroom.hswalkto[i].y = hotspot->WalkToPoint.Y;
 		CompileCustomProperties(hotspot->Properties, &thisroom.hsProps[i]);
@@ -4547,12 +4406,14 @@ void save_crm_file(Room ^room)
 		thisroom.regionTintLevel[i] = 0;
 		if (area->UseColourTint) 
 		{
-			thisroom.regionTintLevel[i] = TINT_IS_ENABLED;
-			thisroom.regionTintLevel[i] |= area->RedTint | (area->GreenTint << 8) | (area->BlueTint << 16);
-			thisroom.regionLightLevel[i] = area->TintSaturation;
+            thisroom.regionTintLevel[i]  = area->RedTint | (area->GreenTint << 8) | (area->BlueTint << 16) | (area->TintSaturation << 24);
+            thisroom.regionLightLevel[i] = (area->TintLuminance * 25) / 10;
 		}
 		else 
 		{
+            thisroom.regionTintLevel[i] = 0;
+			// NOTE: Region's light level value exposed in editor is always 100 units higher,
+			// for compatibility with older versions of the editor.
 			thisroom.regionLightLevel[i] = area->LightLevel - 100;
 		}
 	}
@@ -4561,78 +4422,23 @@ void save_crm_file(Room ^room)
 
 	thisroom.scripts = NULL;
 	thisroom.compiled_script = ((AGS::Native::CompiledScript^)room->Script->CompiledData)->Data;
-    thisroom.compiled_script_shared = true;
 
-	char roomFileNameBuffer[MAX_PATH];
-	ConvertStringToCharArray(room->FileName, roomFileNameBuffer);
+	AGSString roomFileName = ConvertFileNameToNativeString(room->FileName);
 
 	TempDataStorage::RoomBeingSaved = room;
 
-	save_room_file(roomFileNameBuffer);
+	save_room_file(roomFileName);
 
 	TempDataStorage::RoomBeingSaved = nullptr;
 
 	for (int i = 0; i < thisroom.numhotspots; i++) 
 	{
-		free(thisroom.hotspotnames[i]);
-		thisroom.hotspotnames[i] = NULL;
+		thisroom.hotspotnames[i].Free(); // TODO: not sure if makes sense here
 	}
-}
-
-ref class ManagedViewProcessing
-{
-public:
-    static void ConvertViewsToDTAFormat(IViewFolder ^folder, Game ^game) 
-    {
-        AGS::Types::FolderHelper::ViewFolderProcessing ^del = 
-            gcnew AGS::Types::FolderHelper::ViewFolderProcessing(ConvertViewsToDTAFormat);
-        AGS::Types::FolderHelper::ForEachViewFolder(folder, game, del);
-
-	    for each (View ^view in folder->Views)
-	    {
-		    int i = view->ID - 1;
-		    ConvertStringToCharArray(view->Name, thisgame.viewNames[i], MAXVIEWNAMELENGTH);
-
-		    newViews[i].Initialize(view->Loops->Count);
-		    for (int j = 0; j < newViews[i].numLoops; j++) 
-		    {
-          newViews[i].loops[j].Initialize(view->Loops[j]->Frames->Count);
-			    for (int k = 0; k < newViews[i].loops[j].numFrames; k++) 
-			    {
-				    AGS::Types::ViewFrame ^frame = view->Loops[j]->Frames[k];
-            int frameSound = -1;
-            if (frame->Sound > 0) 
-              frameSound = game->GetAudioArrayIndexFromAudioClipIndex(frame->Sound);
-
-				    newViews[i].loops[j].frames[k].flags = (frame->Flipped) ? VFLG_FLIPSPRITE : 0;
-				    newViews[i].loops[j].frames[k].pic = frame->Image;
-            newViews[i].loops[j].frames[k].sound = frameSound;
-				    newViews[i].loops[j].frames[k].speed = frame->Delay;
-			    }
-    			
-			    if (view->Loops[j]->RunNextLoop)
-			    {
-            newViews[i].loops[j].flags = LOOPFLAG_RUNNEXTLOOP;
-			    }
-		    }
-
-	    }
-    }
-};
-
-void write_compiled_script(Stream *ooo, Script ^script)
-{
-	if (script->CompiledData == nullptr)
-	{
-		throw gcnew CompileError(String::Format("Script has not been compiled: {0}", script->FileName));
-	}
-
-	((AGS::Native::CompiledScript^)script->CompiledData)->Data->Write(ooo);
 }
 
 void serialize_interaction_scripts(Interactions ^interactions, Stream *ooo)
 {
-	char textBuffer[256];
 	ooo->WriteInt32(interactions->ScriptFunctionNames->Length);
 	for each (String^ funcName in interactions->ScriptFunctionNames)
 	{
@@ -4642,8 +4448,8 @@ void serialize_interaction_scripts(Interactions ^interactions, Stream *ooo)
 		}
 		else 
 		{
-			ConvertStringToCharArray(funcName, textBuffer, 256);
-			fputstring(textBuffer, ooo);
+			AGSString fname = ConvertStringToNativeString(funcName);
+			fname.Write(ooo);
 		}
 	}
 }
@@ -4664,547 +4470,6 @@ void serialize_room_interactions(Stream *ooo)
 	{
 		serialize_interaction_scripts(region->Interactions, ooo);
 	}
-}
-
-void WriteGameSetupStructBase_Aligned(Stream *out)
-{
-    GameSetupStructBase *gameBase = (GameSetupStructBase *)&thisgame;
-    AlignedStream align_s(out, Common::kAligned_Write);
-    gameBase->WriteToFile(&align_s);
-}
-
-void save_thisgame_to_file(const char *fileName, Game ^game)
-{
-    Common::String ags_version;
-    ConvertStringToNativeString(AGS::Types::Version::AGS_EDITOR_VERSION, ags_version);
-
-  char textBuffer[500];
-	int bb;
-
-	Stream*ooo = Common::File::CreateFile(fileName);
-	if (ooo == NULL) 
-	{
-		throw gcnew CompileError(String::Format("Cannot open file {0} for writing", gcnew String(fileName)));
-	}
-
-  ooo->Write(game_file_sig,30);
-  ooo->WriteInt32(kGameVersion_Current);
-  ooo->WriteInt32(ags_version.GetLength());
-  ooo->Write(ags_version, ags_version.GetLength());
-
-  WriteGameSetupStructBase_Aligned(ooo);
-  ooo->Write(&thisgame.guid[0], MAX_GUID_LENGTH);
-  ooo->Write(&thisgame.saveGameFileExtension[0], MAX_SG_EXT_LENGTH);
-  ooo->Write(&thisgame.saveGameFolderName[0], MAX_SG_FOLDER_LEN);
-  ooo->Write(&thisgame.fontflags[0], thisgame.numfonts);
-  ooo->Write(&thisgame.fontoutline[0], thisgame.numfonts);
-  ooo->WriteInt32 (MAX_SPRITES);
-  ooo->Write(&thisgame.spriteflags[0], MAX_SPRITES);
-  ooo->WriteArray(&thisgame.invinfo[0], sizeof(InventoryItemInfo), thisgame.numinvitems);
-  ooo->WriteArray(&thisgame.mcurs[0], sizeof(::MouseCursor), thisgame.numcursors);
-  
-  for (bb = 0; bb < thisgame.numcharacters; bb++)
-  {
-    serialize_interaction_scripts(game->Characters[bb]->Interactions, ooo);
-  }
-  for (bb = 1; bb < thisgame.numinvitems; bb++)
-  {
-    serialize_interaction_scripts(game->InventoryItems[bb - 1]->Interactions, ooo);
-  }
-
-  if (thisgame.dict != NULL) {
-    write_dictionary (thisgame.dict, ooo);
-  }
-
-  write_compiled_script(ooo, game->ScriptsToCompile->GetScriptByFilename(Script::GLOBAL_SCRIPT_FILE_NAME));
-  write_compiled_script(ooo, game->ScriptsToCompile->GetScriptByFilename(Script::DIALOG_SCRIPTS_FILE_NAME));
-
-  // Extract all the scripts we want to persist (all the non-headers, except
-  // the global script which was already written)
-  List<AGS::Types::Script^>^ scriptsToWrite = gcnew List<AGS::Types::Script^>();
-  for each (ScriptAndHeader ^scriptAndHeader in game->ScriptsToCompile)
-  {
-	  AGS::Types::Script^ script = scriptAndHeader->Script;
-	  if (script != nullptr)
-	  {
-		  if ((!script->FileName->Equals(Script::GLOBAL_SCRIPT_FILE_NAME)) &&
-			 (!script->FileName->Equals(Script::DIALOG_SCRIPTS_FILE_NAME)))
-		  {
-			  scriptsToWrite->Add(script);
-		  }
-	  }
-  }
-
-  ooo->WriteInt32(scriptsToWrite->Count);
-
-  for each (Script ^script in scriptsToWrite)
-  {
-	  write_compiled_script(ooo, script);
-  }
-
-  for (bb = 0; bb < thisgame.numviews; bb++)
-  {
-    newViews[bb].WriteToFile(ooo);
-  }
-
-  ooo->WriteArray(&thisgame.chars[0],sizeof(CharacterInfo),thisgame.numcharacters);
-
-  ooo->WriteArray(&thisgame.lipSyncFrameLetters[0][0], MAXLIPSYNCFRAMES, 50);
-
-  char *buffer;
-  for (bb=0;bb<MAXGLOBALMES;bb++) 
-  {
-	  if ((game->GlobalMessages[bb] == nullptr) || (game->GlobalMessages[bb]->Length == 0))
-		  continue;
-      
-	  buffer = (char*)malloc(game->GlobalMessages[bb]->Length + 1);
-	  ConvertStringToCharArray(game->GlobalMessages[bb], buffer);
-    write_string_encrypt(ooo, buffer);
-	  free(buffer);
-  }
-  ooo->WriteArray(&dialog[0], sizeof(DialogTopic), thisgame.numdialog);
-  write_gui(ooo,&guis[0],&thisgame,false);
-  write_plugins_to_disk(ooo);
-  // write the custom properties & schema
-  thisgame.propSchema.Serialize(ooo);
-  for (bb = 0; bb < thisgame.numcharacters; bb++)
-    thisgame.charProps[bb].Serialize (ooo);
-  for (bb = 0; bb < thisgame.numinvitems; bb++)
-    thisgame.invProps[bb].Serialize (ooo);
-
-  for (bb = 0; bb < thisgame.numviews; bb++)
-    fputstring(thisgame.viewNames[bb], ooo);
-
-  for (bb = 0; bb < thisgame.numinvitems; bb++)
-    fputstring(thisgame.invScriptNames[bb], ooo);
-
-  for (bb = 0; bb < thisgame.numdialog; bb++)
-    fputstring(thisgame.dialogScriptNames[bb], ooo);
-
-
-  int audioClipTypeCount = game->AudioClipTypes->Count + 1;
-  ooo->WriteInt32(audioClipTypeCount);
-  ::AudioClipType *clipTypes = (::AudioClipType*)calloc(audioClipTypeCount, sizeof(::AudioClipType));
-  // hard-coded SPEECH audio type 0
-  clipTypes[0].id = 0;
-  clipTypes[0].reservedChannels = 1;
-  clipTypes[0].volume_reduction_while_speech_playing = 0;
-  clipTypes[0].crossfadeSpeed = 0;
-
-  for (bb = 1; bb < audioClipTypeCount; bb++)
-  {
-    clipTypes[bb].id = bb;
-    clipTypes[bb].reservedChannels = game->AudioClipTypes[bb - 1]->MaxChannels;
-    clipTypes[bb].volume_reduction_while_speech_playing = game->AudioClipTypes[bb - 1]->VolumeReductionWhileSpeechPlaying;
-    clipTypes[bb].crossfadeSpeed = (int)game->AudioClipTypes[bb - 1]->CrossfadeClips;
-  }
-  ooo->WriteArray(clipTypes, sizeof(::AudioClipType), audioClipTypeCount);
-  free(clipTypes);
-
-  IList<AudioClip^>^ allClips = game->CachedAudioClipListForCompile;
-  ooo->WriteInt32(allClips->Count);
-  ScriptAudioClip *compiledAudioClips = (ScriptAudioClip*)calloc(allClips->Count, sizeof(ScriptAudioClip));
-  for (int i = 0; i < allClips->Count; i++)
-  {
-    AudioClip^ clip = allClips[i];
-    ConvertStringToCharArray(clip->ScriptName, compiledAudioClips[i].scriptName, 30);
-	  ConvertStringToCharArray(clip->CacheFileNameWithoutPath, compiledAudioClips[i].fileName, 15);
-    compiledAudioClips[i].bundlingType = (int)clip->BundlingType;
-    compiledAudioClips[i].defaultPriority = (int)clip->ActualPriority;
-    compiledAudioClips[i].defaultRepeat = (clip->ActualRepeat) ? 1 : 0;
-    compiledAudioClips[i].defaultVolume = clip->ActualVolume;
-    compiledAudioClips[i].fileType = (int)clip->FileType;
-    compiledAudioClips[i].type = clip->Type;
-  }
-  ooo->WriteArray(compiledAudioClips, sizeof(ScriptAudioClip), allClips->Count);
-  free(compiledAudioClips);
-  ooo->WriteInt32(game->GetAudioArrayIndexFromAudioClipIndex(game->Settings->PlaySoundOnScore));
-
-  if (game->Settings->DebugMode)
-  {
-    ooo->WriteInt32(game->Rooms->Count);
-    for (bb = 0; bb < game->Rooms->Count; bb++)
-    {
-      IRoom ^room = game->Rooms[bb];
-      ooo->WriteInt32(room->Number);
-      if (room->Description != nullptr)
-      {
-        ConvertStringToCharArray(room->Description, textBuffer, 500);
-      }
-      else
-      {
-        textBuffer[0] = 0;
-      }
-      fputstring(textBuffer, ooo);
-    }
-  }
-
-  delete ooo;
-}
-
-void save_game_to_dta_file(Game^ game, const char *fileName)
-{
-	thisgame.options[OPT_ALWAYSSPCH] = game->Settings->AlwaysDisplayTextAsSpeech;
-	thisgame.options[OPT_ANTIALIASFONTS] = game->Settings->AntiAliasFonts;
-	thisgame.options[OPT_ANTIGLIDE] = game->Settings->AntiGlideMode;
-	thisgame.options[OPT_NOWALKMODE] = !game->Settings->AutoMoveInWalkMode;
-	thisgame.options[OPT_RIGHTLEFTWRITE] = game->Settings->BackwardsText;
-	thisgame.color_depth = (int)game->Settings->ColorDepth;
-	thisgame.options[OPT_COMPRESSSPRITES] = game->Settings->CompressSprites;
-	thisgame.options[OPT_CROSSFADEMUSIC] = (int)game->Settings->CrossfadeMusic;
-	thisgame.options[OPT_DEBUGMODE] = game->Settings->DebugMode;
-	thisgame.options[OPT_DIALOGUPWARDS] = game->Settings->DialogOptionsBackwards;
-	thisgame.options[OPT_DIALOGGAP] = game->Settings->DialogOptionsGap;
-	thisgame.options[OPT_DIALOGIFACE] = game->Settings->DialogOptionsGUI;
-	thisgame.dialog_bullet = game->Settings->DialogOptionsBullet;
-	thisgame.options[OPT_DUPLICATEINV] = game->Settings->DisplayMultipleInventory;
-	thisgame.options[OPT_STRICTSTRINGS] = game->Settings->EnforceNewStrings;
-	thisgame.options[OPT_STRICTSCRIPTING] = game->Settings->EnforceObjectBasedScript;
-	thisgame.options[OPT_NOSCALEFNT] = game->Settings->FontsForHiRes;
-	ConvertStringToCharArray(game->Settings->GameName, thisgame.gamename, 50);
-	thisgame.options[OPT_NEWGUIALPHA] = (int)game->Settings->GUIAlphaStyle;
-    thisgame.options[OPT_SPRITEALPHA] = (int)game->Settings->SpriteAlphaStyle;
-	thisgame.options[OPT_HANDLEINVCLICKS] = game->Settings->HandleInvClicksInScript;
-	thisgame.options[OPT_FIXEDINVCURSOR] = !game->Settings->InventoryCursors;
-	thisgame.options[OPT_GLOBALTALKANIMSPD] = game->Settings->UseGlobalSpeechAnimationDelay ?
-        game->Settings->GlobalSpeechAnimationDelay : (-game->Settings->GlobalSpeechAnimationDelay - 1);
-	thisgame.options[OPT_LEFTTORIGHTEVAL] = game->Settings->LeftToRightPrecedence;
-	thisgame.options[OPT_LETTERBOX] = game->Settings->LetterboxMode;
-  thisgame.totalscore = game->Settings->MaximumScore;
-	thisgame.options[OPT_MOUSEWHEEL] = game->Settings->MouseWheelEnabled;
-	thisgame.options[OPT_DIALOGNUMBERED] = (int)game->Settings->NumberDialogOptions;
-	thisgame.options[OPT_PIXPERFECT] = game->Settings->PixelPerfect;
-	thisgame.options[OPT_SCORESOUND] = 0; // saved elsewhere now to make it 32-bit
-	thisgame.default_resolution = (GameResolutionType)game->Settings->Resolution;
-	thisgame.options[OPT_FADETYPE] = (int)game->Settings->RoomTransition;
-	thisgame.options[OPT_RUNGAMEDLGOPTS] = game->Settings->RunGameLoopsWhileDialogOptionsDisplayed;
-	thisgame.options[OPT_SAVESCREENSHOT] = game->Settings->SaveScreenshots;
-	thisgame.options[OPT_NOSKIPTEXT] = (int)game->Settings->SkipSpeech;
-	thisgame.options[OPT_PORTRAITSIDE] = (int)game->Settings->SpeechPortraitSide;
-	thisgame.options[OPT_SPEECHTYPE] = (int)game->Settings->SpeechStyle;
-	thisgame.options[OPT_SPLITRESOURCES] = game->Settings->SplitResources;
-	thisgame.options[OPT_TWCUSTOM] = game->Settings->TextWindowGUI;
-	thisgame.options[OPT_THOUGHTGUI] = game->Settings->ThoughtGUI;
-	thisgame.options[OPT_TURNTOFACELOC] = game->Settings->TurnBeforeFacing;
-	thisgame.options[OPT_ROTATECHARS] = game->Settings->TurnBeforeWalking;
-	thisgame.options[OPT_NATIVECOORDINATES] = !game->Settings->UseLowResCoordinatesInScript;
-	thisgame.options[OPT_WALKONLOOK] = game->Settings->WalkInLookMode;
-	thisgame.options[OPT_DISABLEOFF] = (int)game->Settings->WhenInterfaceDisabled;
-    thisgame.options[OPT_SAFEFILEPATHS] = 1; // always use safe file paths in new games
-	thisgame.uniqueid = game->Settings->UniqueID;
-  ConvertStringToCharArray(game->Settings->GUIDAsString, thisgame.guid, MAX_GUID_LENGTH);
-  ConvertStringToCharArray(game->Settings->SaveGameFolderName, thisgame.saveGameFolderName, MAX_SG_FOLDER_LEN);
-
-  if (game->Settings->EnhancedSaveGames)
-  {
-    ConvertStringToCharArray(game->Settings->SaveGameFileExtension, thisgame.saveGameFileExtension, MAX_SG_EXT_LENGTH);
-  }
-  else 
-  {
-    thisgame.saveGameFileExtension[0] = 0;
-  }
-
-	thisgame.hotdot = game->Settings->InventoryHotspotMarker->DotColor;
-	thisgame.hotdotouter = game->Settings->InventoryHotspotMarker->CrosshairColor;
-	thisgame.invhotdotsprite = game->Settings->InventoryHotspotMarker->Image;
-	if (game->Settings->InventoryHotspotMarker->Style == InventoryHotspotMarkerStyle::Crosshair)
-	{
-		thisgame.invhotdotsprite = 0;
-	}
-	else if (game->Settings->InventoryHotspotMarker->Style == InventoryHotspotMarkerStyle::None)
-	{
-		thisgame.invhotdotsprite = 0;
-		thisgame.hotdot = 0;
-	}
-
-	// ** Palette **
-	int i;
-	for (i = 0; i < 256; i++) 
-	{
-		if (game->Palette[i]->ColourType == PaletteColourType::Background) 
-		{
-			thisgame.paluses[i] = PAL_BACKGROUND;
-		}
-		else 
-		{
-			thisgame.paluses[i] = PAL_GAMEWIDE;
-		}
-		palette[i].r = game->Palette[i]->Colour.R / 4;
-		palette[i].g = game->Palette[i]->Colour.G / 4;
-		palette[i].b = game->Palette[i]->Colour.B / 4;
-	}
-
-	// ** Plugins **
-	if (game->Plugins->Count > MAX_PLUGINS) 
-	{
-		throw gcnew CompileError("Too many plugins");
-	}
-
-	numThisgamePlugins = game->Plugins->Count;
-	for (i = 0; i < game->Plugins->Count; i++) 
-	{
-		AGS::Types::Plugin ^plugin = game->Plugins[i];
-		ConvertStringToCharArray(plugin->FileName, thisgamePlugins[i].filename, 50);
-		
-		thisgamePlugins[i].dataSize = plugin->SerializedData->Length;
-		for (int j = 0; j < thisgamePlugins[i].dataSize; j++) 
-		{
-			thisgamePlugins[i].data[j] = plugin->SerializedData[j];
-		}
-	}
-
-	// ** Views **
-    int viewCount = AGS::Types::FolderHelper::CountViews(AGS::Types::FolderHelper::GetRootViewFolder(game));
-
-	thisgame.numviews = viewCount;
-  allocate_memory_for_views(viewCount);
-  numNewViews = viewCount;
-
-  ManagedViewProcessing::ConvertViewsToDTAFormat(AGS::Types::FolderHelper::GetRootViewFolder(game), game);
-
-	// ** Characters **
-	thisgame.numcharacters = game->Characters->Count;
-	thisgame.chars = (CharacterInfo*)calloc(sizeof(CharacterInfo) * thisgame.numcharacters, 1);
-  thisgame.charProps = (::CustomProperties*)calloc(thisgame.numcharacters, sizeof(::CustomProperties));
-	for (i = 0; i < thisgame.numcharacters; i++) 
-	{
-		AGS::Types::Character ^character = game->Characters[i];
-		thisgame.chars[i].flags = 0;
-		thisgame.chars[i].on = 1;
-		if (character->AdjustSpeedWithScaling) thisgame.chars[i].flags |= CHF_SCALEMOVESPEED;
-		if (character->AdjustVolumeWithScaling) thisgame.chars[i].flags |= CHF_SCALEVOLUME;
-		if (!character->Clickable) thisgame.chars[i].flags |= CHF_NOINTERACT;
-		if (!character->DiagonalLoops) thisgame.chars[i].flags |= CHF_NODIAGONAL;
-    if (character->MovementLinkedToAnimation) thisgame.chars[i].flags |= CHF_ANTIGLIDE;
-		if (!character->Solid) thisgame.chars[i].flags |= CHF_NOBLOCKING;
-		if (!character->TurnBeforeWalking) thisgame.chars[i].flags |= CHF_NOTURNING;
-		if (!character->UseRoomAreaLighting) thisgame.chars[i].flags |= CHF_NOLIGHTING;
-		if (!character->UseRoomAreaScaling) thisgame.chars[i].flags |= CHF_MANUALSCALING;
-
-		if (character->UniformMovementSpeed) 
-		{
-			thisgame.chars[i].walkspeed = character->MovementSpeed;
-			thisgame.chars[i].walkspeed_y = UNIFORM_WALK_SPEED;
-		}
-		else 
-		{
-			thisgame.chars[i].walkspeed = character->MovementSpeedX;
-			thisgame.chars[i].walkspeed_y = character->MovementSpeedY;
-		}
-
-		thisgame.chars[i].animspeed = character->AnimationDelay;
-		thisgame.chars[i].blinkview = character->BlinkingView - 1;
-		thisgame.chars[i].idleview = character->IdleView - 1;
-		thisgame.chars[i].defview = character->NormalView - 1;
-		thisgame.chars[i].view = thisgame.chars[i].defview;
-		ConvertStringToCharArray(character->RealName, thisgame.chars[i].name, 40);
-		ConvertStringToCharArray(character->ScriptName, thisgame.chars[i].scrname, MAX_SCRIPT_NAME_LEN);
-		thisgame.chars[i].talkcolor = character->SpeechColor;
-		thisgame.chars[i].talkview = character->SpeechView - 1;
-		thisgame.chars[i].room = character->StartingRoom;
-    thisgame.chars[i].speech_anim_speed = character->SpeechAnimationDelay;
-		thisgame.chars[i].x = character->StartX;
-		thisgame.chars[i].y = character->StartY;
-		thisgame.chars[i].thinkview = character->ThinkingView - 1;
-
-		CompileCustomProperties(character->Properties, &thisgame.charProps[i]);
-	}
-	thisgame.playercharacter = game->PlayerCharacter->ID;
-
-	// ** Text Parser **
-  thisgame.dict = (WordsDictionary*)malloc(sizeof(WordsDictionary));
-  thisgame.dict->allocate_memory(game->TextParser->Words->Count);
-  for (i = 0; i < thisgame.dict->num_words; i++)
-	{
-    ConvertStringToCharArray(game->TextParser->Words[i]->Word, thisgame.dict->word[i], MAX_PARSER_WORD_LENGTH);
-    thisgame.dict->wordnum[i] = game->TextParser->Words[i]->WordGroup;
-	}
-
-	// ** Global Messages **
-	for (i = 0; i < MAXGLOBALMES; i++) 
-	{
-		if (game->GlobalMessages[i] != String::Empty) 
-		{
-			thisgame.messages[i] = (char*)malloc(game->GlobalMessages[i]->Length + 1);
-			ConvertStringToCharArray(game->GlobalMessages[i], thisgame.messages[i]);
-		}
-		else
-		{
-			thisgame.messages[i] = NULL;
-		}
-	}
-
-	// ** Lip Sync **
-	if (game->LipSync->Type == LipSyncType::Text)
-	{
-		thisgame.options[OPT_LIPSYNCTEXT] = 1;
-	}
-	else 
-	{
-		thisgame.options[OPT_LIPSYNCTEXT] = 0;
-	}
-	thisgame.default_lipsync_frame = game->LipSync->DefaultFrame;
-	for (i = 0; i < MAXLIPSYNCFRAMES; i++) 
-	{
-		ConvertStringToCharArray(game->LipSync->CharactersPerFrame[i], thisgame.lipSyncFrameLetters[i], 50);
-	}
-
-	// ** Dialogs **
-	if (game->Dialogs->Count > MAX_DIALOG) 
-	{
-		throw gcnew CompileError("Too many dialogs");
-	}
-	thisgame.numdialog = game->Dialogs->Count;
-	thisgame.numdlgmessage = 0;
-	dialog = (DialogTopic*)malloc(sizeof(DialogTopic) * thisgame.numdialog);
-	for (i = 0; i < thisgame.numdialog; i++) 
-	{
-		Dialog ^curDialog = game->Dialogs[i];
-		dialog[i].numoptions = curDialog->Options->Count;
-		for (int j = 0; j < dialog[i].numoptions; j++) 
-		{
-			AGS::Types::DialogOption ^option = curDialog->Options[j];
-			ConvertStringToCharArray(option->Text, dialog[i].optionnames[j], 150);
-			//dialog[i].entrypoints[j] = option->EntryPointOffset;
-			dialog[i].optionflags[j] = 0;
-			if (!option->Say) 
-			{
-				dialog[i].optionflags[j] |= DFLG_NOREPEAT;
-			}
-			if (option->Show)
-			{
-				dialog[i].optionflags[j] |= DFLG_ON;
-			}
-		}
-		
-    dialog[i].optionscripts = NULL;
-/*	    dialog[i].optionscripts = (unsigned char*)malloc(curDialog->CodeSize);
-	    Marshal::Copy(curDialog->CompiledCode, 0, IntPtr(dialog[i].optionscripts), curDialog->CodeSize);
-
-		dialog[i].codesize = curDialog->CodeSize;
-		dialog[i].startupentrypoint = curDialog->StartupEntryPointOffset;
-
-		dlgscript[i] = (char*)malloc(curDialog->Script->Length + 1);
-		ConvertStringToCharArray(curDialog->Script, dlgscript[i]);*/
-
-		ConvertStringToCharArray(curDialog->Name, thisgame.dialogScriptNames[i], MAX_SCRIPT_NAME_LEN);
-
-		dialog[i].topicFlags = 0;
-		if (curDialog->ShowTextParser) dialog[i].topicFlags |= DTFLG_SHOWPARSER;
-	}
-
-	// ** Cursors **
-	if (game->Cursors->Count > MAX_CURSOR) 
-	{
-		throw gcnew CompileError("Too many cursors");
-	}
-	thisgame.numcursors = game->Cursors->Count;
-	for (i = 0; i < thisgame.numcursors; i++)
-	{
-		AGS::Types::MouseCursor ^cursor = game->Cursors[i];
-		thisgame.mcurs[i].flags = 0;
-		if (cursor->Animate) 
-		{
-			thisgame.mcurs[i].view = cursor->View - 1;
-			if (cursor->AnimateOnlyOnHotspots) thisgame.mcurs[i].flags |= MCF_HOTSPOT;
-			if (cursor->AnimateOnlyWhenMoving) thisgame.mcurs[i].flags |= MCF_ANIMMOVE;
-		}
-		else 
-		{
-			thisgame.mcurs[i].view = -1;
-		}
-		if (cursor->StandardMode) thisgame.mcurs[i].flags |= MCF_STANDARD;
-		thisgame.mcurs[i].pic = cursor->Image;
-		thisgame.mcurs[i].hotx = cursor->HotspotX;
-		thisgame.mcurs[i].hoty = cursor->HotspotY;
-		ConvertStringToCharArray(cursor->Name, thisgame.mcurs[i].name, 10);
-	}
-
-	// ** Fonts **
-	if (game->Fonts->Count > MAX_FONTS)
-	{
-		throw gcnew CompileError("Too many fonts");
-	}
-	thisgame.numfonts = game->Fonts->Count;
-	for (i = 0; i < thisgame.numfonts; i++) 
-	{
-		AGS::Types::Font ^font = game->Fonts[i];
-		thisgame.fontflags[i] = font->PointSize & FFLG_SIZEMASK;
-		if (font->OutlineStyle == FontOutlineStyle::None) 
-		{
-			thisgame.fontoutline[i] = -1;
-		}
-		else if (font->OutlineStyle == FontOutlineStyle::Automatic) 
-		{
-			thisgame.fontoutline[i] = FONT_OUTLINE_AUTO;
-		}
-		else
-		{
-			thisgame.fontoutline[i] = font->OutlineFont;
-		}
-	}
-
-	// ** Inventory items **
-	if (game->InventoryItems->Count > MAX_INV)
-	{
-		throw gcnew CompileError("Too many inventory items");
-	}
-	thisgame.numinvitems = game->InventoryItems->Count + 1;
-	for (i = 1; i < thisgame.numinvitems; i++)
-	{
-		InventoryItem^ invItem = game->InventoryItems[i - 1];
-		ConvertStringToCharArray(invItem->Description, thisgame.invinfo[i].name, 25);
-		ConvertStringToCharArray(invItem->Name, thisgame.invScriptNames[i], MAX_SCRIPT_NAME_LEN);
-		thisgame.invinfo[i].pic = invItem->Image; 
-    thisgame.invinfo[i].cursorPic = invItem->CursorImage;
-		thisgame.invinfo[i].hotx = invItem->HotspotX;
-		thisgame.invinfo[i].hoty = invItem->HotspotY;
-		thisgame.invinfo[i].flags = 0;
-		if (invItem->PlayerStartsWithItem) thisgame.invinfo[i].flags |= IFLG_STARTWITH;
-
-		CompileCustomProperties(invItem->Properties, &thisgame.invProps[i]);
-	}
-
-	// ** Custom Properties Schema **
-	List<AGS::Types::CustomPropertySchemaItem ^> ^schema = game->PropertySchema->PropertyDefinitions;
-	if (schema->Count > MAX_CUSTOM_PROPERTIES)
-	{
-		throw gcnew CompileError("Too many custom properties defined");
-	}
-	thisgame.propSchema.numProps = schema->Count;
-	for (i = 0; i < thisgame.propSchema.numProps; i++) 
-	{
-		CustomPropertySchemaItem ^schemaItem = schema[i];
-		ConvertStringToCharArray(schemaItem->Name, thisgame.propSchema.propName[i], 20);
-		ConvertStringToCharArray(schemaItem->Description, thisgame.propSchema.propDesc[i], 100);
-		thisgame.propSchema.defaultValue[i] = (char*)malloc(schemaItem->DefaultValue->Length + 1);
-		ConvertStringToCharArray(schemaItem->DefaultValue, thisgame.propSchema.defaultValue[i]);
-		thisgame.propSchema.propType[i] = (int)schemaItem->Type;
-	}
-
-	// ** GUIs **
-	numguibuts = 0;
-	numguilabels = 0;
-	numguitext = 0;
-	numguilist = 0;
-	numguislider = 0;
-	numguiinv = 0;
-
-	thisgame.numgui = game->GUIs->Count;
-  guis = (GUIMain*)calloc(thisgame.numgui, sizeof(GUIMain));
-	for (i = 0; i < thisgame.numgui; i++)
-	{
-		guis[i].init();
-		ConvertGUIToBinaryFormat(game->GUIs[i], &guis[i]);
-		guis[i].highlightobj = -1;
-	}
-
-	// this cannot be null, so set it randomly
-	thisgame.compiled_script = (ccScript*)0x12345678;
-
-	save_thisgame_to_file(fileName, game);
-	
-	free_old_game_data();
 }
 
 
@@ -5238,7 +4503,7 @@ void load_script_configuration(Stream*iii) { int aa;
   int numvarnames=getlong(iii);
   for (aa=0;aa<numvarnames;aa++) {
     int lenoft=iii->ReadByte();
-    iii->Seek(Common::kSeekCurrent,lenoft);
+    iii->Seek(lenoft);
   }
 }
 
@@ -5260,7 +4525,7 @@ void load_graphical_scripts(Stream*iii,roomstruct*rst) {
     }
     // skip the data
     long lee = iii->ReadInt32();
-    iii->Seek (Common::kSeekCurrent, lee);
+    iii->Seek (lee);
   }
 }
 

@@ -20,36 +20,32 @@
 #include "ac/gamesetupstruct.h"
 #include "ac/global_dynamicsprite.h"
 #include "ac/global_game.h"
-#include "ac/file.h"
 #include "ac/math.h"    // M_PI
 #include "ac/objectcache.h"
+#include "ac/path_helper.h"
 #include "ac/roomobject.h"
 #include "ac/roomstatus.h"
 #include "ac/roomstruct.h"
+#include "ac/system.h"
 #include "debug/debug_log.h"
-#include "gui/dynamicarray.h"
 #include "gui/guibutton.h"
 #include "ac/spritecache.h"
 #include "platform/base/override_defines.h"
 #include "gfx/graphicsdriver.h"
 #include "script/runtimescriptvalue.h"
 
-using AGS::Common::Bitmap;
-namespace BitmapHelper = AGS::Common::BitmapHelper;
+using namespace Common;
+using namespace Engine;
 
 extern GameSetupStruct game;
 extern SpriteCache spriteset;
 extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
 extern roomstruct thisroom;
-extern DynamicArray<GUIButton> guibuts;
-extern int numguibuts;
 extern RoomObject*objs;
 extern RoomStatus*croom;
 extern CharacterCache *charcache;
 extern ObjectCache objcache[MAX_INIT_SPR];
 
-extern int final_scrn_wid,final_scrn_hit,final_col_dep;
-extern int scrnwid,scrnhit;
 extern color palette[256];
 extern Bitmap *virtual_screen;
 extern AGS::Engine::IGraphicsDriver *gfxDriver;
@@ -164,59 +160,15 @@ void DynamicSprite_CopyTransparencyMask(ScriptDynamicSprite *sds, int sourceSpri
     }
 
     // set the target's alpha channel depending on the source
-    bool sourceHasAlpha = (game.spriteflags[sourceSprite] & SPF_ALPHACHANNEL) != 0;
+    bool dst_has_alpha = (game.spriteflags[sds->slot] & SPF_ALPHACHANNEL) != 0;
+    bool src_has_alpha = (game.spriteflags[sourceSprite] & SPF_ALPHACHANNEL) != 0;
     game.spriteflags[sds->slot] &= ~SPF_ALPHACHANNEL;
-    if (sourceHasAlpha)
+    if (src_has_alpha)
     {
         game.spriteflags[sds->slot] |= SPF_ALPHACHANNEL;
     }
 
-    unsigned int maskColor = source->GetMaskColor();
-    int colDep = source->GetColorDepth();
-    int bytesPerPixel = (colDep + 1) / 8;
-
-    unsigned short *shortPtr;
-    unsigned int *longPtr;
-    for (int y = 0; y < target->GetHeight(); y++)
-    {
-        unsigned char * sourcePixel = source->GetScanLineForWriting(y);
-        unsigned char * targetPixel = target->GetScanLineForWriting(y);
-        for (int x = 0; x < target->GetWidth(); x++)
-        {
-            shortPtr = (unsigned short*)sourcePixel;
-            longPtr = (unsigned int*)sourcePixel;
-
-            if ((colDep == 8) && (sourcePixel[0] == maskColor))
-            {
-                targetPixel[0] = maskColor;
-            }
-            else if ((bytesPerPixel == 2) && (shortPtr[0] == maskColor))
-            {
-                ((unsigned short*)targetPixel)[0] = maskColor;
-            }
-            else if ((bytesPerPixel == 3) && (memcmp(sourcePixel, &maskColor, 3) == 0))
-            {
-                memcpy(targetPixel, sourcePixel, 3);
-            }
-            else if ((bytesPerPixel == 4) && (longPtr[0] == maskColor))
-            {
-                ((unsigned int*)targetPixel)[0] = maskColor;
-            }
-            else if ((bytesPerPixel == 4) && (sourceHasAlpha))
-            {
-                // the fourth byte is the alpha channel, copy it
-                targetPixel[3] = sourcePixel[3];
-            }
-            else if (bytesPerPixel == 4)
-            {
-                // set the alpha channel byte to opaque
-                targetPixel[3] = 0xff;
-            }
-
-            sourcePixel += bytesPerPixel;
-            targetPixel += bytesPerPixel;
-        }
-    }
+    BitmapHelper::CopyTransparency(target, source, dst_has_alpha, src_has_alpha);
 }
 
 void DynamicSprite_ChangeCanvasSize(ScriptDynamicSprite *sds, int width, int height, int x, int y) 
@@ -315,20 +267,19 @@ void DynamicSprite_Tint(ScriptDynamicSprite *sds, int red, int green, int blue, 
     add_dynamic_sprite(sds->slot, newPic, (game.spriteflags[sds->slot] & SPF_ALPHACHANNEL) != 0);
 }
 
-int DynamicSprite_SaveToFile(ScriptDynamicSprite *sds, const char* namm) {
+int DynamicSprite_SaveToFile(ScriptDynamicSprite *sds, const char* namm)
+{
     if (sds->slot == 0)
         quit("!DynamicSprite.SaveToFile: sprite has been deleted");
 
-    char fileName[MAX_PATH];
-    get_current_dir_path(fileName, namm);
+    String filename = namm;
+    if (filename.FindChar('.') < 0)
+        filename.Append(".bmp");
 
-    if (strchr(namm,'.') == NULL)
-        strcat(fileName, ".bmp");
-
-	if (!spriteset[sds->slot]->SaveToFile(fileName, palette))
-        return 0; // failed
-
-    return 1;  // successful
+    String path, alt_path; // alt_path is unused here, because it's a write op
+    if (!ResolveScriptPath(namm, false, path, alt_path))
+        return 0;
+    return spriteset[sds->slot]->SaveToFile(path, palette) ? 1 : 0;
 }
 
 ScriptDynamicSprite* DynamicSprite_CreateFromSaveGame(int sgslot, int width, int height) {
@@ -369,14 +320,14 @@ ScriptDynamicSprite* DynamicSprite_CreateFromScreenShot(int width, int height) {
     if (!gfxDriver->UsesMemoryBackBuffer()) 
     {
         // D3D driver
-        Bitmap *scrndump = BitmapHelper::CreateBitmap(scrnwid, scrnhit, final_col_dep);
+        Bitmap *scrndump = BitmapHelper::CreateBitmap(play.viewport.GetWidth(), play.viewport.GetHeight(), System_GetColorDepth());
         gfxDriver->GetCopyOfScreenIntoBitmap(scrndump);
 
         update_polled_stuff_if_runtime();
 
-        if ((scrnwid != width) || (scrnhit != height))
+        if ((play.viewport.GetWidth() != width) || (play.viewport.GetHeight() != height))
         {
-            newPic = BitmapHelper::CreateBitmap(width, height, final_col_dep);
+            newPic = BitmapHelper::CreateBitmap(width, height, System_GetColorDepth());
             newPic->StretchBlt(scrndump,
                 RectWH(0, 0, scrndump->GetWidth(), scrndump->GetHeight()),
                 RectWH(0, 0, width, height));
@@ -397,7 +348,7 @@ ScriptDynamicSprite* DynamicSprite_CreateFromScreenShot(int width, int height) {
     }
 
     // replace the bitmap in the sprite set
-    add_dynamic_sprite(gotSlot, gfxDriver->ConvertBitmapToSupportedColourDepth(newPic));
+    add_dynamic_sprite(gotSlot, ReplaceBitmapWithSupportedFormat(newPic));
     ScriptDynamicSprite *new_spr = new ScriptDynamicSprite(gotSlot);
     return new_spr;
 }
@@ -462,14 +413,14 @@ ScriptDynamicSprite* DynamicSprite_Create(int width, int height, int alphaChanne
     if (gotSlot <= 0)
         return NULL;
 
-    Bitmap *newPic = BitmapHelper::CreateTransparentBitmap(width, height, final_col_dep);
+    Bitmap *newPic = BitmapHelper::CreateTransparentBitmap(width, height, System_GetColorDepth());
     if (newPic == NULL)
         return NULL;
 
-    if ((alphaChannel) && (final_col_dep < 32))
+    if ((alphaChannel) && (System_GetColorDepth() < 32))
         alphaChannel = false;
 
-    add_dynamic_sprite(gotSlot, gfxDriver->ConvertBitmapToSupportedColourDepth(newPic), alphaChannel != 0);
+    add_dynamic_sprite(gotSlot, ReplaceBitmapWithSupportedFormat(newPic), alphaChannel != 0);
     ScriptDynamicSprite *new_spr = new ScriptDynamicSprite(gotSlot);
     return new_spr;
 }

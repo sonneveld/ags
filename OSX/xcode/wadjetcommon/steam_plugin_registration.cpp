@@ -9,6 +9,7 @@
 #include "plugin_registration.hpp"
 
 #include "agsplugin.h"
+#include "plugin_engine.h"
 #include "agswadjetutil.h"
 #include "AGSteam.h"
 

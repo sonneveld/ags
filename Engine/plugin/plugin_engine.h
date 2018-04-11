@@ -19,8 +19,8 @@
 #define __AGS_EE_PLUGIN__PLUGINENGINE_H
 
 #include <vector>
-#include "game/game_init.h"
-#include "game/plugininfo.h"
+//#include "game/game_init.h"
+//#include "game/plugininfo.h"
 
 #define PLUGIN_FILENAME_MAX (49)
 
@@ -34,7 +34,7 @@ int  pl_run_plugin_hooks (int event, long data);
 void pl_run_plugin_init_gfx_hooks(const char *driverName, void *data);
 int  pl_run_plugin_debug_hooks (const char *scriptfile, int linenum);
 // Tries to register plugins, either by loading dynamic libraries, or getting any kind of replacement
-Engine::GameInitError pl_register_plugins(const std::vector<Common::PluginInfo> &infos);
+//Engine::GameInitError pl_register_plugins(const std::vector<Common::PluginInfo> &infos);
 bool pl_is_plugin_loaded(const char *pl_name);
 
 //  Initial implementation for apps to register their own inbuilt plugins

@@ -101,6 +101,7 @@ StaticArray StaticRegionArray;
 StaticArray StaticInventoryArray;
 StaticArray StaticDialogArray;
 
+Engine::GameInitError pl_register_plugins(const std::vector<Common::PluginInfo> &infos);
 
 namespace AGS
 {

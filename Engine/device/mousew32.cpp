@@ -360,7 +360,7 @@ int butwas = 0;
 int mgetbutton()
 {
   int toret = NONE;
-  int butis = get_mouse_b();
+  int butis = mouse_b;
 
   if ((butis > 0) & (butwas > 0))
     return NONE;  // don't allow holding button down
@@ -388,7 +388,7 @@ int mgetbutton()
 const int MB_ARRAY[3] = { 1, 2, 4 };
 int misbuttondown(int buno)
 {
-    return get_mouse_b() & MB_ARRAY[buno];
+    return mouse_b & MB_ARRAY[buno];
 }
 
 void msetgraphpos(int xa, int ya)
@@ -408,7 +408,7 @@ int minstalled()
 {
   // only useful for DOS
   LOCK_FUNCTION(_ags_mouse_callback);
-  mouse_callback = &_ags_mouse_callback;
+    mouse_callback = &Mouse::_ags_mouse_callback;
     
   int nbuts = install_mouse();
   mgraphconfine(0, 0, 319, 199);  // use 320x200 co-ord system

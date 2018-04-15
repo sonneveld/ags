@@ -361,7 +361,7 @@ int butwas = 0;
 int mgetbutton()
 {
   int toret = NONE;
-  int butis = mouse_b;
+  int butis = get_mouse_b();
 
   if ((butis > 0) & (butwas > 0))
     return NONE;  // don't allow holding button down
@@ -389,7 +389,7 @@ int mgetbutton()
 const int MB_ARRAY[3] = { 1, 2, 4 };
 int misbuttondown(int buno)
 {
-    return mouse_b & MB_ARRAY[buno];
+  return get_mouse_b() & MB_ARRAY[buno];
 }
 
 void msetgraphpos(int xa, int ya)

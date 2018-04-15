@@ -62,9 +62,6 @@
 #include "main/graphics_mode.h"
 #include "gfx/gfx_util.h"
 
-#include "game/game_init.h"
-#include "game/plugininfo.h"
-
 using namespace AGS::Common;
 using namespace AGS::Engine;
 

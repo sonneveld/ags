@@ -101,6 +101,7 @@ StaticArray StaticRegionArray;
 StaticArray StaticInventoryArray;
 StaticArray StaticDialogArray;
 
+
 namespace AGS
 {
 namespace Engine

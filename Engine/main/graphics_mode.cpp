@@ -31,6 +31,10 @@
 #include "platform/base/agsplatformdriver.h"
 #include "util/scaling.h"
 
+// Don't try to figure out the window size on the mac because the port resizes itself.
+#if (defined (WINDOWS_VERSION) || defined (LINUX_VERSION)) && !defined(MAC_VERSION) && !defined(ALLEGRO_SDL2)
+#define FIND_NEAREST_WINDOWED_SIZE 
+#endif
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -327,7 +331,7 @@ bool try_init_compatible_mode(const DisplayMode &dm, const bool match_device_rat
         // When initializing windowed mode we could start with any random window size;
         // if that did not work, try to find nearest supported mode, as with fullscreen mode,
         // except refering to max window size as an upper bound
-#if (defined (WINDOWS_VERSION) || defined (LINUX_VERSION)) && !defined(ALLEGRO_SDL2)
+#ifdef FIND_NEAREST_WINDOWED_SIZE
         bool findresult = find_nearest_supported_mode(screen_size, dm.ColorDepth, NULL, &device_size, dm_compat)
         if (findresult)
 #endif
@@ -361,142 +365,6 @@ bool try_init_mode_using_setup(const Size &game_size, const DisplayModeSetup &dm
         return false;
     return true;
 }
-
-
-//void CreateBlankImage()
-//{
-//    // this is the first time that we try to use the graphics driver,
-//    // so it's the most likey place for a crash
-//    try
-//    {
-//        Bitmap *blank = BitmapHelper::CreateBitmap(16, 16, final_col_dep);
-//        blank = gfxDriver->ConvertBitmapToSupportedColourDepth(blank);
-//        blank->Clear();
-//        blankImage = gfxDriver->CreateDDBFromBitmap(blank, false, true);
-//        blankSidebarImage = gfxDriver->CreateDDBFromBitmap(blank, false, true);
-//        delete blank;
-//    }
-//    catch (Ali3DException gfxException)
-//    {
-//        quit((char*)gfxException._message);
-//    }
-//
-//}
-//
-//void engine_post_init_gfx_driver()
-//{
-//    _old_screen = BitmapHelper::GetScreenBitmap();
-//
-//    if (gfxDriver->HasAcceleratedStretchAndFlip()) 
-//    {
-//        walkBehindMethod = DrawAsSeparateSprite;
-//
-//        CreateBlankImage();
-//    }
-//}
-//
-//void engine_prepare_screen()
-//{
-//    Out::FPrint("Preparing graphics mode screen");
-//
-//    if ((final_scrn_hit != scrnhit) || (final_scrn_wid != scrnwid)) {
-//        _old_screen->Clear();
-//        BitmapHelper::SetScreenBitmap(
-//            BitmapHelper::CreateSubBitmap(_old_screen, RectWH(final_scrn_wid / 2 - scrnwid / 2, final_scrn_hit/2-scrnhit/2, scrnwid, scrnhit))
-//            );
-//        Bitmap *screen_bmp = BitmapHelper::GetScreenBitmap();
-//        _sub_screen=screen_bmp;
-//
-//        scrnhit = screen_bmp->GetHeight();
-//        vesa_yres = screen_bmp->GetHeight();
-//        scrnwid = screen_bmp->GetWidth();
-//        vesa_xres = screen_bmp->GetWidth();
-//        gfxDriver->SetMemoryBackBuffer(screen_bmp);
-//    }
-//
-//
-//    // Most cards do 5-6-5 RGB, which is the format the files are saved in
-//    // Some do 5-6-5 BGR, or  6-5-5 RGB, in which case convert the gfx
-//    if ((final_col_dep == 16) && ((_rgb_b_shift_16 != 0) || (_rgb_r_shift_16 != 11))) {
-//        convert_16bit_bgr = 1;
-//        if (_rgb_r_shift_16 == 10) {
-//            // some very old graphics cards lie about being 16-bit when they
-//            // are in fact 15-bit ... get around this
-//            _places_r = 3;
-//            _places_g = 3;
-//        }
-//    }
-//    if (final_col_dep > 16) {
-//        // when we're using 32-bit colour, it converts hi-color images
-//        // the wrong way round - so fix that
-//#if defined(IOS_VERSION) || defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(MAC_VERSION) || defined(ALLEGRO_SDL2)
-//        _rgb_b_shift_16 = 0;
-//        _rgb_g_shift_16 = 5;
-//        _rgb_r_shift_16 = 11;
-//
-//        _rgb_b_shift_15 = 0;
-//        _rgb_g_shift_15 = 5;
-//        _rgb_r_shift_15 = 10;
-//
-//        _rgb_r_shift_32 = 0;
-//        _rgb_g_shift_32 = 8;
-//        _rgb_b_shift_32 = 16;
-//#else
-//        _rgb_r_shift_16 = 11;
-//        _rgb_g_shift_16 = 5;
-//        _rgb_b_shift_16 = 0;
-//#endif
-//    }
-//    else if (final_col_dep == 16) {
-//        // ensure that any 32-bit graphics displayed are converted
-//        // properly to the current depth
-//#if defined(PSP_VERSION)
-//        _rgb_r_shift_32 = 0;
-//        _rgb_g_shift_32 = 8;
-//        _rgb_b_shift_32 = 16;
-//
-//        _rgb_b_shift_15 = 0;
-//        _rgb_g_shift_15 = 5;
-//        _rgb_r_shift_15 = 10;
-//#else
-//        _rgb_r_shift_32 = 16;
-//        _rgb_g_shift_32 = 8;
-//        _rgb_b_shift_32 = 0;
-//#endif
-//    }
-//    else if (final_col_dep < 16) {
-//        // ensure that any 32-bit graphics displayed are converted
-//        // properly to the current depth
-//#if defined (WINDOWS_VERSION)
-//        _rgb_r_shift_32 = 16;
-//        _rgb_g_shift_32 = 8;
-//        _rgb_b_shift_32 = 0;
-//#else
-//        _rgb_r_shift_32 = 0;
-//        _rgb_g_shift_32 = 8;
-//        _rgb_b_shift_32 = 16;
-//
-//        _rgb_b_shift_15 = 0;
-//        _rgb_g_shift_15 = 5;
-//        _rgb_r_shift_15 = 10;
-//#endif
-//    }
-//}
-//
-//
-//void engine_set_gfx_driver_callbacks()
-//{
-//    gfxDriver->SetCallbackForPolling(update_polled_stuff_if_runtime);
-//    gfxDriver->SetCallbackToDrawScreen(draw_screen_callback);
-//    gfxDriver->SetCallbackForNullSprite(GfxDriverNullSpriteCallback);
-//}
-//
-//void engine_set_color_conversions()
-//{
-//    Out::FPrint("Initializing colour conversion");
-//
-//    set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256 | COLORCONV_REDUCE_16_TO_15);
-//}
 
 void log_out_driver_modes(const int color_depth)
 {

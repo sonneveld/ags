@@ -35,7 +35,7 @@
 #include "gfx/ddb.h"
 #include "gui/guilabel.h"
 #include "media/audio/audio.h"
-#include "plugin/plugin_engine.h"
+#include "plugin/plugin_engine_internal.h"
 #include "script/cc_error.h"
 #include "script/exports.h"
 #include "script/script.h"
@@ -100,8 +100,6 @@ StaticArray StaticHotspotArray;
 StaticArray StaticRegionArray;
 StaticArray StaticInventoryArray;
 StaticArray StaticDialogArray;
-
-Engine::GameInitError pl_register_plugins(const std::vector<Common::PluginInfo> &infos);
 
 namespace AGS
 {

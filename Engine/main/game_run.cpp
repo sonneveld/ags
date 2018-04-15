@@ -50,7 +50,7 @@
 #include "main/update.h"
 #include "media/audio/soundclip.h"
 #include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
+#include "plugin/plugin_engine_internal.h"
 #include "script/script.h"
 #include "ac/spritecache.h"
 

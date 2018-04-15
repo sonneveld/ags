@@ -50,6 +50,7 @@
 
 #include "util/mutex.h"
 #include "util/mutex_lock.h"
+
 using namespace AGS::Common;
 using namespace AGS::Engine;
 
@@ -89,6 +90,9 @@ namespace Mouse
     float SpeedUnit = 1.f;
     // Actual speed factor (cached)
     float Speed = 1.f;
+    
+    void AdjustPosition(int &x, int &y);
+}
 
 /*
  Button tracking:
@@ -153,9 +157,6 @@ int get_mouse_b()
         _clear_at_global_timer_counter = globalTimerCounter + 2;
     }
     return result;
-}
-
-    void AdjustPosition(int &x, int &y);
 }
 
 void mgraphconfine(int x1, int y1, int x2, int y2)
@@ -408,7 +409,7 @@ int minstalled()
 {
   // only useful for DOS
   LOCK_FUNCTION(_ags_mouse_callback);
-    mouse_callback = &Mouse::_ags_mouse_callback;
+  mouse_callback = &_ags_mouse_callback;
     
   int nbuts = install_mouse();
   mgraphconfine(0, 0, 319, 199);  // use 320x200 co-ord system

@@ -22,6 +22,8 @@
 // What about other platforms?
 //
 
+#define ALLEGRO_NO_MAGIC_MAIN
+
 #include "ac/common.h"
 #include "ac/gamesetup.h"
 #include "ac/gamestate.h"

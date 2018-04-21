@@ -680,6 +680,8 @@ void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int
 
     int res;
 
+    process_sdl2_events();
+
     update_mp3();
 
     numEventsAtStartOfFunction = numevents;
@@ -924,6 +926,8 @@ void RunGameUntilAborted()
 
 void update_polled_stuff_if_runtime()
 {
+    SDL_PumpEvents();
+
     if (want_exit) {
         want_exit = 0;
         quit("||exit!");

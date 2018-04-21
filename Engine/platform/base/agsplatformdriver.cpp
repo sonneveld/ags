@@ -86,7 +86,7 @@ void AGSPlatformDriver::WriteStdOut(const char *fmt, ...) {
 }
 
 void AGSPlatformDriver::YieldCPU() {
-    this->Delay(1);
+    this->Delay(0);
 }
 
 void AGSPlatformDriver::InitialiseAbufAtStartup()

@@ -24,6 +24,8 @@
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
 
+#include "sdl2alleg.h"
+
 #if defined(PSP_VERSION)
 // PSP: Includes for sceKernelDelayThread.
 #include <pspsdk.h>
@@ -198,9 +200,10 @@ bool ALSoftwareGraphicsDriver::SetDisplayMode(const DisplayMode &mode, volatile 
   if (_initGfxCallback != NULL)
     _initGfxCallback(NULL);
 
-  if (!IsModeSupported(mode) || set_gfx_mode(driver, mode.Width, mode.Height, 0, 0) != 0)
-    return false;
-
+  if (!IsModeSupported(mode)) { return false; }
+    
+  if (set_gfx_mode(driver, mode.Width, mode.Height, 0, 0 ) != 0) { return false; }
+   
   OnInit(loopTimer);
   OnModeSet(mode);
   // [IKM] 2012-09-07
@@ -461,6 +464,8 @@ void ALSoftwareGraphicsDriver::Render(GlobalFlipType flip)
     _filter->RenderScreen(virtualScreen, _global_x_offset, _global_y_offset);
   else
     _filter->RenderScreenFlipped(virtualScreen, _global_x_offset, _global_y_offset, flip);
+
+  sdl2_present_screen();
 }
 
 void ALSoftwareGraphicsDriver::Render()

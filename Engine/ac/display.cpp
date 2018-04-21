@@ -278,6 +278,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             /*      if (!play.mouse_cursor_hidden)
             domouse(0);
             write_screen();*/
+            process_sdl2_events();
 
             render_graphics();
 

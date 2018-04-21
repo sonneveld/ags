@@ -24,6 +24,8 @@
 	<string>1.1</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.adventure-games</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 	<key>UIStatusBarHidden</key>
 	<true/>
 </dict>

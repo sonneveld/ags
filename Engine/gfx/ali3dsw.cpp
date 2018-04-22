@@ -155,24 +155,7 @@ PGfxFilter ALSoftwareGraphicsDriver::GetGraphicsFilter() const
 
 int ALSoftwareGraphicsDriver::GetAllegroGfxDriverID(bool windowed)
 {
-#ifdef _WIN32
-  if (windowed)
-    return GFX_DIRECTX_WIN;
-  return GFX_DIRECTX;
-#elif defined (LINUX_VERSION) && (!defined (ALLEGRO_MAGIC_DRV)) && !defined(ALLEGRO_SDL2)
-  if (windowed)
-    return GFX_XWINDOWS;
-  return GFX_XWINDOWS_FULLSCREEN;
-#elif defined (MAC_VERSION)
-    if (windowed) {
-        return GFX_COCOAGL_WINDOW;
-    }
-    return GFX_COCOAGL_FULLSCREEN;
-#else
-  if (windowed)
-    return GFX_AUTODETECT_WINDOWED;
-  return GFX_AUTODETECT_FULLSCREEN;
-#endif
+  return windowed ? GFX_SDL2_WINDOW : GFX_SDL2_FULLSCREEN;
 }
 
 void ALSoftwareGraphicsDriver::SetGraphicsFilter(PALSWFilter filter)

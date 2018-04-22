@@ -32,8 +32,8 @@
 #include "util/scaling.h"
 
 // Don't try to figure out the window size on the mac because the port resizes itself.
-#if (defined (WINDOWS_VERSION) || defined (LINUX_VERSION)) && !defined(MAC_VERSION) && !defined(ALLEGRO_SDL2)
-#define FIND_NEAREST_WINDOWED_SIZE 
+#if defined(MAC_VERSION) || defined(ALLEGRO_SDL2)
+#define USE_SIMPLE_GFX_INIT
 #endif
 
 using namespace AGS::Common;
@@ -331,10 +331,7 @@ bool try_init_compatible_mode(const DisplayMode &dm, const bool match_device_rat
         // When initializing windowed mode we could start with any random window size;
         // if that did not work, try to find nearest supported mode, as with fullscreen mode,
         // except refering to max window size as an upper bound
-#ifdef FIND_NEAREST_WINDOWED_SIZE
-        bool findresult = find_nearest_supported_mode(screen_size, dm.ColorDepth, NULL, &device_size, dm_compat)
-        if (findresult)
-#endif
+        if (find_nearest_supported_mode(screen_size, dm.ColorDepth, NULL, &device_size, dm_compat))
         {
             dm_compat.Vsync = dm.Vsync;
             dm_compat.Windowed = true;
@@ -425,6 +422,29 @@ bool create_gfx_driver_and_init_mode_any(const String &gfx_driver_id, const Size
     return result;
 }
 
+bool simple_create_gfx_driver_and_init_mode(const String &gfx_driver_id,
+                                            const Size &game_size,
+                                            const DisplayModeSetup &dm_setup,
+                                            const ColorDepthOption &color_depth,
+                                            const GameFrameSetup &frame_setup,
+                                            const GfxFilterSetup &filter_setup)
+{
+    if (!graphics_mode_create_renderer(gfx_driver_id)) { return false; }
+
+    const int col_depth = gfxDriver->GetDisplayDepthForNativeDepth(color_depth.Bits);
+
+    DisplayMode dm(GraphicResolution(game_size.Width, game_size.Height, col_depth),
+                   dm_setup.Windowed, dm_setup.RefreshRate, dm_setup.VSync);
+
+    if (!graphics_mode_set_dm(dm)) { return false; }
+    if (!graphics_mode_set_native_size(game_size)) { return false; }
+    if (!graphics_mode_set_render_frame(frame_setup)) { return false; }
+    if (!graphics_mode_set_filter_any(filter_setup)) { return false; }
+
+    return true;
+}
+
+
 void display_gfx_mode_error(const Size &game_size, const ScreenSetup &setup, const int color_depth)
 {
     proper_exit=1;
@@ -480,8 +500,14 @@ bool graphics_mode_init_any(const Size game_size, const ScreenSetup &setup, cons
     bool result = false;
     for (StringV::const_iterator it = ids.begin(); it != ids.end(); ++it)
     {
-        result = create_gfx_driver_and_init_mode_any(*it, game_size, setup.DisplayMode, color_depth,
-                                                     gameframe, setup.Filter);
+        result =
+#ifdef USE_SIMPLE_GFX_INIT
+            simple_create_gfx_driver_and_init_mode
+#else
+            create_gfx_driver_and_init_mode_any
+#endif
+                (*it, game_size, setup.DisplayMode, color_depth, gameframe, setup.Filter);
+
         if (result)
             break;
         graphics_mode_shutdown();

@@ -43,6 +43,17 @@
 #include "test/test_all.h"
 #endif
 
+#ifdef MAC_VERSION
+#include <osxalleg.h>
+
+#define MIN_MACOS_PORT_VERSION (1524488744L)
+
+#if MACOS_PORT_VERSION < MIN_MACOS_PORT_VERSION
+#error "Prebuilt allegro library is out of date, please rebuild allegro library then clean/build xcode project."
+#endif
+
+#endif
+
 using namespace AGS::Common;
 using namespace AGS::Engine;
 

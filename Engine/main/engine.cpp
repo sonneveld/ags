@@ -84,7 +84,6 @@ extern ViewStruct*views;
 extern int displayed_room;
 extern int eip_guinum;
 extern int eip_guiobj;
-extern const char *replayTempFile;
 extern SpeechLipSyncLine *splipsync;
 extern int numLipLines, curLipLine, curLipLinePhoneme;
 extern ScriptSystem scsystem;
@@ -101,7 +100,6 @@ String speech_file;
 
 t_engine_pre_init_callback engine_pre_init_callback = 0;
 
-#define ALLEGRO_KEYBOARD_HANDLER
 // KEYBOARD HANDLER
 #if !defined (WINDOWS_VERSION)
 int myerrno;
@@ -424,23 +422,6 @@ int engine_init_mouse()
 	return RETURN_CONTINUE;
 }
 
-int engine_check_memory()
-{
-    Debug::Printf(kDbgMsg_Init, "Checking memory");
-
-    char*memcheck=(char*)malloc(4000000);
-    if (memcheck==NULL) {
-        platform->DisplayAlert("There is not enough memory available to run this game. You need 4 Mb free\n"
-            "extended memory to run the game.\n"
-            "If you are running from Windows, check the 'DPMI memory' setting on the DOS box\n"
-            "properties.\n");
-        return EXIT_NORMAL;
-    }
-    free(memcheck);
-    unlink (replayTempFile);
-    return RETURN_CONTINUE;
-}
-
 void engine_init_rooms()
 {
     // Obsolete now since room statuses are allocated only when needed
@@ -521,11 +502,9 @@ int engine_init_music()
 
 void engine_init_keyboard()
 {
-#ifdef ALLEGRO_KEYBOARD_HANDLER
     Debug::Printf(kDbgMsg_Init, "Initializing keyboard");
 
     install_keyboard();
-#endif
 }
 
 void engine_init_timer()
@@ -1400,11 +1379,6 @@ int initialize_engine(int argc,char*argv[])
     }
 
     our_eip = -187;
-
-    res = engine_check_memory();
-    if (res != RETURN_CONTINUE) {
-        return res;
-    }
 
     engine_init_directories();
 

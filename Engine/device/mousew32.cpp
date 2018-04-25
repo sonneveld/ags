@@ -44,9 +44,6 @@
 #include "main/graphics_mode.h"
 #include "platform/base/agsplatformdriver.h"
 #include "util/math.h"
-#if defined(MAC_VERSION)
-#include "ac/global_game.h" // j for IsKeyPressed
-#endif
 
 #include "util/mutex.h"
 #include "util/mutex_lock.h"
@@ -57,7 +54,7 @@ using namespace AGS::Engine;
 extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
 
-char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
+const char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
 const int NONE = -1, LEFT = 0, RIGHT = 1, MIDDLE = 2;
 int aa;
 char mouseturnedon = FALSE, currentcursor = 0;
@@ -370,9 +367,10 @@ int mgetbutton()
   {
     toret = LEFT;
 #if defined(MAC_VERSION)
+    SDL_PumpEvents();
+    SDL_Keymod modState = SDL_GetModState();
     // j Ctrl-left click should be right-click
-    if (IsKeyPressed(405) || IsKeyPressed(406))
-    {
+    if (modState & KMOD_CTRL) {
       toret = RIGHT;
     }
 #endif

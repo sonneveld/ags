@@ -2210,15 +2210,29 @@ void start_skipping_cutscene () {
 
 }
 
-void check_skip_cutscene_keypress (int kgn) {
-
-    if ((play.in_cutscene > 0) && (play.in_cutscene != 3)) {
-        if ((kgn != 27) && ((play.in_cutscene == 1) || (play.in_cutscene == 5)))
-            ;
-        else
+int check_skip_cutscene_keypress (int kgn) {
+    int key_used = 0;
+    switch (play.in_cutscene) {
+        case 1: // esc only
+        case 5: // esc or right mouse button
+            if (kgn == ASCII_ESCAPE) {
+                start_skipping_cutscene();
+                key_used = 1;
+            }
+            break;
+            
+        case 2: // any key
+        case 4: // key or mouse click
             start_skipping_cutscene();
+            key_used = 1;
+            break;
+            
+        case 3: // mouse click
+        default:
+            // do nothing
+            break;
     }
-
+    return key_used;
 }
 
 // Helper functions used by StartCutscene/EndCutscene, but also

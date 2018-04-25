@@ -353,12 +353,11 @@ void IAGSEngine::PollSystem () {
     if (mbut > NONE)
         pl_run_plugin_hooks (AGSE_MOUSECLICK, mbut);
 
-    if (rec_kbhit()) {
-        int kp = rec_getch();
-        if (kp == 0) kp = rec_getch()+AGS_EXT_KEY_SHIFT;
-        pl_run_plugin_hooks (AGSE_KEYPRESS, kp);
+    SDL_Event kgn = getTextEventFromQueue();
+    int kc = asciiOrAgsKeyCodeFromEvent(kgn);
+    if (kc > 0) {
+        pl_run_plugin_hooks (AGSE_KEYPRESS, kc);
     }
-
 }
 AGSCharacter* IAGSEngine::GetCharacter (int32 charnum) {
     if (charnum >= game.numcharacters)

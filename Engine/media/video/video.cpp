@@ -64,8 +64,11 @@ int fliTargetWidth, fliTargetHeight;
 int check_if_user_input_should_cancel_video()
 {
     NEXT_ITERATION();
-    if (kbhit()) {
-        if ((getch()==27) && (canabort==1))
+
+    SDL_Event kpEvent = getTextEventFromQueue();
+    int kp = asciiFromEvent(kpEvent);
+    if (kp > 0) {
+        if ((kp==ASCII_ESCAPE) && (canabort==1))
             return 1;
         if (canabort >= 2)
             return 1;  // skip on any key

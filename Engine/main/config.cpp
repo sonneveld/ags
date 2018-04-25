@@ -44,7 +44,6 @@ extern int spritewidth[MAX_SPRITES],spriteheight[MAX_SPRITES];
 extern SpriteCache spriteset;
 extern int force_window;
 extern char psp_translation[];
-extern char replayfile[MAX_PATH];
 extern GameState play;
 
 // Filename of the default config file, the one found in the game installation
@@ -483,12 +482,7 @@ void apply_config(const ConfigTree &cfg)
 #endif
 
         String repfile = INIreadstring(cfg, "misc", "replay");
-        if (repfile != NULL) {
-            strcpy (replayfile, repfile);
-            play.playback = 1;
-        }
-        else
-            play.playback = 0;
+        play.playback = 0;
 
         usetup.mouse_auto_lock = INIreadint(cfg, "mouse", "auto_lock") > 0;
 

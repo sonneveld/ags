@@ -19,6 +19,7 @@
 #include "util/stream.h"
 #include "gfx/bitmap.h"
 #include "util/wgt2allg.h"
+#include "ac/record.h"
 
 using AGS::Common::Stream;
 using AGS::Common::Bitmap;
@@ -63,31 +64,27 @@ void GUITextBox::Draw(Common::Bitmap *ds)
 // Excludes control characters (<32) and extended keys (eg. up/down arrow; 256+)
 void GUITextBox::KeyPress(int kp)
 {
-  guis_need_update = 1;
-  // backspace, remove character
-  if ((kp == 8) && (strlen(text) > 0)) {
-    text[strlen(text) - 1] = 0;
-    return;
-  } else if (kp == 8)
-    return;
+    guis_need_update = 1;
+    
+    if ((kp == ASCII_BACKSPACE) && (strlen(text) > 0)) {
+        text[strlen(text) - 1] = 0;
+    }
+    if (kp == ASCII_RETURN) {
+        activated++;
+    }
+    
+    if (kp >= 32) {
+#warning does not really support unicode here.
+        if ((kp <= 0x7f) || (font_supports_extended_characters(font))) {
+            if ((strlen(text)+2) <= 200) {
+                text[strlen(text) + 1] = 0;
+                text[strlen(text)] = kp;
+            }
+        }
+    }
 
-  // other key, continue
-  if ((kp >= 128) && (!font_supports_extended_characters(font)))
-    return;
-
-  if (kp == 13) {
-    activated++;
-    return;
-  }
-
-  if (strlen(text) >= 199)
-    return;
-
-  text[strlen(text) + 1] = 0;
-  text[strlen(text)] = kp;
-
-  // if the new string is too long, remove the new character
-  if (wgettextwidth(text, font) > (wid - (6 + get_fixed_pixel_size(5))))
-    text[strlen(text) - 1] = 0;
-
+    // if the new string is too long, remove the new character
+    if (wgettextwidth(text, font) > (wid - (6 + get_fixed_pixel_size(5)))) {
+        text[strlen(text) - 1] = 0;
+    }
 }

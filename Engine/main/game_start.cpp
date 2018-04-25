@@ -49,19 +49,6 @@ extern int numScriptModules;
 extern CharacterInfo*playerchar;
 extern int convert_16bit_bgr;
 
-
-void start_game_check_replay()
-{
-    Debug::Printf("Checking replay status");
-
-    if (play.recording) {
-        start_recording();
-    }
-    else if (play.playback) {
-        start_playback();
-    }
-}
-
 void start_game_init_editor_debugging()
 {
     if (editor_debugging_enabled)
@@ -151,8 +138,6 @@ void initialize_start_and_play_game(int override_start_room, const char *loadSav
         play.gamestep = 0;
         if (override_start_room)
             playerchar->room = override_start_room;
-
-        start_game_check_replay();
 
         Debug::Printf(kDbgMsg_Init, "Engine initialization complete");
         Debug::Printf(kDbgMsg_Init, "Starting game");

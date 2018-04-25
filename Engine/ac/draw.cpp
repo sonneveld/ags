@@ -114,7 +114,6 @@ extern int is_complete_overlay;
 extern int cur_mode,cur_cursor;
 extern int mouse_frame,mouse_delay;
 extern int lastmx,lastmy;
-extern int replay_time;
 extern int mouse_on_iface_button;
 extern IDriverDependantBitmap *mouseCursor;
 extern int hotx,hoty;
@@ -2382,24 +2381,6 @@ void draw_misc_info()
     }
 
     Bitmap *ds = GetVirtualScreen();
-
-    color_t text_color;
-    if (play.recording) {
-        // Flash "REC" while recording
-        text_color = ds->GetCompatibleColor (12);
-        //if ((loopcounter % (frames_per_second * 2)) > frames_per_second/2) {
-        char tformat[30];
-        sprintf (tformat, "REC %02d:%02d:%02d", replay_time / 3600, (replay_time % 3600) / 60, replay_time % 60);
-        draw_and_invalidate_text(ds, get_fixed_pixel_size(5), get_fixed_pixel_size(10), FONT_SPEECH, text_color, tformat);
-        //}
-    }
-    else if (play.playback) {
-        text_color = ds->GetCompatibleColor (10);
-        char tformat[30];
-        sprintf (tformat, "PLAY %02d:%02d:%02d", replay_time / 3600, (replay_time % 3600) / 60, replay_time % 60);
-
-        draw_and_invalidate_text(ds, get_fixed_pixel_size(5), get_fixed_pixel_size(10), FONT_SPEECH, text_color, tformat);
-    }
 
     our_eip = 1101;
 }

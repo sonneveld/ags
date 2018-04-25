@@ -53,7 +53,11 @@ void init_pathfinder()
 }
 
 Bitmap *wallscreen;
+
+// Show debug information on screen and wait for key press
+// Incomplete: seems to rely on removed code.
 //#define DEBUG_PATHFINDER
+
 char *movelibcopyright = "PathFinder library v3.1 (c) 1998, 1999, 2001, 2002 Chris Jones.";
 int line_failed = 0;
 int lastcx, lastcy;
@@ -827,7 +831,11 @@ stage_again:
     mls[mlist].lastx = -1;
     mls[mlist].lasty = -1;
 #ifdef DEBUG_PATHFINDER
-    getch();
+    for (;;) {
+        SDL_Event kpEvent = getTextEventFromQueue();
+        int kp = asciiFromEvent(kpEvent);
+        if (kp > 0) { break; }
+    }
 #endif
     return mlist;
   } else {

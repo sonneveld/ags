@@ -115,13 +115,16 @@ void script_debug(int cmdd,int dataa) {
 			Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(stretched, false, true);
-        render_graphics(ddb, 0, 0);
-
+        for (;;) {
+            render_graphics(ddb, 0, 0);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete stretched;
         gfxDriver->DestroyDDB(ddb);
-        while (!kbhit()) ;
-        getch();
         invalidate_screen();
     }
     else if (cmdd==3) 
@@ -170,10 +173,15 @@ void script_debug(int cmdd,int dataa) {
         screen_bmp->StretchBlt(tempw,
 			RectWH(-offsetx, -offsety, multiply_up_coordinate(tempw->GetWidth()), multiply_up_coordinate(tempw->GetHeight())),
 			Common::kBitmap_Transparency);
-        render_to_screen(BitmapHelper::GetScreenBitmap(), 0, 0);
+        
+        for (;;) {
+            render_to_screen(BitmapHelper::GetScreenBitmap(), 0, 0);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
-        while (!kbhit()) ;
-        getch();
     }
     else if (cmdd == 99)
         ccSetOption(SCOPT_DEBUGRUN, dataa);

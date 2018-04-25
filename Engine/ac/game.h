@@ -143,7 +143,7 @@ void skip_serialized_bitmap(Common::Stream *in);
 long write_screen_shot_for_vista(Common::Stream *out, Common::Bitmap *screenshot);
 
 void start_skipping_cutscene ();
-void check_skip_cutscene_keypress (int kgn);
+int check_skip_cutscene_keypress (int kgn);
 void initialize_skippable_cutscene();
 void stop_fast_forwarding();
 

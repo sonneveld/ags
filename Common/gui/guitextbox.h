@@ -23,26 +23,10 @@ struct GUITextBox:public GUIObject
   char text[200];
   int font, textcol, exflags;
 
-  virtual void WriteToFile(Common::Stream *out);
-  virtual void ReadFromFile(Common::Stream *in, GuiVersion gui_version);
-  virtual void Draw(Common::Bitmap *ds);
-  void KeyPress(int);
-
-  void MouseMove(int x, int y)
-  {
-  }
-
-  void MouseOver()
-  {
-  }
-
-  void MouseLeave()
-  {
-  }
-
-  void MouseUp()
-  {
-  }
+  void WriteToFile(Common::Stream *out) override;
+  void ReadFromFile(Common::Stream *in, GuiVersion gui_version) override;
+  void Draw(Common::Bitmap *ds) override;
+  void KeyPress(int) override;
 
   void reset()
   {

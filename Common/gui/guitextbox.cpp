@@ -59,6 +59,8 @@ void GUITextBox::Draw(Common::Bitmap *ds)
   Draw_text_box_contents(ds, text_color);
 }
 
+// 'kp' is a displayable character (32-255).
+// Excludes control characters (<32) and extended keys (eg. up/down arrow; 256+)
 void GUITextBox::KeyPress(int kp)
 {
   guis_need_update = 1;

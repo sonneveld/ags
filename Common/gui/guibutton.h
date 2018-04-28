@@ -38,16 +38,12 @@ struct GUIButton:public GUIObject
   int lclickdata, rclickdata;
   int textAlignment, reserved1;
 
-  virtual void WriteToFile(Common::Stream *out);
-  virtual void ReadFromFile(Common::Stream *in, GuiVersion gui_version);
-  virtual void Draw(Common::Bitmap *ds);
-  void MouseUp();
+  void WriteToFile(Common::Stream *out) override;
+  void ReadFromFile(Common::Stream *in, GuiVersion gui_version) override;
+  void Draw(Common::Bitmap *ds) override;
+  void MouseUp() override;
 
-  void MouseMove(int x, int y)
-  {
-  }
-
-  void MouseOver()
+  void MouseOver() override
   {
     if (ispushed)
       usepic = pushedpic;
@@ -57,23 +53,19 @@ struct GUIButton:public GUIObject
     isover = 1;
   }
 
-  void MouseLeave()
+  void MouseLeave() override
   {
     usepic = pic;
     isover = 0;
   }
 
-  virtual int MouseDown()
+  int MouseDown() override
   {
     if (pushedpic > 0)
       usepic = pushedpic;
 
     ispushed = 1;
     return 0;
-  }
-
-  void KeyPress(int keycode)
-  {
   }
 
   void reset()

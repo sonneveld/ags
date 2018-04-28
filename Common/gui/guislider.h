@@ -28,36 +28,25 @@ struct GUISlider:public GUIObject
   int cached_handtlx, cached_handbrx;
   int cached_handtly, cached_handbry;
 
-  virtual void WriteToFile(Common::Stream *out);
-  virtual void ReadFromFile(Common::Stream *in, GuiVersion gui_version);
-  virtual void Draw(Common::Bitmap *ds);
-  void MouseMove(int xp, int yp);
+  void WriteToFile(Common::Stream *out) override;
+  void ReadFromFile(Common::Stream *in, GuiVersion gui_version) override;
+  void Draw(Common::Bitmap *ds) override;
+  void MouseMove(int xp, int yp) override;
 
-  void MouseOver()
-  {
-  }
-
-  void MouseLeave()
-  {
-  }
-
-  virtual int MouseDown()
+  int MouseDown() override
   {
     mpressed = 1;
     // lock focus to ourselves
     return 1;
   }
 
-  void MouseUp()
+  void MouseUp() override
   {
     mpressed = 0;
   }
-
-  void KeyPress(int kp)
+  
+  int IsOverControl(int p_x, int p_y, int p_extra) override
   {
-  }
-
-  virtual int IsOverControl(int p_x, int p_y, int p_extra) {
     // check the overall boundary
     if (GUIObject::IsOverControl(p_x, p_y, p_extra))
       return 1;

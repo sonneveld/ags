@@ -26,32 +26,12 @@ private:
 public:
   int font, textcol, align;
 
-  virtual void WriteToFile(Common::Stream *out);
-  virtual void ReadFromFile(Common::Stream *in, GuiVersion gui_version);
-  virtual void Draw(Common::Bitmap *ds);
+  void WriteToFile(Common::Stream *out) override;
+  void ReadFromFile(Common::Stream *in, GuiVersion gui_version) override;
+  void Draw(Common::Bitmap *ds) override;
   void printtext_align(Common::Bitmap *g, int yy, color_t text_color, char *teptr);
   void SetText(const char *newText);
   const char *GetText();
-
-  void MouseMove(int x, int y)
-  {
-  }
-
-  void MouseOver()
-  {
-  }
-
-  void MouseLeave()
-  {
-  }
-
-  void MouseUp()
-  {
-  }
-
-  void KeyPress(int kp)
-  {
-  }
 
   void reset()
   {

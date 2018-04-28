@@ -28,42 +28,26 @@ struct GUIListBox:public GUIObject
   int font, textcol, backcol, exflags;
   int selectedbgcol;
   int alignment, reserved1;
-  virtual void WriteToFile(Common::Stream *out);
-  virtual void ReadFromFile(Common::Stream *in, GuiVersion gui_version);
+  void WriteToFile(Common::Stream *out) override;
+  void ReadFromFile(Common::Stream *in, GuiVersion gui_version) override;
   int  AddItem(const char *toadd);
   int  InsertItem(int index, const char *toadd);
   void SetItemText(int index, const char *newtext);
   void RemoveItem(int index);
   void Clear();
-  virtual void Draw(Common::Bitmap *ds);
+  void Draw(Common::Bitmap *ds) override;
   int  IsInRightMargin(int x);
   int  GetIndexFromCoordinates(int x, int y);
   void ChangeFont(int newFont);
-  virtual int MouseDown();
+  int MouseDown() override;
   
-  void MouseMove(int nx, int ny)
+  void MouseMove(int nx, int ny) override
   {
     mousexp = nx - x;
     mouseyp = ny - y;
   }
 
-  void MouseOver()
-  {
-  }
-
-  void MouseLeave()
-  {
-  }
-
-  void MouseUp()
-  {
-  }
-
-  void KeyPress(int kp)
-  {
-  }
-
-  virtual void Resized();
+  void Resized() override;
 
   void reset()
   {

@@ -27,42 +27,34 @@ struct GUIInv:public GUIObject
 
   int itemsPerLine, numLines;  // not persisted
 
-  virtual void WriteToFile(Common::Stream *out);
-  virtual void ReadFromFile(Common::Stream *in, GuiVersion gui_version);
+  void WriteToFile(Common::Stream *out) override;
+  void ReadFromFile(Common::Stream *in, GuiVersion gui_version) override;
 
   void CalculateNumCells();
 
-  virtual void Resized() {
+  void Resized() override {
     CalculateNumCells();
   }
 
   int CharToDisplay();
 
   // This function has distinct implementations in Engine and Editor
-  virtual void Draw(Common::Bitmap *ds);
+  void Draw(Common::Bitmap *ds) override;
 
-  void MouseMove(int x, int y)
-  {
-  }
-
-  void MouseOver()
+  void MouseOver() override
   {
     isover = 1;
   }
 
-  void MouseLeave()
+  void MouseLeave() override
   {
     isover = 0;
   }
 
-  void MouseUp()
+  void MouseUp() override
   {
     if (isover)
       activated = 1;
-  }
-
-  void KeyPress(int kp)
-  {
   }
 
   GUIInv() {

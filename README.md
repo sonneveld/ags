@@ -1,3 +1,19 @@
+# Experimental SDL2 Port
+
+This requires the allegro fork with SDL2 as a platform. Refer to this branch:
+https://github.com/sonneveld/allegro/tree/sdl2
+
+The aim of this branch is to attempt to slowly migrate AGS to SDL2. To do this, Allegro4 has been
+patched to use SDL2 as the platform that provides input, audio, graphics, etc. That way we can still
+rely on Allegro for things like bitmap graphics drawing/conversion, audio mixing, midi rendering, etc.
+
+Current status is that games seem to work with the ported allegro library. AGS still calls allegro, which
+calls SDL2 functions. Work has started on replacing those Allegro calls with direct SDL2 calls.
+
+We might not be able to rid AGS completely of Allegro, but at least it will be kept at a minimum while 
+we use a slightly more up-to-date library.
+
+
 # Adventure Game Studio
 
 Adventure Game Studio (AGS) - is the IDE and the engine meant for creating and running videogames of adventure (aka "quest") genre. It has potential, although limited, support for other genres as well.

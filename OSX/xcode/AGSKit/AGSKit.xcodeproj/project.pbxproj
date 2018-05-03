@@ -742,6 +742,7 @@
 		52F5D8611DA1219D006F8F4B /* inventoryiteminfo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52F5D8601DA1219D006F8F4B /* inventoryiteminfo.cpp */; };
 		52F5D8641DA121CC006F8F4B /* version.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52F5D8621DA121CC006F8F4B /* version.cpp */; };
 		52F5D8651DA121CC006F8F4B /* version.h in Headers */ = {isa = PBXBuildFile; fileRef = 52F5D8631DA121CC006F8F4B /* version.h */; };
+		61802D54209B40AD00321357 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 61802D53209B40AD00321357 /* SDL2.framework */; };
 		6192A72C207E2F2800B57741 /* outputhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 6192A729207E2F2800B57741 /* outputhandler.h */; };
 		6192A72D207E2F2800B57741 /* debugmanager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6192A72A207E2F2800B57741 /* debugmanager.cpp */; };
 		6192A72E207E2F2800B57741 /* debugmanager.h in Headers */ = {isa = PBXBuildFile; fileRef = 6192A72B207E2F2800B57741 /* debugmanager.h */; };
@@ -1489,6 +1490,7 @@
 		52F5D8601DA1219D006F8F4B /* inventoryiteminfo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inventoryiteminfo.cpp; sourceTree = "<group>"; };
 		52F5D8621DA121CC006F8F4B /* version.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = version.cpp; sourceTree = "<group>"; };
 		52F5D8631DA121CC006F8F4B /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
+		61802D53209B40AD00321357 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
 		6192A729207E2F2800B57741 /* outputhandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = outputhandler.h; sourceTree = "<group>"; };
 		6192A72A207E2F2800B57741 /* debugmanager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = debugmanager.cpp; sourceTree = "<group>"; };
 		6192A72B207E2F2800B57741 /* debugmanager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = debugmanager.h; sourceTree = "<group>"; };
@@ -1520,6 +1522,7 @@
 				521C56AA1D1E5B5F00BD619E /* liballeg.a in Frameworks */,
 				521C56AB1D1E5B5F00BD619E /* libdumb.a in Frameworks */,
 				521C56A91D1E5B5F00BD619E /* libaldmb.a in Frameworks */,
+				61802D54209B40AD00321357 /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1689,6 +1692,7 @@
 		521C56B61D1E5BCF00BD619E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				61802D53209B40AD00321357 /* SDL2.framework */,
 				52A7D3271D1E643800D88BEE /* libbz2.1.0.dylib */,
 				52A7D3251D1E641F00D88BEE /* libz.1.dylib */,
 				521C56B41D1E5B7C00BD619E /* libbz2.tbd */,
@@ -3706,7 +3710,17 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Frameworks",
+				);
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"${SOURCE_ROOT}/../../include",
+					"${SOURCE_ROOT}/../../include/freetype2",
+					"${SOURCE_ROOT}/../../../Common/libinclude",
+					"$(USER_LIBRARY_DIR)/Frameworks/SDL2.framework/Headers",
+				);
 				INFOPLIST_FILE = AGSKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
@@ -3725,7 +3739,17 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Frameworks",
+				);
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"${SOURCE_ROOT}/../../include",
+					"${SOURCE_ROOT}/../../include/freetype2",
+					"${SOURCE_ROOT}/../../../Common/libinclude",
+					"$(USER_LIBRARY_DIR)/Frameworks/SDL2.framework/Headers",
+				);
 				INFOPLIST_FILE = AGSKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";

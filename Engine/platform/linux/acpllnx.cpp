@@ -54,6 +54,11 @@ int psp_clear_cache_on_room_change = 0;
 int psp_midi_preload_patches = 0;
 int psp_audio_cachesize = 10;
 char psp_game_file_name[256];
+
+int psp_gfx_renderer = 0;
+int psp_gfx_scaling = 1;
+int psp_gfx_smoothing = 0;
+int psp_gfx_super_sampling = 1;
 int psp_gfx_smooth_sprites = 1;
 char psp_translation[100];
 

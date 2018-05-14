@@ -49,6 +49,11 @@ int psp_midi_enabled = 1;
 int psp_midi_preload_patches = 0;
 
 int psp_video_framedrop = 0;
+
+int psp_gfx_renderer = 0;
+int psp_gfx_scaling = 1;
+int psp_gfx_smoothing = 0;
+int psp_gfx_super_sampling = 1;
 int psp_gfx_smooth_sprites = 0;
 
 char psp_game_file_name[256];

@@ -14,6 +14,35 @@ We might not be able to rid AGS completely of Allegro, but at least it will be k
 we use a slightly more up-to-date library.
 
 
+## Building SDL on Linux
+
+Check out the sdl ports of AGS and Allegro:
+https://github.com/sonneveld/allegro/tree/sdl2
+https://github.com/sonneveld/agscommunity/tree/sdl2-port
+
+Install dependencies (for ubuntu):
+
+    apt-get update
+    apt-get install build-essential pkg-config cmake libsdl2-2.0 libsdl2-dev libsdl2-dev libfreetype6-dev libogg-dev libtheora-dev libvorbis-dev liballegro4-dev libaldmb1-dev
+
+Build allegro:
+
+    cd $ALLEGRO_SRC
+    mkdir build-sdl2
+    cd build-sdl2
+    cmake -D SHARED=off -DCMAKE_BUILD_TYPE=Debug ..
+    make
+    make install
+
+This will install into /usr/local
+
+Build AGS:
+
+    cd $AGS_SRC
+    cd Engine
+    make
+
+
 # Adventure Game Studio
 
 Adventure Game Studio (AGS) - is the IDE and the engine meant for creating and running videogames of adventure (aka "quest") genre. It has potential, although limited, support for other genres as well.

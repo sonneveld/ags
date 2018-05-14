@@ -69,4 +69,3 @@ APEG = libsrc/apeg-1.2.1/adisplay.c libsrc/apeg-1.2.1/getbits.c libsrc/apeg-1.2.
 
 AASTR = ../Common/libsrc/aastr-0.1.1/AAROT.c ../Common/libsrc/aastr-0.1.1/aastr.c ../Common/libsrc/aastr-0.1.1/aautil.c
 
-AL_MIDI_PATCH = libsrc/allegro-4.2.2-agspatch/midi.c

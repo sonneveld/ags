@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <allegro.h>
-#include <xalleg.h>
 #include "ac/runtime_defines.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
@@ -84,8 +83,6 @@ struct AGSLinux : AGSPlatformDriver {
   virtual void PostAllegroExit();
   virtual void SetGameWindowIcon();
   virtual void ShutdownCDPlayer();
-  virtual bool LockMouseToWindow();
-  virtual void UnlockMouse();
 };
 
 AGSLinux::AGSLinux() {
@@ -185,7 +182,7 @@ void AGSLinux::Delay(int millis) {
     usleep(5);
     millis -= 5;
 
-    update_polled_stuff_if_runtime();
+    // update_polled_stuff_if_runtime();
   }
   if (millis > 0)
     usleep(millis);
@@ -277,15 +274,3 @@ void AGSLinux::ReplaceSpecialPaths(const char *sourcePath, char *destPath) {
   }
 }
 #endif
-
-bool AGSLinux::LockMouseToWindow()
-{
-    return XGrabPointer(_xwin.display, _xwin.window, False,
-        PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
-        GrabModeAsync, GrabModeAsync, _xwin.window, None, CurrentTime) == GrabSuccess;
-}
-
-void AGSLinux::UnlockMouse()
-{
-    XUngrabPointer(_xwin.display, CurrentTime);
-}

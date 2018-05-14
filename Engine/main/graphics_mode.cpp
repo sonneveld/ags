@@ -26,13 +26,13 @@
 #include "gfx/gfxfilter.h"
 #include "gfx/graphicsdriver.h"
 #include "main/config.h"
+#include "main/engine_setup.h"
 #include "main/graphics_mode.h"
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
-#include "util/scaling.h"
 
 // Don't try to figure out the window size on the mac because the port resizes itself.
-#if defined(MAC_VERSION) || defined(ALLEGRO_SDL2)
+#if defined(MAC_VERSION) || defined(ALLEGRO_SDL2) || defined(IOS_VERSION) || defined(PSP_VERSION) || defined(ANDROID_VERSION)
 #define USE_SIMPLE_GFX_INIT
 #endif
 
@@ -488,6 +488,7 @@ bool graphics_mode_init_any(const Size game_size, const ScreenSetup &setup, cons
         ignore_device_ratio ? "ignore" : (scsz.MatchDeviceRatio ? "yes" : "no"), scale_option.GetCStr());
 
     // Prepare the list of available gfx factories, having the one requested by user at first place
+    // TODO: make factory & driver IDs case-insensitive!
     StringV ids;
     GetGfxDriverFactoryNames(ids);
     StringV::iterator it = std::find(ids.begin(), ids.end(), setup.DriverID);
@@ -526,12 +527,21 @@ ActiveDisplaySetting graphics_mode_get_last_setting(bool windowed)
     return windowed ? SavedWindowedSetting : SavedFullscreenSetting;
 }
 
+bool graphics_mode_update_render_frame();
+void GfxDriverOnSurfaceUpdate()
+{
+    // Resize render frame using current scaling settings
+    graphics_mode_update_render_frame();
+    on_coordinates_scaling_changed();
+}
+
 bool graphics_mode_create_renderer(const String &driver_id)
 {
     if (!create_gfx_driver(driver_id))
         return false;
 
     gfxDriver->SetCallbackOnInit(GfxDriverOnInitCallback);
+    gfxDriver->SetCallbackOnSurfaceUpdate(GfxDriverOnSurfaceUpdate);
     // TODO: this is remains of the old code; find out if this is really
     // the best time and place to set the tint method
     gfxDriver->SetTintMethod(TintReColourise);

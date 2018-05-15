@@ -86,6 +86,9 @@ struct AGSLinux : AGSPlatformDriver {
 };
 
 AGSLinux::AGSLinux() {
+  // TODO: why is psp_game_file_name needed for linux builds?  
+  // Setting it prevents proper discovery of AGS games.
+  // Might be a left over from preparing AGS for Steam on Linux
   strcpy(psp_game_file_name, "agsgame.dat");
   strcpy(psp_translation, "default");
 

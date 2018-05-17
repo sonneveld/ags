@@ -40,15 +40,7 @@ public:
 
   inline bool CreateAndStart(AGSThreadEntry entryPoint, bool looping)
   {
-    if (Create(entryPoint, looping))
-    {
-      if (Start())
-      {
-        return true;
-      }
-    }
-
-    return false;
+    return Create(entryPoint, looping) && Start();
   }
 };
 
@@ -57,22 +49,7 @@ public:
 } // namespace AGS
 
 
-#if defined(WINDOWS_VERSION)
-#include "thread_windows.h"
-
-#elif defined(PSP_VERSION)
-#include "thread_psp.h"
-
-#elif defined(WII_VERSION)
-#include "thread_wii.h"
-
-#elif defined(LINUX_VERSION) \
-   || defined(MAC_VERSION) \
-   || defined(IOS_VERSION) \
-   || defined(ANDROID_VERSION)
-#include "thread_pthread.h"
-
-#endif
+#include "thread_sdl2.h"
 
 
 #endif // __AGS_EE_UTIL__THREAD_H

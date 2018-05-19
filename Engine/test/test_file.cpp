@@ -197,10 +197,10 @@ void Test_File()
     assert(memcmp(&tricky_data_in, &tricky_data_out, sizeof(TTrickyAlignedData)) == 0);
     assert(int32val == 20);
 
-    assert(ptr32_array_in[0] == 0xABCDABCD);
-    assert(ptr32_array_in[1] == 0xFEDCFEDC);
-    assert(ptr32_array_in[2] == 0xFEEDBEEF);
-    assert(ptr32_array_in[3] == 0xBEEFFEED);
+    assert((ptr32_array_in[0]&0xFFFFFFFF) == 0xABCDABCD);
+    assert((ptr32_array_in[1]&0xFFFFFFFF) == 0xFEDCFEDC);
+    assert((ptr32_array_in[2]&0xFFFFFFFF) == 0xFEEDBEEF);
+    assert((ptr32_array_in[3]&0xFFFFFFFF) == 0xBEEFFEED);
 
     assert(!File::TestReadFile("test.tmp"));
 }

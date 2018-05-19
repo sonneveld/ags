@@ -14,11 +14,16 @@ We might not be able to rid AGS completely of Allegro, but at least it will be k
 we use a slightly more up-to-date library.
 
 
-## Building SDL on Linux
+## Building AGS/SDL2 on Linux
 
 Check out the sdl ports of AGS and Allegro:
 https://github.com/sonneveld/allegro/tree/sdl2
 https://github.com/sonneveld/agscommunity/tree/sdl2-port
+
+Set environment variables to point to source directories:
+
+    ALLEGRO_SRC=...
+    AGS_SRC=...
 
 Install dependencies (for ubuntu):
 
@@ -41,6 +46,42 @@ Build AGS:
     cd $AGS_SRC
     cd Engine
     make
+
+
+## Building AGS/SDL2 on macOS
+
+Check out the sdl ports of AGS and Allegro:
+https://github.com/sonneveld/allegro/tree/sdl2
+https://github.com/sonneveld/agscommunity/tree/sdl2-port
+
+Set environment variables to point to source directories:
+
+    ALLEGRO_SRC=...
+    AGS_SRC=...
+
+Install dependencies:
+
+    brew install cmake
+
+Download SDL2 [ https://www.libsdl.org/release/SDL2-2.0.8.dmg ] and drag the SDL2.framework into /Library/Frameworks
+
+Build allegro:
+
+    cd $ALLEGRO_SRC
+    mkdir build-sdl2
+    cd build-sdl2
+    cmake -DCMAKE_INSTALL_PREFIX=$AGS_SRC/OSX -D SHARED=off -DCMAKE_BUILD_TYPE=Debug ..
+    make
+    make install
+
+Build AGS
+
+    cd $AGS_SRC
+    mkdir build-sdl2
+    cd build-sdl2
+    cmake ..
+    make
+
 
 
 # Adventure Game Studio

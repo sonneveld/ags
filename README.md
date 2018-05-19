@@ -65,6 +65,12 @@ Install dependencies:
 
 Download SDL2 [ https://www.libsdl.org/release/SDL2-2.0.8.dmg ] and drag the SDL2.framework into /Library/Frameworks
 
+Build OSX Libs (check out OSX/buildlibs/README.md for more details)
+
+    cd $ALLEGRO_SRC
+    cd OSX/buildlibs
+    make libs install
+
 Build allegro:
 
     cd $ALLEGRO_SRC
@@ -82,7 +88,7 @@ Build AGS
     cmake .. -DCMAKE_BUILD_TYPE=Debug
     make
 
-Build AGS for xcode
+*or* Build AGS for xcode
 
     cd $AGS_SRC
     mkdir build-sdl2-xcode

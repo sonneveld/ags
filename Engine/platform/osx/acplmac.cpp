@@ -27,6 +27,7 @@
 //#include <libcda.h>
 //#include <pwd.h>
 //#include <sys/stat.h>
+#include "SDL.h"
 #include <unistd.h>
 #include "platform/base/agsplatformdriver.h"
 #include "util/directory.h"
@@ -106,13 +107,7 @@ void AGSMac::DisplayAlert(const char *text, ...) {
 }
 
 void AGSMac::Delay(int millis) {
-  while (millis >= 5) {
-    usleep(5);
-    millis -= 5;
-    update_polled_stuff_if_runtime();
-  }
-  if (millis > 0)
-    usleep(millis);
+  SDL_Delay(millis);
 }
 
 unsigned long AGSMac::GetDiskFreeSpaceMB() {

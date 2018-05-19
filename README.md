@@ -79,8 +79,16 @@ Build AGS
     cd $AGS_SRC
     mkdir build-sdl2
     cd build-sdl2
-    cmake ..
+    cmake .. -DCMAKE_BUILD_TYPE=Debug
     make
+
+Build AGS for xcode
+
+    cd $AGS_SRC
+    mkdir build-sdl2-xcode
+    cd build-sdl2
+    cmake .. -DCMAKE_BUILD_TYPE=Debug -GXcode
+    open AdventureGameStudio.xcodeproj
 
 
 

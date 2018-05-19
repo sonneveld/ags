@@ -776,3 +776,10 @@ set(plugin_sources
     Plugins/agswadjetutil/agswadjetutil.cpp
     Plugins/agswadjetutil/agswadjetutil.h
 )
+
+set (resources
+    game_files/speech.vox
+    game_files/audio.vox
+    game_files/ac2game.dat
+    game_files/acsetup.cfg
+)

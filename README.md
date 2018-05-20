@@ -58,6 +58,9 @@ Set environment variables to point to source directories:
 
     ALLEGRO_SRC=...
     AGS_SRC=...
+    NUM_JOBS=$(sysctl -n hw.ncpu)  # 8 on my machine
+    CMAKE_BUILD_TYPE=Debug   # or Release!
+    #CMAKE_BUILD_TYPE=Release
 
 Install dependencies:
 
@@ -80,20 +83,31 @@ Build allegro:
     make
     make install
 
+Copy game files into $AGS_SRC/game_files in this format:
+
+    ac2game.dat
+    acsetup.cfg
+    audio.vox
+    speech.vox
+
 Build AGS
 
     cd $AGS_SRC
-    mkdir build-sdl2
-    cd build-sdl2
-    cmake .. -DCMAKE_BUILD_TYPE=Debug
-    make
+    mkdir build-sdl2-$CMAKE_BUILD_TYPE
+    cd build-sdl2-$CMAKE_BUILD_TYPE
+    cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
+    make -j$NUM_JOBS
 
-*or* Build AGS for xcode
+After building, there should be an "AGS.app" bundle in your build directory. You can run this like a normal app.
+
+
+
+*or* Build AGS for xcode if you want to develop and debug within
 
     cd $AGS_SRC
-    mkdir build-sdl2-xcode
-    cd build-sdl2
-    cmake .. -DCMAKE_BUILD_TYPE=Debug -GXcode
+    mkdir build-sdl2-xcode-$CMAKE_BUILD_TYPE
+    cd build-sdl2-$CMAKE_BUILD_TYPE
+    cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -GXcode
     open AdventureGameStudio.xcodeproj
 
 

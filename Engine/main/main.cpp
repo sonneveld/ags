@@ -473,7 +473,7 @@ int malloc_fail_handler(size_t amountwanted) {
 
 int main(int argc,char*argv[]) { 
 
-#ifdef _DEBUG
+#if 0 && defined(_DEBUG)
     Test_DoAllTests();
 #endif
     

@@ -77,12 +77,22 @@ Build OSX Libs (check out OSX/buildlibs/README.md for more details)
 Build allegro:
 
     cd $ALLEGRO_SRC
-    mkdir build-sdl2
-    cd build-sdl2
+
+    mkdir build-release
+    pushd build-release
+    cmake -DCMAKE_INSTALL_PREFIX=$AGS_SRC/OSX -D SHARED=off -DCMAKE_BUILD_TYPE=Release ..
+    make
+    make install
+    popd
+
+    mkdir build-debug
+    pushd build-debug
     cmake -DCMAKE_INSTALL_PREFIX=$AGS_SRC/OSX -D SHARED=off -DCMAKE_BUILD_TYPE=Debug ..
     make
     make install
-
+    popd
+    
+    
 Copy game files into $AGS_SRC/game_files in this format:
 
     ac2game.dat

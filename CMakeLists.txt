@@ -37,8 +37,13 @@ if (WIN32)
     )
 endif (WIN32)
 
+add_library(AGSCommon STATIC
+    ${common_sources}
+)
+target_link_libraries(AGS AGSCommon)
+
 target_sources(AGS PRIVATE 
-    ${sources} 
+    ${engine_sources} 
     ${macos_sources}
     ${plugin_sources}
     ${lib_sources}
@@ -47,7 +52,8 @@ target_sources(AGS PRIVATE
     )
 
 source_group(TREE ${AdventureGameStudio_SOURCE_DIR} PREFIX Sources FILES 
-    ${sources} 
+    ${common_sources}
+    ${engine_sources} 
     ${macos_sources}
     ${plugin_sources}
     ${lib_sources}
@@ -58,108 +64,92 @@ source_group(TREE ${AdventureGameStudio_SOURCE_DIR} PREFIX Resources FILES
     ${resources} 
 )
 
-include_directories(
+target_include_directories(AGSCommon PRIVATE
+    PUBLIC
     "${AdventureGameStudio_SOURCE_DIR}/Common"
-    "${AdventureGameStudio_SOURCE_DIR}/Engine"
-    "${AdventureGameStudio_SOURCE_DIR}/Engine/plugin"
     "${AdventureGameStudio_SOURCE_DIR}/Common/libinclude"
     "${AdventureGameStudio_SOURCE_DIR}/OSX/include"
     "${AdventureGameStudio_SOURCE_DIR}/OSX/include/freetype2"
 ) 
 
+target_include_directories(AGS PRIVATE
+    "${AdventureGameStudio_SOURCE_DIR}/Engine"
+    "${AdventureGameStudio_SOURCE_DIR}/Engine/plugin"
+) 
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
+foreach(target_var AGS AGSCommon)
+    target_compile_definitions(${target_var} PRIVATE 
+        $<$<PLATFORM_ID:Windows>:WINDOWS_VERSION>
+        $<$<PLATFORM_ID:Linux>:LINUX_VERSION>
+        $<$<PLATFORM_ID:Darwin>:MAC_VERSION>
+
+        $<$<CONFIG:Debug>:DEBUG>
+        $<$<CONFIG:Debug>:_DEBUG>
+        $<$<CONFIG:Debug>:DEBUG_SPRITECACHE>
+        $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
+
+        $<$<STREQUAL:ENABLE_MP3,OFF>:NO_MP3_PLAYER>
+
+        $<$<PLATFORM_ID:Windows>:WIN32>
+        $<$<PLATFORM_ID:Windows>:_WINDOWS>
+        $<$<PLATFORM_ID:Windows>:VS2005>
+        $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
+
+        DISABLE_MPEG_AUDIO # apeg-1.2.1
+        ALLEGRO_STATICLINK # used by allegro (if statically linked)
+    )
+endforeach(target_var)
+
+# Engine specific
+target_compile_definitions(AGS PRIVATE 
+    $<$<PLATFORM_ID:Linux>:BUILTIN_PLUGINS> 
+    $<$<PLATFORM_ID:Darwin>:BUILTIN_PLUGINS> 
+
+    $<$<PLATFORM_ID:Windows>:AGS_HAS_CD_AUDIO>
+    $<$<PLATFORM_ID:Linux>:AGS_HAS_CD_AUDIO>  
+
+    $<$<PLATFORM_ID:Linux>:RTLD_NEXT> 
+
+    $<$<CONFIG:Debug>:SOUND_CACHE_DEBUG>
+    $<$<CONFIG:Debug>:DEBUG_MANAGED_OBJECTS>
+    #$<$<CONFIG:Debug>:DEBUG_PATHFINDER>
+)
+
+# common specific
+target_compile_definitions(AGSCommon PRIVATE 
+    $<$<PLATFORM_ID:Linux>:AGS_CASE_SENSITIVE_FILESYSTEM> # common
+)
+
+if (APPLE)
+    set_target_properties(AGS PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER uk.co.adventuregamestudio.AGS
+        RESOURCE "${resources}"
+    )
+endif()
 
 link_directories(${AdventureGameStudio_SOURCE_DIR}/OSX/lib)
 
-if (WIN32)
-    target_compile_definitions(AGS PRIVATE 
-        WINDOWS_VERSION
-        WIN32
-        _WINDOWS
-        VS2005
-        _CRT_SECURE_NO_WARNINGS
-        AGS_HAS_CD_AUDIO
-        _LIB   # for common
-        _CONSOLE   # for tests
-    )
-endif()
-
-if (APPLE)
-    target_compile_definitions(AGS PRIVATE 
-        MAC_VERSION
-        BUILTIN_PLUGINS
-    )
-endif()
-
-if (LINUX)
-    target_compile_definitions(AGS PRIVATE 
-        LINUX_VERSION
-        AGS_RUNTIME_PATCH_ALLEGRO
-        AGS_HAS_CD_AUDIO
-        AGS_CASE_SENSITIVE_FILESYSTEM
-        BUILTIN_PLUGINS
-        RTLD_NEXT
-    )
-endif()
-
-target_compile_definitions(AGS PRIVATE 
-    DISABLE_MPEG_AUDIO
-    ALLEGRO_STATICLINK
-)
-
-if (!ENABLE_MP3)
-    target_compile_definitions(AGS PRIVATE 
-        NO_MP3_PLAYER
-    )
-endif()
-
-
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(AGS PRIVATE 
-        DEBUG
-        _DEBUG
-        SOUND_CACHE_DEBUG
-        DEBUG_SPRITECACHE
-        DEBUG_MANAGED_OBJECTS
-        #DEBUG_PATHFINDER  # broken
-    )
-else()
-    target_compile_definitions(AGS PRIVATE 
-        NDEBUG
-    )
-endif()
-
-
-set_target_properties(AGS PROPERTIES
-    MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER uk.co.adventuregamestudio.AGS
-    RESOURCE "${resources}"
-)
-
 target_link_libraries(AGS 
 
-    # debug dumb
-    ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libaldmd.a
-    ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libdumbd.a
+    $<$<CONFIG:Debug>:${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libdumbd.a>
+    $<$<NOT:$<CONFIG:Debug>>:${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libdumb.a>
 
-    # release dumb
-    #${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libaldmb.a
-    #${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libdumb.a
+    $<$<CONFIG:Debug>:${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libaldmd.a>
+    $<$<NOT:$<CONFIG:Debug>>:${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libaldmb.a>
 
-    ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/liballeg-debug.a
-    #${AdventureGameStudio_SOURCE_DIR}/OSX/lib/liballeg.a
+    $<$<CONFIG:Debug>:${AdventureGameStudio_SOURCE_DIR}/OSX/lib/liballeg-debug.a>
+    $<$<NOT:$<CONFIG:Debug>>:${AdventureGameStudio_SOURCE_DIR}/OSX/lib/liballeg.a>
 
     ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libfreetype.a
 
     ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/liblua.a
 
     ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libogg.a
-    # libtheora is deprecated
-    #${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libtheora.a
     ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libtheoradec.a
-    #${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libtheoraenc.a
     ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libvorbis.a
-    #${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libvorbisenc.a
     ${AdventureGameStudio_SOURCE_DIR}/OSX/lib/libvorbisfile.a
 )
 

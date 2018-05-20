@@ -19,7 +19,11 @@
 #include "util/stream.h"
 #include "gfx/bitmap.h"
 #include "util/wgt2allg.h"
-#include "ac/record.h"
+
+#define ASCII_BACKSPACE (8)
+#define ASCII_TAB (9)
+#define ASCII_RETURN (13)
+#define ASCII_ESCAPE (27)
 
 using AGS::Common::Stream;
 using AGS::Common::Bitmap;

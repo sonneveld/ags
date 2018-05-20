@@ -152,8 +152,7 @@ set (lib_sources
     Engine/libsrc/hq2x/hq2x3x.cpp
 )
 
-
-set(sources
+set(common_sources
     Common/ac/animationstruct.h
     Common/ac/audiocliptype.cpp
     Common/ac/audiocliptype.h
@@ -302,6 +301,9 @@ set(sources
     Common/util/version.h
     Common/util/wgt2allg.cpp
     Common/util/wgt2allg.h
+)
+
+set(engine_sources
     Engine/ac/asset_helper.h
     Engine/ac/audiochannel.cpp
     Engine/ac/audiochannel.h

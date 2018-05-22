@@ -62,4 +62,24 @@
 #define HWND void*
 #define HINSTANCE void*
 
+#elif defined(AGS_ENABLE_OPENGL_DRIVER)
+
+#include "SDL.h"
+
+#ifndef GL_GLEXT_PROTOTYPES
+#define GL_GLEXT_PROTOTYPES
+#endif
+
+#include "SDL_opengl.h"
+#include "SDL_opengl_glext.h"
+
+#define HDC void*
+#define HGLRC void*
+#define HWND void*
+#define HINSTANCE void*
+
+#else 
+
+#error Unsupported platform
+
 #endif

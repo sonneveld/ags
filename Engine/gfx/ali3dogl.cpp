@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#if defined(WINDOWS_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION)
+#ifdef AGS_ENABLE_OPENGL_DRIVER
 
 #include <algorithm>
 #include "gfx/ali3dexception.h"
@@ -137,6 +137,13 @@ const void (*glSwapIntervalEXT)(int) = NULL;
 #define GL_FRAMEBUFFER_EXT GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0_EXT GL_COLOR_ATTACHMENT0_OES
 
+#elif defined(AGS_ENABLE_OPENGL_DRIVER)
+
+int device_screen_initialized = 1;
+const char* fbo_extension_string = "GL_ARB_framebuffer_object";
+
+#else
+#error Unsupported platform
 #endif
 
 namespace AGS
@@ -462,6 +469,7 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
+#ifdef WINDOWS_VERSION
   if (glSwapIntervalEXT)
   {
     if(mode.Vsync)
@@ -550,9 +558,7 @@ void OGLGraphicsDriver::TestVSync()
   if (extensions && strstr(extensions, vsync_extension_string) != NULL ||
         extensionsARB && strstr(extensionsARB, vsync_extension_string) != NULL)
   {
-//#if defined(WINDOWS_VERSION)
     glSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-//#endif
   }
   if (!glSwapIntervalEXT)
     Debug::Printf(kDbgMsg_Warn, "WARNING: OpenGL extension '%s' not supported, vertical sync will be kept at driver default.", vsync_extension_string);

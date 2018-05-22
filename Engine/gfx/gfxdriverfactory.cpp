@@ -16,7 +16,7 @@
 #include "gfx/ali3dsw.h"
 #include "gfx/gfxfilter_allegro.h"
 
-#if defined(WINDOWS_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION)
+#ifdef AGS_ENABLE_OPENGL_DRIVER
 #include "gfx/ali3dogl.h" // TODO: support on Linux too
 #include "gfx/gfxfilter_ogl.h"
 #endif
@@ -38,7 +38,7 @@ void GetGfxDriverFactoryNames(StringV &ids)
 #ifdef WINDOWS_VERSION
     ids.push_back("D3D9");
 #endif
-#if defined (ANDROID_VERSION) || defined (IOS_VERSION) || defined (WINDOWS_VERSION)
+#ifdef AGS_ENABLE_OPENGL_DRIVER
     ids.push_back("OGL");
 #endif
     ids.push_back("Software");
@@ -50,8 +50,12 @@ IGfxDriverFactory *GetGfxDriverFactory(const String id)
     if (id.CompareNoCase("D3D9") == 0)
         return D3D::D3DGraphicsFactory::GetFactory();
 #endif
-#if defined (ANDROID_VERSION) || defined (IOS_VERSION)|| defined (WINDOWS_VERSION)
-    if (id.CompareNoCase("OGL") == 0)
+#ifdef AGS_ENABLE_OPENGL_DRIVER
+    if (id.CompareNoCase("OGL") == 0 
+#if defined (ANDROID_VERSION) || defined (IOS_VERSION)
+        || (id.CompareNoCase("D3D9") == 0 && psp_gfx_renderer > 0)
+#endif
+        )
         return OGL::OGLGraphicsFactory::GetFactory();
 #endif
     if (id.CompareNoCase("Software") == 0)

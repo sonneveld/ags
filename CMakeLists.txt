@@ -115,6 +115,11 @@ target_compile_definitions(AGS PRIVATE
     $<$<CONFIG:Debug>:SOUND_CACHE_DEBUG>
     $<$<CONFIG:Debug>:DEBUG_MANAGED_OBJECTS>
     #$<$<CONFIG:Debug>:DEBUG_PATHFINDER>
+
+    $<$<PLATFORM_ID:Windows>:AGS_ENABLE_OPENGL_DRIVER>
+    # $<$<PLATFORM_ID:Android>:AGS_ENABLE_OPENGL_DRIVER>
+    # $<$<PLATFORM_ID:IOS>:AGS_ENABLE_OPENGL_DRIVER>
+    $<$<PLATFORM_ID:Darwin>:AGS_ENABLE_OPENGL_DRIVER>
 )
 
 # common specific
@@ -170,3 +175,8 @@ if ( BZIP2_FOUND )
     include_directories( ${BZIP2_INCLUDE_DIRS} )
     target_link_libraries( AGS ${BZIP2_LIBRARIES} )
 endif( BZIP2_FOUND )
+
+find_package( OpenGL REQUIRED )
+if ( OPENGL_FOUND )
+    target_link_libraries(AGS OpenGL::GL)
+endif( OPENGL_FOUND )

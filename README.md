@@ -70,7 +70,7 @@ Download SDL2 [ https://www.libsdl.org/release/SDL2-2.0.8.dmg ] and drag the SDL
 
 Build OSX Libs (check out OSX/buildlibs/README.md for more details)
 
-    cd $ALLEGRO_SRC
+    cd $AGS_SRC
     cd OSX/buildlibs
     make libs install
 
@@ -109,6 +109,16 @@ Build AGS
     make -j$NUM_JOBS
 
 After building, there should be an "AGS.app" bundle in your build directory. You can run this like a normal app.
+
+Bundling SDL2 framework with the app:
+
+    Copy SDL2.framework into AGS.app/Contents/Frameworks
+
+    # Tell the AGS binary to also search for @rpath based libraries within the bundle relative to itself.
+    install_name_tool -add_rpath "@executable_path/../Frameworks" AGS.app/Contents/MacOS/AGS
+
+
+
 
 
 

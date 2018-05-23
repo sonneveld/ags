@@ -279,11 +279,16 @@ private:
     std::vector<OGLDrawListEntry> drawListLastTime;
     GlobalFlipType flipTypeLastTime;
 
+    SDL_Window *sdlWindow = NULL;
+    SDL_GLContext sdlGlContext = NULL;
+    
     // Sets up GL objects not related to particular display mode
     void FirstTimeInit();
     // Initializes Gl rendering context
     bool InitGlScreen(const DisplayMode &mode);
+#if defined (WINDOWS_VERSION)
     bool CreateGlContext(const DisplayMode &mode);
+#endif
     void DeleteGlContext();
     // Sets up general rendering parameters
     void InitGlParams(const DisplayMode &mode);

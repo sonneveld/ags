@@ -167,6 +167,15 @@ void ogl_dummy_vsync() { }
 
 #define GFX_OPENGL  AL_ID('O','G','L',' ')
 
+static int ogl_show_mouse(struct BITMAP *bmp, int x, int y) {
+    SDL_ShowCursor(SDL_ENABLE);
+    return -1; // show cursor, but "fail" because we're not supporting hardware cursors
+}
+
+static void ogl_hide_mouse() {
+    SDL_ShowCursor(SDL_DISABLE);
+}
+    
 GFX_DRIVER gfx_opengl =
 {
    GFX_OPENGL,
@@ -188,8 +197,8 @@ GFX_DRIVER gfx_opengl =
    NULL,  //gfx_directx_create_system_bitmap,
    NULL, //gfx_directx_destroy_system_bitmap,
    NULL, //gfx_directx_set_mouse_sprite,
-   NULL, //gfx_directx_show_mouse,
-   NULL, //gfx_directx_hide_mouse,
+   ogl_show_mouse, //gfx_directx_show_mouse,
+   ogl_hide_mouse, //gfx_directx_hide_mouse,
    NULL, //gfx_directx_move_mouse,
    NULL,                        // AL_METHOD(void, drawing_mode, (void));
    NULL,                        // AL_METHOD(void, save_video_state, (void*));
@@ -229,13 +238,14 @@ OGLGraphicsDriver::ShaderProgram::ShaderProgram() : Program(0), SamplerVar(0), C
 
 OGLGraphicsDriver::OGLGraphicsDriver() 
 {
+  device_screen_physical_width  = 0;
+  device_screen_physical_height = 0;
+    
 #if defined (WINDOWS_VERSION)
   _hDC = NULL;
   _hRC = NULL;
   _hWnd = NULL;
   _hInstance = NULL;
-  device_screen_physical_width  = 0;
-  device_screen_physical_height = 0;
 #elif defined (ANDROID_VERSION)
   device_screen_physical_width  = android_screen_physical_width;
   device_screen_physical_height = android_screen_physical_height;
@@ -435,6 +445,52 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 
   CreateDesktopScreen(mode.Width, mode.Height, mode.ColorDepth);
   win_grab_input();
+
+#else 
+
+    this->sdlWindow = SDL_CreateWindow(
+                                  "AGS",
+                                  SDL_WINDOWPOS_CENTERED,
+                                  SDL_WINDOWPOS_CENTERED,
+                                  mode.Width, mode.Height,
+                                  SDL_WINDOW_OPENGL
+                                  );
+    
+    device_screen_physical_width = mode.Width;
+    device_screen_physical_height = mode.Height;
+    
+    _rgb_r_shift_15 = 10;
+    _rgb_g_shift_15 = 5;
+    _rgb_b_shift_15 = 0;
+    
+    _rgb_r_shift_16 = 11;
+    _rgb_g_shift_16 = 5;
+    _rgb_b_shift_16 = 0;
+    
+    _rgb_r_shift_24 = 16;
+    _rgb_g_shift_24 = 8;
+    _rgb_b_shift_24 = 0;
+    
+    _rgb_a_shift_32 = 24;
+    _rgb_r_shift_32 = 16;
+    _rgb_g_shift_32 = 8;
+    _rgb_b_shift_32 = 0;
+    
+    this->sdlGlContext = SDL_GL_CreateContext(this->sdlWindow);
+    
+    SDL_GL_MakeCurrent(this->sdlWindow, this->sdlGlContext);
+    
+    // Set our OpenGL version.
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+    
+    // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    
+    // Turn on double buffering with a 24bit Z buffer.
+    // You may need to change this to 16 or 32 for your system
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    
 #endif
 
   gfx_driver = &gfx_opengl;
@@ -477,6 +533,9 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
     else
       glSwapIntervalEXT(0);
   }
+#else
+  SDL_GL_SetSwapInterval(mode.Vsync ? 1 : 0);
+#endif
 
 #if defined(ANDROID_VERSION) || defined(IOS_VERSION)
   // Setup library mouse to have 1:1 coordinate transformation.
@@ -486,10 +545,10 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   device_mouse_setup(0, device_screen_physical_width - 1, 0, device_screen_physical_height - 1, 1.0, 1.0);
 #endif
 }
-
+    
+#if defined (WINDOWS_VERSION)
 bool OGLGraphicsDriver::CreateGlContext(const DisplayMode &mode)
 {
-#if defined (WINDOWS_VERSION)
   PIXELFORMATDESCRIPTOR pfd =
   {
     sizeof(PIXELFORMATDESCRIPTOR),
@@ -525,10 +584,11 @@ bool OGLGraphicsDriver::CreateGlContext(const DisplayMode &mode)
 
   if(!wglMakeCurrent(_hDC, _hRC))
     return false;
-#endif // WINDOWS_VERSION
+
   return true;
 }
-
+#endif // WINDOWS_VERSION
+    
 void OGLGraphicsDriver::DeleteGlContext()
 {
 #if defined (WINDOWS_VERSION)
@@ -541,6 +601,12 @@ void OGLGraphicsDriver::DeleteGlContext()
 
   if (_oldPixelFormat > 0)
     SetPixelFormat(_hDC, _oldPixelFormat, &_oldPixelFormatDesc);
+#else
+    if (this->sdlGlContext) {
+        SDL_GL_MakeCurrent(NULL, NULL);
+        SDL_GL_DeleteContext(this->sdlGlContext);
+        this->sdlGlContext = NULL;
+    }
 #endif
 }
 
@@ -1007,6 +1073,8 @@ void OGLGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
     ios_select_buffer();
 #elif defined(WINDOWS_VERSION)
     glReadBuffer(GL_FRONT);
+#else 
+    glReadBuffer(GL_FRONT);
 #endif
     retr_rect = _dstRect;
   }
@@ -1371,6 +1439,8 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   SwapBuffers(_hDC);
 #elif defined(ANDROID_VERSION) || defined(IOS_VERSION)
   device_swap_buffers();
+#else 
+  SDL_GL_SwapWindow(this->sdlWindow);
 #endif
 
   if (clearDrawListAfterwards)

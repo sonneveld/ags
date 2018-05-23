@@ -448,6 +448,22 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 
 #else 
 
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_PROFILE_MASK: %s", SDL_GetError());
+    }
+
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MAJOR_VERSION: %s", SDL_GetError());
+    }
+    
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MINOR_VERSION: %s", SDL_GetError());
+    }
+    
+    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_DOUBLEBUFFER: %s", SDL_GetError());
+    }
+    
     this->sdlWindow = SDL_CreateWindow(
                                   "AGS",
                                   SDL_WINDOWPOS_CENTERED,
@@ -477,25 +493,6 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
         SDL_DestroyWindow(this->sdlWindow);
         this->sdlWindow = NULL;
         return false;
-    }
-    
-    // Set our OpenGL version.
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) != 0) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_PROFILE_MASK: %s", SDL_GetError());
-    }
-    
-    // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MAJOR_VERSION: %s", SDL_GetError());
-    }
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MINOR_VERSION: %s", SDL_GetError());
-    }
-    
-    // Turn on double buffering with a 24bit Z buffer.
-    // You may need to change this to 16 or 32 for your system
-    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) != 0) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_DOUBLEBUFFER: %s", SDL_GetError());
     }
     
     device_screen_physical_width = mode.Width;
@@ -749,8 +746,7 @@ void OGLGraphicsDriver::CreateTintShader()
     // Color processing is replicated from Direct3D shader by Chris Jones
     // (Engine/resource/tintshaderLegacy.fx).
     "\
-                                #version 130\n\
-                                out vec4 gl_FragColor;\n\
+                                #version 120\n\
                                 uniform sampler2D textID;\n\
                                 uniform vec3 tintHSV;\n\
                                 uniform vec3 tintAmnTrsLum;\n\
@@ -802,8 +798,7 @@ void OGLGraphicsDriver::CreateLightShader()
     // NOTE: it's been said that using branching in shaders produces inefficient code.
     // If that will ever become a real problem, we can easily split this shader in two.
     "\
-                                #version 130\n\
-                                out vec4 gl_FragColor;\n\
+                                #version 120\n\
                                 uniform sampler2D textID;\n\
                                 uniform float light;\n\
                                 uniform float alpha;\n\

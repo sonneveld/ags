@@ -456,6 +456,48 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
                                   SDL_WINDOW_OPENGL
                                   );
     
+    if (this->sdlWindow == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error opening window for OpenGL: %s", SDL_GetError());
+        return false;
+    }
+    
+    this->sdlGlContext = SDL_GL_CreateContext(this->sdlWindow);
+    
+    if (this->sdlGlContext == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error creating OpenGL context: %s", SDL_GetError());
+        SDL_DestroyWindow(this->sdlWindow);
+        this->sdlWindow = NULL;
+        return false;
+    }
+    
+    if (SDL_GL_MakeCurrent(this->sdlWindow, this->sdlGlContext) != 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error setting current OpenGL context: %s", SDL_GetError());
+        SDL_GL_DeleteContext(this->sdlGlContext);
+        this->sdlGlContext = NULL;
+        SDL_DestroyWindow(this->sdlWindow);
+        this->sdlWindow = NULL;
+        return false;
+    }
+    
+    // Set our OpenGL version.
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_PROFILE_MASK: %s", SDL_GetError());
+    }
+    
+    // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MAJOR_VERSION: %s", SDL_GetError());
+    }
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MINOR_VERSION: %s", SDL_GetError());
+    }
+    
+    // Turn on double buffering with a 24bit Z buffer.
+    // You may need to change this to 16 or 32 for your system
+    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_DOUBLEBUFFER: %s", SDL_GetError());
+    }
+    
     device_screen_physical_width = mode.Width;
     device_screen_physical_height = mode.Height;
     
@@ -475,21 +517,6 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
     _rgb_r_shift_32 = 16;
     _rgb_g_shift_32 = 8;
     _rgb_b_shift_32 = 0;
-    
-    this->sdlGlContext = SDL_GL_CreateContext(this->sdlWindow);
-    
-    SDL_GL_MakeCurrent(this->sdlWindow, this->sdlGlContext);
-    
-    // Set our OpenGL version.
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-    
-    // 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    
-    // Turn on double buffering with a 24bit Z buffer.
-    // You may need to change this to 16 or 32 for your system
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     
 #endif
 
@@ -602,11 +629,11 @@ void OGLGraphicsDriver::DeleteGlContext()
   if (_oldPixelFormat > 0)
     SetPixelFormat(_hDC, _oldPixelFormat, &_oldPixelFormatDesc);
 #else
+    SDL_GL_MakeCurrent(NULL, NULL);
     if (this->sdlGlContext) {
-        SDL_GL_MakeCurrent(NULL, NULL);
         SDL_GL_DeleteContext(this->sdlGlContext);
-        this->sdlGlContext = NULL;
     }
+    this->sdlGlContext = NULL;
 #endif
 }
 
@@ -1027,6 +1054,9 @@ void OGLGraphicsDriver::ReleaseDisplayMode()
 
   DestroyStageScreen();
 
+  SDL_DestroyWindow(this->sdlWindow);
+  this->sdlWindow = NULL;
+    
   gfx_driver = NULL;
 
   if (platform->ExitFullscreenMode())

@@ -61,6 +61,7 @@
 #include "gfx/graphicsdriver.h"
 #include "gfx/ali3dexception.h"
 #include "gfx/blender.h"
+#include "device/mousew32.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

@@ -23,6 +23,8 @@
 
 #include "util/geometry.h"
 
+#define DOMOUSE_NOCURSOR 5
+
 #define MAXCURSORS 20
 
 #include "util/geometry.h"
@@ -37,7 +39,7 @@ void mgetgraphpos();
 // Sets the area of the game frame (zero-based coordinates) where the mouse cursor is allowed to move;
 // this function was meant to be used to achieve gameplay effect
 void msetcursorlimit(int x1, int y1, int x2, int y2);
-void drawCursor(Common::Bitmap *ds);
+void drawCursor(Common::Bitmap *ds, int x, int y);
 void domouse(int str);
 int ismouseinbox(int lf, int tp, int rt, int bt);
 void mfreemem();

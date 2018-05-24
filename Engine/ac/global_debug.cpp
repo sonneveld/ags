@@ -116,6 +116,7 @@ void script_debug(int cmdd,int dataa) {
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(stretched, false, true);
         for (;;) {
+            process_pending_events();
             render_graphics(ddb, 0, 0);
             
             SDL_Event kpEvent = getTextEventFromQueue();
@@ -175,6 +176,7 @@ void script_debug(int cmdd,int dataa) {
 			Common::kBitmap_Transparency);
         
         for (;;) {
+            process_pending_events();
             render_to_screen(BitmapHelper::GetScreenBitmap(), 0, 0);
             
             SDL_Event kpEvent = getTextEventFromQueue();

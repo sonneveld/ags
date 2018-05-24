@@ -831,7 +831,8 @@ stage_again:
     mls[mlist].lastx = -1;
     mls[mlist].lasty = -1;
 #ifdef DEBUG_PATHFINDER
-    for (;;) {
+    for (;;) {    
+        process_pending_events();
         SDL_Event kpEvent = getTextEventFromQueue();
         int kp = asciiFromEvent(kpEvent);
         if (kp > 0) { break; }

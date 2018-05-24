@@ -50,6 +50,7 @@
 #include "gfx/ddb.h"
 #include "gfx/gfx_util.h"
 #include "gfx/graphicsdriver.h"
+#include "device/mousew32.h"
 
 using namespace AGS::Common;
 
@@ -873,6 +874,9 @@ static int dialogOptionFromKey(SDL_Event event) {
 
 bool DialogOptions::Run()
 {
+    // Run() can be called in a loop, so keep events going.
+    process_pending_events();
+
     const bool new_custom_render = usingCustomRendering && game.options[OPT_DIALOGOPTIONSAPI] >= 0;
 
       if (runGameLoopsInBackground)

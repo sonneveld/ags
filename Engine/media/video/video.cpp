@@ -64,6 +64,7 @@ int fliTargetWidth, fliTargetHeight;
 int check_if_user_input_should_cancel_video()
 {
     NEXT_ITERATION();
+    process_pending_events();
 
     SDL_Event kpEvent = getTextEventFromQueue();
     int kp = asciiFromEvent(kpEvent);
@@ -209,7 +210,10 @@ void play_flc_file(int numb,int playflags) {
     delete hicol_buf;
     hicol_buf=NULL;
     //  SetVirtualScreen(screen); wputblock(0,0,backbuffer,0);
-    while (mgetbutton()!=NONE) ;
+    for(;;) {
+        process_pending_events();
+        if (mgetbutton() == NONE) { break; }
+    }
     invalidate_screen();
 }
 

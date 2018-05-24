@@ -175,6 +175,7 @@ int WINAPI _export CSCIWaitMessage(Bitmap *ds, CSCIMessage * cscim)
     while (1) {
         timerloop = 0;
         NextIteration();
+        process_pending_events();
         refresh_gui_screen();
 
         cscim->id = -1;

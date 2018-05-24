@@ -345,6 +345,9 @@ void InventoryScreen::RedrawOverItem(int isonitem)
 
 bool InventoryScreen::Run()
 {
+    // Run() can be called in a loop, so keep events going.
+    process_pending_events();
+
     if (kbhit() != 0)
     {
         return false; // end inventory screen loop

@@ -24,7 +24,6 @@
 #ifndef IS_RECORD_UNIT
 #undef kbhit
 #define mgetbutton rec_mgetbutton
-#define domouse rec_domouse
 #define misbuttondown rec_misbuttondown
 #define kbhit rec_kbhit
 #define getch rec_getch
@@ -38,12 +37,10 @@ int  rec_iskeypressed (int keycode);
 int  rec_isSpeechFinished ();
 int  rec_misbuttondown (int but);
 int  rec_mgetbutton();
-void rec_domouse (int what);
 int  check_mouse_wheel ();
 int  my_readkey();
 void clear_input_buffer(); // Clears buffered keypresses and mouse clicks, if any
 
-void set_key_event_watch();
 SDL_Event getTextEventFromQueue();
 
 int asciiFromEvent(SDL_Event event);
@@ -54,5 +51,7 @@ int asciiOrAgsKeyCodeFromEvent(SDL_Event event);
 #define ASCII_TAB (9)
 #define ASCII_RETURN (13)
 #define ASCII_ESCAPE (27)
+
+void process_pending_events();
 
 #endif // __AGS_EE_AC__RECORD_H

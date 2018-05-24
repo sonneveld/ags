@@ -219,6 +219,8 @@ void check_controls() {
     our_eip = 1007;
     NEXT_ITERATION();
 
+    process_pending_events();
+
     int aa,mongu=-1;
     
     mongu = gui_on_mouse_move();
@@ -562,12 +564,6 @@ void game_loop_do_render_and_check_mouse(IDriverDependantBitmap *extraBitmap, in
 
         offsetxWas = offsetx;
         offsetyWas = offsety;
-
-#ifdef MAC_VERSION
-        // take a breather after the heavy work
-        // cuts down on CPU usage and reduces the fan noise
-        rest(2);
-#endif
     }
 }
 
@@ -642,7 +638,7 @@ void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int
 
     int res;
 
-    process_sdl2_events();
+    process_pending_events();
 
     update_mp3();
 

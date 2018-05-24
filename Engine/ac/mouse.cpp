@@ -33,6 +33,7 @@
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/gfxfilter.h"
+#include "ac/record.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -288,11 +289,11 @@ int GetCursorMode() {
 }
 
 int IsButtonDown(int which) {
-    if ((which < 1) || (which > 3))
+    if ((which < 1) || (which > 3)) {
         quit("!IsButtonDown: only works with eMouseLeft, eMouseRight, eMouseMiddle");
-    if (misbuttondown(which-1))
-        return 1;
-    return 0;
+    }
+    process_pending_events();
+    return misbuttondown(which-1);
 }
 
 int IsModeEnabled(int which) {

@@ -51,6 +51,8 @@
 using namespace AGS::Common;
 using namespace AGS::Engine;
 
+extern void process_pending_events();
+
 extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
 
@@ -141,9 +143,8 @@ END_OF_FUNCTION(_ags_mouse_callback)
 
 int get_mouse_b()
 {
-    if (mouse_needs_poll()) {
-        poll_mouse();
-    }
+#warning TODO: find out where mouse_b is needed, are events polled before that?
+    process_pending_events();
     
     AGS::Engine::MutexLock _lock(_mouse_mutex);
     
@@ -167,9 +168,8 @@ void mgraphconfine(int x1, int y1, int x2, int y2)
 
 void mgetgraphpos()
 {
-    if (mouse_needs_poll()) {
-        poll_mouse();
-    }
+#warning TODO: find out where mgetgraphpos is needed, are events polled before that?
+    process_pending_events();
     
     if (disable_mgetgraphpos)
     {
@@ -259,13 +259,13 @@ void msetcursorlimit(int x1, int y1, int x2, int y2)
   boundy2 = y2;
 }
 
-void drawCursor(Bitmap *ds) {
+void drawCursor(Bitmap *ds, int x, int y) {
   if (alpha_blend_cursor) {
     set_alpha_blender();
-    ds->TransBlendBlt(mousecurs[currentcursor], mousex, mousey);
+    ds->TransBlendBlt(mousecurs[currentcursor], x, y);
   }
   else
-    AGS::Engine::GfxUtil::DrawSpriteWithTransparency(ds, mousecurs[currentcursor], mousex, mousey);
+    AGS::Engine::GfxUtil::DrawSpriteWithTransparency(ds, mousecurs[currentcursor], x, y);
 }
 
 int hotxwas = 0, hotywas = 0;
@@ -275,13 +275,19 @@ void domouse(int str)
      TO USE THIS ROUTINE YOU MUST LOAD A MOUSE CURSOR USING mloadcursor.
      YOU MUST ALSO REMEMBER TO CALL mfreemem AT THE END OF THE PROGRAM.
   */
-  int poow = mousecurs[currentcursor]->GetWidth();
-  int pooh = mousecurs[currentcursor]->GetHeight();
+
   int smx = mousex - hotxwas, smy = mousey - hotywas;
 
   mgetgraphpos();
+
+  if (str == DOMOUSE_NOCURSOR) { return; }
+
+  // temporarily adjust mousex/y. Original values returned at end of func.
   mousex -= hotx;
   mousey -= hoty;
+
+  int poow = mousecurs[currentcursor]->GetWidth();
+  int pooh = mousecurs[currentcursor]->GetHeight();
 
   if (mousex + poow >= play.viewport.GetWidth())
     poow = play.viewport.GetWidth() - mousex;
@@ -297,13 +303,13 @@ void domouse(int str)
       wputblock(ds, smx, smy, savebk, 0);
       delete savebk;
       savebk = wnewblock(ds, mousex, mousey, mousex + poow, mousey + pooh);
-      drawCursor(ds);
+      drawCursor(ds, mousex, mousey);
     }
   }
   else if ((str == 1) & (mouseturnedon == FALSE)) {
     // the mouse is just being turned on
     savebk = wnewblock(ds, mousex, mousey, mousex + poow, mousey + pooh);
-    drawCursor(ds);
+    drawCursor(ds, mousex, mousey);
     mouseturnedon = TRUE;
   }
   else if ((str == 2) & (mouseturnedon == TRUE)) {    // the mouse is being turned off

@@ -532,7 +532,7 @@ void GfxDriverOnSurfaceUpdate()
 {
     // Resize render frame using current scaling settings
     graphics_mode_update_render_frame();
-    on_coordinates_scaling_changed();
+    on_coordinates_scaling_changed();  // mouse
 }
 
 bool graphics_mode_create_renderer(const String &driver_id)

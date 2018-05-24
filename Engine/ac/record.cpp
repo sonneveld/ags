@@ -53,15 +53,10 @@ extern volatile char want_exit, abort_engine;
 int mouse_z_was = 0;
 
 static std::queue<SDL_Event> textEventQueue;
-static SDL_mutex *sdlKeysymQueueMutex = nullptr;
 
-static int textEventWatch(void *userdata, SDL_Event *event) {
+static void onkeydown(SDL_Event *event) {
 #warning if text_input, we should emit multiple unicode codepoints. check out ugetx
-    if (event->type == SDL_KEYDOWN || event->type == SDL_TEXTINPUT) {
-        SDL_LockMutex(sdlKeysymQueueMutex);
         textEventQueue.push(*event);
-        SDL_UnlockMutex(sdlKeysymQueueMutex);
-    }
     
 #warning this might break since running in a different thread.  maybe set a quit flag.
     // Alt+X, abort (but only once game is loaded)
@@ -71,18 +66,14 @@ static int textEventWatch(void *userdata, SDL_Event *event) {
         want_exit = 1;
 //        quit("!|");
     }
-    
-    return 0;
 }
 
 SDL_Event getTextEventFromQueue() {
     SDL_Event result = { .type = 0 };
-    SDL_LockMutex(sdlKeysymQueueMutex);
     if (!textEventQueue.empty()) {
         result = textEventQueue.front();
         textEventQueue.pop();
     }
-    SDL_UnlockMutex(sdlKeysymQueueMutex);
     
     if ((globalTimerCounter < play.ignore_user_input_until_time)) {
         // ignoring user input
@@ -92,9 +83,39 @@ SDL_Event getTextEventFromQueue() {
     return result;
 }
 
-void set_key_event_watch() {
-    SDL_AddEventWatch(textEventWatch, nullptr);
-    sdlKeysymQueueMutex = SDL_CreateMutex();
+void process_pending_events() {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+
+        switch (event.type) {
+            
+            case SDL_WINDOWEVENT: {
+                
+                switch(event.window.event) {
+                    // case SDL_WINDOWEVENT_RESIZED:
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                        Size size(event.window.data1, event.window.data2);
+                        // graphics_mode_set_native_size(size);
+                        //  try engine_try_switch_windowed_gfxmode
+                        break;
+                }
+                break;
+            }
+
+            case SDL_KEYDOWN:
+            case SDL_TEXTINPUT:
+                onkeydown(&event);
+                break;
+            case SDL_KEYUP:
+            case SDL_MOUSEMOTION:
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+            case SDL_QUIT:
+                break;
+        }
+
+        sdl2_process_single_event(&event);
+    }
 }
 
 
@@ -144,13 +165,6 @@ int rec_mgetbutton() {
     }
 
     return result;
-}
-
-void rec_domouse (int what) {
-    if (what == DOMOUSE_NOCURSOR)
-        mgetgraphpos();
-    else
-        domouse(what);
 }
 
 int check_mouse_wheel () {
@@ -286,8 +300,15 @@ int my_readkey() {
 
 void clear_input_buffer()
 {
-    while (rec_kbhit()) rec_getch();
-    while (mgetbutton() != NONE);
+    for(;;) {
+        process_pending_events();
+        if (!rec_kbhit()) { break; }
+        rec_getch();
+    }
+    for(;;) {
+        process_pending_events();
+        if (mgetbutton() == NONE) { break; }
+    }
 }
 
 

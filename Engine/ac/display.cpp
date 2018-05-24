@@ -41,6 +41,7 @@
 #include "ac/spritecache.h"
 #include "gfx/gfx_util.h"
 #include "util/string_utils.h"
+#include "device/mousew32.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
@@ -278,7 +279,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             /*      if (!play.mouse_cursor_hidden)
             domouse(0);
             write_screen();*/
-            process_sdl2_events();
+            process_pending_events();
 
             render_graphics();
 

@@ -347,6 +347,7 @@ extern int  mgetbutton();
 void IAGSEngine::PollSystem () {
 
     NEXT_ITERATION();
+    process_pending_events();
     domouse(DOMOUSE_NOCURSOR);
     update_polled_stuff_if_runtime();
     int mbut = mgetbutton();

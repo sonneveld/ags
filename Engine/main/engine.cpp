@@ -505,7 +505,6 @@ void engine_init_keyboard()
     Debug::Printf(kDbgMsg_Init, "Initializing keyboard");
 
     install_keyboard();
-    set_key_event_watch();
 }
 
 void engine_init_timer()

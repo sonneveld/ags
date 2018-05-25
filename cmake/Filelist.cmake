@@ -728,7 +728,6 @@ set(engine_sources
     Engine/script/script_runtime.h
     Engine/script/systemimports.cpp
     Engine/script/systemimports.h
-    Engine/sdl2alleg.h
     Engine/util/library.h
     Engine/util/library_dummy.h
     Engine/util/library_posix.h

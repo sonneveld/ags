@@ -203,6 +203,8 @@ public:
     virtual bool HasAcceleratedStretchAndFlip() { return true; }
     virtual void SetScreenTint(int red, int green, int blue);
 
+    virtual void UpdateDeviceScreen(const Size &screenSize);
+
     typedef stdtr1compat::shared_ptr<OGLGfxFilter> POGLFilter;
 
     void SetGraphicsFilter(POGLFilter filter);

@@ -33,6 +33,7 @@
 #include "gfx/gfxfilter.h"
 #include "device/mousew32.h"
 #include "util/filestream.h"
+#include "gfx/graphicsdriver.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -49,6 +50,8 @@ extern int displayed_room;
 extern char check_dynamic_sprites_at_exit;
 
 extern volatile char want_exit, abort_engine;
+
+extern IGraphicsDriver *gfxDriver;
 
 int mouse_z_was = 0;
 
@@ -94,9 +97,8 @@ void process_pending_events() {
                 switch(event.window.event) {
                     // case SDL_WINDOWEVENT_RESIZED:
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        Size size(event.window.data1, event.window.data2);
-                        // graphics_mode_set_native_size(size);
-                        //  try engine_try_switch_windowed_gfxmode
+                        Size windowSize(event.window.data1, event.window.data2);
+                        gfxDriver->UpdateDeviceScreen(windowSize);
                         break;
                 }
                 break;

@@ -126,6 +126,7 @@ public:
   virtual bool RequiresFullRedrawEachFrame() = 0;
   virtual bool HasAcceleratedStretchAndFlip() = 0;
   virtual bool UsesMemoryBackBuffer() = 0;
+  virtual void UpdateDeviceScreen(const Size &screenSize) = 0;
   virtual ~IGraphicsDriver() { }
 };
 

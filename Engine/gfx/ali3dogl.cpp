@@ -308,27 +308,22 @@ void OGLGraphicsDriver::CreateDesktopScreen(int width, int height, int depth)
   device_screen_physical_height = height;
 }
 
-#elif defined (ANDROID_VERSION) || defined (IOS_VERSION)
-
-void OGLGraphicsDriver::UpdateDeviceScreen()
-{
-#if defined (ANDROID_VERSION)
-    device_screen_physical_width  = android_screen_physical_width;
-    device_screen_physical_height = android_screen_physical_height;
-#elif defined (IOS_VERSION)
-    device_screen_physical_width  = ios_screen_physical_width;
-    device_screen_physical_height = ios_screen_physical_height;
 #endif
 
+void OGLGraphicsDriver::UpdateDeviceScreen(const Size &screenSize)
+{
+    device_screen_physical_width  = screenSize.Width;
+    device_screen_physical_height = screenSize.Height;
+    
     Debug::Printf("OGL: notified of device screen updated to %d x %d, resizing viewport", device_screen_physical_width, device_screen_physical_height);
+    
     _mode.Width = device_screen_physical_width;
     _mode.Height = device_screen_physical_height;
     InitGlParams(_mode);
+    
     if (_initSurfaceUpdateCallback)
         _initSurfaceUpdateCallback();
 }
-
-#endif
 
 void OGLGraphicsDriver::Vsync() 
 {
@@ -464,12 +459,17 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_DOUBLEBUFFER: %s", SDL_GetError());
     }
     
+    Uint32 createWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+    if (!mode.Windowed) {
+        createWindowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
+    
     this->sdlWindow = SDL_CreateWindow(
                                   "AGS",
                                   SDL_WINDOWPOS_CENTERED,
                                   SDL_WINDOWPOS_CENTERED,
                                   mode.Width, mode.Height,
-                                  SDL_WINDOW_OPENGL
+                                  createWindowFlags
                                   );
     
     if (this->sdlWindow == NULL) {
@@ -1357,7 +1357,6 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   ios_select_buffer();
 #endif
 
-#if defined (ANDROID_VERSION) || defined (IOS_VERSION)
   // TODO:
   // For some reason, mobile ports initialize actual display size after a short delay.
   // This is why we update display mode and related parameters (projection, viewport)
@@ -1367,10 +1366,17 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   // of the platform-specific part of the code (Java app for Android / XCode for iOS).
   if (!device_screen_initialized)
   {
-    UpdateDeviceScreen();
+#if defined (ANDROID_VERSION)
+      UpdateDeviceScreen(Size(android_screen_physical_width, android_screen_physical_height));
+#elif defined (IOS_VERSION)
+      UpdateDeviceScreen(Size(ios_screen_physical_width, ios_screen_physical_height));
+#else
+      int w, h;
+      SDL_GetWindowSize(this->sdlWindow, &w, &h);
+      UpdateDeviceScreen(Size(w,h));
+#endif
     device_screen_initialized = 1;
   }
-#endif
 
   std::vector<OGLDrawListEntry> &listToDraw = drawList;
   size_t listSize = drawList.size();

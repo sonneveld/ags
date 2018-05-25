@@ -29,6 +29,12 @@ namespace Engine
 using Common::Bitmap;
 
 
+class NotImplemented : public std::logic_error
+{
+public:
+    NotImplemented() : std::logic_error("Function not yet implemented") { };
+};
+
 template<class T_DDB>
 struct SpriteDrawListEntry
 {
@@ -74,6 +80,8 @@ public:
     virtual void        SetCallbackOnInit(GFXDRV_CLIENTCALLBACKINITGFX callback) { _initGfxCallback = callback; }
     virtual void        SetCallbackOnSurfaceUpdate(GFXDRV_CLIENTCALLBACKSURFACEUPDATE callback) { _initSurfaceUpdateCallback = callback; }
     virtual void        SetCallbackForNullSprite(GFXDRV_CLIENTCALLBACKXY callback) { _nullSpriteCallback = callback; }
+
+    virtual void        UpdateDeviceScreen(const Size &screenSize) { throw NotImplemented(); }
 
 protected:
     // Called after graphics driver was initialized for use for the first time

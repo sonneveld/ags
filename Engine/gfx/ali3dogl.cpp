@@ -22,6 +22,7 @@
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
 
+extern void process_pending_events();
 
 #if defined(WINDOWS_VERSION)
 
@@ -1884,6 +1885,7 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
 
     do
     {
+      process_pending_events();
       if (_pollingCallback)
         _pollingCallback();
       platform->YieldCPU();
@@ -1963,6 +1965,7 @@ void OGLGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
     
     this->_render(flipTypeLastTime, false);
 
+    process_pending_events();
     if (_pollingCallback)
       _pollingCallback();
     platform->Delay(delay);

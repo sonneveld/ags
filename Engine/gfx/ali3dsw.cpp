@@ -49,6 +49,8 @@ extern "C" DDRAW_SURFACE *gfx_directx_primary_surface;
 extern int dxmedia_play_video (const char*, bool, int, int);
 #endif // WINDOWS_VERSION
 
+extern void process_pending_events();
+
 namespace AGS
 {
 namespace Engine
@@ -503,6 +505,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *currentVirtScreen, int 
        _filter->RenderScreen(bmp_buff, 0, 0);
        do
        {
+         process_pending_events();
          if (_pollingCallback)
            _pollingCallback();
          platform->Delay(1);
@@ -542,6 +545,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(int speed, int targetColourRed
                 _filter->RenderScreen(bmp_buff, 0, 0);
                 do
                 {
+                  process_pending_events();
                   if (_pollingCallback)
                     _pollingCallback();
                   platform->Delay(1);
@@ -632,6 +636,7 @@ void ALSoftwareGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int del
       this->ClearRectangle(_srcRect.GetWidth() / 2 - boxwid / 2, vcentre - boxhit / 2,
           _srcRect.GetWidth() / 2 + boxwid / 2, vcentre + boxhit / 2, NULL);
     
+      process_pending_events();    
       if (_pollingCallback)
         _pollingCallback();
 

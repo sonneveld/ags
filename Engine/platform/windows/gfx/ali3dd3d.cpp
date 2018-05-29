@@ -34,6 +34,7 @@ using namespace AGS::Common;
 
 extern int dxmedia_play_video_3d(const char*filename, IDirect3DDevice9 *device, bool useAVISound, int canskip, int stretch);
 extern void dxmedia_shutdown_3d();
+extern void process_pending_events();
 
 
 namespace AGS
@@ -1783,6 +1784,7 @@ void D3DGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
 
     do
     {
+      process_events();      
       if (_pollingCallback)
         _pollingCallback();
       platform->YieldCPU();
@@ -1862,6 +1864,7 @@ void D3DGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
     
     this->_renderAndPresent(flipTypeLastTime, false);
 
+    process_events();      
     if (_pollingCallback)
       _pollingCallback();
     platform->Delay(delay);

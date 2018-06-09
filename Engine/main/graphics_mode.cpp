@@ -405,8 +405,6 @@ bool create_gfx_driver_and_init_mode_any(const String &gfx_driver_id, const Size
 
     const int use_col_depth =
         color_depth.Forced ? color_depth.Bits : gfxDriver->GetDisplayDepthForNativeDepth(color_depth.Bits);
-    // Log out supported driver modes
-    log_out_driver_modes(use_col_depth);
 
     bool result = try_init_mode_using_setup(game_size, dm_setup, use_col_depth, frame_setup, filter_setup);
     // Try windowed mode if fullscreen failed, and vice versa
@@ -656,9 +654,6 @@ bool graphics_mode_set_filter(const String &filter_id)
         Debug::Printf(kDbgMsg_Error, "Unable to set graphics filter '%s'. Error: %s", filter_id.GetCStr(), filter_error.GetCStr());
         return false;
     }
-    Rect filter_rect  = filter->GetDestination();
-    Debug::Printf("Graphics filter set: '%s', filter dest (%d, %d, %d, %d : %d x %d)", filter->GetInfo().Id.GetCStr(),
-        filter_rect.Left, filter_rect.Top, filter_rect.Right, filter_rect.Bottom, filter_rect.GetWidth(), filter_rect.GetHeight());
     return true;
 }
 

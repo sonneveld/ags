@@ -49,6 +49,7 @@ target_sources(AGS PRIVATE
     ${lib_sources}
     ${test_sources}
     ${resources}
+    "${AdventureGameStudio_SOURCE_DIR}/glad/src/glad.c"
     )
 
 source_group(TREE ${AdventureGameStudio_SOURCE_DIR} PREFIX Sources FILES 
@@ -75,6 +76,9 @@ target_include_directories(AGSCommon PRIVATE
 target_include_directories(AGS PRIVATE
     "${AdventureGameStudio_SOURCE_DIR}/Engine"
     "${AdventureGameStudio_SOURCE_DIR}/Engine/plugin"
+    # use glm-0.9.8.5 for now as glm-0.9.9.0 removed default initialisers
+    "${AdventureGameStudio_SOURCE_DIR}/glm-0.9.8.5"
+    "${AdventureGameStudio_SOURCE_DIR}/glad/include"
 ) 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")

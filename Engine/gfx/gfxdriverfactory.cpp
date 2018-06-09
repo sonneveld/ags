@@ -17,7 +17,7 @@
 #include "gfx/gfxfilter_allegro.h"
 
 #ifdef AGS_ENABLE_OPENGL_DRIVER
-#include "gfx/ali3dogl.h" // TODO: support on Linux too
+#include "gfx/ali3dogl3.h" // TODO: support on Linux too
 #include "gfx/gfxfilter_ogl.h"
 #endif
 
@@ -56,7 +56,7 @@ IGfxDriverFactory *GetGfxDriverFactory(const String id)
         || (id.CompareNoCase("D3D9") == 0 && psp_gfx_renderer > 0)
 #endif
         )
-        return OGL::OGLGraphicsFactory::GetFactory();
+        return GetOGL3Factory();
 #endif
     if (id.CompareNoCase("Software") == 0)
         return ALSW::ALSWGraphicsFactory::GetFactory();

@@ -589,8 +589,8 @@ set(engine_sources
     Engine/game/savegame.h
     Engine/game/savegame_internal.h
     Engine/gfx/ali3dexception.h
-    Engine/gfx/ali3dogl.cpp
-    Engine/gfx/ali3dogl.h
+    Engine/gfx/ali3dogl3.cpp
+    Engine/gfx/ali3dogl3.h
     Engine/gfx/ali3dsw.cpp
     Engine/gfx/ali3dsw.h
     Engine/gfx/blender.cpp

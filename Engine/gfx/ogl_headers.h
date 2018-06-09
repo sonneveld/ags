@@ -64,14 +64,15 @@
 
 #elif defined(AGS_ENABLE_OPENGL_DRIVER)
 
+#define GLM_FORCE_RADIANS 1
+ #define GLM_ENABLE_EXPERIMENTAL
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include "glm/ext.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "SDL.h"
-
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif
-
-#include "SDL_opengl.h"
-#include "SDL_opengl_glext.h"
+#include "glad/glad.h"
 
 #define HDC void*
 #define HGLRC void*

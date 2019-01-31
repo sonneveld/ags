@@ -22,13 +22,13 @@
 #if defined(WINDOWS_VERSION)
 
     #ifdef _DEBUG
+
+    #define SDL_ASSERT_LEVEL 2
+    #include "SDL_assert.h"
+
     inline void assert(bool expr)
     {
-        if (!expr) {
-            _asm {
-                int 3
-            }
-        }
+        SDL_assert(expr);
     }
     #else
     inline void assert(bool /*expr*/) {}
@@ -44,4 +44,4 @@
 
 #endif
 
-#endif // __AGS_CN_DEBUG__ASSERT_H
+#endif

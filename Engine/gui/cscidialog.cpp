@@ -234,7 +234,9 @@ int CSCIWaitMessage(CSCIMessage * cscim)
             break;
 
         update_polled_audio_and_crossfade();
-        while (timerloop == 0) ;
+        while (timerloop == 0) {
+            SDL_Delay(1);
+        }
     }
 
     return 0;

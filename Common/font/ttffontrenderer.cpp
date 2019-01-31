@@ -108,7 +108,10 @@ bool TTFFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRen
     return false;
 
   // TODO: move this somewhere, should not be right here
-#if !defined(WINDOWS_VERSION)
+
+// SDL-TODO: do some test renderings of fonts with old alfont library, compare with current.
+
+#if 0 and !defined(WINDOWS_VERSION)
   // FIXME: (!!!) this fix should be done differently:
   // 1. Find out which OUTLINE font was causing troubles;
   // 2. Replace outline method ONLY if that troublesome font is used as outline.

@@ -410,6 +410,7 @@ bool SetCustomSaveParent(const String &path)
     return false;
 }
 
+// set global variable 'saveGameDirectory'
 bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
 {
     if (!newFolder || newFolder[0] == 0)
@@ -2004,7 +2005,7 @@ void display_switch_in_resume()
     }
 
     // This can cause a segfault on Linux
-#if !defined (LINUX_VERSION)
+#if !defined (LINUX_VERSION) || defined(ALLEGRO_SDL2)
     if (gfxDriver->UsesMemoryBackBuffer())  // make sure all borders are cleared
         gfxDriver->ClearRectangle(0, 0, game.size.Width - 1, game.size.Height - 1, NULL);
 #endif

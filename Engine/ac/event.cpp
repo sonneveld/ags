@@ -294,7 +294,9 @@ void process_event(EventHappened*evp) {
                         boxwid, boxhit);
                     render_to_screen(viewport.Left, viewport.Top);
                     update_mp3();
-                        while (timerloop == 0) ;
+                    while (timerloop == 0) {
+                        SDL_Delay(1);
+                    }
                 }
                 gfxDriver->SetMemoryBackBuffer(saved_backbuf, viewport.Left, viewport.Top);
             }
@@ -324,7 +326,9 @@ void process_event(EventHappened*evp) {
                 }
 				render_to_screen();
                 update_polled_stuff_if_runtime();
-                while (timerloop == 0) ;
+                while (timerloop == 0) {
+                    SDL_Delay(1);
+                }
                 transparency -= 16;
             }
             saved_viewport_bitmap->Release();
@@ -362,7 +366,9 @@ void process_event(EventHappened*evp) {
                 gfxDriver->DrawSprite(0, 0, ddb);
 				render_to_screen();
                 update_polled_stuff_if_runtime();
-                while (timerloop == 0) ;
+                while (timerloop == 0) {
+                    SDL_Delay(1);
+                }
             }
             saved_viewport_bitmap->Release();
 

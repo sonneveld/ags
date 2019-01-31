@@ -85,7 +85,7 @@ void AGSPlatformDriver::WriteStdOut(const char *fmt, ...) {
 }
 
 void AGSPlatformDriver::YieldCPU() {
-    this->Delay(1);
+    SDL_Delay(1);
 }
 
 void AGSPlatformDriver::InitialiseAbufAtStartup()

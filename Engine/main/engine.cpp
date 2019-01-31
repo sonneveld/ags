@@ -107,7 +107,7 @@ bool engine_init_allegro()
     our_eip = -199;
     // Initialize allegro
     set_uformat(U_ASCII);
-    if (install_allegro(SYSTEM_AUTODETECT, &myerrno, atexit))
+    if (install_allegro(SYSTEM_AUTODETECT, &errno, atexit))
     {
         const char *al_err = get_allegro_error();
         const char *user_hint = platform->GetAllegroFailUserHint();
@@ -224,7 +224,7 @@ void engine_force_window()
 void init_game_file_name_from_cmdline()
 {
     game_file_name.Empty();
-#if defined(PSP_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION) || defined(MAC_VERSION)
+#if defined(PSP_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION) || defined(MAC_VERSION) 
     game_file_name = psp_game_file_name;
 #else
     game_file_name = GetPathFromCmdArg(datafile_argv);
@@ -412,23 +412,6 @@ int engine_init_mouse()
     else
         Debug::Printf(kDbgMsg_Init, "Initializing mouse: number of buttons reported is %d", res);
 	return RETURN_CONTINUE;
-}
-
-int engine_check_memory()
-{
-    Debug::Printf(kDbgMsg_Init, "Checking memory");
-
-    char*memcheck=(char*)malloc(4000000);
-    if (memcheck==NULL) {
-        platform->DisplayAlert("There is not enough memory available to run this game. You need 4 Mb free\n"
-            "extended memory to run the game.\n"
-            "If you are running from Windows, check the 'DPMI memory' setting on the DOS box\n"
-            "properties.\n");
-        return EXIT_NORMAL;
-    }
-    free(memcheck);
-    unlink (replayTempFile);
-    return RETURN_CONTINUE;
 }
 
 void engine_init_rooms()
@@ -1379,11 +1362,6 @@ int initialize_engine(int argc,char*argv[])
 
     our_eip = -187;
 
-    res = engine_check_memory();
-    if (res != RETURN_CONTINUE) {
-        return res;
-    }
-
     engine_init_directories();
 
     engine_init_rooms();
@@ -1478,6 +1456,11 @@ int initialize_engine(int argc,char*argv[])
     // [ER] 2014-03-13
     // Hide the system cursor via allegro
     show_os_cursor(MOUSE_CURSOR_NONE);
+
+    // TODO:  Find out whether this function
+    // has anything to do with graphics mode at all. It is quite possible
+    // that we may split it into two functions, or remove parameter.
+    platform->PostAllegroInit(false);
 
     show_preload();
 

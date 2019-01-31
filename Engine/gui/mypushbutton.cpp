@@ -93,7 +93,9 @@ int MyPushButton::pressedon(int mousex, int mousey)
 
         refresh_gui_screen();
 
-        while (timerloop == 0) ;
+        while (timerloop == 0) {
+            SDL_Delay(1);
+        }
     }
     wasstat = state;
     state = 0;

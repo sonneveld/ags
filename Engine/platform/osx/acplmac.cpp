@@ -27,6 +27,8 @@
 //#include <libcda.h>
 //#include <pwd.h>
 //#include <sys/stat.h>
+#include "SDL.h"
+#include <unistd.h>
 #include "platform/base/agsplatformdriver.h"
 #include "util/directory.h"
 #include "ac/common.h"
@@ -48,6 +50,11 @@ int psp_midi_enabled = 1;
 int psp_midi_preload_patches = 0;
 
 int psp_video_framedrop = 0;
+
+int psp_gfx_renderer = 0;
+int psp_gfx_scaling = 1;
+int psp_gfx_smoothing = 0;
+int psp_gfx_super_sampling = 1;
 int psp_gfx_smooth_sprites = 0;
 
 char psp_game_file_name[256];
@@ -100,13 +107,7 @@ void AGSMac::DisplayAlert(const char *text, ...) {
 }
 
 void AGSMac::Delay(int millis) {
-  while (millis >= 5) {
-    usleep(5);
-    millis -= 5;
-    update_polled_stuff_if_runtime();
-  }
-  if (millis > 0)
-    usleep(millis);
+  SDL_Delay(millis);
 }
 
 unsigned long AGSMac::GetDiskFreeSpaceMB() {

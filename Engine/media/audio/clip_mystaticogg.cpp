@@ -17,6 +17,7 @@
 #include "media/audio/audiointernaldefs.h"
 #include "media/audio/soundcache.h"
 #include "util/mutex_lock.h"
+#include "util/math.h"
 
 #include "platform/base/agsplatformdriver.h"
 
@@ -182,7 +183,7 @@ void MYSTATICOGG::restart()
     if (tune != NULL) {
         alogg_stop_ogg(tune);
         alogg_rewind_ogg(tune);
-        alogg_play_ogg(tune, 16384, vol, panning);
+        alogg_play_ogg(tune, 16384, AGS::Common::Math::Clamp(0, 255, vol), panning);
         last_ms_offs = 0;
         last_but_one = 0;
         last_but_one_but_one = 0;
@@ -212,7 +213,7 @@ int MYSTATICOGG::play_from(int position)
     else
         extraOffset = 0;
 
-    if (alogg_play_ex_ogg(tune, 16384, vol, panning, 1000, repeat) != ALOGG_OK) {
+    if (alogg_play_ex_ogg(tune, 16384, AGS::Common::Math::Clamp(0, 255, vol), panning, 1000, repeat) != ALOGG_OK) {
         destroy();
         delete this;
         return 0;

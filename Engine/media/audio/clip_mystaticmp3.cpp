@@ -20,6 +20,7 @@
 #include "media/audio/audiointernaldefs.h"
 #include "media/audio/soundcache.h"
 #include "util/mutex_lock.h"
+#include "util/math.h"
 
 #include "platform/base/agsplatformdriver.h"
 
@@ -70,7 +71,8 @@ void MYSTATICMP3::adjust_stream()
     if (tune)
     {
         AGS::Engine::MutexLock _lockMp3(_mp3_mutex);
-        almp3_adjust_mp3(tune, get_final_volume(), panning, speed, repeat);
+        auto adjustvol = get_final_volume();
+        almp3_adjust_mp3(tune, AGS::Common::Math::Clamp(0, 255, adjustvol), panning, speed, repeat);
     }
 }
 
@@ -157,7 +159,7 @@ void MYSTATICMP3::restart()
         AGS::Engine::MutexLock _lockMp3(_mp3_mutex);
         almp3_stop_mp3(tune);
         almp3_rewind_mp3(tune);
-        almp3_play_mp3(tune, 16384, vol, panning);
+        almp3_play_mp3(tune, 16384, AGS::Common::Math::Clamp(0, 255, vol), panning);
 		_lockMp3.Release();
         done = 0;
 
@@ -179,7 +181,8 @@ int MYSTATICMP3::get_sound_type() {
 
 int MYSTATICMP3::play() {
     AGS::Engine::MutexLock _lockMp3(_mp3_mutex);
-    int result = almp3_play_ex_mp3(tune, 16384, vol, panning, 1000, repeat);
+    
+    int result = almp3_play_ex_mp3(tune, 16384, AGS::Common::Math::Clamp(0, 255, vol), panning, 1000, repeat);
 	_lockMp3.Release();
 
     if (result != ALMP3_OK) {

@@ -20,6 +20,7 @@
 #include "media/audio/audiointernaldefs.h"
 #include "ac/common.h"               // quit()
 #include "util/mutex_lock.h"
+#include "util/math.h"
 
 #include "platform/base/agsplatformdriver.h"
 
@@ -80,7 +81,8 @@ int MYMP3::poll()
 void MYMP3::adjust_stream()
 {
     AGS::Engine::MutexLock _lockMp3(_mp3_mutex);
-    almp3_adjust_mp3stream(stream, get_final_volume(), panning, speed);
+    auto adjustvol = get_final_volume();
+    almp3_adjust_mp3stream(stream, AGS::Common::Math::Clamp(0, 255, adjustvol), panning, speed);
 }
 
 void MYMP3::adjust_volume()
@@ -171,7 +173,7 @@ void MYMP3::restart()
     if (stream != NULL) {
         // need to reset file pointer for this to work
 		AGS::Engine::MutexLock _lockMp3(_mp3_mutex);
-        almp3_play_mp3stream(stream, MP3CHUNKSIZE, vol, panning);
+        almp3_play_mp3stream(stream, MP3CHUNKSIZE, AGS::Common::Math::Clamp(0, 255, vol), panning);
 		_lockMp3.Release();
         done = 0;
         paused = 0;
@@ -194,7 +196,8 @@ int MYMP3::get_sound_type() {
 
 int MYMP3::play() {
 	AGS::Engine::MutexLock _lockMp3(_mp3_mutex);
-    almp3_play_mp3stream(stream, chunksize, (vol > 230) ? vol : vol + 20, panning);
+    auto playvol = (vol > 230) ? vol : vol + 20;
+    almp3_play_mp3stream(stream, chunksize, AGS::Common::Math::Clamp(0, 255, playvol), panning);
 	_lockMp3.Release();
 
     if (!psp_audio_multithreaded)

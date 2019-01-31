@@ -57,6 +57,7 @@ struct SOUNDCLIP
     bool repeat;
     void *sourceClip;
     bool ready;
+#pragma message ("SDL-TODO: change to sharedptr as polling thread can hold onto this while clip is being destroyed")
     AGS::Engine::Mutex _mutex;
 
     virtual int poll() = 0;

@@ -262,9 +262,6 @@ String find_user_cfg_file()
 void config_defaults()
 {
     usetup.translation = NULL;
-#ifdef WINDOWS_VERSION
-    usetup.digicard = DIGI_DIRECTAMX(0);
-#endif
 }
 
 void read_game_data_location(const ConfigTree &cfg)
@@ -389,35 +386,13 @@ void override_config_ext(ConfigTree &cfg)
 void apply_config(const ConfigTree &cfg)
 {
     {
-#ifndef WINDOWS_VERSION
+
         usetup.digicard=INIreadint(cfg, "sound","digiid", DIGI_AUTODETECT);
         usetup.midicard=INIreadint(cfg, "sound","midiid", MIDI_AUTODETECT);
-#else
-        int idx = INIreadint(cfg, "sound","digiwinindx", -1);
-        if (idx == 0)
-            idx = DIGI_DIRECTAMX(0);
-        else if (idx == 1)
-            idx = DIGI_WAVOUTID(0);
-        else if (idx == 2)
-            idx = DIGI_NONE;
-        else if (idx == 3) 
-            idx = DIGI_DIRECTX(0);
-        else 
-            idx = DIGI_AUTODETECT;
-        usetup.digicard = idx;
 
-        idx = INIreadint(cfg, "sound","midiwinindx", -1);
-        if (idx == 1)
-            idx = MIDI_NONE;
-        else if (idx == 2)
-            idx = MIDI_WIN32MAPPER;
-        else
-            idx = MIDI_AUTODETECT;
-        usetup.midicard = idx;
-#endif
-#if !defined (LINUX_VERSION)
-        psp_audio_multithreaded = INIreadint(cfg, "sound", "threaded", psp_audio_multithreaded);
-#endif
+// #if !defined (LINUX_VERSION)
+//         psp_audio_multithreaded = INIreadint(cfg, "sound", "threaded", psp_audio_multithreaded);
+// #endif
 
         // Filter can also be set by command line
         // TODO: apply command line arguments to ConfigTree instead to override options read from config file

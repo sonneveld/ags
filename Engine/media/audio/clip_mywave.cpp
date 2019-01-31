@@ -18,6 +18,7 @@
 #include "media/audio/audiointernaldefs.h"
 #include "media/audio/soundcache.h"
 #include "util/mutex_lock.h"
+#include "util/math.h"
 
 #include "platform/base/agsplatformdriver.h"
 
@@ -129,7 +130,7 @@ void MYWAVE::restart()
         done = 0;
         paused = 0;
         stop_sample(wave);
-        voice = play_sample(wave, vol, panning, 1000, 0);
+        voice = play_sample(wave, AGS::Common::Math::Clamp(0, 255, vol), panning, 1000, 0);
     }
 }
 
@@ -143,7 +144,7 @@ int MYWAVE::get_sound_type() {
 }
 
 int MYWAVE::play() {
-    voice = play_sample(wave, vol, panning, 1000, repeat);
+    voice = play_sample(wave, AGS::Common::Math::Clamp(0, 255, vol), panning, 1000, repeat);
 
     _playing = true;
 

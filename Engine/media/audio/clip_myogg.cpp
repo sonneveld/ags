@@ -17,6 +17,7 @@
 #include "media/audio/audiointernaldefs.h"
 #include "ac/common.h"               // quit()
 #include "util/mutex_lock.h"
+#include "util/math.h"
 
 #include "platform/base/agsplatformdriver.h"
 
@@ -31,6 +32,8 @@ extern "C" {
 int MYOGG::poll()
 {
     AGS::Engine::MutexLock _lock(_mutex);
+    
+    if (!stream) { return true; }
 
     if (!done && _destroyThis)
     {
@@ -78,6 +81,7 @@ int MYOGG::poll()
 
 void MYOGG::adjust_stream()
 {
+    if (!stream) { return; }
     alogg_adjust_oggstream(stream, get_final_volume(), panning, speed);
 }
 
@@ -104,6 +108,8 @@ void MYOGG::set_speed(int new_speed)
 
 void MYOGG::internal_destroy()
 {
+    if (!stream) { return; }
+
     if (!done)
         alogg_stop_oggstream(stream);
 
@@ -120,17 +126,18 @@ void MYOGG::internal_destroy()
 
 void MYOGG::destroy()
 {
-	AGS::Engine::MutexLock _lock(_mutex);
+    {
+        AGS::Engine::MutexLock _lock(_mutex);
 
-    if (psp_audio_multithreaded && _playing && !_audio_doing_crossfade)
-      _destroyThis = true;
-    else
-      internal_destroy();
-
-	_lock.Release();
-
+        if (psp_audio_multithreaded && _playing && !_audio_doing_crossfade) {
+            _destroyThis = true;
+        } else {
+            internal_destroy();
+        }
+    }
+    
     while (!done)
-      AGSPlatformDriver::GetDriver()->YieldCPU();
+        AGSPlatformDriver::GetDriver()->YieldCPU();
 }
 
 void MYOGG::seek(int pos)
@@ -145,6 +152,8 @@ int MYOGG::get_pos()
 
 int MYOGG::get_pos_ms()
 {
+    if (!stream) { return 0; }
+    
     // Unfortunately the alogg_get_pos_msecs_oggstream function
     // returns the ms offset that was last decoded, so it's always
     // ahead of the actual playback. Therefore we have this
@@ -197,7 +206,7 @@ void MYOGG::restart()
     if (stream != NULL) {
         // need to reset file pointer for this to work
         quit("Attempted to restart OGG not currently supported");
-        alogg_play_oggstream(stream, MP3CHUNKSIZE, vol, panning);
+        alogg_play_oggstream(stream, MP3CHUNKSIZE, AGS::Common::Math::Clamp(0, 255, vol), panning);
         done = 0;
         paused = 0;
         
@@ -208,6 +217,8 @@ void MYOGG::restart()
 
 int MYOGG::get_voice()
 {
+    if (!stream) { return -1; }
+    
     AUDIOSTREAM *ast = alogg_get_audiostream_oggstream(stream);
     if (ast)
         return ast->voice;
@@ -219,7 +230,10 @@ int MYOGG::get_sound_type() {
 }
 
 int MYOGG::play() {
-    alogg_play_oggstream(stream, MP3CHUNKSIZE, (vol > 230) ? vol : vol + 20, panning);
+    if (!stream) { return 0; }
+    
+    auto playvol = (vol > 230) ? vol : vol + 20;
+    alogg_play_oggstream(stream, MP3CHUNKSIZE, AGS::Common::Math::Clamp(0, 255, playvol), panning);
 
     if (!psp_audio_multithreaded)
       poll();

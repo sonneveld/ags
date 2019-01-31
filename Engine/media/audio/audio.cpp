@@ -47,7 +47,7 @@ extern CharacterInfo*playerchar;
 extern volatile int switching_away_from_game;
 
 #if !defined(IOS_VERSION) && !defined(PSP_VERSION) && !defined(ANDROID_VERSION)
-volatile int psp_audio_multithreaded = 0;
+volatile int psp_audio_multithreaded = 1;
 #endif
 
 ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
@@ -89,8 +89,9 @@ void start_fading_in_new_track_if_applicable(int fadeInChannel, ScriptAudioClip 
 void move_track_to_crossfade_channel(int currentChannel, int crossfadeSpeed, int fadeInChannel, ScriptAudioClip *newSound)
 {
     stop_and_destroy_channel(SPECIAL_CROSSFADE_CHANNEL);
-    channels[SPECIAL_CROSSFADE_CHANNEL] = channels[currentChannel];
+    auto ch = channels[currentChannel];
     channels[currentChannel] = NULL;
+    channels[SPECIAL_CROSSFADE_CHANNEL] = ch;
 
     play.crossfading_out_channel = SPECIAL_CROSSFADE_CHANNEL;
     play.crossfade_step = 0;
@@ -433,8 +434,12 @@ void stop_and_destroy_channel_ex(int chid, bool resetLegacyMusicSettings) {
 
     if (channels[chid] != NULL) {
         channels[chid]->destroy();
-        delete channels[chid];
-        channels[chid] = NULL;
+        {
+            AGS::Engine::MutexLock _lock(_audio_mutex);
+            auto todelete = channels[chid];
+            channels[chid] = NULL;
+            delete todelete;
+        }
     }
 
     if (play.crossfading_in_channel == chid)
@@ -683,8 +688,6 @@ int crossFading = 0, crossFadeVolumePerStep = 0, crossFadeStep = 0;
 int crossFadeVolumeAtStart = 0;
 SOUNDCLIP *cachedQueuedMusic = NULL;
 
-int musicPollIterator; // long name so it doesn't interfere with anything else
-
 volatile int mvolcounter = 0;
 int update_music_at=0;
 
@@ -727,8 +730,11 @@ void clear_music_cache() {
 
     if (cachedQueuedMusic != NULL) {
         cachedQueuedMusic->destroy();
-        delete cachedQueuedMusic;
-        cachedQueuedMusic = NULL;
+        {
+            AGS::Engine::MutexLock _lock(_audio_mutex);
+            delete cachedQueuedMusic;
+            cachedQueuedMusic = NULL;
+        }
     }
 
 }
@@ -805,12 +811,16 @@ extern int frames_per_second;
 
 void update_mp3_thread()
 {
+#pragma message ("SDL-TODO: weird lock issues. Any modifications to channels should be wrapped with a mutex.")
 	while (switching_away_from_game) { }
+
 	AGS::Engine::MutexLock _lock(_audio_mutex);
-	for (musicPollIterator = 0; musicPollIterator <= MAX_SOUND_CHANNELS; ++musicPollIterator)
+	for (auto musicPollIterator = 0; musicPollIterator <= MAX_SOUND_CHANNELS; musicPollIterator++)
 	{
-		if ((channels[musicPollIterator] != NULL) && (channels[musicPollIterator]->done == 0))
-			channels[musicPollIterator]->poll();
+        auto ch = channels[musicPollIterator];
+        if (ch == nullptr) { continue; }
+        if (ch->done) { continue; }
+        ch->poll();
 	}
 }
 
@@ -938,8 +948,9 @@ void update_music_volume() {
                 newvol = targetVol;
                 stop_and_destroy_channel_ex(SCHAN_MUSIC, false);
                 if (crossFading > 0) {
-                    channels[SCHAN_MUSIC] = channels[crossFading];
+                    auto ch = channels[crossFading];
                     channels[crossFading] = NULL;
+                    channels[SCHAN_MUSIC] = ch;
                 }
                 crossFading = 0;
             }
@@ -984,8 +995,9 @@ int prepare_for_new_music () {
             if (crossFading > 0) {
                 // It's still crossfading to the previous track
                 stop_and_destroy_channel_ex(SCHAN_MUSIC, false);
-                channels[SCHAN_MUSIC] = channels[crossFading];
+                auto ch = channels[crossFading];
                 channels[crossFading] = NULL;
+                channels[SCHAN_MUSIC] = ch;
                 crossFading = 0;
                 update_music_volume();
             }

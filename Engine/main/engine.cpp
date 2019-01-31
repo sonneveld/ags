@@ -656,13 +656,7 @@ void engine_init_sound()
         play.separate_music_lib = 0;
     }
 
-#ifdef WINDOWS_VERSION
-    if (usetup.digicard == DIGI_DIRECTX(0))
-    {
-        // DirectX mixer seems to buffer an extra sample itself
-        use_extra_sound_offset = 1;
-    }
-#endif
+
 }
 
 void engine_init_debug()

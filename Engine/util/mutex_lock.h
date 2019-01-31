@@ -48,6 +48,7 @@ public:
 	{
 	}
 
+#pragma message ("SDL-TODO: change to accept a sharedptr")
 	explicit MutexLock(BaseMutex &mutex) : _m(NULL)
 	{
 		Acquire(mutex);

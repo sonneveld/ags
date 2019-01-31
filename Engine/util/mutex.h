@@ -42,22 +42,7 @@ public:
 } // namespace AGS
 
 
-#if defined(WINDOWS_VERSION)
-#include "mutex_windows.h"
-
-#elif defined(PSP_VERSION)
-#include "mutex_psp.h"
-
-#elif defined(WII_VERSION)
-#include "mutex_wii.h"
-
-#elif defined(LINUX_VERSION) \
-   || defined(MAC_VERSION) \
-   || defined(IOS_VERSION) \
-   || defined(ANDROID_VERSION)
-#include "mutex_pthread.h"
-
-#endif
+#include "mutex_sdl2.h"
 
 
 #endif // __AGS_EE_UTIL__MUTEX_H

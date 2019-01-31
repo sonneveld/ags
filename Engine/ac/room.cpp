@@ -54,7 +54,7 @@
 #include "media/audio/audio.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
+#include "plugin/plugin_engine_internal.h"
 #include "script/cc_error.h"
 #include "script/script.h"
 #include "script/script_runtime.h"

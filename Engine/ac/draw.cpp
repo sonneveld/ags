@@ -54,7 +54,7 @@
 #include "media/audio/soundclip.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
+#include "plugin/plugin_engine_internal.h"
 #include "ac/spritecache.h"
 #include "gfx/gfx_util.h"
 #include "gfx/graphicsdriver.h"

@@ -20,7 +20,7 @@
 #include "ac/tree_map.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
+#include "plugin/plugin_engine_internal.h"
 
 extern GameState play;
 extern AGSPlatformDriver *platform;

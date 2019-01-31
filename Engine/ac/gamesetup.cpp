@@ -15,6 +15,12 @@
 #include "util/wgt2allg.h" // DIGI_AUTODETECT & MIDI_AUTODETECT
 #include "ac/gamesetup.h"
 
+#ifdef WINDOWS_VERSION
+static const MouseControl defaultMouseControl = kMouseCtrl_Fullscreen;
+#else
+static const MouseControl defaultMouseControl = kMouseCtrl_Never;
+#endif
+
 GameSetup::GameSetup()
 {
     digicard=DIGI_AUTODETECT;
@@ -28,7 +34,7 @@ GameSetup::GameSetup()
     override_multitasking = -1;
     override_upscale = false;
     mouse_speed = 1.f;
-    mouse_control = kMouseCtrl_Fullscreen;
+    mouse_control = defaultMouseControl;
     mouse_speed_def = kMouseSpeed_CurrentDisplay;
     RenderAtScreenRes = false;
     Supersampling = 1;

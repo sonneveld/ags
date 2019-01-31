@@ -41,6 +41,7 @@
 #include "ac/spritecache.h"
 #include "gfx/gfx_util.h"
 #include "util/string_utils.h"
+#include "device/mousew32.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
@@ -273,6 +274,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             /*      if (!play.mouse_cursor_hidden)
             domouse(0);
             write_screen();*/
+            process_pending_events();
 
             render_graphics();
 
@@ -282,22 +284,28 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
                 if (skip_setting & SKIP_MOUSECLICK)
                     break;
             }
-            int kp;
-            if (run_service_key_controls(kp)) {
-                // let them press ESC to skip the cutscene
+            
+            // let them press ESC to skip the cutscene
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            auto keyAvailable = run_service_key_controls(kpEvent);
+            if (keyAvailable && kp > 0) {
                 check_skip_cutscene_keypress (kp);
-                if (play.fast_forward)
+                
+                if (play.fast_forward) {
                     break;
+                }
 
-                if (skip_setting & SKIP_KEYPRESS)
+                if (skip_setting & SKIP_KEYPRESS) {
                     break;
+                }
             }
             PollUntilNextFrame();
             countdown--;
 
             if (channels[SCHAN_SPEECH] != NULL) {
                 // extend life of text if the voice hasn't finished yet
-                if ((!rec_isSpeechFinished()) && (play.fast_forward == 0)) {
+                if ((!isSpeechFinished()) && (play.fast_forward == 0)) {
                     if (countdown <= 1)
                         countdown = 1;
                 }

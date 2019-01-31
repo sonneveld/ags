@@ -594,142 +594,127 @@ void GetLocationName(int xxx,int yyy,char*tempo) {
     play.get_loc_name_last_time = onhs;
 }
 
+// this is eKeyCode defiend in agsdefns.sh
 int IsKeyPressed (int keycode) {
-#ifdef ALLEGRO_KEYBOARD_HANDLER
-    if (keyboard_needs_poll())
-        poll_keyboard();
-    if (keycode >= AGS_EXT_KEY_SHIFT) {
-        // function keys are 12 lower in allegro 4
-        if ((keycode>=359) & (keycode<=368)) keycode-=12;
-        // F11-F12
-        else if ((keycode==433) || (keycode==434)) keycode-=76;
-        // left arrow
-        else if (keycode==375) keycode=382;
-        // right arrow
-        else if (keycode==377) keycode=383;
-        // up arrow
-        else if (keycode==372) keycode=384;
-        // down arrow
-        else if (keycode==380) keycode=385;
-        // numeric keypad
-        else if (keycode==379) keycode=338;
-        else if (keycode==380) keycode=339;
-        else if (keycode==381) keycode=340;
-        else if (keycode==375) keycode=341;
-        else if (keycode==376) keycode=342;
-        else if (keycode==377) keycode=343;
-        else if (keycode==371) keycode=344;
-        else if (keycode==372) keycode=345;
-        else if (keycode==373) keycode=346;
-        // insert
-        else if (keycode == AGS_KEYCODE_INSERT) keycode = KEY_INSERT + AGS_EXT_KEY_SHIFT;
-        // delete
-        else if (keycode == AGS_KEYCODE_DELETE) keycode = KEY_DEL + AGS_EXT_KEY_SHIFT;
+    SDL_PumpEvents();
+    const Uint8 *state = SDL_GetKeyboardState(NULL);
 
-        // deal with shift/ctrl/alt
-        if (keycode == 403) keycode = KEY_LSHIFT;
-        else if (keycode == 404) keycode = KEY_RSHIFT;
-        else if (keycode == 405) keycode = KEY_LCONTROL;
-        else if (keycode == 406) keycode = KEY_RCONTROL;
-        else if (keycode == 407) keycode = KEY_ALT;
-        else keycode -= AGS_EXT_KEY_SHIFT;
+    switch (keycode) {
+        case 'A': return state[SDL_GetScancodeFromKey(SDLK_a)];
+        case 'B': return state[SDL_GetScancodeFromKey(SDLK_b)];
+        case 'C': return state[SDL_GetScancodeFromKey(SDLK_c)];
+        case 'D': return state[SDL_GetScancodeFromKey(SDLK_d)];
+        case 'E': return state[SDL_GetScancodeFromKey(SDLK_e)];
+        case 'F': return state[SDL_GetScancodeFromKey(SDLK_f)];
+        case 'G': return state[SDL_GetScancodeFromKey(SDLK_g)];
+        case 'H': return state[SDL_GetScancodeFromKey(SDLK_h)];
+        case 'I': return state[SDL_GetScancodeFromKey(SDLK_i)];
+        case 'J': return state[SDL_GetScancodeFromKey(SDLK_j)];
+        case 'K': return state[SDL_GetScancodeFromKey(SDLK_k)];
+        case 'L': return state[SDL_GetScancodeFromKey(SDLK_l)];
+        case 'M': return state[SDL_GetScancodeFromKey(SDLK_m)];
+        case 'N': return state[SDL_GetScancodeFromKey(SDLK_n)];
+        case 'O': return state[SDL_GetScancodeFromKey(SDLK_o)];
+        case 'P': return state[SDL_GetScancodeFromKey(SDLK_p)];
+        case 'Q': return state[SDL_GetScancodeFromKey(SDLK_q)];
+        case 'R': return state[SDL_GetScancodeFromKey(SDLK_r)];
+        case 'S': return state[SDL_GetScancodeFromKey(SDLK_s)];
+        case 'T': return state[SDL_GetScancodeFromKey(SDLK_t)];
+        case 'U': return state[SDL_GetScancodeFromKey(SDLK_u)];
+        case 'V': return state[SDL_GetScancodeFromKey(SDLK_v)];
+        case 'W': return state[SDL_GetScancodeFromKey(SDLK_w)];
+        case 'X': return state[SDL_GetScancodeFromKey(SDLK_x)];
+        case 'Y': return state[SDL_GetScancodeFromKey(SDLK_y)];
+        case 'Z': return state[SDL_GetScancodeFromKey(SDLK_z)];
 
-        if (rec_iskeypressed(keycode))
-            return 1;
-        // deal with numeric pad keys having different codes to arrow keys
-        if ((keycode == KEY_LEFT) && (rec_iskeypressed(KEY_4_PAD) != 0))
-            return 1;
-        if ((keycode == KEY_RIGHT) && (rec_iskeypressed(KEY_6_PAD) != 0))
-            return 1;
-        if ((keycode == KEY_UP) && (rec_iskeypressed(KEY_8_PAD) != 0))
-            return 1;
-        if ((keycode == KEY_DOWN) && (rec_iskeypressed(KEY_2_PAD) != 0))
-            return 1;
-        // PgDn/PgUp are equivalent to 3 and 9 on numeric pad
-        if ((keycode == KEY_9_PAD) && (rec_iskeypressed(KEY_PGUP) != 0))
-            return 1;
-        if ((keycode == KEY_3_PAD) && (rec_iskeypressed(KEY_PGDN) != 0))
-            return 1;
-        // Home/End are equivalent to 7 and 1
-        if ((keycode == KEY_7_PAD) && (rec_iskeypressed(KEY_HOME) != 0))
-            return 1;
-        if ((keycode == KEY_1_PAD) && (rec_iskeypressed(KEY_END) != 0))
-            return 1;
-        // insert/delete have numpad equivalents
-        if ((keycode == KEY_INSERT) && (rec_iskeypressed(KEY_0_PAD) != 0))
-            return 1;
-        if ((keycode == KEY_DEL) && (rec_iskeypressed(KEY_DEL_PAD) != 0))
-            return 1;
+        case '0': return state[SDL_SCANCODE_0];
+        case '1': return state[SDL_SCANCODE_1];
+        case '2': return state[SDL_SCANCODE_2];
+        case '3': return state[SDL_SCANCODE_3];
+        case '4': return state[SDL_SCANCODE_4];
+        case '5': return state[SDL_SCANCODE_5];
+        case '6': return state[SDL_SCANCODE_6];
+        case '7': return state[SDL_SCANCODE_7];
+        case '8': return state[SDL_SCANCODE_8];
+        case '9': return state[SDL_SCANCODE_9];
 
-        return 0;
-    }
-    // convert ascii to scancode
-    else if ((keycode >= 'A') && (keycode <= 'Z'))
-    {
-        keycode = platform->ConvertKeycodeToScanCode(keycode);
-    }
-    else if ((keycode >= '0') && (keycode <= '9'))
-        keycode -= ('0' - KEY_0);
-    else if (keycode == 8)
-        keycode = KEY_BACKSPACE;
-    else if (keycode == 9)
-        keycode = KEY_TAB;
-    else if (keycode == 13) {
+        case 8: return state[SDL_SCANCODE_BACKSPACE] || state[SDL_SCANCODE_KP_BACKSPACE];
+        case 9: return state[SDL_SCANCODE_TAB] || state[SDL_SCANCODE_KP_TAB];
+
         // check both the main return key and the numeric pad enter
-        if (rec_iskeypressed(KEY_ENTER))
-            return 1;
-        keycode = KEY_ENTER_PAD;
-    }
-    else if (keycode == ' ')
-        keycode = KEY_SPACE;
-    else if (keycode == 27)
-        keycode = KEY_ESC;
-    else if (keycode == '-') {
-        // check both the main - key and the numeric pad
-        if (rec_iskeypressed(KEY_MINUS))
-            return 1;
-        keycode = KEY_MINUS_PAD;
-    }
-    else if (keycode == '+') {
-        // check both the main + key and the numeric pad
-        if (rec_iskeypressed(KEY_EQUALS))
-            return 1;
-        keycode = KEY_PLUS_PAD;
-    }
-    else if (keycode == '/') {
-        // check both the main / key and the numeric pad
-        if (rec_iskeypressed(KEY_SLASH))
-            return 1;
-        keycode = KEY_SLASH_PAD;
-    }
-    else if (keycode == '=')
-        keycode = KEY_EQUALS;
-    else if (keycode == '[')
-        keycode = KEY_OPENBRACE;
-    else if (keycode == ']')
-        keycode = KEY_CLOSEBRACE;
-    else if (keycode == '\\')
-        keycode = KEY_BACKSLASH;
-    else if (keycode == ';')
-        keycode = KEY_SEMICOLON;
-    else if (keycode == '\'')
-        keycode = KEY_QUOTE;
-    else if (keycode == ',')
-        keycode = KEY_COMMA;
-    else if (keycode == '.')
-        keycode = KEY_STOP;
-    else {
-        debug_script_log("IsKeyPressed: unsupported keycode %d", keycode);
-        return 0;
-    }
+        case 13: return state[SDL_SCANCODE_RETURN] || state[SDL_SCANCODE_RETURN2] || state[SDL_SCANCODE_KP_ENTER];
+        
+        case ' ': return state[SDL_SCANCODE_KP_SPACE] || state[SDL_SCANCODE_KP_SPACE];
 
-    if (rec_iskeypressed(keycode))
-        return 1;
-    return 0;
-#else
-    // old allegro version
-    quit("allegro keyboard handler not in use??");
-#endif
+        case 27: return state[SDL_SCANCODE_ESCAPE];
+
+        // check both the main - key and the numeric pad
+        case '-': return state[SDL_SCANCODE_MINUS] || state[SDL_SCANCODE_KP_MINUS];
+        
+        // check both the main + key and the numeric pad
+        case '+': return state[SDL_SCANCODE_EQUALS] || state[SDL_SCANCODE_KP_PLUS];
+        
+        // check both the main / key and the numeric pad
+        case '/': return state[SDL_SCANCODE_SLASH] || state[SDL_SCANCODE_KP_DIVIDE];
+
+        case '=': return state[SDL_SCANCODE_EQUALS] || state[SDL_SCANCODE_KP_EQUALS];
+        case '[': return state[SDL_SCANCODE_LEFTBRACKET];
+        case ']': return state[SDL_SCANCODE_RIGHTBRACKET];
+        case '\\': return state[SDL_SCANCODE_BACKSLASH];
+        case ';': return state[SDL_SCANCODE_SEMICOLON];
+        case '\'': return state[SDL_SCANCODE_APOSTROPHE];
+        case ',': return state[SDL_SCANCODE_COMMA] || state[SDL_SCANCODE_KP_COMMA];
+        case '.': return state[SDL_SCANCODE_PERIOD] || state[SDL_SCANCODE_KP_PERIOD];
+
+        // AGS_EXT_KEY_SHIFT is >= 300 and sort of maps to original allegro3 keycodes (+300)
+
+        // function keys are 12 lower in allegro 4
+        case 359: return state[SDL_SCANCODE_F1];
+        case 360: return state[SDL_SCANCODE_F2];
+        case 361: return state[SDL_SCANCODE_F3];
+        case 362: return state[SDL_SCANCODE_F4];
+        case 363: return state[SDL_SCANCODE_F5];
+        case 364: return state[SDL_SCANCODE_F6];
+        case 365: return state[SDL_SCANCODE_F7];
+        case 366: return state[SDL_SCANCODE_F8];
+        case 367: return state[SDL_SCANCODE_F9];
+        case 368: return state[SDL_SCANCODE_F10];
+
+        case 371: return state[SDL_SCANCODE_KP_7] || state[SDL_SCANCODE_HOME];
+        case 372: return state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_KP_8];
+        case 373: return state[SDL_SCANCODE_KP_9] || state[SDL_SCANCODE_PAGEUP];
+        case 374: return state[SDL_SCANCODE_KP_MINUS];
+        case 375: return state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_KP_4];
+        case 376: return state[SDL_SCANCODE_KP_5];
+        case 377: return state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_KP_6];
+        case 378: return state[SDL_SCANCODE_KP_PLUS];
+        case 379: return state[SDL_SCANCODE_KP_1] || state[SDL_SCANCODE_END];
+        case 380: return state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_KP_2];
+        case 381: return state[SDL_SCANCODE_KP_3] || state[SDL_SCANCODE_PAGEDOWN];
+        case 382: return state[SDL_SCANCODE_INSERT] || state[SDL_SCANCODE_KP_0];
+        case 383: return state[SDL_SCANCODE_DELETE] || state[SDL_SCANCODE_KP_PERIOD];
+
+        case 387: return state[SDL_SCANCODE_F11];
+        case 388: return state[SDL_SCANCODE_F12];
+
+        // made up numbers, not based on allegro3 keycodes
+        // deal with shift/ctrl/alt
+        case 403: return state[SDL_SCANCODE_LSHIFT];
+        case 404: return state[SDL_SCANCODE_RSHIFT];
+        case 405: return state[SDL_SCANCODE_LCTRL];
+        case 406: return state[SDL_SCANCODE_RCTRL];
+        case 407: return state[SDL_SCANCODE_LALT] || state[SDL_SCANCODE_RALT];
+        // F11-F12
+        case 433: return state[SDL_SCANCODE_F11];
+        case 434: return state[SDL_SCANCODE_F12];
+
+        default:        
+            if (keycode >= AGS_EXT_KEY_SHIFT) {
+                return key[keycode - 300];  // try allegro3 codes that map directly to allergro4.  also, won't work when SDL only.
+            }
+            debug_script_log("IsKeyPressed: unsupported keycode %d", keycode);
+            return 0;
+    }
 }
 
 int SaveScreenShot(const char*namm) {

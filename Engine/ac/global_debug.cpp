@@ -114,12 +114,17 @@ void script_debug(int cmdd,int dataa) {
         view_bmp->StretchBlt(tempw, mask_src, RectWH(0, 0, viewport.GetWidth(), viewport.GetHeight()), Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
-        render_graphics(ddb, viewport.Left, viewport.Top);
-
+        for (;;) {
+            process_pending_events();
+            render_graphics(ddb, viewport.Left, viewport.Top);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        wait_until_keypress();
         invalidate_screen();
     }
     else if (cmdd==3) 
@@ -164,20 +169,25 @@ void script_debug(int cmdd,int dataa) {
             short targety=short(cmls->pos[i+1] & 0x00ffff);
             tempw->DrawLine(Line(srcx, srcy, targetx, targety), MakeColor(i+1));
         }
-
-        const Rect &viewport = play.GetRoomViewport();
+		const Rect &viewport = play.GetRoomViewport();
         const Rect &camera = play.GetRoomCamera();
         Bitmap *view_bmp = BitmapHelper::CreateBitmap(viewport.GetWidth(), viewport.GetHeight());
         Rect mask_src = Rect(camera.Left / thisroom.Resolution, camera.Top / thisroom.Resolution, camera.Right / thisroom.Resolution, camera.Bottom / thisroom.Resolution);
         view_bmp->StretchBlt(tempw, mask_src, RectWH(0, 0, viewport.GetWidth(), viewport.GetHeight()), Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
-        render_graphics(ddb, viewport.Left, viewport.Top);
-
+        
+        for (;;) {
+            process_pending_events();
+            render_graphics(ddb, viewport.Left, viewport.Top);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        wait_until_keypress();
     }
     else if (cmdd == 99)
         ccSetOption(SCOPT_DEBUGRUN, dataa);

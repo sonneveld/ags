@@ -82,7 +82,6 @@ extern ViewStruct*views;
 extern int displayed_room;
 extern int eip_guinum;
 extern int eip_guiobj;
-extern const char *replayTempFile;
 extern SpeechLipSyncLine *splipsync;
 extern int numLipLines, curLipLine, curLipLinePhoneme;
 extern ScriptSystem scsystem;
@@ -99,14 +98,7 @@ String speech_file;
 
 t_engine_pre_init_callback engine_pre_init_callback = 0;
 
-#define ALLEGRO_KEYBOARD_HANDLER
-// KEYBOARD HANDLER
-#if !defined (WINDOWS_VERSION)
-int myerrno;
-#else
-int errno;
-#define myerrno errno
-#endif
+
 
 bool engine_init_allegro()
 {
@@ -519,11 +511,9 @@ int engine_init_music()
 
 void engine_init_keyboard()
 {
-#ifdef ALLEGRO_KEYBOARD_HANDLER
     Debug::Printf(kDbgMsg_Init, "Initializing keyboard");
 
     install_keyboard();
-#endif
 }
 
 void engine_init_timer()

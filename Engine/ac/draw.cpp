@@ -60,6 +60,7 @@
 #include "gfx/graphicsdriver.h"
 #include "gfx/ali3dexception.h"
 #include "gfx/blender.h"
+#include "device/mousew32.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -113,6 +114,7 @@ extern int cur_mode,cur_cursor;
 extern int mouse_frame,mouse_delay;
 extern int lastmx,lastmy;
 extern int replay_time;
+extern int mouse_on_iface_button;
 extern IDriverDependantBitmap *mouseCursor;
 extern int hotx,hoty;
 extern int bg_just_changed;

@@ -50,17 +50,6 @@ extern CharacterInfo*playerchar;
 extern int convert_16bit_bgr;
 
 
-void start_game_check_replay()
-{
-    Debug::Printf("Checking replay status");
-
-    if (play.recording) {
-        start_recording();
-    }
-    else if (play.playback) {
-        start_playback();
-    }
-}
 
 void start_game_init_editor_debugging()
 {
@@ -98,7 +87,7 @@ void start_game_load_savegame_on_startup()
 
 void start_game() {
     set_cursor_mode(MODE_WALK);
-    Mouse::SetPosition(Point(160, 100));
+    Mouse::SetPosition(Point(play.GetMainViewport().GetWidth()/2, play.GetMainViewport().GetHeight()/2));
     newmusic(0);
 
     our_eip = -42;
@@ -151,8 +140,6 @@ void initialize_start_and_play_game(int override_start_room, const char *loadSav
         play.gamestep = 0;
         if (override_start_room)
             playerchar->room = override_start_room;
-
-        start_game_check_replay();
 
         Debug::Printf(kDbgMsg_Init, "Engine initialization complete");
         Debug::Printf(kDbgMsg_Init, "Starting game");

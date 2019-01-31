@@ -61,6 +61,7 @@
 #include "ac/dynobj/scriptstring.h"
 #include "main/graphics_mode.h"
 #include "gfx/gfx_util.h"
+#include "main/game_run.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -396,17 +397,19 @@ extern int  mgetbutton();
 void IAGSEngine::PollSystem () {
 
     NEXT_ITERATION();
+    process_pending_events();
     domouse(DOMOUSE_NOCURSOR);
     update_polled_stuff_if_runtime();
     int mbut = mgetbutton();
     if (mbut > NONE)
         pl_run_plugin_hooks (AGSE_MOUSECLICK, mbut);
 
-    int kp;
-    if (run_service_key_controls(kp)) {
-        pl_run_plugin_hooks (AGSE_KEYPRESS, kp);
+    SDL_Event kgn = getTextEventFromQueue();
+    auto keyAvailable = run_service_key_controls(kgn);
+    int kc = asciiOrAgsKeyCodeFromEvent(kgn);
+    if (keyAvailable && kc > 0) {
+        pl_run_plugin_hooks (AGSE_KEYPRESS, kc);
     }
-
 }
 AGSCharacter* IAGSEngine::GetCharacter (int32 charnum) {
     if (charnum >= game.numcharacters)

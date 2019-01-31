@@ -23,6 +23,8 @@
 
 #include "util/geometry.h"
 
+#define DOMOUSE_NOCURSOR 5
+
 #define MAXCURSORS 20
 
 #include "util/geometry.h"

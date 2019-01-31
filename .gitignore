@@ -155,3 +155,7 @@ desktop.ini
 
 # recommended CMake build directory
 build*/**
+
+
+# macOS default game
+game_files

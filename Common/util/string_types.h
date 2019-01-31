@@ -25,22 +25,26 @@
 namespace FNV
 {
 
-const uint32_t PRIME_NUMBER = 2166136261U;
-const uint32_t SECONDARY_NUMBER = 16777619U;
+const uint32_t FNV1_32A_INIT = 0x811c9dc5UL;
+const uint32_t FNV_32_PRIME  = 0x01000193UL;
 
 inline size_t Hash(const char *data, const size_t len)
 {
-    uint32_t hash = PRIME_NUMBER;
-    for (size_t i = 0; i < len; ++i)
-        hash = (SECONDARY_NUMBER * hash) ^ (uint8_t)(data[i]);
+    uint32_t hash = FNV1_32A_INIT;
+    for (size_t i = 0; i < len; ++i) {
+        hash ^= static_cast<uint8_t>(data[i]);
+        hash *= FNV_32_PRIME;
+    }
     return hash;
 }
 
 inline size_t Hash_LowerCase(const char *data, const size_t len)
 {
-    uint32_t hash = PRIME_NUMBER;
-    for (size_t i = 0; i < len; ++i)
-        hash = (SECONDARY_NUMBER * hash) ^ (uint8_t)(tolower(data[i]));
+    uint32_t hash = FNV1_32A_INIT;
+    for (size_t i = 0; i < len; ++i) {
+        hash ^= static_cast<uint8_t>(tolower(data[i]));
+        hash *= FNV_32_PRIME;
+    }
     return hash;
 }
 

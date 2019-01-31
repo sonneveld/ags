@@ -13,31 +13,16 @@
 //
 //=============================================================================
 //
-// String class with simple memory management and copy-on-write behavior.
-//
-// String objects do reference counting and share data buffer on assignment.
-// The reallocation and copying is done only when the string is modified.
-// This means that passing string object by value is about as effective, as
-// passing by reference.
-//
-// The copying of memory inside buffer is reduced to minimum. If the string is
-// truncated, it is not aligned to buffer head each time, instead the c-str
-// pointer is advanced, or null-terminator is put on the new place. Similarly,
-// when string is enlarged and new characters are prepended or appended, only
-// c-str pointer and null-terminator's position are changed, if there's enough
-// space before and after meaningful string data.
-//
-// The class provides means to reserve large amount of buffer space before
-// making modifications, as well as compacting buffer to minimal size.
-//
-// For all methods that expect C-string as parameter - if the null pointer is
-// passed in place of C-string it is treated in all aspects as a valid empty
-// string.
+// String class with that wraps std::string. Because we require C++11 as
+// minimum, there should be _no_ Copy-On-Write (COW) behaviour that caused
+// havoc with multi threading.
 //
 //=============================================================================
 #ifndef __AGS_CN_UTIL__STRING_H
 #define __AGS_CN_UTIL__STRING_H
 
+#include <vector>
+#include <string>
 #include <stdarg.h>
 #include "core/types.h"
 #include "debug/assert.h"
@@ -49,7 +34,7 @@ namespace Common
 
 class Stream;
 
-class String
+class String final
 {
 public:
     // Standart constructor: intialize empty string
@@ -58,45 +43,32 @@ public:
     String(const String&);
     // Initialize with C-string
     String(const char *cstr);
+
+    String(const std::string cppstr);
+
+
+
     // Initialize by copying up to N chars from C-string
-    String(const char *cstr, size_t length);
+    // String(const char *cstr, size_t length);
     // Initialize by filling N chars with certain value
-    String(char c, size_t count);
+    // String(char c, size_t count);
     ~String();
 
     // Get underlying C-string for reading
     inline const char *GetCStr() const
     {
-        return _meta ? _meta->CStr : "";
+        return __data.c_str();
     }
     // Get character count
     inline size_t GetLength() const
     {
-        return _meta ? _meta->Length : 0;
+        return __data.length();
     }
     // Know if the string is empty (has no meaningful characters)
     inline bool IsEmpty() const
     {
-        return _meta ? _meta->Length == 0 : true;
+        return __data.empty();
     }
-
-    // Those getters are for tests only, hence ifdef _DEBUG
-#ifdef _DEBUG
-    inline const char *GetData() const
-    {
-        return _data;
-    }
-
-    inline size_t GetCapacity() const
-    {
-        return _meta ? _meta->Capacity : 0;
-    }
-
-    inline size_t GetRefCount() const
-    {
-        return _meta ? _meta->RefCount : 0;
-    }
-#endif
 
     // Read() method implies that string length is initially unknown.
     // max_chars parameter determine the buffer size limit.
@@ -155,14 +127,17 @@ public:
     bool    FindSection(char separator, size_t first, size_t last, bool exclude_first_sep, bool exclude_last_sep,
                         size_t &from, size_t &to) const;
 
+    std::vector<String> Split(String delims, int max_splits = -1) const;
+
     // Get Nth character with bounds check (as opposed to subscript operator)
     inline char GetAt(size_t index) const
     {
-        return (_meta && index < _meta->Length) ? _meta->CStr[index] : 0;
+        return (index <= __data.length()) ? __data[index] : 0;
     }
     inline char GetLast() const
     {
-        return (_meta && _meta->Length > 0) ? _meta->CStr[_meta->Length - 1] : 0;
+        auto len = __data.length();
+        return (len > 0) ? __data[len - 1] : 0;
     }
 
     //-------------------------------------------------------------------------
@@ -271,7 +246,7 @@ public:
     // characters (space, tabs, CRLF) are removed.
     // Remove heading and trailing characters from the string
     void    Trim(char c = 0);
-    // Remove heading characters from the string; 
+    // Remove heading characters from the string;
     void    TrimLeft(char c = 0);
     // Remove trailing characters from the string
     void    TrimRight(char c = 0);
@@ -302,13 +277,12 @@ public:
         return GetCStr();
     }
     // Assign String by sharing data reference
-    String &operator=(const String&);
+//    String &operator=(const String&);
     // Assign C-string by copying contents
     String &operator=(const char *cstr);
     inline char operator[](size_t index) const
     {
-        assert(_meta && index < _meta->Length);
-        return _meta->CStr[index];
+        return __data[index];
     }
     inline bool operator==(const char *cstr) const
     {
@@ -328,8 +302,6 @@ private:
     void    Create(size_t buffer_length);
     // Release string and copy data to the new buffer
     void    Copy(size_t buffer_length, size_t offset = 0);
-    // Aligns data at given offset
-    void    Align(size_t offset);
 
     // Ensure this string is a compact independent copy, with ref counter = 1
     void    BecomeUnique();
@@ -337,25 +309,7 @@ private:
     // or after the current string data
     void    ReserveAndShift(bool left, size_t more_length);
 
-    struct Header
-    {
-        Header();
-
-        size_t  RefCount;   // reference count
-        // Capacity and Length do not include null-terminator
-        size_t  Capacity;   // available space, in characters
-        size_t  Length;     // used space
-        char    *CStr;      // pointer to string data start
-    };
-
-    union
-    {
-        char    *_data;
-        Header  *_meta;
-    };
-
-    static const size_t _internalBufferLength = 3000;
-    static char _internalBuffer[3001];
+    std::string __data {};
 };
 
 } // namespace Common

@@ -216,9 +216,6 @@ static void Initialize_Decoder(void)
 // The default callback; requires Allegro's keyboard handler
 static int default_callback(BITMAP *tempBuffer)
 {
-	if(keypressed())
-		return 1;
-
 	return 0;
 }
 static int (*callback_proc)(BITMAP* tempBuffer);

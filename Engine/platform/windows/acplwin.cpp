@@ -130,7 +130,6 @@ struct AGSWin32 : AGSPlatformDriver {
   virtual void RestoreWindowStyle();
   virtual void RegisterGameWithGameExplorer();
   virtual void UnRegisterGameWithGameExplorer();
-  virtual int  ConvertKeycodeToScanCode(int keyCode);
   virtual void ValidateWindowSize(int &x, int &y, bool borderless) const;
   virtual bool LockMouseToWindow();
   virtual void UnlockMouse();

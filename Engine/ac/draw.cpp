@@ -62,6 +62,7 @@
 #include "gfx/blender.h"
 #include "media/audio/audio_system.h"
 #include "ac/game.h"
+#include "device/mousew32.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

@@ -281,6 +281,8 @@ void engine_pre_gfxmode_draw_cleanup()
 // Setup mouse control mode and graphic area
 void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
 {
+#ifdef AGS_DELETE_FOR_3_6
+
     // Assign mouse control parameters.
     //
     // Whether mouse movement should be controlled by the engine - this is
@@ -308,6 +310,11 @@ void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_des
     }
     Debug::Printf(kDbgMsg_Init, "Mouse control: %s, base: %f, speed: %f", Mouse::IsControlEnabled() ? "on" : "off",
         Mouse::GetSpeedUnit(), Mouse::GetSpeed());
+
+#endif
+
+    // Since we're always use desktop resolution, we don't need to adjust mouse acceleration
+    Mouse::DisableControl();
 
     on_coordinates_scaling_changed();
 

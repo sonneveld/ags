@@ -18,19 +18,24 @@
 #ifndef __AGS_EE_AC__SYS_EVENTS_H
 #define __AGS_EE_AC__SYS_EVENTS_H
 
-int  ags_getch ();
-int  ags_kbhit ();
-int  ags_iskeypressed (int keycode);
+void process_pending_events();
 
-int  ags_misbuttondown (int but);
+void ags_clear_input_buffer(); // Clears buffered keypresses and mouse clicks, if any
+
 int  ags_mgetbutton();
 void ags_domouse (int what);
 int  ags_check_mouse_wheel ();
 
-// Clears buffered keypresses and mouse clicks, if any
-void ags_clear_input_buffer();
-// Halts execution until any user input
-// TODO: seriously not a good design, replace with event listening
-void ags_wait_until_keypress();
+SDL_Event getTextEventFromQueue();
+int  ags_iskeypressed (int keycode);
+
+int asciiFromEvent(SDL_Event event);
+int agsKeyCodeFromEvent(SDL_Event event);
+int asciiOrAgsKeyCodeFromEvent(SDL_Event event);
+
+#define ASCII_BACKSPACE (8)
+#define ASCII_TAB (9)
+#define ASCII_RETURN (13)
+#define ASCII_ESCAPE (27)
 
 #endif // __AGS_EE_AC__SYS_EVENTS_H

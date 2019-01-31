@@ -637,6 +637,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *currentVirtScreen, int 
        _filter->RenderScreen(bmp_buff, 0, 0);
        do
        {
+         process_pending_events();
          if (_pollingCallback)
            _pollingCallback();
        }
@@ -674,6 +675,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(int speed, int targetColourRed
                 _filter->RenderScreen(bmp_buff, 0, 0);
                 do
                 {
+                  process_pending_events();
                   if (_pollingCallback)
                     _pollingCallback();
                 }
@@ -765,6 +767,7 @@ void ALSoftwareGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int del
       this->ClearRectangle(_srcRect.GetWidth() / 2 - boxwid / 2, vcentre - boxhit / 2,
           _srcRect.GetWidth() / 2 + boxwid / 2, vcentre + boxhit / 2, nullptr);
     
+      process_pending_events();    
       if (_pollingCallback)
         _pollingCallback();
 

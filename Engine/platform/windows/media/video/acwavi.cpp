@@ -391,8 +391,10 @@ int dxmedia_play_video(const char* filename, bool pUseSound, int canskip, int st
 
     RenderToSurface(vscreen);
     //Sleep(0);
-    int key;
-    if (run_service_key_controls(key)) {
+    // auto keyAvailable = run_service_key_controls(gkey);
+    if (rec_kbhit()) {
+      int key = rec_getch();
+      
       if ((canskip == 1) && (key == 27))
         break;
       if (canskip >= 2)

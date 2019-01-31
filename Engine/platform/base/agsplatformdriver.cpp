@@ -116,7 +116,7 @@ void AGSPlatformDriver::SetGameWindowIcon() {
 
 int AGSPlatformDriver::ConvertKeycodeToScanCode(int keycode)
 {
-    keycode -= ('A' - KEY_A);
+    keycode -= ('A' - __allegro_KEY_A);
     return keycode;
 }
 

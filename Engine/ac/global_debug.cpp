@@ -116,12 +116,17 @@ void script_debug(int cmdd,int dataa) {
         view_bmp->StretchBlt(tempw, mask_src, RectWH(0, 0, viewport.GetWidth(), viewport.GetHeight()), Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
-        render_graphics(ddb, viewport.Left, viewport.Top);
-
+        for (;;) {
+            process_pending_events();
+            render_graphics(ddb, viewport.Left, viewport.Top);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        ags_wait_until_keypress();
         invalidate_screen();
     }
     else if (cmdd==3) 
@@ -177,12 +182,18 @@ void script_debug(int cmdd,int dataa) {
         view_bmp->StretchBlt(tempw, mask_src, RectWH(0, 0, viewport.GetWidth(), viewport.GetHeight()), Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
-        render_graphics(ddb, viewport.Left, viewport.Top);
-
+        
+        for (;;) {
+            process_pending_events();
+            render_graphics(ddb, viewport.Left, viewport.Top);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        ags_wait_until_keypress();
     }
     else if (cmdd == 99)
         ccSetOption(SCOPT_DEBUGRUN, dataa);

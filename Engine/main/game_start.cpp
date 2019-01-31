@@ -85,7 +85,7 @@ void start_game_load_savegame_on_startup()
 
 void start_game() {
     set_cursor_mode(MODE_WALK);
-    Mouse::SetPosition(Point(160, 100));
+    Mouse::SetPosition(Point(play.GetMainViewport().GetWidth()/2, play.GetMainViewport().GetHeight()/2));
     newmusic(0);
 
     our_eip = -42;

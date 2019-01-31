@@ -1756,14 +1756,29 @@ void start_skipping_cutscene () {
 
 }
 
-void check_skip_cutscene_keypress (int kgn) {
-
-    CutsceneSkipStyle skip = get_cutscene_skipstyle();
-    if (skip == eSkipSceneAnyKey || skip == eSkipSceneKeyMouse ||
-        (kgn == 27 && (skip == eSkipSceneEscOnly || skip == eSkipSceneEscOrRMB)))
-    {
-        start_skipping_cutscene();
+bool check_skip_cutscene_keypress (int kgn) {
+    auto keyUsed = false;
+    switch (get_cutscene_skipstyle()) {
+        case eSkipSceneEscOnly: // esc only
+        case eSkipSceneEscOrRMB: // esc or right mouse button
+            if (kgn == ASCII_ESCAPE) {
+                start_skipping_cutscene();
+                keyUsed = true;
+            }
+            break;
+            
+        case eSkipSceneAnyKey: // any key
+        case eSkipSceneKeyMouse: // key or mouse click
+            start_skipping_cutscene();
+            keyUsed = true;
+            break;
+            
+        case eSkipSceneMouse: // mouse click
+        default:
+            // do nothing
+            break;
     }
+    return keyUsed;
 }
 
 // Helper functions used by StartCutscene/EndCutscene, but also

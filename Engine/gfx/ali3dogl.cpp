@@ -1882,6 +1882,7 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
     this->_render(flipTypeLastTime, false);
 
     do {
+      process_pending_events();
       if (_pollingCallback)
         _pollingCallback();
     } while (waitingForNextTick());
@@ -1962,6 +1963,7 @@ void OGLGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
     
     this->_render(flipTypeLastTime, false);
 
+    process_pending_events();
     if (_pollingCallback)
       _pollingCallback();
     platform->Delay(delay);

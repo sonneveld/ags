@@ -165,16 +165,16 @@ extern int smcode;
       strcpy(itemnames[wParam], newstri);
 
     } else if (mcode == CTB_KEYPRESS) {
-      if ((wParam == 380) && (selected < items - 1))
+      if ((wParam == 380) && (selected < items - 1))  // down
         selected++;
 
-      if ((wParam == 372) && (selected > 0))
+      if ((wParam == 372) && (selected > 0))  // up
         selected--;
 
-      if (wParam == 373)
+      if (wParam == 373)   // page up
         selected -= (numonscreen - 1);
 
-      if (wParam == 381)
+      if (wParam == 381)   // page down
         selected += (numonscreen - 1);
 
       if ((selected < 0) && (items > 0))

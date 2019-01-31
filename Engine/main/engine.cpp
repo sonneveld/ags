@@ -112,7 +112,6 @@ ResourcePaths ResPaths;
 
 t_engine_pre_init_callback engine_pre_init_callback = nullptr;
 
-#define ALLEGRO_KEYBOARD_HANDLER
 
 bool engine_init_allegro()
 {
@@ -437,6 +436,8 @@ void engine_locate_audio_pak()
     }
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void engine_init_keyboard()
 {
 #ifdef ALLEGRO_KEYBOARD_HANDLER
@@ -445,6 +446,8 @@ void engine_init_keyboard()
     install_keyboard();
 #endif
 }
+
+#endif
 
 bool try_install_sound(int digi_id, int midi_id, String *p_err_msg = nullptr)
 {
@@ -1405,9 +1408,13 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     engine_init_fonts();
 
+#ifdef AGS_DELETE_FOR_3_6
+
     our_eip = -195;
 
     engine_init_keyboard();
+
+#endif
 
     our_eip = -196;
 
@@ -1478,9 +1485,7 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     SetMultitasking(0);
 
-    // [ER] 2014-03-13
-    // Hide the system cursor via allegro
-    show_os_cursor(MOUSE_CURSOR_NONE);
+    SDL_ShowCursor(SDL_DISABLE);
 
     show_preload();
 

@@ -16,21 +16,14 @@
 //
 //=============================================================================
 
-#if defined(WINDOWS_VERSION)
-#include <allegro.h>
-#include <winalleg.h>
-#include <allegro/platform/aintwin.h>
-#include <GL/gl.h>
+#include "allegro.h"
 
-// Allegro and glext.h define these
-#undef int32_t
-#undef int64_t
-#undef uint64_t
+#ifdef WINDOWS_VERSION
+// need this as it renames BITMAP
+#include "winalleg.h"
+#endif
 
-#include <GL/glext.h>
-#include <GL/wglext.h>
-
-#elif defined(ANDROID_VERSION)
+#if defined(ANDROID_VERSION)
 
 #include <GLES/gl.h>
 #include <GLES2/gl2.h>
@@ -61,5 +54,20 @@
 #define HGLRC void*
 #define HWND void*
 #define HINSTANCE void*
+
+#elif defined(AGS_ENABLE_OPENGL_DRIVER)
+
+#include "SDL.h"
+
+#include "glad/glad.h"
+
+#define HDC void*
+#define HGLRC void*
+#define HWND void*
+#define HINSTANCE void*
+
+#else 
+
+#error Unsupported platform
 
 #endif

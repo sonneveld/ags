@@ -24,6 +24,8 @@
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
 
+#include "sdl2alleg.h"
+
 #if defined(PSP_VERSION)
 // PSP: Includes for sceKernelDelayThread.
 #include <pspsdk.h>
@@ -31,21 +33,8 @@
 #include <psputils.h>
 #endif
 
-#if defined (WINDOWS_VERSION)
-// NOTE: this struct and variables are defined internally in Allegro
-typedef struct DDRAW_SURFACE {
-    LPDIRECTDRAWSURFACE2 id;
-    int flags;
-    int lock_nesting;
-    BITMAP *parent_bmp;  
-    struct DDRAW_SURFACE *next;
-    struct DDRAW_SURFACE *prev;
-} DDRAW_SURFACE;
 
-extern "C" extern LPDIRECTDRAW2 directdraw;
-extern "C" DDRAW_SURFACE *gfx_directx_primary_surface;
-extern int dxmedia_play_video (const char*, bool, int, int);
-#endif // WINDOWS_VERSION
+extern void process_pending_events();
 
 namespace AGS
 {
@@ -80,9 +69,7 @@ ALSoftwareGraphicsDriver::ALSoftwareGraphicsDriver()
   _autoVsync = false;
   _spareTintingScreen = NULL;
   _gfxModeList = NULL;
-#ifdef _WIN32
-  dxGammaControl = NULL;
-#endif
+
   _allegroScreenWrapper = NULL;
   _origVirtualScreen = NULL;
   virtualScreen = NULL;
@@ -92,6 +79,8 @@ ALSoftwareGraphicsDriver::ALSoftwareGraphicsDriver()
   InitSpriteBatch(0, _spriteBatchDesc[0]);
 }
 
+void ALSoftwareGraphicsDriver::UpdateDeviceScreen(const Size &screenSize) {}
+
 bool ALSoftwareGraphicsDriver::IsModeSupported(const DisplayMode &mode)
 {
   if (mode.Width <= 0 || mode.Height <= 0 || mode.ColorDepth <= 0)
@@ -99,7 +88,7 @@ bool ALSoftwareGraphicsDriver::IsModeSupported(const DisplayMode &mode)
     set_allegro_error("Invalid resolution parameters: %d x %d x %d", mode.Width, mode.Height, mode.ColorDepth);
     return false;
   }
-#if defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(IOS_VERSION) || defined(MAC_VERSION)
+#if defined(ANDROID_VERSION) || defined(PSP_VERSION) || defined(IOS_VERSION) || defined(ALLEGRO_SDL2) || defined(MAC_VERSION)
   // Everything is drawn to a virtual screen, so all resolutions are supported.
   return true;
 #endif
@@ -159,24 +148,7 @@ PGfxFilter ALSoftwareGraphicsDriver::GetGraphicsFilter() const
 
 int ALSoftwareGraphicsDriver::GetAllegroGfxDriverID(bool windowed)
 {
-#ifdef _WIN32
-  if (windowed)
-    return GFX_DIRECTX_WIN;
-  return GFX_DIRECTX;
-#elif defined (LINUX_VERSION) && (!defined (ALLEGRO_MAGIC_DRV))
-  if (windowed)
-    return GFX_XWINDOWS;
-  return GFX_XWINDOWS_FULLSCREEN;
-#elif defined (MAC_VERSION)
-    if (windowed) {
-        return GFX_COCOAGL_WINDOW;
-    }
-    return GFX_COCOAGL_FULLSCREEN;
-#else
-  if (windowed)
-    return GFX_AUTODETECT_WINDOWED;
-  return GFX_AUTODETECT_FULLSCREEN;
-#endif
+  return windowed ? GFX_SDL2_WINDOW : GFX_SDL2_FULLSCREEN;
 }
 
 void ALSoftwareGraphicsDriver::SetGraphicsFilter(PALSWFilter filter)
@@ -204,9 +176,10 @@ bool ALSoftwareGraphicsDriver::SetDisplayMode(const DisplayMode &mode, volatile 
   if (_initGfxCallback != NULL)
     _initGfxCallback(NULL);
 
-  if (!IsModeSupported(mode) || set_gfx_mode(driver, mode.Width, mode.Height, 0, 0) != 0)
-    return false;
-
+  if (!IsModeSupported(mode)) { return false; }
+    
+  if (set_gfx_mode(driver, mode.Width, mode.Height, 0, 0 ) != 0) { return false; }
+   
   OnInit(loopTimer);
   OnModeSet(mode);
   // set_gfx_mode is an allegro function that creates screen bitmap;
@@ -218,20 +191,6 @@ bool ALSoftwareGraphicsDriver::SetDisplayMode(const DisplayMode &mode, volatile 
   // If we already have a gfx filter, then use it to update virtual screen immediately
   CreateVirtualScreen();
 
-#ifdef _WIN32
-  if (!mode.Windowed)
-  {
-    memset(&ddrawCaps, 0, sizeof(ddrawCaps));
-    ddrawCaps.dwSize = sizeof(ddrawCaps);
-    IDirectDraw2_GetCaps(directdraw, &ddrawCaps, NULL);
-
-    if ((ddrawCaps.dwCaps2 & DDCAPS2_PRIMARYGAMMA) == 0) { }
-    else if (IDirectDrawSurface2_QueryInterface(gfx_directx_primary_surface->id, IID_IDirectDrawGammaControl, (void **)&dxGammaControl) == 0) 
-    {
-      dxGammaControl->GetGammaRamp(0, &defaultGammaRamp);
-    }
-  }
-#endif
 
   return true;
 }
@@ -274,13 +233,7 @@ void ALSoftwareGraphicsDriver::ReleaseDisplayMode()
   OnModeReleased();
   ClearDrawLists();
 
-#ifdef _WIN32
-  if (dxGammaControl != NULL) 
-  {
-    dxGammaControl->Release();
-    dxGammaControl = NULL;
-  }
-#endif
+
 
   DestroyVirtualScreen();
 
@@ -334,32 +287,14 @@ void ALSoftwareGraphicsDriver::UnInit()
 
 bool ALSoftwareGraphicsDriver::SupportsGammaControl() 
 {
-#ifdef _WIN32
 
-  if (dxGammaControl != NULL) 
-  {
-    return 1;
-  }
-
-#endif
 
   return 0;
 }
 
 void ALSoftwareGraphicsDriver::SetGamma(int newGamma)
 {
-#ifdef _WIN32
-  for (int i = 0; i < 256; i++) {
-    int newValue = ((int)defaultGammaRamp.red[i] * newGamma) / 100;
-    if (newValue >= 65535)
-      newValue = 65535;
-    gammaRamp.red[i] = newValue;
-    gammaRamp.green[i] = newValue;
-    gammaRamp.blue[i] = newValue;
-  }
 
-  dxGammaControl->SetGammaRamp(0, &gammaRamp);
-#endif
 }
 
 int ALSoftwareGraphicsDriver::GetCompatibleBitmapFormat(int color_depth)
@@ -551,6 +486,7 @@ void ALSoftwareGraphicsDriver::Render(GlobalFlipType flip)
     _filter->RenderScreen(virtualScreen, _virtualScrOff.X + _globalViewOff.X, _virtualScrOff.Y + _globalViewOff.Y);
   else
     _filter->RenderScreenFlipped(virtualScreen, _virtualScrOff.X + _globalViewOff.X, _virtualScrOff.Y + _globalViewOff.Y, flip);
+    sdl2_present_screen();
 }
 
 void ALSoftwareGraphicsDriver::Render()
@@ -789,13 +725,15 @@ void ALSoftwareGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int del
 
 bool ALSoftwareGraphicsDriver::PlayVideo(const char *filename, bool useAVISound, VideoSkipType skipType, bool stretchToFullScreen)
 {
-#ifdef _WIN32
-  int result = dxmedia_play_video(filename, useAVISound, skipType, stretchToFullScreen ? 1 : 0);
-  return (result == 0);
-#else
+
   return 0;
-#endif
+
 }
+
+void ALSoftwareGraphicsDriver::ToggleFullscreen() {
+  sdl2_toggle_fullscreen();
+}
+
 
 // add the alpha values together, used for compositing alpha images
 unsigned long _trans_alpha_blender32(unsigned long x, unsigned long y, unsigned long n)

@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#if defined(WINDOWS_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION)
+#ifdef AGS_ENABLE_OPENGL_DRIVER
 
 #include <algorithm>
 #include "gfx/ali3dexception.h"
@@ -24,44 +24,9 @@
 #include "platform/base/agsplatformdriver.h"
 #include "util/math.h"
 
+extern void process_pending_events();
 
-#if defined(WINDOWS_VERSION)
-
-const char* fbo_extension_string = "GL_EXT_framebuffer_object";
-const char* vsync_extension_string = "WGL_EXT_swap_control";
-
-// TODO: linking to glew32 library might be a better option
-PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = 0;
-PFNGLDELETEFRAMEBUFFERSEXTPROC glDeleteFramebuffersEXT = 0;
-PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = 0;
-PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = 0;
-PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glGetFramebufferAttachmentParameterivEXT = 0;
-PFNGLGENERATEMIPMAPEXTPROC glGenerateMipmapEXT = 0;
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = 0;
-PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT = 0;
-PFNWGLSWAPINTERVALEXTPROC glSwapIntervalEXT = 0;
-// Shaders stuff
-PFNGLCREATESHADERPROC glCreateShader = 0;
-PFNGLSHADERSOURCEPROC glShaderSource = 0;
-PFNGLCOMPILESHADERPROC glCompileShader = 0;
-PFNGLGETSHADERIVPROC glGetShaderiv = 0;
-PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = 0;
-PFNGLATTACHSHADERPROC glAttachShader = 0;
-PFNGLDETACHSHADERPROC glDetachShader = 0;
-PFNGLDELETESHADERPROC glDeleteShader = 0;
-PFNGLCREATEPROGRAMPROC glCreateProgram = 0;
-PFNGLLINKPROGRAMPROC glLinkProgram = 0;
-PFNGLGETPROGRAMIVPROC glGetProgramiv = 0;
-PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = 0;
-PFNGLUSEPROGRAMPROC glUseProgram = 0;
-PFNGLDELETEPROGRAMPROC glDeleteProgram = 0;
-PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = 0;
-PFNGLUNIFORM1IPROC glUniform1i = 0;
-PFNGLUNIFORM1FPROC glUniform1f = 0;
-PFNGLUNIFORM3FPROC glUniform3f = 0;
-
-
-#elif defined(ANDROID_VERSION)
+#if defined(ANDROID_VERSION)
 
 #define glOrtho glOrthof
 #define GL_CLAMP GL_CLAMP_TO_EDGE
@@ -139,6 +104,13 @@ const void (*glSwapIntervalEXT)(int) = NULL;
 #define GL_FRAMEBUFFER_EXT GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0_EXT GL_COLOR_ATTACHMENT0_OES
 
+#elif defined(AGS_ENABLE_OPENGL_DRIVER)
+
+int device_screen_initialized = 1;
+const char* fbo_extension_string = "GL_ARB_framebuffer_object";
+
+#else
+#error Unsupported platform
 #endif
 
 // Necessary to update textures from 8-bit bitmaps
@@ -158,6 +130,15 @@ void ogl_dummy_vsync() { }
 
 #define GFX_OPENGL  AL_ID('O','G','L',' ')
 
+static int ogl_show_mouse(struct BITMAP *bmp, int x, int y) {
+    SDL_ShowCursor(SDL_ENABLE);
+    return -1; // show cursor, but "fail" because we're not supporting hardware cursors
+}
+
+static void ogl_hide_mouse() {
+    SDL_ShowCursor(SDL_DISABLE);
+}
+    
 GFX_DRIVER gfx_opengl =
 {
    GFX_OPENGL,
@@ -179,8 +160,8 @@ GFX_DRIVER gfx_opengl =
    NULL,  //gfx_directx_create_system_bitmap,
    NULL, //gfx_directx_destroy_system_bitmap,
    NULL, //gfx_directx_set_mouse_sprite,
-   NULL, //gfx_directx_show_mouse,
-   NULL, //gfx_directx_hide_mouse,
+   ogl_show_mouse, //gfx_directx_show_mouse,
+   ogl_hide_mouse, //gfx_directx_hide_mouse,
    NULL, //gfx_directx_move_mouse,
    NULL,                        // AL_METHOD(void, drawing_mode, (void));
    NULL,                        // AL_METHOD(void, save_video_state, (void*));
@@ -220,14 +201,10 @@ OGLGraphicsDriver::ShaderProgram::ShaderProgram() : Program(0), SamplerVar(0), C
 
 OGLGraphicsDriver::OGLGraphicsDriver() 
 {
-#if defined (WINDOWS_VERSION)
-  _hDC = NULL;
-  _hRC = NULL;
-  _hWnd = NULL;
-  _hInstance = NULL;
   device_screen_physical_width  = 0;
   device_screen_physical_height = 0;
-#elif defined (ANDROID_VERSION)
+    
+#if defined (ANDROID_VERSION)
   device_screen_physical_width  = android_screen_physical_width;
   device_screen_physical_height = android_screen_physical_height;
 #elif defined (IOS_VERSION)
@@ -259,8 +236,6 @@ OGLGraphicsDriver::OGLGraphicsDriver()
   _vmem_b_shift_32 = 16;
   _vmem_a_shift_32 = 24;
 
-  // Initialize default sprite batch, it will be used when no other batch was activated
-  InitSpriteBatch(0, _spriteBatchDesc[0]);
 }
 
 
@@ -290,35 +265,20 @@ void OGLGraphicsDriver::SetupDefaultVertices()
   defaultVertices[3].tv=1.0;
 }
 
-#if defined (WINDOWS_VERSION)
 
-void OGLGraphicsDriver::CreateDesktopScreen(int width, int height, int depth)
+void OGLGraphicsDriver::UpdateDeviceScreen(const Size &screenSize)
 {
-  device_screen_physical_width = width;
-  device_screen_physical_height = height;
-}
-
-#elif defined (ANDROID_VERSION) || defined (IOS_VERSION)
-
-void OGLGraphicsDriver::UpdateDeviceScreen()
-{
-#if defined (ANDROID_VERSION)
-    device_screen_physical_width  = android_screen_physical_width;
-    device_screen_physical_height = android_screen_physical_height;
-#elif defined (IOS_VERSION)
-    device_screen_physical_width  = ios_screen_physical_width;
-    device_screen_physical_height = ios_screen_physical_height;
-#endif
-
+    SDL_GL_GetDrawableSize(this->sdlWindow, &device_screen_physical_width, &device_screen_physical_height);
+        
     Debug::Printf("OGL: notified of device screen updated to %d x %d, resizing viewport", device_screen_physical_width, device_screen_physical_height);
+    
     _mode.Width = device_screen_physical_width;
     _mode.Height = device_screen_physical_height;
     InitGlParams(_mode);
+    
     if (_initSurfaceUpdateCallback)
         _initSurfaceUpdateCallback();
 }
-
-#endif
 
 void OGLGraphicsDriver::Vsync() 
 {
@@ -373,16 +333,8 @@ void OGLGraphicsDriver::SetTintMethod(TintMethod method)
 
 void OGLGraphicsDriver::FirstTimeInit()
 {
-  // It was told that GL_VERSION is supposed to begin with digits and may have
-  // custom string after, but mobile version of OpenGL seem to have different
-  // version string format.
-  String ogl_v_str = (const char*)glGetString(GL_VERSION);
-  String digits = "1234567890";
-  const char *digits_ptr = std::find_first_of(ogl_v_str.GetCStr(), ogl_v_str.GetCStr() + ogl_v_str.GetLength(),
-      digits.GetCStr(), digits.GetCStr() + digits.GetLength());
-  if (digits_ptr < ogl_v_str.GetCStr() + ogl_v_str.GetLength())
-    _oglVersion.SetFromString(digits_ptr);
-  Debug::Printf(kDbgMsg_Init, "Running OpenGL: %s", ogl_v_str.GetCStr());
+  _oglVersion = Version(GLVersion.major, GLVersion.minor, 0);
+  Debug::Printf(kDbgMsg_Init, "Running OpenGL: %s", _oglVersion.ShortString.GetCStr());
 
   TestVSync();
   TestRenderToTexture();
@@ -397,46 +349,89 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 #elif defined(IOS_VERSION)
   ios_create_screen();
   ios_select_buffer();
-#elif defined (WINDOWS_VERSION)
-  if (!mode.Windowed)
-  {
-    if (platform->EnterFullscreenMode(mode))
-      platform->AdjustWindowStyleForFullscreen();
-  }
-  // NOTE: adjust_window may leave task bar visible, so we do not use it for fullscreen mode
-  if (mode.Windowed && adjust_window(mode.Width, mode.Height) != 0)
-  {
-    set_allegro_error("Window size not supported");
-    return false;
-  }
 
-  _hWnd = win_get_window();
-  if (!(_hDC = GetDC(_hWnd)))
-    return false;
 
-  // First check if we need to recreate GL context, this will only be
-  // required if different color depth is requested.
-  if (_hRC)
-  {
-    GLuint pixel_fmt = GetPixelFormat(_hDC);
-    PIXELFORMATDESCRIPTOR pfd;
-    DescribePixelFormat(_hDC, pixel_fmt, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-    if (pfd.cColorBits != mode.ColorDepth)
-    {
-      DeleteGlContext();
+#else 
+
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_PROFILE_MASK: %s", SDL_GetError());
     }
-  }
 
-  if (!_hRC)
-  {
-    if (!CreateGlContext(mode))
-      return false;
-  }
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MAJOR_VERSION: %s", SDL_GetError());
+    }
+    
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MINOR_VERSION: %s", SDL_GetError());
+    }
+    
+    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_DOUBLEBUFFER: %s", SDL_GetError());
+    }
+    
+    Uint32 createWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+    if (!mode.Windowed) {
+        createWindowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
+    
+    this->sdlWindow = SDL_CreateWindow(
+                                  "AGS",
+                                  SDL_WINDOWPOS_CENTERED,
+                                  SDL_WINDOWPOS_CENTERED,
+                                  mode.Width, mode.Height,
+                                  createWindowFlags
+                                  );
+    
+    if (this->sdlWindow == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error opening window for OpenGL: %s", SDL_GetError());
+        return false;
+    }
+    
+    this->sdlGlContext = SDL_GL_CreateContext(this->sdlWindow);
+    
+    if (this->sdlGlContext == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error creating OpenGL context: %s", SDL_GetError());
+        SDL_DestroyWindow(this->sdlWindow);
+        this->sdlWindow = NULL;
+        return false;
+    }
+    
+    if (SDL_GL_MakeCurrent(this->sdlWindow, this->sdlGlContext) != 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error setting current OpenGL context: %s", SDL_GetError());
+        SDL_GL_DeleteContext(this->sdlGlContext);
+        this->sdlGlContext = NULL;
+        SDL_DestroyWindow(this->sdlWindow);
+        this->sdlWindow = NULL;
+        return false;
+    }
 
-  CreateDesktopScreen(mode.Width, mode.Height, mode.ColorDepth);
-  win_grab_input();
+    gladLoadGLLoader(SDL_GL_GetProcAddress);
+    
+    SDL_GL_GetDrawableSize(this->sdlWindow, &device_screen_physical_width, &device_screen_physical_height);
+    
+   _rgb_r_shift_15 = 10;
+   _rgb_g_shift_15 = 5;
+   _rgb_b_shift_15 = 0;
+
+   _rgb_r_shift_16 = 11;
+   _rgb_g_shift_16 = 5;
+   _rgb_b_shift_16 = 0;
+
+   _rgb_r_shift_24 = 16;
+   _rgb_g_shift_24 = 8;
+   _rgb_b_shift_24 = 0;
+
+   _rgb_a_shift_32 = 24;
+   _rgb_r_shift_32 = 16; 
+   _rgb_g_shift_32 = 8; 
+   _rgb_b_shift_32 = 0;
+    
 #endif
 
+  // Initialize default sprite batch, it will be used when no other batch was activated
+  InitSpriteBatch(0, _spriteBatchDesc[0]);
+
+    
   gfx_driver = &gfx_opengl;
   return true;
 }
@@ -469,13 +464,9 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-  if (glSwapIntervalEXT)
-  {
-    if(mode.Vsync)
-      glSwapIntervalEXT(1);
-    else
-      glSwapIntervalEXT(0);
-  }
+
+  SDL_GL_SetSwapInterval(mode.Vsync ? 1 : 0);
+
 
 #if defined(ANDROID_VERSION) || defined(IOS_VERSION)
   // Setup library mouse to have 1:1 coordinate transformation.
@@ -485,85 +476,22 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   device_mouse_setup(0, device_screen_physical_width - 1, 0, device_screen_physical_height - 1, 1.0, 1.0);
 #endif
 }
-
-bool OGLGraphicsDriver::CreateGlContext(const DisplayMode &mode)
-{
-#if defined (WINDOWS_VERSION)
-  PIXELFORMATDESCRIPTOR pfd =
-  {
-    sizeof(PIXELFORMATDESCRIPTOR),
-    1,
-    PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-    PFD_TYPE_RGBA,
-    mode.ColorDepth,
-    0, 0, 0, 0, 0, 0,
-    0,
-    0,
-    0,
-    0, 0, 0, 0,
-    0,
-    0,
-    0,
-    PFD_MAIN_PLANE,
-    0,
-    0, 0, 0
-  };
-
-  _oldPixelFormat = GetPixelFormat(_hDC);
-  DescribePixelFormat(_hDC, _oldPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &_oldPixelFormatDesc);
-
-  GLuint pixel_fmt;
-  if (!(pixel_fmt = ChoosePixelFormat(_hDC, &pfd)))
-    return false;
-
-  if (!SetPixelFormat(_hDC, pixel_fmt, &pfd))
-    return false;
-
-  if (!(_hRC = wglCreateContext(_hDC)))
-    return false;
-
-  if(!wglMakeCurrent(_hDC, _hRC))
-    return false;
-#endif // WINDOWS_VERSION
-  return true;
-}
-
+    
+    
 void OGLGraphicsDriver::DeleteGlContext()
 {
-#if defined (WINDOWS_VERSION)
-  if (_hRC)
-  {
-    wglMakeCurrent(NULL, NULL);
-    wglDeleteContext(_hRC);
-    _hRC = NULL;
-  }
 
-  if (_oldPixelFormat > 0)
-    SetPixelFormat(_hDC, _oldPixelFormat, &_oldPixelFormatDesc);
-#endif
+    SDL_GL_MakeCurrent(NULL, NULL);
+    if (this->sdlGlContext) {
+        SDL_GL_DeleteContext(this->sdlGlContext);
+    }
+    this->sdlGlContext = NULL;
+
 }
 
 void OGLGraphicsDriver::TestVSync()
 {
-// TODO: find out how to implement SwapInterval on other platforms, and how to check if it's supported
-#if defined(WINDOWS_VERSION)
-  const char* extensions = (const char*)glGetString(GL_EXTENSIONS);
-  const char* extensionsARB = NULL;
-//#if defined(WINDOWS_VERSION)
-  PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglGetProcAddress("wglGetExtensionsStringARB");
-  extensionsARB = wglGetExtensionsStringARB ? (const char*)wglGetExtensionsStringARB(_hDC) : NULL;
-//#endif
 
-  if (extensions && strstr(extensions, vsync_extension_string) != NULL ||
-        extensionsARB && strstr(extensionsARB, vsync_extension_string) != NULL)
-  {
-//#if defined(WINDOWS_VERSION)
-    glSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-//#endif
-  }
-  if (!glSwapIntervalEXT)
-    Debug::Printf(kDbgMsg_Warn, "WARNING: OpenGL extension '%s' not supported, vertical sync will be kept at driver default.", vsync_extension_string);
-#endif
 }
 
 void OGLGraphicsDriver::TestRenderToTexture()
@@ -572,16 +500,7 @@ void OGLGraphicsDriver::TestRenderToTexture()
 
   if (extensions && strstr(extensions, fbo_extension_string) != NULL)
   {
-  #if defined(WINDOWS_VERSION)
-    glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)wglGetProcAddress("glGenFramebuffersEXT");
-    glDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC)wglGetProcAddress("glDeleteFramebuffersEXT");
-    glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC)wglGetProcAddress("glBindFramebufferEXT");
-    glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)wglGetProcAddress("glCheckFramebufferStatusEXT");
-    glGetFramebufferAttachmentParameterivEXT = (PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)wglGetProcAddress("glGetFramebufferAttachmentParameterivEXT");
-    glGenerateMipmapEXT = (PFNGLGENERATEMIPMAPEXTPROC)wglGetProcAddress("glGenerateMipmapEXT");
-    glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)wglGetProcAddress("glFramebufferTexture2DEXT");
-    glFramebufferRenderbufferEXT = (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)wglGetProcAddress("glFramebufferRenderbufferEXT");
-  #endif
+
 
     _can_render_to_texture = true;
     TestSupersampling();
@@ -617,32 +536,8 @@ void OGLGraphicsDriver::CreateShaders()
     Debug::Printf(kDbgMsg_Warn, "WARNING: OpenGL 3.0 or higher is required for tinting shader.");
 
   // TODO: linking with GLEW library might be a better idea
-  #if defined(WINDOWS_VERSION)
-    glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
-    glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
-    glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
-    glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
-    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
-    glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
-    glDetachShader = (PFNGLDETACHSHADERPROC)wglGetProcAddress("glDetachShader");
-    glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
-    glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
-    glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
-    glGetProgramiv = (PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv");
-    glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog");
-    glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
-    glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
-    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
-    glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
-    glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
-    glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
-  #endif
 
-  if (!glCreateShader)
-  {
-    Debug::Printf(kDbgMsg_Error, "ERROR: OpenGL shader functions could not be linked.");
-    return;
-  }
+
 
   CreateTintShader();
   CreateLightShader();
@@ -657,8 +552,7 @@ void OGLGraphicsDriver::CreateTintShader()
     // Color processing is replicated from Direct3D shader by Chris Jones
     // (Engine/resource/tintshaderLegacy.fx).
     "\
-                                #version 130\n\
-                                out vec4 gl_FragColor;\n\
+                                #version 120\n\
                                 uniform sampler2D textID;\n\
                                 uniform vec3 tintHSV;\n\
                                 uniform vec3 tintAmnTrsLum;\n\
@@ -710,8 +604,7 @@ void OGLGraphicsDriver::CreateLightShader()
     // NOTE: it's been said that using branching in shaders produces inefficient code.
     // If that will ever become a real problem, we can easily split this shader in two.
     "\
-                                #version 130\n\
-                                out vec4 gl_FragColor;\n\
+                                #version 120\n\
                                 uniform sampler2D textID;\n\
                                 uniform float light;\n\
                                 uniform float alpha;\n\
@@ -970,6 +863,9 @@ void OGLGraphicsDriver::ReleaseDisplayMode()
 
   DestroyAllStageScreens();
 
+  SDL_DestroyWindow(this->sdlWindow);
+  this->sdlWindow = NULL;
+    
   gfx_driver = NULL;
 
   if (platform->ExitFullscreenMode())
@@ -982,10 +878,7 @@ void OGLGraphicsDriver::UnInit()
   ReleaseDisplayMode();
 
   DeleteGlContext();
-#if defined (WINDOWS_VERSION)
-  _hWnd = NULL;
-  _hDC = NULL;
-#endif
+
 
   DeleteShaderProgram(_tintShader);
   DeleteShaderProgram(_lightShader);
@@ -1023,7 +916,7 @@ bool OGLGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
   {
 #if defined(IOS_VERSION)
     ios_select_buffer();
-#elif defined(WINDOWS_VERSION)
+#else 
     glReadBuffer(GL_FRONT);
 #endif
     retr_rect = _dstRect;
@@ -1284,7 +1177,6 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   ios_select_buffer();
 #endif
 
-#if defined (ANDROID_VERSION) || defined (IOS_VERSION)
   // TODO:
   // For some reason, mobile ports initialize actual display size after a short delay.
   // This is why we update display mode and related parameters (projection, viewport)
@@ -1294,10 +1186,17 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   // of the platform-specific part of the code (Java app for Android / XCode for iOS).
   if (!device_screen_initialized)
   {
-    UpdateDeviceScreen();
+#if defined (ANDROID_VERSION)
+      UpdateDeviceScreen(Size(android_screen_physical_width, android_screen_physical_height));
+#elif defined (IOS_VERSION)
+      UpdateDeviceScreen(Size(ios_screen_physical_width, ios_screen_physical_height));
+#else
+      int w, h;
+      SDL_GetWindowSize(this->sdlWindow, &w, &h);
+      UpdateDeviceScreen(Size(w,h));
+#endif
     device_screen_initialized = 1;
   }
-#endif
 
   if (_do_render_to_texture)
   {
@@ -1362,10 +1261,10 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
 
   glFinish();
 
-#if defined(WINDOWS_VERSION)
-  SwapBuffers(_hDC);
-#elif defined(ANDROID_VERSION) || defined(IOS_VERSION)
+#if defined(ANDROID_VERSION) || defined(IOS_VERSION)
   device_swap_buffers();
+#else 
+  SDL_GL_SwapWindow(this->sdlWindow);
 #endif
 
   if (clearDrawListAfterwards)
@@ -1522,6 +1421,8 @@ void OGLGraphicsDriver::DestroyDDB(IDriverDependantBitmap* bitmap)
     }
     delete bitmap;
 }
+#define D3DCOLOR_RGBA(r,g,b,a) \
+  (((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
 
 
 void OGLGraphicsDriver::UpdateTextureRegion(OGLTextureTile *tile, Bitmap *bitmap, OGLBitmap *target, bool hasAlpha)
@@ -1743,7 +1644,7 @@ IDriverDependantBitmap* OGLGraphicsDriver::CreateDDBFromBitmap(Bitmap *bitmap, b
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
       // NOTE: pay attention that the texture format depends on the **display mode**'s format,
       // rather than source bitmap's color depth!
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, thisAllocatedWidth, thisAllocatedHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, thisAllocatedWidth, thisAllocatedHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
     }
   }
 
@@ -1787,7 +1688,7 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
       process_pending_events();
       if (_pollingCallback)
         _pollingCallback();
-      platform->YieldCPU();
+      SDL_Delay(1);
     }
     while (timerValue == *_loopTimer);
 
@@ -1909,6 +1810,27 @@ void OGLGraphicsDriver::SetScreenTint(int red, int green, int blue)
 
     _screenTintSprite.skip = ((red == 0) && (green == 0) && (blue == 0));
   }
+}
+
+void OGLGraphicsDriver::ToggleFullscreen() {
+   int isFullscreen = SDL_GetWindowFlags(this->sdlWindow) & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP);
+
+   int result = 0;
+   if (isFullscreen) {
+      result = SDL_SetWindowFullscreen(this->sdlWindow, 0);
+   } else {
+      result = SDL_SetWindowFullscreen(this->sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+   }
+   if (result != 0) {
+      SDL_Log("Unable to toggle fullscreen: %s", SDL_GetError());
+   }
+}
+
+DisplayMode OGLGraphicsDriver::GetDisplayMode() const
+{
+  auto result = _mode;
+  result.Windowed = !(SDL_GetWindowFlags(this->sdlWindow) & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP));
+  return result;
 }
 
 

@@ -420,7 +420,7 @@ void apply_config(const ConfigTree &cfg)
                                                         INIreadint(cfg, "graphics", "screen_height"));
         usetup.Screen.DisplayMode.ScreenSize.MatchDeviceRatio = INIreadint(cfg, "graphics", "match_device_ratio", 1) != 0;
         // TODO: move to config overrides (replace values during config load)
-#if defined(MAC_VERSION)
+#if defined(MAC_VERSION) || defined(ALLEGRO_SDL2)
         usetup.Screen.Filter.ID = "none";
 #else
         if (should_read_filter)

@@ -204,6 +204,11 @@ public:
     virtual bool HasAcceleratedTransform() { return true; }
     virtual void SetScreenTint(int red, int green, int blue);
 
+    virtual void UpdateDeviceScreen(const Size &screenSize);
+    virtual void ToggleFullscreen();
+    virtual DisplayMode GetDisplayMode() const;
+
+
     typedef stdtr1compat::shared_ptr<OGLGfxFilter> POGLFilter;
 
     void SetGraphicsFilter(POGLFilter filter);
@@ -212,28 +217,28 @@ public:
     virtual ~OGLGraphicsDriver();
 
 private:
-    POGLFilter _filter;
+    POGLFilter _filter {};
 
 #if defined (WINDOWS_VERSION)
-    HDC _hDC;
-    HGLRC _hRC;
-    HWND _hWnd;
-    HINSTANCE _hInstance;
-    GLuint _oldPixelFormat;
-    PIXELFORMATDESCRIPTOR _oldPixelFormatDesc;
+    HDC _hDC {};
+    HGLRC _hRC {};
+    HWND _hWnd {};
+    HINSTANCE _hInstance {};
+    GLuint _oldPixelFormat {};
+    PIXELFORMATDESCRIPTOR _oldPixelFormatDesc {};
 #endif
-    Version _oglVersion;
-    bool _firstTimeInit;
-    int _tint_red, _tint_green, _tint_blue;
+    Version _oglVersion {};
+    bool _firstTimeInit {};
+    int _tint_red, _tint_green, _tint_blue {};
     // Position of backbuffer texture in world space
-    GLfloat _backbuffer_vertices[8];
+    GLfloat _backbuffer_vertices[8] {};
     // Relative position of source image on the backbuffer texture,
     // in local coordinates
-    GLfloat _backbuffer_texture_coordinates[8];
-    OGLCUSTOMVERTEX defaultVertices[4];
-    String previousError;
-    bool _smoothScaling;
-    bool _legacyPixelShader;
+    GLfloat _backbuffer_texture_coordinates[8] {};
+    OGLCUSTOMVERTEX defaultVertices[4] {};
+    String previousError {};
+    bool _smoothScaling {};
+    bool _legacyPixelShader {};
     // shader program and its variable references
     struct ShaderProgram
     {
@@ -244,35 +249,34 @@ private:
 
         ShaderProgram();
     };
-    ShaderProgram _tintShader;
-    ShaderProgram _lightShader;
-
+    ShaderProgram _tintShader {};
+    ShaderProgram _lightShader {};
     // TODO: find a way to have this tint sprite in the normal sprite list (or use shader instead!)
-    Bitmap *_screenTintLayer;
-    OGLBitmap* _screenTintLayerDDB;
-    OGLDrawListEntry _screenTintSprite;
+    Bitmap *_screenTintLayer {};
+    OGLBitmap* _screenTintLayerDDB {};
+    OGLDrawListEntry _screenTintSprite {};
 
-    int device_screen_physical_width;
-    int device_screen_physical_height;
+    int device_screen_physical_width {};
+    int device_screen_physical_height {};
 
     // Viewport and scissor rect, in OpenGL screen coordinates (0,0 is at left-bottom)
-    Rect _viewportRect;
+    Rect _viewportRect {};
 
     // These two flags define whether driver can, and should (respectively)
     // render sprites to texture, and then texture to screen, as opposed to
     // rendering to screen directly. This is known as supersampling mode
-    bool _can_render_to_texture;
-    bool _do_render_to_texture;
+    bool _can_render_to_texture {};
+    bool _do_render_to_texture {};
     // Backbuffer texture multiplier, used to determine a size of texture
     // relative to the native game size.
-    int _super_sampling;
-    unsigned int _backbuffer;
-    unsigned int _fbo;
+    int _super_sampling {};
+    unsigned int _backbuffer {};
+    unsigned int _fbo {};
     // Size of the backbuffer drawing area, equals to native size
     // multiplied by _super_sampling
-    Size _backRenderSize;
+    Size _backRenderSize {};
     // Actual size of the backbuffer texture, created by OpenGL
-    Size _backTextureSize;
+    Size _backTextureSize {};
 
     OGLSpriteBatches _spriteBatches;
     GlobalFlipType flipTypeLastTime;
@@ -284,11 +288,16 @@ private:
     virtual void InitSpriteBatch(size_t index, const SpriteBatchDesc &desc);
     virtual void ResetAllBatches();
 
+    SDL_Window *sdlWindow {nullptr};
+    SDL_GLContext sdlGlContext {nullptr};
+    
     // Sets up GL objects not related to particular display mode
     void FirstTimeInit();
     // Initializes Gl rendering context
     bool InitGlScreen(const DisplayMode &mode);
+#if defined (WINDOWS_VERSION)
     bool CreateGlContext(const DisplayMode &mode);
+#endif
     void DeleteGlContext();
     // Sets up general rendering parameters
     void InitGlParams(const DisplayMode &mode);

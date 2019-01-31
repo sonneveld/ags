@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#if defined(WINDOWS_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION)
+#ifdef AGS_ENABLE_OPENGL_DRIVER
 
 #include "gfx/gfxfilter_ogl.h"
 #include "ogl_headers.h"

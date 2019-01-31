@@ -283,7 +283,7 @@ Bitmap *convert_32_to_32bgr(Bitmap *tempbl) {
 // TODO: make gfxDriver->GetCompatibleBitmapFormat describe all necessary
 // conversions, so that we did not have to guess.
 //
-Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
+Bitmap *AdjustBitmapForUseWithDisplayModeOld(Bitmap* bitmap, bool has_alpha)
 {
     const int bmp_col_depth = bitmap->GetColorDepth();
     const int sys_col_depth = System_GetColorDepth();
@@ -334,6 +334,17 @@ Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
         new_bitmap = convert_16_to_16bgr(bitmap);
     }
     return new_bitmap;
+}
+
+Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
+{
+    const int bmp_col_depth = bitmap->GetColorDepth();
+
+    if ((bmp_col_depth == 32) && has_alpha) {
+        set_rgb_mask_using_alpha_channel(bitmap);
+    }
+
+    return bitmap;
 }
 
 Bitmap *ReplaceBitmapWithSupportedFormat(Bitmap *bitmap)
@@ -699,9 +710,7 @@ void render_to_screen(int atx, int aty)
         return;
     }
 
-    // only vsync in full screen mode, it makes things worse
-    // in a window
-    gfxDriver->EnableVsyncBeforeRender((scsystem.vsync > 0) && (!scsystem.windowed));
+    gfxDriver->EnableVsyncBeforeRender(scsystem.vsync > 0);
 
     bool succeeded = false;
     while (!succeeded)

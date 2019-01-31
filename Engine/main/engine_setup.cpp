@@ -169,7 +169,7 @@ void engine_init_resolution_settings(const Size game_size)
 }
 
 // Setup gfx driver callbacks and options
-void engine_post_gfxmode_driver_setup()
+static void engine_post_gfxmode_driver_setup()
 {
     gfxDriver->SetCallbackForPolling(update_polled_stuff_if_runtime);
     gfxDriver->SetCallbackToDrawScreen(draw_screen_callback);
@@ -186,7 +186,7 @@ void engine_pre_gfxmode_driver_cleanup()
 }
 
 // Setup virtual screen
-void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitmaps)
+static void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitmaps)
 {
     if (recreate_bitmaps)
     {
@@ -210,7 +210,8 @@ void engine_pre_gfxsystem_screen_destroy()
 // Setup color conversion parameters
 void engine_setup_color_conversions(int coldepth)
 {
-    // default shifts for how we store the sprite data1
+#if 0
+    // default shifts for how we store the sprite data
 #if defined(PSP_VERSION)
     // PSP: Switch b<>r for 15/16 bit.
     _rgb_r_shift_32 = 16;
@@ -304,13 +305,13 @@ void engine_setup_color_conversions(int coldepth)
         _rgb_r_shift_15 = 10;
 #endif
     }
-
+#endif
     set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256);
 }
 
 // Setup drawing modes and color conversions;
 // they depend primarily on gfx driver capabilities and new color depth
-void engine_post_gfxmode_draw_setup(const DisplayMode &dm)
+static void engine_post_gfxmode_draw_setup(const DisplayMode &dm)
 {
     engine_setup_color_conversions(dm.ColorDepth);
     init_draw_method();
@@ -323,33 +324,10 @@ void engine_pre_gfxmode_draw_cleanup()
 }
 
 // Setup mouse control mode and graphic area
-void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
+static void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
 {
-    // Assign mouse control parameters.
-    //
-    // Whether mouse movement should be controlled by the engine - this is
-    // determined based on related config option.
-    const bool should_control_mouse = usetup.mouse_control == kMouseCtrl_Always ||
-        usetup.mouse_control == kMouseCtrl_Fullscreen && !dm.Windowed;
-    // Whether mouse movement control is supported by the engine - this is
-    // determined on per platform basis. Some builds may not have such
-    // capability, e.g. because of how backend library implements mouse utils.
-    const bool can_control_mouse = platform->IsMouseControlSupported(dm.Windowed);
-    // The resulting choice is made based on two aforementioned factors.
-    const bool control_sens = should_control_mouse && can_control_mouse;
-    if (control_sens)
-    {
-        Mouse::EnableControl(!dm.Windowed);
-        Mouse::SetSpeedUnit(1.f);
-        if (usetup.mouse_speed_def == kMouseSpeed_CurrentDisplay)
-        {
-            Size cur_desktop;
-            if (get_desktop_resolution(&cur_desktop.Width, &cur_desktop.Height) == 0)
-                Mouse::SetSpeedUnit(Math::Max((float)cur_desktop.Width / (float)init_desktop.Width,
-                                              (float)cur_desktop.Height / (float)init_desktop.Height));
-        }
-        Mouse::SetSpeed(usetup.mouse_speed);
-    }
+    Mouse::DisableControl();
+
     Debug::Printf(kDbgMsg_Init, "Mouse control: %s, base: %f, speed: %f", Mouse::IsControlEnabled() ? "on" : "off",
         Mouse::GetSpeedUnit(), Mouse::GetSpeed());
 
@@ -369,7 +347,7 @@ void engine_pre_gfxmode_mouse_cleanup()
 }
 
 // Fill in scsystem struct with display mode parameters
-void engine_setup_scsystem_screen(const DisplayMode &dm)
+static void engine_setup_scsystem_screen(const DisplayMode &dm)
 {
     scsystem.coldepth = dm.ColorDepth;
     scsystem.windowed = dm.Windowed;
@@ -390,13 +368,7 @@ void engine_post_gfxmode_setup(const Size &init_desktop)
         engine_post_gfxmode_draw_setup(dm);
     engine_post_gfxmode_mouse_setup(dm, init_desktop);
     
-    // TODO: the only reason this call was put here is that it requires
-    // "windowed" flag to be specified. Find out whether this function
-    // has anything to do with graphics mode at all. It is quite possible
-    // that we may split it into two functions, or remove parameter.
-    platform->PostAllegroInit(scsystem.windowed != 0);
-
-    video_on_gfxmode_changed();
+    video_on_gfxmode_changed(); 
     invalidate_screen();
 }
 

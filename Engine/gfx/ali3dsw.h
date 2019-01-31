@@ -140,6 +140,7 @@ public:
 
     virtual const char*GetDriverName() { return "Software renderer"; }
     virtual const char*GetDriverID() { return "Software"; }
+    virtual void UpdateDeviceScreen(const Size &screenSize);
     virtual void SetTintMethod(TintMethod method);
     virtual bool SetDisplayMode(const DisplayMode &mode, volatile int *loopTimer);
     virtual bool SetNativeSize(const Size &src_size);
@@ -179,6 +180,7 @@ public:
     virtual Bitmap *GetStageBackBuffer();
     virtual void SetScreenTint(int red, int green, int blue) { 
         _tint_red = red; _tint_green = green; _tint_blue = blue; }
+    virtual void ToggleFullscreen();
     virtual ~ALSoftwareGraphicsDriver();
 
     typedef stdtr1compat::shared_ptr<AllegroGfxFilter> PALSWFilter;

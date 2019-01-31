@@ -49,14 +49,6 @@ void init_pathfinder()
 }
 
 Bitmap *wallscreen;
-<<<<<<< HEAD
-=======
-
-// Show debug information on screen and wait for key press
-// Incomplete: seems to rely on removed code.
-//#define DEBUG_PATHFINDER
-
->>>>>>> SDL2: key/mouse events
 const char *movelibcopyright = "PathFinder library v3.1 (c) 1998, 1999, 2001, 2002 Chris Jones.";
 int lastcx, lastcy;
 
@@ -250,7 +242,6 @@ int find_route(short srcx, short srcy, short xx, short yy, Bitmap *onscreen, int
   for (i=0; i<num_navpoints-1; i++)
     calculate_move_stage(&mls[mlist], i);
 
-<<<<<<< HEAD
   mls[mlist].fromx = srcx;
   mls[mlist].fromy = srcy;
   mls[mlist].onstage = 0;
@@ -259,33 +250,4 @@ int find_route(short srcx, short srcy, short xx, short yy, Bitmap *onscreen, int
   mls[mlist].lastx = -1;
   mls[mlist].lasty = -1;
   return mlist;
-=======
-    for (aaa = 0; aaa < numstages - 1; aaa++) {
-      calculate_move_stage(&mls[mlist], aaa);
-    }
-
-    mls[mlist].fromx = orisrcx;
-    mls[mlist].fromy = orisrcy;
-    mls[mlist].onstage = 0;
-    mls[mlist].onpart = 0;
-    mls[mlist].doneflag = 0;
-    mls[mlist].lastx = -1;
-    mls[mlist].lasty = -1;
-#ifdef DEBUG_PATHFINDER
-    for (;;) {    
-        process_pending_events();
-        SDL_Event kpEvent = getTextEventFromQueue();
-        int kp = asciiFromEvent(kpEvent);
-        if (kp > 0) { break; }
-    }
-#endif
-    return mlist;
-  } else {
-    return 0;
-  }
-
-#ifdef DEBUG_PATHFINDER
-  __unnormscreen();
-#endif
->>>>>>> SDL2: key/mouse events
 }

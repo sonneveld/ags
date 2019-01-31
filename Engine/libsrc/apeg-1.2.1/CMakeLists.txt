@@ -39,5 +39,10 @@ target_sources(apeg
 target_compile_definitions(apeg PUBLIC DISABLE_MPEG_AUDIO)
 
 target_link_libraries(apeg PUBLIC Allegro::Allegro Ogg::Ogg Vorbis::Vorbis Vorbis::VorbisFile Theora::TheoraDecoder)
+if (MACOS)
+    target_link_libraries(apeg PUBLIC ${OPENAL_FRAMEWORK})
+else()
+    target_link_libraries(apeg PUBLIC OpenAL::OpenAL)
+endif()
 
 add_library(Apeg::Apeg ALIAS apeg)

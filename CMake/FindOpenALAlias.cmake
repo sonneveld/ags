@@ -1,0 +1,8 @@
+if (MACOS)
+    find_library(OPENAL_FRAMEWORK OpenAL)
+else()
+    find_package(OpenAL)
+    add_library(OpenAL::OpenAL INTERFACE IMPORTED)
+    target_link_libraries(OpenAL::OpenAL INTERFACE ${OPENAL_LIBRARY})
+    target_include_directories(OpenAL::OpenAL INTERFACE ${OPENAL_INCLUDE_DIR})
+endif()

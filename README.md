@@ -1,3 +1,165 @@
+# Experimental SDL2 Port
+
+This requires the allegro fork with SDL2 as a platform. Refer to this branch:
+https://github.com/sonneveld/allegro/tree/sdl2
+
+The aim of this branch is to attempt to slowly migrate AGS to SDL2. To do this, Allegro4 has been
+patched to use SDL2 as the platform that provides input, audio, graphics, etc. That way we can still
+rely on Allegro for things like bitmap graphics drawing/conversion, audio mixing, midi rendering, etc.
+
+Current status is that games seem to work with the ported allegro library. AGS still calls allegro, which
+calls SDL2 functions. Work has started on replacing those Allegro calls with direct SDL2 calls.
+
+We might not be able to rid AGS completely of Allegro, but at least it will be kept at a minimum while 
+we use a slightly more up-to-date library.
+
+
+## Building AGS/SDL2 on Linux
+
+Check out the sdl ports of AGS and Allegro:
+https://github.com/sonneveld/allegro/tree/sdl2
+https://github.com/sonneveld/agscommunity/tree/sdl2-port
+
+Set environment variables to point to source directories:
+
+    ALLEGRO_SRC=...
+    AGS_SRC=...
+
+Install dependencies (for ubuntu):
+
+    apt-get update
+    apt-get install build-essential pkg-config cmake libsdl2-2.0 libsdl2-dev libsdl2-dev libfreetype6-dev libogg-dev libtheora-dev libvorbis-dev liballegro4-dev libaldmb1-dev
+
+Build allegro:
+
+    cd $ALLEGRO_SRC
+    mkdir build-sdl2
+    cd build-sdl2
+    cmake -D SHARED=off -DCMAKE_BUILD_TYPE=Debug ..
+    make
+    make install
+
+This will install into /usr/local
+
+Build AGS:
+
+    cd $AGS_SRC
+    cd Engine
+    make
+
+
+## Building AGS/SDL2 on macOS
+
+Check out the sdl ports of AGS and Allegro:
+https://github.com/sonneveld/allegro/tree/sdl2
+https://github.com/sonneveld/agscommunity/tree/sdl2-port
+
+Set environment variables to point to source directories:
+
+    ALLEGRO_SRC=...
+    AGS_SRC=...
+    NUM_JOBS=$(sysctl -n hw.ncpu)  # 8 on my machine
+    CMAKE_BUILD_TYPE=Debug   # or Release!
+    #CMAKE_BUILD_TYPE=Release
+
+Install dependencies:
+
+    brew install cmake
+
+Download SDL2 [ https://www.libsdl.org/release/SDL2-2.0.8.dmg ] and drag the SDL2.framework into /Library/Frameworks
+
+Build OSX Libs (check out OSX/buildlibs/README.md for more details)
+
+    cd $AGS_SRC
+    cd OSX/buildlibs
+    make libs install
+
+Build allegro:
+
+    cd $ALLEGRO_SRC
+
+    mkdir build-release
+    pushd build-release
+    cmake -DCMAKE_INSTALL_PREFIX=$AGS_SRC/OSX -D SHARED=off -DCMAKE_BUILD_TYPE=Release ..
+    make
+    make install
+    popd
+
+    mkdir build-debug
+    pushd build-debug
+    cmake -DCMAKE_INSTALL_PREFIX=$AGS_SRC/OSX -D SHARED=off -DCMAKE_BUILD_TYPE=Debug ..
+    make
+    make install
+    popd
+    
+    
+Copy game files into $AGS_SRC/game_files in this format:
+
+    ac2game.dat
+    acsetup.cfg
+    audio.vox
+    speech.vox
+
+Build AGS
+
+    cd $AGS_SRC
+    mkdir build-sdl2-$CMAKE_BUILD_TYPE
+    cd build-sdl2-$CMAKE_BUILD_TYPE
+    cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
+    make -j$NUM_JOBS
+
+After building, there should be an "AGS.app" bundle in your build directory. You can run this like a normal app.
+
+Bundling SDL2 framework with the app:
+
+    Copy SDL2.framework into AGS.app/Contents/Frameworks
+
+    # Tell the AGS binary to also search for @rpath based libraries within the bundle relative to itself.
+    install_name_tool -add_rpath "@executable_path/../Frameworks" AGS.app/Contents/MacOS/AGS
+
+
+
+
+
+
+*or* Build AGS for xcode if you want to develop and debug within
+
+    cd $AGS_SRC
+    mkdir build-sdl2-xcode-$CMAKE_BUILD_TYPE
+    cd build-sdl2-$CMAKE_BUILD_TYPE
+    cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -GXcode
+    open AdventureGameStudio.xcodeproj
+
+
+## Building AGS/SDL2 on Windows
+
+These instructions have similiar requiements to the [original Windows build instructions](Windows/README.md), so it might be helpful to also read that documentation for further details.
+
+Download and install Visual Studio Community 2017 https://www.visualstudio.com/downloads/
+
+Download and install cmake https://cmake.org/download/
+
+Download SDL2 development libraries for MSVC https://www.libsdl.org/download-2.0.php . Install in AGS Source/SDL2-2.0.8
+
+Build thirdparty static libs:
+
+- allegro - the sdl2 port version
+- alfont - https://github.com/adventuregamestudio/lib-alfont
+- ogg - https://www.xiph.org/downloads/
+- theora
+- vorbis
+
+Allegro will require cmake but others have their own win32 solution files. When building, pick static libs and ensure using /MD runtime. (Ogg is one offender where it is configured as MT) Place libs and includes in Windows/lib and Windows/include
+
+Build engine:
+
+- mkdir build-Debug
+- cd build-Debug
+- cmake -DCMAKE_BUILD_TYPE=Debug ..
+- Open AdventureGameStudio.sln
+- Build AGS
+
+
 # Adventure Game Studio
 
 Adventure Game Studio (AGS) - is the IDE and the engine meant for creating and running videogames of adventure (aka "quest") genre. It has potential, although limited, support for other genres as well.

@@ -327,6 +327,8 @@ String find_user_cfg_file()
 
 void config_defaults()
 {
+#ifdef AGS_DELETE_FOR_3_6
+
 #if AGS_PLATFORM_OS_WINDOWS
     usetup.Screen.DriverID = "D3D9";
 #else
@@ -337,6 +339,13 @@ void config_defaults()
 #endif
     usetup.midicard = MIDI_AUTODETECT;
     usetup.translation = "";
+
+#endif
+    usetup.digicard = DIGI_AUTODETECT;
+    usetup.midicard = MIDI_AUTODETECT;
+    usetup.Screen.DriverID = "OGL";
+
+    usetup.translation.Empty();
 }
 
 void read_game_data_location(const ConfigTree &cfg)
@@ -493,6 +502,9 @@ void apply_config(const ConfigTree &cfg)
         // Legacy settings has to be translated into new options;
         // they must be read first, to let newer options override them, if ones are present
         read_legacy_audio_config(cfg);
+
+#ifdef AGS_DELETE_FOR_3_6
+
         if (psp_audio_enabled)
         {
             usetup.digicard = read_driverid(cfg, "sound", "digiid", usetup.digicard);
@@ -506,6 +518,11 @@ void apply_config(const ConfigTree &cfg)
             usetup.digicard = DIGI_NONE;
             usetup.midicard = MIDI_NONE;
         }
+
+#endif
+
+        usetup.digicard = read_driverid(cfg, "sound", "digiid", usetup.digicard);
+        usetup.midicard = read_driverid(cfg, "sound", "midiid", usetup.midicard);
 
         psp_audio_multithreaded = INIreadint(cfg, "sound", "threaded", psp_audio_multithreaded);
 

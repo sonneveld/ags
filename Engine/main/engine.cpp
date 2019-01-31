@@ -587,12 +587,16 @@ void engine_init_audio()
         usetup.mod_player = 0;
     }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 #if AGS_PLATFORM_OS_WINDOWS
     if (digi_card == DIGI_DIRECTX(0))
     {
         // DirectX mixer seems to buffer an extra sample itself
         use_extra_sound_offset = 1;
     }
+#endif
+
 #endif
 }
 

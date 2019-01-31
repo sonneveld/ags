@@ -35,8 +35,10 @@ const char *ScriptString::GetType() {
 }
 
 int ScriptString::Serialize(const char *address, char *buffer, int bufsize) {
-    if (text == NULL)
-        text = "";
+    if (text == NULL) {
+        text = static_cast<char *>(malloc(1));
+        text[0] = 0;
+    }
     StartSerialize(buffer);
     SerializeInt(strlen(text));
     strcpy(&serbuffer[bytesSoFar], text);

@@ -62,6 +62,7 @@
 #include "gfx/blender.h"
 #include "media/audio/audio_system.h"
 #include "ac/game.h"
+#include "device/mousew32.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -121,8 +122,10 @@ color palette[256];
 COLOR_MAP maincoltable;
 
 IGraphicsDriver *gfxDriver;
+#ifdef AGS_DELETE_FOR_3_6
 IDriverDependantBitmap *blankImage = nullptr;
 IDriverDependantBitmap *blankSidebarImage = nullptr;
+#endif
 IDriverDependantBitmap *debugConsole = nullptr;
 
 // actsps is used for temporary storage of the bitamp image
@@ -182,6 +185,8 @@ SpriteListEntry::SpriteListEntry()
 void setpal() {
     set_palette_range(palette, 0, 255, 0);
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 int _places_r = 3, _places_g = 2, _places_b = 3;
 
@@ -299,6 +304,65 @@ Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
     {
         new_bitmap = convert_16_to_16bgr(bitmap);
     }
+    return new_bitmap;
+}
+
+#endif
+
+
+
+// NOTE: Some of these conversions are required  even when using
+// D3D and OpenGL rendering, for two reasons:
+// 1) certain raw drawing operations are still performed by software
+// Allegro methods, hence bitmaps should be kept compatible to any native
+// software operations, such as blitting two bitmaps of different formats.
+// 2) mobile ports feature an OpenGL renderer built in Allegro library,
+// that assumes native bitmaps are in OpenGL-compatible format, so that it
+// could copy them to texture without additional changes.
+// AGS own OpenGL renderer tries to sync its behavior with the former one.
+//
+// TODO: make gfxDriver->GetCompatibleBitmapFormat describe all necessary
+// conversions, so that we did not have to guess.
+//
+Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
+{
+    const int bmp_col_depth = bitmap->GetColorDepth();
+    const int game_col_depth = game.GetColorDepth();
+    Bitmap *new_bitmap = bitmap;
+
+    // Bring bitmaps to the native game's format (has no dependency on display mode).
+
+    if (game_col_depth == 32)
+    {
+        switch (bmp_col_depth) {
+            case 8:
+            case 16:
+                // In 32-bit game hicolor bitmaps must be converted to the true color
+                new_bitmap = BitmapHelper::CreateBitmapCopy(bitmap, game_col_depth);
+                break;
+            case 32:
+                // In 32-bit game 32-bit bitmaps should have transparent pixels marked
+                // (this adjustment is probably needed for DrawingSurface ops)
+                if (has_alpha)
+                    set_rgb_mask_using_alpha_channel(new_bitmap);
+                else
+                    force_opaque_alpha_channel(new_bitmap);
+                break;
+        }
+    } else if (game_col_depth == 8 || game_col_depth == 16) {
+        switch (bmp_col_depth) {
+            case 8:
+            case 16:
+                break;
+            case 32:
+                // In non-32-bit game truecolor bitmaps must be downgraded
+                if (has_alpha) // if has valid alpha channel, convert it to regular transparency mask
+                    new_bitmap = remove_alpha_channel(bitmap);
+                else // else simply convert bitmap
+                    new_bitmap = BitmapHelper::CreateBitmapCopy(bitmap, game_col_depth);
+        }
+    }
+
     return new_bitmap;
 }
 
@@ -468,6 +532,8 @@ AGS_INLINE void defgame_to_finalgame_coords(int &x, int &y)
 
 // End resolution system functions
 
+#ifdef AGS_DELETE_FOR_3_6
+
 // Create blank (black) images used to repaint borders around game frame
 void create_blank_image(int coldepth)
 {
@@ -498,6 +564,8 @@ void destroy_blank_image()
     blankSidebarImage = nullptr;
 }
 
+#endif
+
 int MakeColor(int color_index)
 {
     color_t real_color = 0;
@@ -510,7 +578,9 @@ void init_draw_method()
     if (gfxDriver->HasAcceleratedTransform())
     {
         walkBehindMethod = DrawAsSeparateSprite;
+#ifdef AGS_DELETE_FOR_3_6
         create_blank_image(game.GetColorDepth());
+#endif
     }
     else
     {
@@ -526,14 +596,18 @@ void init_draw_method()
 void dispose_draw_method()
 {
     dispose_room_drawdata();
+#ifdef AGS_DELETE_FOR_3_6
     dispose_invalid_regions(false);
     destroy_blank_image();
+#endif
 }
 
 void dispose_room_drawdata()
 {
     CameraDrawData.clear();
+#ifdef AGS_DELETE_FOR_3_6
     dispose_invalid_regions(true);
+#endif
 }
 
 void on_mainviewport_changed()
@@ -541,8 +615,12 @@ void on_mainviewport_changed()
     if (!gfxDriver->RequiresFullRedrawEachFrame())
     {
         init_invalid_regions(-1, play.GetMainViewport().GetSize(), RectWH(play.GetMainViewport().GetSize()));
+#ifdef AGS_DELETE_FOR_3_6
+
         if (game.GetGameRes().ExceedsByAny(play.GetMainViewport().GetSize()))
             clear_letterbox_borders();
+
+#endif        
     }
 }
 
@@ -615,7 +693,9 @@ void on_roomviewport_created(int index)
 void on_roomviewport_deleted(int index)
 {
     CameraDrawData.erase(CameraDrawData.begin() + index);
+#ifdef AGS_DELETE_FOR_3_6
     delete_invalid_regions(index);
+#endif
 }
 
 void on_roomviewport_changed(Viewport *view)
@@ -633,7 +713,9 @@ void on_roomviewport_changed(Viewport *view)
         prepare_roomview_frame(view);
     // TODO: don't have to do this all the time, perhaps do "dirty rect" method
     // and only clear previous viewport location?
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_screen();
+#endif
     gfxDriver->GetMemoryBackBuffer()->Clear();
 }
 
@@ -680,8 +762,10 @@ void on_roomcamera_changed(Camera *cam)
                 sync_roomview(vp.get());
         }
     }
+#ifdef AGS_DELETE_FOR_3_6
     // TODO: only invalidate what this particular camera sees
     invalidate_screen();
+#endif
 }
 
 void mark_screen_dirty()
@@ -693,6 +777,8 @@ bool is_screen_dirty()
 {
     return screen_is_dirty;
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 void invalidate_screen()
 {
@@ -716,6 +802,7 @@ void invalidate_sprite(int x1, int y1, IDriverDependantBitmap *pic, bool in_room
     invalidate_rect_ds(x1, y1, x1 + pic->GetWidth(), y1 + pic->GetHeight(), in_room);
 }
 
+#endif      
 void mark_current_background_dirty()
 {
     current_background_is_dirty = true;
@@ -725,9 +812,14 @@ void mark_current_background_dirty()
 void draw_and_invalidate_text(Bitmap *ds, int x1, int y1, int font, color_t text_color, const char *text)
 {
     wouttext_outline(ds, x1, y1, font, text_color, (char*)text);
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_rect(x1, y1, x1 + wgettextwidth_compensate(text, font), y1 + getfontheight_outlined(font) + get_fixed_pixel_size(1), false);
+
+
+#endif      
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 // Renders black borders for the legacy boxed game mode,
 // where whole game screen changes size between large and small rooms
 void render_black_borders()
@@ -753,7 +845,7 @@ void render_black_borders()
         }
     }
 }
-
+#endif
 
 void render_to_screen()
 {
@@ -766,9 +858,10 @@ void render_to_screen()
     // Stage: engine overlay
     construct_engine_overlay();
 
+#ifdef AGS_DELETE_FOR_3_6
     // only vsync in full screen mode, it makes things worse in a window
     gfxDriver->EnableVsyncBeforeRender((scsystem.vsync > 0) && (!scsystem.windowed));
-
+#endif
     bool succeeded = false;
     while (!succeeded)
     {
@@ -797,6 +890,8 @@ void render_to_screen()
     }
 }
 
+
+#ifdef AGS_DELETE_FOR_3_6
 // Blanks out borders around main viewport in case it became smaller (e.g. after loading another room)
 void clear_letterbox_borders()
 {
@@ -804,6 +899,7 @@ void clear_letterbox_borders()
     gfxDriver->ClearRectangle(0, 0, game.GetGameRes().Width - 1, viewport.Top - 1, nullptr);
     gfxDriver->ClearRectangle(0, viewport.Bottom + 1, game.GetGameRes().Width - 1, game.GetGameRes().Height - 1, nullptr);
 }
+#endif
 
 void draw_game_screen_callback()
 {
@@ -2043,9 +2139,11 @@ void prepare_room_sprites()
 // Draws the black surface behind (or rather between) the room viewports
 void draw_preroom_background()
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->RequiresFullRedrawEachFrame())
         return;
     update_black_invreg_and_reset(gfxDriver->GetMemoryBackBuffer());
+#endif
 }
 
 // Draws the room background on the given surface.
@@ -2131,7 +2229,11 @@ void draw_fps(const Rect &viewport)
         ddb = gfxDriver->CreateDDBFromBitmap(fpsDisplay, false);
     int yp = viewport.GetHeight() - fpsDisplay->GetHeight();
     gfxDriver->DrawSprite(1, yp, ddb);
+
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_sprite(1, yp, ddb, false);
+
+#endif
 }
 
 // Draw GUI and overlays of all kinds, anything outside the room space
@@ -2251,11 +2353,21 @@ void put_sprite_list_on_screen(bool in_room)
     {
         thisThing = &thingsToDrawList[i];
 
+#ifdef AGS_DELETE_FOR_3_6
+
         if (thisThing->bmp != nullptr) {
             // mark the image's region as dirty
             invalidate_sprite(thisThing->x, thisThing->y, thisThing->bmp, in_room);
         }
         else if ((thisThing->transparent != TRANS_RUN_PLUGIN) &&
+            (thisThing->bmp == nullptr)) 
+        {
+            quit("Null pointer added to draw list");
+        }
+
+#endif
+
+        if ((thisThing->transparent != TRANS_RUN_PLUGIN) &&
             (thisThing->bmp == nullptr)) 
         {
             quit("Null pointer added to draw list");
@@ -2375,9 +2487,13 @@ void construct_game_scene(bool full_redraw)
 
     pl_run_plugin_hooks(AGSE_PRERENDER, 0);
 
+#ifdef AGS_DELETE_FOR_3_6
+
     // Possible reasons to invalidate whole screen for the software renderer
     if (full_redraw || play.screen_tint > 0 || play.shakesc_length > 0)
         invalidate_screen();
+
+#endif
 
     // TODO: move to game update! don't call update during rendering pass!
     // IMPORTANT: keep the order same because sometimes script may depend on it
@@ -2452,7 +2568,9 @@ void construct_game_screen_overlay(bool draw_mouse)
     if (draw_mouse && !play.mouse_cursor_hidden && play.screen_is_faded_out == 0)
     {
         gfxDriver->DrawSprite(mousex - hotx, mousey - hoty, mouseCursor);
+#ifdef AGS_DELETE_FOR_3_6
         invalidate_sprite(mousex - hotx, mousey - hoty, mouseCursor, false);
+#endif
     }
 
     if (play.screen_is_faded_out == 0)
@@ -2461,7 +2579,9 @@ void construct_game_screen_overlay(bool draw_mouse)
         if (play.screen_tint >= 1)
             gfxDriver->SetScreenTint(play.screen_tint & 0xff, (play.screen_tint >> 8) & 0xff, (play.screen_tint >> 16) & 0xff);
         // Stage: legacy letterbox mode borders
+#ifdef AGS_DELETE_FOR_3_6
         render_black_borders();
+#endif
     }
 
     if (play.screen_is_faded_out != 0 && gfxDriver->RequiresFullRedrawEachFrame())
@@ -2505,7 +2625,9 @@ void construct_engine_overlay()
             gfxDriver->UpdateDDBFromBitmap(debugConsole, debugConsoleBuffer, false);
 
         gfxDriver->DrawSprite(0, 0, debugConsole);
+#ifdef AGS_DELETE_FOR_3_6
         invalidate_sprite(0, 0, debugConsole, false);
+#endif
     }
 
     if (display_fps)
@@ -2542,7 +2664,9 @@ void render_graphics(IDriverDependantBitmap *extraBitmap, int extraX, int extraY
     // NOTE: extraBitmap will always be drawn with the UI render stage
     if (extraBitmap != nullptr)
     {
+#ifdef AGS_DELETE_FOR_3_6
         invalidate_sprite(extraX, extraY, extraBitmap, false);
+#endif
         gfxDriver->DrawSprite(extraX, extraY, extraBitmap);
     }
     construct_game_screen_overlay(true);

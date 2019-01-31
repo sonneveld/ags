@@ -54,6 +54,7 @@ void Test_File()
     //-----------------------------------------------------
     // Operations
     Stream *out = File::OpenFile("test.tmp", AGS::Common::kFile_CreateAlways, AGS::Common::kFile_Write);
+    assert(out != nullptr);
 
     out->WriteInt16(10);
     out->WriteInt64(-20202);
@@ -140,6 +141,7 @@ void Test_File()
     //-------------------------------------------------------------------------
 
     Stream *in = File::OpenFile("test.tmp", AGS::Common::kFile_Open, AGS::Common::kFile_Read);
+    assert(in != nullptr);
 
     int16_t int16val    = in->ReadInt16();
     int64_t int64val    = in->ReadInt64();

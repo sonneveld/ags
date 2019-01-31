@@ -41,6 +41,7 @@
 #include "main/game_run.h"
 #include "util/stream.h"
 #include "media/audio/audio_system.h"
+#include "main/game_run.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -69,9 +70,13 @@ Bitmap *fli_target = nullptr;
 int fliTargetWidth, fliTargetHeight;
 int check_if_user_input_should_cancel_video()
 {
-    int key;
-    if (run_service_key_controls(key)) {
-        if ((key==27) && (canabort==1))
+    process_pending_events();
+
+    SDL_Event kpEvent = getTextEventFromQueue();
+    int kp = asciiFromEvent(kpEvent);
+    auto keyAvailable = run_service_key_controls(kpEvent);
+    if (keyAvailable && kp > 0) {
+        if ((kp==ASCII_ESCAPE) && (canabort==1))
             return 1;
         if (canabort >= 2)
             return 1;  // skip on any key
@@ -221,8 +226,10 @@ void play_flc_file(int numb,int playflags) {
     delete hicol_buf;
     hicol_buf=nullptr;
     //  SetVirtualScreen(screen); wputblock(0,0,backbuffer,0);
-    while (ags_mgetbutton()!=NONE) { } // clear any queued mouse events.
-    invalidate_screen();
+    for(;;) {
+        process_pending_events();
+        if (ags_mgetbutton() == NONE) { break; }
+    }
 }
 
 // FLIC player end
@@ -450,7 +457,6 @@ void play_theora_video(const char *name, int skip, int flags)
     gfxDriver->DestroyDDB(fli_ddb);
     fli_target = nullptr;
     fli_ddb = nullptr;
-    invalidate_screen();
 }
 // Theora player end
 

@@ -104,7 +104,6 @@ ResourcePaths ResPaths;
 
 t_engine_pre_init_callback engine_pre_init_callback = nullptr;
 
-#define ALLEGRO_KEYBOARD_HANDLER
 
 bool engine_init_allegro()
 {
@@ -419,6 +418,8 @@ void engine_locate_audio_pak()
     }
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void engine_init_keyboard()
 {
 #ifdef ALLEGRO_KEYBOARD_HANDLER
@@ -428,12 +429,16 @@ void engine_init_keyboard()
 #endif
 }
 
+#endif
+
 void engine_init_timer()
 {
     Debug::Printf(kDbgMsg_Init, "Install timer");
 
     skipMissedTicks();
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 bool try_install_sound(int digi_id, int midi_id, String *p_err_msg = nullptr)
 {
@@ -575,6 +580,7 @@ void engine_init_audio()
         usetup.mod_player = 0;
     }
 
+
 #if AGS_PLATFORM_OS_WINDOWS
     if (digi_card == DIGI_DIRECTX(0))
     {
@@ -582,11 +588,32 @@ void engine_init_audio()
         use_extra_sound_offset = 1;
     }
 #endif
+
 }
+
+#endif
+
+
+void engine_init_audio()
+{
+    Debug::Printf("Initialise sound drivers");
+    audio_core_init();
+    usetup.mod_player = 1;
+    our_eip = -181;
+
+    if (usetup.digicard == DIGI_NONE)
+    {
+        // disable speech and music if no digital sound
+        // therefore the MIDI soundtrack will be used if present,
+        // and the voice mode should not go to Voice Only
+        play.want_speech = -2;
+        play.separate_music_lib = 0;
+    }
+}
+
 
 void engine_init_debug()
 {
-    //set_volume(255,-1);
     if ((debug_flags & (~DBG_DEBUGMODE)) >0) {
         platform->DisplayAlert("Engine debugging enabled.\n"
             "\nNOTE: You have selected to enable one or more engine debugging options.\n"
@@ -786,6 +813,8 @@ int engine_check_font_was_loaded()
     return 0;
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void engine_init_modxm_player()
 {
 #ifndef PSP_NO_MOD_PLAYBACK
@@ -805,6 +834,8 @@ void engine_init_modxm_player()
     Debug::Printf(kDbgMsg_Init, "Compiled without MOD/XM player");
 #endif
 }
+
+#endif
 
 // Do the preload graphic if available
 void show_preload()
@@ -1133,6 +1164,8 @@ void engine_setup_scsystem_auxiliary()
     }
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void engine_update_mp3_thread()
 {
     update_mp3_thread();
@@ -1163,12 +1196,16 @@ void engine_start_multithreaded_audio()
   }
 }
 
+#endif
+
 void engine_prepare_to_start_game()
 {
     Debug::Printf("Prepare to start game");
 
     engine_setup_scsystem_auxiliary();
+#ifdef AGS_DELETE_FOR_3_6
     engine_start_multithreaded_audio();
+#endif
 
 #if AGS_PLATFORM_OS_ANDROID
     if (psp_load_latest_savegame)
@@ -1476,9 +1513,13 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     engine_init_fonts();
 
+#ifdef AGS_DELETE_FOR_3_6
+
     our_eip = -195;
 
     engine_init_keyboard();
+
+#endif
 
     our_eip = -196;
 
@@ -1534,7 +1575,9 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     our_eip = -179;
 
+#ifdef AGS_DELETE_FOR_3_6
     engine_init_modxm_player();
+#endif
 
     engine_init_resolution_settings(game.GetGameRes());
 
@@ -1544,9 +1587,7 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     SetMultitasking(0);
 
-    // [ER] 2014-03-13
-    // Hide the system cursor via allegro
-    show_os_cursor(MOUSE_CURSOR_NONE);
+    SDL_ShowCursor(SDL_DISABLE);
 
     show_preload();
 
@@ -1574,65 +1615,38 @@ bool engine_try_set_gfxmode_any(const ScreenSetup &setup)
     if (!graphics_mode_init_any(game.GetGameRes(), setup, ColorDepthOption(game.GetColorDepth())))
         return false;
 
-    engine_post_gfxmode_setup(init_desktop);
+    const Size ignored;
+    engine_post_gfxmode_setup(ignored);
+
     return true;
 }
 
+static Uint32 lastFullscreenToggle = 0;
+
 bool engine_try_switch_windowed_gfxmode()
 {
-    if (!gfxDriver || !gfxDriver->IsModeSet())
-        return false;
+    if (!gfxDriver) { return false; }
+    if (!gfxDriver->IsModeSet()) { return false; }
 
-    // Keep previous mode in case we need to revert back
-    DisplayMode old_dm = gfxDriver->GetDisplayMode();
-    GameFrameSetup old_frame = graphics_mode_get_render_frame();
-
-    // Release engine resources that depend on display mode
-    engine_pre_gfxmode_release();
-
-    Size init_desktop = get_desktop_size();
-    bool switch_to_windowed = !old_dm.Windowed;
-    ActiveDisplaySetting setting = graphics_mode_get_last_setting(switch_to_windowed);
-    DisplayMode last_opposite_mode = setting.Dm;
-    GameFrameSetup use_frame_setup = setting.FrameSetup;
+    auto timeSinceLastToggle = SDL_GetTicks() - lastFullscreenToggle;
+    if (timeSinceLastToggle < 250) { return false; }
+    lastFullscreenToggle = SDL_GetTicks();
     
-    // If there are saved parameters for given mode (fullscreen/windowed)
-    // then use them, if there are not, get default setup for the new mode.
-    bool res;
-    if (last_opposite_mode.IsValid())
-    {
-        res = graphics_mode_set_dm(last_opposite_mode);
-    }
-    else
-    {
-        // we need to clone from initial config, because not every parameter is set by graphics_mode_get_defaults()
-        DisplayModeSetup dm_setup = usetup.Screen.DisplayMode;
-        dm_setup.Windowed = !old_dm.Windowed;
-        graphics_mode_get_defaults(dm_setup.Windowed, dm_setup.ScreenSize, use_frame_setup);
-        res = graphics_mode_set_dm_any(game.GetGameRes(), dm_setup, old_dm.ColorDepth, use_frame_setup);
-    }
-
-    // Apply corresponding frame render method
-    if (res)
-        res = graphics_mode_set_render_frame(use_frame_setup);
+    graphics_mode_toggle_full_screen();
     
-    if (!res)
-    {
-        // If failed, try switching back to previous gfx mode
-        res = graphics_mode_set_dm(old_dm) &&
-              graphics_mode_set_render_frame(old_frame);
-    }
+    const Size ignored;
+    engine_post_gfxmode_setup(ignored);
 
-    if (res)
-    {
-        // If succeeded (with any case), update engine objects that rely on
-        // active display mode.
-        if (gfxDriver->GetDisplayMode().Windowed)
-            init_desktop = get_desktop_size();
-        engine_post_gfxmode_setup(init_desktop);
-    }
     ags_clear_input_buffer();
-    return res;
+
+    return true;
+}
+
+void engine_on_window_size_changed() 
+{
+    graphics_mode_on_window_size_changed();
+    Size ignored;
+    engine_post_gfxmode_setup(ignored);
 }
 
 void engine_shutdown_gfxmode()

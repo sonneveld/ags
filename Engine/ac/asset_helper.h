@@ -51,8 +51,16 @@ AssetPath get_voice_over_assetpath(const String &filename);
 // This function is supposed to be used only when you have to create Allegro
 // object, passing PACKFILE stream to constructor.
 PACKFILE *PackfileFromAsset(const AssetPath &path);
-// Creates DUMBFILE stream from AGS asset. Used for creating DUMB objects
-DUMBFILE *DUMBfileFromAsset(const AssetPath &path);
 bool DoesAssetExistInLib(const AssetPath &assetname);
+
+// helper class to temporarily set asset library and revert when out of scope.
+class WithAssetLibrary {
+public:
+    WithAssetLibrary(const String &assetlib);
+    ~WithAssetLibrary();
+private:
+    bool needsetback = false;
+};
+
 
 #endif // __AGS_EE_AC__ASSETHELPER_H

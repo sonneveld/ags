@@ -18,6 +18,8 @@
 #ifndef __AGS_EE_MAIN__GAMERUN_H
 #define __AGS_EE_MAIN__GAMERUN_H
 
+#include "SDL.h"
+
 namespace AGS { namespace Engine { class IDriverDependantBitmap; }}
 using namespace AGS::Engine; // FIXME later
 
@@ -39,6 +41,6 @@ void UpdateGameOnce(bool checkControls = false, IDriverDependantBitmap *extraBit
 float get_current_fps();
 // Runs service key controls, returns false if service key combinations were handled
 // and no more processing required, otherwise returns true and provides current keycode and key shifts.
-bool run_service_key_controls(int &kgn);
+bool run_service_key_controls(SDL_Event kgn);
 
 #endif // __AGS_EE_MAIN__GAMERUN_H

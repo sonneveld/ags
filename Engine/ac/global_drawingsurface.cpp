@@ -60,7 +60,6 @@ void RawRestoreScreen() {
     }
     PBitmap deston = thisroom.BgFrames[play.bg_frame].Graphic;
     deston->Blit(raw_saved_screen, 0, 0, 0, 0, deston->GetWidth(), deston->GetHeight());
-    invalidate_screen();
     mark_current_background_dirty();
 }
 // Restores the backup bitmap, but tints it to the specified level
@@ -78,7 +77,6 @@ void RawRestoreScreenTinted(int red, int green, int blue, int opacity) {
 
     PBitmap deston = thisroom.BgFrames[play.bg_frame].Graphic;
     tint_image(deston.get(), raw_saved_screen, red, green, blue, opacity);
-    invalidate_screen();
     mark_current_background_dirty();
 }
 
@@ -106,7 +104,6 @@ void RawDrawFrameTransparent (int frame, int translev) {
         GfxUtil::DrawSpriteWithTransparency (RAW_SURFACE(), bg.get(), 0, 0,
             GfxDef::Trans100ToAlpha255(translev));
     }
-    invalidate_screen();
     mark_current_background_dirty();
     RAW_END();
 }
@@ -115,7 +112,6 @@ void RawClear (int clr) {
     RAW_START();
     clr = RAW_SURFACE()->GetCompatibleColor(clr);
     RAW_SURFACE()->Clear (clr);
-    invalidate_screen();
     mark_current_background_dirty();
 }
 void RawSetColor (int clr) {
@@ -141,7 +137,6 @@ void RawPrint (int xx, int yy, const char *text) {
     wouttext_outline(RAW_SURFACE(), xx, yy, play.normal_font, text_color, text);
     // we must invalidate the entire screen because these are room
     // co-ordinates, not screen co-ords which it works with
-    invalidate_screen();
     mark_current_background_dirty();
     RAW_END();
 }
@@ -162,7 +157,9 @@ void RawPrintMessageWrapped (int xx, int yy, int wid, int font, int msgm) {
     color_t text_color = play.raw_color;
     for (size_t i = 0; i < Lines.Count(); i++)
         wouttext_outline(RAW_SURFACE(), xx, yy + linespacing*i, font, text_color, Lines[i].GetCStr());
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_screen();
+#endif
     mark_current_background_dirty();
     RAW_END();
 }
@@ -177,7 +174,6 @@ void RawDrawImageCore(int xx, int yy, int slot, int alpha) {
     }
 
     draw_sprite_slot_support_alpha(RAW_SURFACE(), false, xx, yy, slot, kBlendMode_Alpha, alpha);
-    invalidate_screen();
     mark_current_background_dirty();
     RAW_END();
 }
@@ -247,7 +243,6 @@ void RawDrawImageResized(int xx, int yy, int gotSlot, int width, int height) {
 
     GfxUtil::DrawSpriteWithTransparency(RAW_SURFACE(), newPic, xx, yy);
     delete newPic;
-    invalidate_screen();
     mark_current_background_dirty();
     update_polled_stuff_if_runtime();  // this operation can be slow so stop music skipping
     RAW_END();
@@ -265,7 +260,6 @@ void RawDrawLine (int fromx, int fromy, int tox, int toy) {
         for (jj = 0; jj < get_fixed_pixel_size(1); jj++)
             bg->DrawLine (Line(fromx+ii, fromy+jj, tox+ii, toy+jj), draw_color);
     }
-    invalidate_screen();
     mark_current_background_dirty();
 }
 void RawDrawCircle (int xx, int yy, int rad) {
@@ -275,7 +269,6 @@ void RawDrawCircle (int xx, int yy, int rad) {
     play.raw_modified[play.bg_frame] = 1;
     PBitmap bg = thisroom.BgFrames[play.bg_frame].Graphic;
     bg->FillCircle(Circle (xx, yy, rad), play.raw_color);
-    invalidate_screen();
     mark_current_background_dirty();
 }
 void RawDrawRectangle(int x1, int y1, int x2, int y2) {
@@ -285,7 +278,6 @@ void RawDrawRectangle(int x1, int y1, int x2, int y2) {
 
     PBitmap bg = thisroom.BgFrames[play.bg_frame].Graphic;
     bg->FillRect(Rect(x1,y1,x2,y2), play.raw_color);
-    invalidate_screen();
     mark_current_background_dirty();
 }
 void RawDrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3) {
@@ -296,6 +288,5 @@ void RawDrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3) {
 
     PBitmap bg = thisroom.BgFrames[play.bg_frame].Graphic;
     bg->DrawTriangle(Triangle (x1,y1,x2,y2,x3,y3), play.raw_color);
-    invalidate_screen();
     mark_current_background_dirty();
 }

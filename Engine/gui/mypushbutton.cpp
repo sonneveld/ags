@@ -70,12 +70,17 @@ void MyPushButton::draw(Bitmap *ds)
 }
 
 //extern const int LEFT;  // in mousew32
+extern void process_pending_events();
+extern int misbuttondown (int but);
 
 int MyPushButton::pressedon(int mousex, int mousey)
 {
     int wasstat;
-    while (mbutrelease(LEFT) == 0) {
-
+    // INNER GAME LOOP - holding push button.
+    for (;;) {
+        process_pending_events();
+        if (!misbuttondown(LEFT)) { break; }
+        
         wasstat = state;
         state = mouseisinarea(mousex, mousey);
         // stop mp3 skipping if button held down

@@ -55,7 +55,11 @@ void DrawingSurface_Release(ScriptDrawingSurface* sds)
         {
             if (sds->roomBackgroundNumber == play.bg_frame)
             {
+#ifdef AGS_DELETE_FOR_3_6
+
                 invalidate_screen();
+
+#endif
                 mark_current_background_dirty();
             }
             play.raw_modified[sds->roomBackgroundNumber] = 1;

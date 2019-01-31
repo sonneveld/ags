@@ -40,13 +40,6 @@
 #include "util/string_compat.h"
 #include "media/audio/audio_system.h"
 
-#ifndef AGS_NO_VIDEO_PLAYER
-extern void dxmedia_abort_video();
-extern void dxmedia_pause_video();
-extern void dxmedia_resume_video();
-extern char lastError[200];
-#endif
-
 using namespace AGS::Common;
 using namespace AGS::Engine;
 
@@ -91,7 +84,6 @@ String win32OutputDirectory;
 
 const unsigned int win32TimerPeriod = 1;
 
-extern SetupReturnValue acwsetup(const ConfigTree &cfg_in, ConfigTree &cfg_out, const String &game_data_dir, const char*, const char*);
 
 struct AGSWin32 : AGSPlatformDriver {
   AGSWin32();
@@ -131,7 +123,6 @@ struct AGSWin32 : AGSPlatformDriver {
   virtual void RestoreWindowStyle();
   virtual void RegisterGameWithGameExplorer();
   virtual void UnRegisterGameWithGameExplorer();
-  virtual int  ConvertKeycodeToScanCode(int keyCode);
   virtual void ValidateWindowSize(int &x, int &y, bool borderless) const;
   virtual bool LockMouseToWindow();
   virtual void UnlockMouse();
@@ -537,9 +528,6 @@ void AGSWin32::PostAllegroInit(bool windowed)
 
   // Set the Windows timer resolution to 1 ms so that calls to
   // Sleep() don't take more time than specified
-  MMRESULT result = timeBeginPeriod(win32TimerPeriod);
-  if (result != TIMERR_NOERROR)
-    Debug::Printf(kDbgMsg_Error, "Failed to set the timer resolution to %d ms", win32TimerPeriod);
 }
 
 typedef UINT (CALLBACK* Dynamic_SHGetKnownFolderPathType) (GUID& rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath); 
@@ -723,35 +711,23 @@ const char *AGSWin32::GetGraphicsTroubleshootingText()
 
 void AGSWin32::DisplaySwitchOut()
 {
-    // If we have explicitly set up fullscreen mode then minimize the window
-    if (_preFullscreenMode.IsValid())
-        ShowWindow(win_get_window(), SW_MINIMIZE);
 }
 
 void AGSWin32::DisplaySwitchIn() {
-    // If we have explicitly set up fullscreen mode then restore the window
-    if (_preFullscreenMode.IsValid())
-        ShowWindow(win_get_window(), SW_RESTORE);
 }
 
 void AGSWin32::PauseApplication()
 {
-#ifndef AGS_NO_VIDEO_PLAYER
-  dxmedia_pause_video();
-#endif
 }
 
 void AGSWin32::ResumeApplication()
 {
-#ifndef AGS_NO_VIDEO_PLAYER
-  dxmedia_resume_video();
-#endif
 }
 
 void AGSWin32::GetSystemDisplayModes(std::vector<DisplayMode> &dms)
 {
     dms.clear();
-    GFX_MODE_LIST *gmlist = get_gfx_mode_list(GFX_DIRECTX);
+    GFX_MODE_LIST *gmlist = get_gfx_mode_list(GFX_SDL2_WINDOW);
     for (int i = 0; i < gmlist->num_modes; ++i)
     {
         const GFX_MODE &m = gmlist->mode[i];
@@ -794,26 +770,10 @@ bool AGSWin32::ExitFullscreenMode()
 
 void AGSWin32::AdjustWindowStyleForFullscreen()
 {
-  // Remove the border in full-screen mode
-  Size sz;
-  get_desktop_resolution(&sz.Width, &sz.Height);
-  HWND allegro_wnd = win_get_window();
-  LONG winstyle = GetWindowLong(allegro_wnd, GWL_STYLE);
-  SetWindowLong(allegro_wnd, GWL_STYLE, (winstyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP);
-  SetWindowPos(allegro_wnd, HWND_TOP, 0, 0, sz.Width, sz.Height, 0);
 }
 
 void AGSWin32::RestoreWindowStyle()
 {
-  // Restore allegro window styles in case we modified them
-  restore_window_style();
-  HWND allegro_wnd = win_get_window();
-  LONG winstyle = GetWindowLong(allegro_wnd, GWL_STYLE);
-  SetWindowLong(allegro_wnd, GWL_STYLE, (winstyle & ~WS_POPUP)/* | WS_OVERLAPPEDWINDOW*/);
-  // For uncertain reasons WS_EX_TOPMOST (applied when creating fullscreen)
-  // cannot be removed with style altering functions; here use SetWindowPos
-  // as a workaround
-  SetWindowPos(win_get_window(), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 int AGSWin32::CDPlayerCommand(int cmdd, int datt) {
@@ -825,17 +785,6 @@ int AGSWin32::CDPlayerCommand(int cmdd, int datt) {
 }
 
 void AGSWin32::DisplayAlert(const char *text, ...) {
-  char displbuf[2500];
-  va_list ap;
-  va_start(ap, text);
-  vsprintf(displbuf, text, ap);
-  va_end(ap);
-  if (_guiMode)
-    MessageBox(win_get_window(), displbuf, "Adventure Game Studio", MB_OK | MB_ICONEXCLAMATION);
-  else if (_logToStdErr)
-    AGSWin32::WriteStdErr("%s", displbuf);
-  else
-    AGSWin32::WriteStdOut("%s", displbuf);
 }
 
 int AGSWin32::GetLastSystemError()
@@ -897,74 +846,24 @@ int AGSWin32::InitializeCDPlayer() {
 #ifndef AGS_NO_VIDEO_PLAYER
 
 void AGSWin32::PlayVideo(const char *name, int skip, int flags) {
-
-  char useloc[250];
-  sprintf(useloc, "%s\\%s", ResPaths.DataDir.GetCStr(), name);
-
-  bool useSound = true;
-  if (flags >= 10) {
-    flags -= 10;
-    useSound = false;
-  }
-  else {
-    // for some reason DirectSound can't be shared, so uninstall
-    // allegro sound before playing the video
-    shutdown_sound();
-  }
-
-  bool isError = false;
-  if (Common::File::TestReadFile(useloc))
-  {
-    isError = (gfxDriver->PlayVideo(useloc, useSound, (VideoSkipType)skip, (flags > 0)) == 0);
-  }
-  else
-  {
-    isError = true;
-    sprintf(lastError, "File not found: %s", useloc);
-  }
-  
-  if (isError) {
-    // turn "Always display as speech" off, to make sure error
-    // gets displayed correctly
-    int oldalways = game.options[OPT_ALWAYSSPCH];
-    game.options[OPT_ALWAYSSPCH] = 0;
-    Display("Video playing error: %s", lastError);
-    game.options[OPT_ALWAYSSPCH] = oldalways;
-  }
-
-  if (useSound)
-  {
-    // Restore sound system
-    install_sound(usetup.digicard,usetup.midicard,NULL);
-    if (usetup.mod_player)
-      init_mod_player(NUM_MOD_DIGI_VOICES);
-  }
-
-  set_palette_range(palette, 0, 255, 0);
 }
 
 #endif
 
 void AGSWin32::AboutToQuitGame() 
 {
-#ifndef AGS_NO_VIDEO_PLAYER
-  dxmedia_abort_video();
-#endif
 }
 
 void AGSWin32::PostAllegroExit() {
   // Release the timer setting
-  timeEndPeriod(win32TimerPeriod);
 }
 
 SetupReturnValue AGSWin32::RunSetup(const ConfigTree &cfg_in, ConfigTree &cfg_out)
 {
-  String version_str = String::FromFormat("Adventure Game Studio v%s setup", get_engine_version());
-  return AGS::Engine::WinSetup(cfg_in, cfg_out, usetup.data_files_dir, version_str);
+  return kSetup_Cancel;
 }
 
 void AGSWin32::SetGameWindowIcon() {
-  SetWinIcon();
 }
 
 void AGSWin32::WriteStdOut(const char *fmt, ...) {
@@ -1008,26 +907,12 @@ void AGSWin32::WriteStdErr(const char *fmt, ...) {
 }
 
 void AGSWin32::ShutdownCDPlayer() {
-  cd_exit();
 }
 
-extern "C" const unsigned char hw_to_mycode[256];
-
-int AGSWin32::ConvertKeycodeToScanCode(int keycode)
-{
-  // ** HIDEOUS HACK TO WORK AROUND ALLEGRO BUG
-  // the key[] array is hardcoded to qwerty keyboards, so we
-  // have to re-map it to make it work on other keyboard layouts
-  keycode += ('a' - 'A');
-  int vkey = VkKeyScan(keycode);
-  int scancode = MapVirtualKey(vkey, MAPVK_VK_TO_VSC);
-  if ((scancode >= 0) && (scancode < 256))
-    keycode = hw_to_mycode[scancode];
-  return keycode;
-}
 
 void AGSWin32::ValidateWindowSize(int &x, int &y, bool borderless) const
 {
+#ifdef AGS_DELETE_FOR_3_6
     // MS Windows DirectDraw and Direct3D renderers do not support a window
     // which exceeds the height of current desktop resolution
     RECT rc;
@@ -1053,23 +938,16 @@ void AGSWin32::ValidateWindowSize(int &x, int &y, bool borderless) const
     }
     x = Math::Clamp(x, 1, cx);
     y = Math::Clamp(y, 1, cy);
+#endif
 }
 
 bool AGSWin32::LockMouseToWindow()
 {
-    RECT rc;
-    HWND allegro_wnd = win_get_window();
-    GetClientRect(allegro_wnd, &rc);
-    ClientToScreen(allegro_wnd, (POINT*)&rc);
-    ClientToScreen(allegro_wnd, (POINT*)&rc.right);
-    --rc.right;
-    --rc.bottom;
-    return ::ClipCursor(&rc) != 0;
+  return false;
 }
 
 void AGSWin32::UnlockMouse()
 {
-    ::ClipCursor(NULL);
 }
 
 AGSPlatformDriver* AGSPlatformDriver::GetDriver() {
@@ -1081,39 +959,34 @@ AGSPlatformDriver* AGSPlatformDriver::GetDriver() {
 
 // *********** WINDOWS-SPECIFIC PLUGIN API FUNCTIONS *************
 
+#ifdef AGS_DELETE_FOR_3_6
+
 HWND IAGSEngine::GetWindowHandle () {
-  return win_get_window();
+    quit("!This plugin is not compatible with the Direct3D driver.");
+    return NULL;
 }
 LPDIRECTDRAW2 IAGSEngine::GetDirectDraw2 () {
-  if (directdraw == NULL)
     quit("!This plugin requires DirectDraw based graphics driver (software driver).");
-
-  return directdraw;
+    return NULL;
 }
 LPDIRECTDRAWSURFACE2 IAGSEngine::GetBitmapSurface (BITMAP *bmp) 
 {
-  if (directdraw == NULL)
     quit("!This plugin requires DirectDraw based graphics driver (software driver).");
-
-  BMP_EXTRA_INFO *bei = (BMP_EXTRA_INFO*)bmp->extra;
-
-  if (bmp == gfxDriver->GetMemoryBackBuffer()->GetAllegroBitmap())
-    invalidate_screen();
-
-  return bei->surf;
+    return NULL;
 }
 
 LPDIRECTSOUND IAGSEngine::GetDirectSound() {
-  return directsound;
+  return NULL;
 }
 
 LPDIRECTINPUTDEVICE IAGSEngine::GetDirectInputKeyboard() {
-  return key_dinput_device;
+  return NULL;
 }
 
 LPDIRECTINPUTDEVICE IAGSEngine::GetDirectInputMouse() {
-  return mouse_dinput_device;
+  return NULL;
 }
 
+#endif
 
 #endif

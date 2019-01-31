@@ -48,7 +48,6 @@ extern GameState play;
 extern RoomStruct thisroom;
 extern CharacterInfo*playerchar;
 
-extern int convert_16bit_bgr;
 extern IGraphicsDriver *gfxDriver;
 extern SpriteCache spriteset;
 extern TreeMap *transtree;
@@ -67,7 +66,7 @@ String GetRuntimeInfo()
         "[Running %d x %d at %d-bit%s%s[GFX: %s; %s[Draw frame %d x %d["
         "Sprite cache size: %d KB (limit %d KB; %d locked)",
         EngineVersion.LongString.GetCStr(), game.GetGameRes().Width, game.GetGameRes().Height, game.GetColorDepth(),
-        mode.Width, mode.Height, mode.ColorDepth, (convert_16bit_bgr) ? " BGR" : "",
+        mode.Width, mode.Height, mode.ColorDepth, (false) ? " BGR" : "",
         mode.Windowed ? " W" : "",
         gfxDriver->GetDriverName(), filter->GetInfo().Name.GetCStr(),
         render_frame.GetWidth(), render_frame.GetHeight(),
@@ -80,8 +79,6 @@ String GetRuntimeInfo()
         runtimeInfo.Append("[Using translation ");
         runtimeInfo.Append(transFileName);
     }
-    if (usetup.mod_player == 0)
-        runtimeInfo.Append("[(mod/xm player discarded)");
 
     return runtimeInfo;
 }
@@ -116,13 +113,17 @@ void script_debug(int cmdd,int dataa) {
         view_bmp->StretchBlt(tempw, mask_src, RectWH(0, 0, viewport.GetWidth(), viewport.GetHeight()), Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
-        render_graphics(ddb, viewport.Left, viewport.Top);
-
+        for (;;) {
+            process_pending_events();
+            render_graphics(ddb, viewport.Left, viewport.Top);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        ags_wait_until_keypress();
-        invalidate_screen();
     }
     else if (cmdd==3) 
     {
@@ -177,12 +178,18 @@ void script_debug(int cmdd,int dataa) {
         view_bmp->StretchBlt(tempw, mask_src, RectWH(0, 0, viewport.GetWidth(), viewport.GetHeight()), Common::kBitmap_Transparency);
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
-        render_graphics(ddb, viewport.Left, viewport.Top);
-
+        
+        for (;;) {
+            process_pending_events();
+            render_graphics(ddb, viewport.Left, viewport.Top);
+            
+            SDL_Event kpEvent = getTextEventFromQueue();
+            int kp = asciiFromEvent(kpEvent);
+            if (kp > 0) { break; }
+        }
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        ags_wait_until_keypress();
     }
     else if (cmdd == 99)
         ccSetOption(SCOPT_DEBUGRUN, dataa);

@@ -44,19 +44,6 @@ public:
 } // namespace Engine
 } // namespace AGS
 
-
-#if AGS_PLATFORM_OS_WINDOWS
-#include "library_windows.h"
-
-#elif AGS_PLATFORM_OS_LINUX \
-   || AGS_PLATFORM_OS_MACOS \
-   || AGS_PLATFORM_OS_ANDROID
-#include "library_posix.h"
-
-#elif AGS_PLATFORM_OS_IOS
-#include "library_dummy.h"
-
-#endif
-
+#include "library_sdl2.h"
 
 #endif // __AGS_EE_UTIL__MUTEX_H

@@ -344,7 +344,9 @@ void restore_after_dialog() {
     set_mouse_cursor(oldmouse);
     if (!play.mouse_cursor_hidden)
         ags_domouse(DOMOUSE_DISABLE);
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_screen();
+#endif
 }
 
 
@@ -441,6 +443,7 @@ bool SetCustomSaveParent(const String &path)
     return false;
 }
 
+// set global variable 'saveGameDirectory'
 bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
 {
     if (!newFolder || newFolder[0] == 0)
@@ -943,11 +946,14 @@ ScriptCamera* Game_GetAnyCamera(int index)
 
 void Game_SimulateKeyPress(int key)
 {
-    int platformKey = GetKeyForKeyPressCb(key);
+    // Not implemented yet.
+#if 0
+int platformKey = GetKeyForKeyPressCb(key);
     platformKey = PlatformKeyFromAgsKey(platformKey);
     if (platformKey >= 0) {
         simulate_keypress(platformKey);
     }
+#endif
 }
 
 //=============================================================================
@@ -1788,14 +1794,29 @@ void start_skipping_cutscene () {
 
 }
 
-void check_skip_cutscene_keypress (int kgn) {
-
-    CutsceneSkipStyle skip = get_cutscene_skipstyle();
-    if (skip == eSkipSceneAnyKey || skip == eSkipSceneKeyMouse ||
-        (kgn == 27 && (skip == eSkipSceneEscOnly || skip == eSkipSceneEscOrRMB)))
-    {
-        start_skipping_cutscene();
+bool check_skip_cutscene_keypress (int kgn) {
+    auto keyUsed = false;
+    switch (get_cutscene_skipstyle()) {
+        case eSkipSceneEscOnly: // esc only
+        case eSkipSceneEscOrRMB: // esc or right mouse button
+            if (kgn == ASCII_ESCAPE) {
+                start_skipping_cutscene();
+                keyUsed = true;
+            }
+            break;
+            
+        case eSkipSceneAnyKey: // any key
+        case eSkipSceneKeyMouse: // key or mouse click
+            start_skipping_cutscene();
+            keyUsed = true;
+            break;
+            
+        case eSkipSceneMouse: // mouse click
+        default:
+            // do nothing
+            break;
     }
+    return keyUsed;
 }
 
 // Helper functions used by StartCutscene/EndCutscene, but also
@@ -1981,10 +2002,6 @@ void display_switch_in_resume()
         }
     }
     } // -- AudioChannelsLock
-
-    // clear the screen if necessary
-    if (gfxDriver && gfxDriver->UsesMemoryBackBuffer())
-        gfxDriver->ClearRectangle(0, 0, game.GetGameRes().Width - 1, game.GetGameRes().Height - 1, nullptr);
 
     platform->ResumeApplication();
 }

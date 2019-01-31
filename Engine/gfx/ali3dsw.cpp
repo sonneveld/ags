@@ -27,20 +27,11 @@
 #include "platform/base/agsplatformdriver.h"
 #include "ac/timer.h"
 
-#if AGS_DDRAW_GAMMA_CONTROL
-// NOTE: this struct and variables are defined internally in Allegro
-typedef struct DDRAW_SURFACE {
-    LPDIRECTDRAWSURFACE2 id;
-    int flags;
-    int lock_nesting;
-    BITMAP *parent_bmp;  
-    struct DDRAW_SURFACE *next;
-    struct DDRAW_SURFACE *prev;
-} DDRAW_SURFACE;
+#include "sdl2alleg.h"
 
-extern "C" extern LPDIRECTDRAW2 directdraw;
-extern "C" DDRAW_SURFACE *gfx_directx_primary_surface;
-#endif // AGS_DDRAW_GAMMA_CONTROL
+extern void process_pending_events();
+
+#include "ac/timer.h"
 
 #ifndef AGS_NO_VIDEO_PLAYER
 extern int dxmedia_play_video (const char*, bool, int, int);
@@ -79,9 +70,6 @@ ALSoftwareGraphicsDriver::ALSoftwareGraphicsDriver()
   _autoVsync = false;
   //_spareTintingScreen = nullptr;
   _gfxModeList = nullptr;
-#if AGS_DDRAW_GAMMA_CONTROL
-  dxGammaControl = nullptr;
-#endif
   _allegroScreenWrapper = nullptr;
   _origVirtualScreen = nullptr;
   virtualScreen = nullptr;
@@ -91,42 +79,27 @@ ALSoftwareGraphicsDriver::ALSoftwareGraphicsDriver()
   ALSoftwareGraphicsDriver::InitSpriteBatch(0, _spriteBatchDesc[0]);
 }
 
+void ALSoftwareGraphicsDriver::UpdateDeviceScreen(const Size &screenSize) {}
+
 bool ALSoftwareGraphicsDriver::IsModeSupported(const DisplayMode &mode)
 {
-  if (mode.Width <= 0 || mode.Height <= 0 || mode.ColorDepth <= 0)
+  if (mode.Width <= 0 || mode.Height <= 0)
   {
-    set_allegro_error("Invalid resolution parameters: %d x %d x %d", mode.Width, mode.Height, mode.ColorDepth);
+    set_allegro_error("Invalid resolution parameters: %d x %d x %d", mode.Width, mode.Height);
     return false;
   }
-#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_MACOS
-  // Everything is drawn to a virtual screen, so all resolutions are supported.
-  return true;
-#endif
 
-  if (mode.Windowed)
-  {
-    return true;
+  switch (mode.ColorDepth) {
+    case 8:
+    case 16:
+    case 32:
+      break;
+    default:
+      set_allegro_error("Invalid colour depth: %d", mode.ColorDepth);
+      return false;
   }
-  if (_gfxModeList == nullptr)
-  {
-    _gfxModeList = get_gfx_mode_list(GetAllegroGfxDriverID(mode.Windowed));
-  }
-  if (_gfxModeList != nullptr)
-  {
-    // if a list is available, check if the mode exists. This prevents the screen flicking
-    // between loads of unsupported resolutions
-    for (int i = 0; i < _gfxModeList->num_modes; i++)
-    {
-      if ((_gfxModeList->mode[i].width == mode.Width) &&
-        (_gfxModeList->mode[i].height == mode.Height) &&
-        (_gfxModeList->mode[i].bpp == mode.ColorDepth))
-      {
-        return true;
-      }
-    }
-    set_allegro_error("This graphics mode is not supported");
-    return false;
-  }
+
+  // Everything is drawn to a virtual screen, so all resolutions are supported.
   return true;
 }
 
@@ -158,24 +131,7 @@ PGfxFilter ALSoftwareGraphicsDriver::GetGraphicsFilter() const
 
 int ALSoftwareGraphicsDriver::GetAllegroGfxDriverID(bool windowed)
 {
-#if AGS_PLATFORM_OS_WINDOWS
-  if (windowed)
-    return GFX_DIRECTX_WIN;
-  return GFX_DIRECTX;
-#elif AGS_PLATFORM_OS_LINUX && (!defined (ALLEGRO_MAGIC_DRV))
-  if (windowed)
-    return GFX_XWINDOWS;
-  return GFX_XWINDOWS_FULLSCREEN;
-#elif AGS_PLATFORM_OS_MACOS
-    if (windowed) {
-        return GFX_COCOAGL_WINDOW;
-    }
-    return GFX_COCOAGL_FULLSCREEN;
-#else
-  if (windowed)
-    return GFX_AUTODETECT_WINDOWED;
-  return GFX_AUTODETECT_FULLSCREEN;
-#endif
+  return windowed ? GFX_SDL2_WINDOW : GFX_SDL2_FULLSCREEN;
 }
 
 void ALSoftwareGraphicsDriver::SetGraphicsFilter(PALSWFilter filter)
@@ -194,6 +150,8 @@ void ALSoftwareGraphicsDriver::SetTintMethod(TintMethod method)
 
 bool ALSoftwareGraphicsDriver::SetDisplayMode(const DisplayMode &mode, volatile int *loopTimer)
 {
+  if (!IsModeSupported(mode)) { return false; }
+
   ReleaseDisplayMode();
 
   const int driver = GetAllegroGfxDriverID(mode.Windowed);
@@ -203,9 +161,8 @@ bool ALSoftwareGraphicsDriver::SetDisplayMode(const DisplayMode &mode, volatile 
   if (_initGfxCallback != nullptr)
     _initGfxCallback(nullptr);
 
-  if (!IsModeSupported(mode) || set_gfx_mode(driver, mode.Width, mode.Height, 0, 0) != 0)
-    return false;
-
+  if (set_gfx_mode(driver, mode.Width, mode.Height, 0, 0 ) != 0) { return false; }
+   
   OnInit(loopTimer);
   OnModeSet(mode);
   // set_gfx_mode is an allegro function that creates screen bitmap;
@@ -216,21 +173,6 @@ bool ALSoftwareGraphicsDriver::SetDisplayMode(const DisplayMode &mode, volatile 
 
   // If we already have a gfx filter, then use it to update virtual screen immediately
   CreateVirtualScreen();
-
-#if AGS_DDRAW_GAMMA_CONTROL
-  if (!mode.Windowed)
-  {
-    memset(&ddrawCaps, 0, sizeof(ddrawCaps));
-    ddrawCaps.dwSize = sizeof(ddrawCaps);
-    IDirectDraw2_GetCaps(directdraw, &ddrawCaps, NULL);
-
-    if ((ddrawCaps.dwCaps2 & DDCAPS2_PRIMARYGAMMA) == 0) { }
-    else if (IDirectDrawSurface2_QueryInterface(gfx_directx_primary_surface->id, IID_IDirectDrawGammaControl, (void **)&dxGammaControl) == 0) 
-    {
-      dxGammaControl->GetGammaRamp(0, &defaultGammaRamp);
-    }
-  }
-#endif
 
   return true;
 }
@@ -272,14 +214,6 @@ void ALSoftwareGraphicsDriver::ReleaseDisplayMode()
 {
   OnModeReleased();
   ClearDrawLists();
-
-#if AGS_DDRAW_GAMMA_CONTROL
-  if (dxGammaControl != NULL) 
-  {
-    dxGammaControl->Release();
-    dxGammaControl = NULL;
-  }
-#endif
 
   DestroyVirtualScreen();
 
@@ -333,32 +267,11 @@ void ALSoftwareGraphicsDriver::UnInit()
 
 bool ALSoftwareGraphicsDriver::SupportsGammaControl() 
 {
-#if AGS_DDRAW_GAMMA_CONTROL
-
-  if (dxGammaControl != NULL) 
-  {
-    return 1;
-  }
-
-#endif
-
   return 0;
 }
 
 void ALSoftwareGraphicsDriver::SetGamma(int newGamma)
 {
-#if AGS_DDRAW_GAMMA_CONTROL
-  for (int i = 0; i < 256; i++) {
-    int newValue = ((int)defaultGammaRamp.red[i] * newGamma) / 100;
-    if (newValue >= 65535)
-      newValue = 65535;
-    gammaRamp.red[i] = newValue;
-    gammaRamp.green[i] = newValue;
-    gammaRamp.blue[i] = newValue;
-  }
-
-  dxGammaControl->SetGammaRamp(0, &gammaRamp);
-#endif
 }
 
 int ALSoftwareGraphicsDriver::GetCompatibleBitmapFormat(int color_depth)
@@ -573,6 +486,7 @@ void ALSoftwareGraphicsDriver::Render(int xoff, int yoff, GlobalFlipType flip)
     _filter->RenderScreen(virtualScreen, xoff, yoff);
   else
     _filter->RenderScreenFlipped(virtualScreen, xoff, yoff, flip);
+    sdl2_present_screen();
 }
 
 void ALSoftwareGraphicsDriver::Render()
@@ -645,6 +559,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *vs, void(*draw_callback
 
    Bitmap *bmp_buff = new Bitmap(bmp_orig->GetWidth(), bmp_orig->GetHeight(), col_depth);
    SetMemoryBackBuffer(bmp_buff);
+   // INNER GAME LOOP - highcolor fade in
    for (int a = 0; a < 256; a+=speed)
    {
        bmp_buff->Fill(clearColor);
@@ -657,6 +572,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *vs, void(*draw_callback
        }
        this->Vsync();
        _filter->RenderScreen(bmp_buff, offx, offy);
+       process_pending_events();
        if (_pollingCallback)
          _pollingCallback();
        WaitForNextFrame();
@@ -681,6 +597,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(Bitmap *vs, void(*draw_callbac
 
     Bitmap *bmp_buff = new Bitmap(bmp_orig->GetWidth(), bmp_orig->GetHeight(), col_depth);
     SetMemoryBackBuffer(bmp_buff);
+    // INNER GAME LOOP - highcolor fade out
     for (int a = 255 - speed; a > 0; a -= speed)
     {
         bmp_buff->Fill(clearColor);
@@ -693,6 +610,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(Bitmap *vs, void(*draw_callbac
         }
         this->Vsync();
         _filter->RenderScreen(bmp_buff, offx, offy);
+        process_pending_events();
         if (_pollingCallback)
           _pollingCallback();
         WaitForNextFrame();
@@ -729,6 +647,7 @@ void ALSoftwareGraphicsDriver::__fade_from_range(PALETTE source, PALETTE dest, i
    for (c=0; c<PAL_SIZE; c++)
       temp[c] = source[c];
 
+   // INNER GAME LOOP - software fade
    for (c=0; c<64; c+=speed) {
       fade_interpolate(source, dest, temp, c, from, to);
       set_palette_range(temp, from, to, TRUE);
@@ -786,6 +705,7 @@ void ALSoftwareGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int del
     Bitmap *bmp_buff = new Bitmap(bmp_orig->GetWidth(), bmp_orig->GetHeight(), bmp_orig->GetColorDepth());
     SetMemoryBackBuffer(bmp_buff);
 
+    // INNER GAME LOOP - software boxout effect
     while (boxwid < _srcRect.GetWidth()) {
       boxwid += speed;
       boxhit += yspeed;
@@ -802,6 +722,7 @@ void ALSoftwareGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int del
       this->Vsync();
       _filter->RenderScreen(bmp_buff, 0, 0);
     
+      process_pending_events();    
       if (_pollingCallback)
         _pollingCallback();
 
@@ -821,15 +742,14 @@ void ALSoftwareGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int del
 
 bool ALSoftwareGraphicsDriver::PlayVideo(const char *filename, bool useAVISound, VideoSkipType skipType, bool stretchToFullScreen)
 {
-#if AGS_PLATFORM_OS_WINDOWS
-  int result = dxmedia_play_video(filename, useAVISound, skipType, stretchToFullScreen ? 1 : 0);
-  return (result == 0);
-#else
   return 0;
-#endif
 }
 
 #endif
+
+void ALSoftwareGraphicsDriver::ToggleFullscreen() {
+  sdl2_toggle_fullscreen();
+}
 
 // add the alpha values together, used for compositing alpha images
 unsigned long _trans_alpha_blender32(unsigned long x, unsigned long y, unsigned long n)
@@ -862,7 +782,7 @@ ALSWGraphicsFactory::~ALSWGraphicsFactory()
 
 size_t ALSWGraphicsFactory::GetFilterCount() const
 {
-    return 2;
+    return 1;
 }
 
 const GfxFilterInfo *ALSWGraphicsFactory::GetFilterInfo(size_t index) const
@@ -871,8 +791,6 @@ const GfxFilterInfo *ALSWGraphicsFactory::GetFilterInfo(size_t index) const
     {
     case 0:
         return &AllegroGfxFilter::FilterInfo;
-    case 1:
-        return &HqxGfxFilter::FilterInfo;
     default:
         return nullptr;
     }
@@ -901,8 +819,6 @@ AllegroGfxFilter *ALSWGraphicsFactory::CreateFilter(const String &id)
 {
     if (AllegroGfxFilter::FilterInfo.Id.CompareNoCase(id) == 0)
         return new AllegroGfxFilter();
-    else if (HqxGfxFilter::FilterInfo.Id.CompareNoCase(id) == 0)
-        return new HqxGfxFilter();
     return nullptr;
 }
 

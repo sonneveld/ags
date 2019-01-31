@@ -108,7 +108,10 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
     return -1;
   }
 
+  // At this point, video is playing in the background, so just poll occasionally
+  // to see if we need to exit early.
 
+  // INNER GAME LOOP - waiting for video
   OAFilterState filterState = State_Running;
   while ((filterState != State_Stopped) && (!want_exit))
   {
@@ -119,8 +122,10 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
 
     filterState = graph->GetState();
 
-    int key;
-    if (run_service_key_controls(key)) {
+    // auto keyAvailable = run_service_key_controls(gkey);
+    if (rec_kbhit()) {
+      int key = rec_getch();
+      
       if ((canskip == 1) && (key == 27))
         break;
       if (canskip >= 2)

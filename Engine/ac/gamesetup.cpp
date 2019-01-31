@@ -12,8 +12,15 @@
 //
 //=============================================================================
 
+#include "core/platform.h"
 #include "util/wgt2allg.h" // DIGI_AUTODETECT & MIDI_AUTODETECT
 #include "ac/gamesetup.h"
+
+#if AGS_PLATFORM_OS_WINDOWS
+static const MouseControlWhen defaultMouseControl = kMouseCtrl_Fullscreen;
+#else
+static const MouseControlWhen defaultMouseControl = kMouseCtrl_Never;
+#endif
 
 GameSetup::GameSetup()
 {
@@ -29,8 +36,8 @@ GameSetup::GameSetup()
     override_multitasking = -1;
     override_upscale = false;
     mouse_speed = 1.f;
-    mouse_ctrl_when = kMouseCtrl_Fullscreen;
-    mouse_ctrl_enabled = true;
+    mouse_ctrl_when = defaultMouseControl;
+    mouse_ctrl_enabled = false;
     mouse_speed_def = kMouseSpeed_CurrentDisplay;
     RenderAtScreenRes = false;
     Supersampling = 1;

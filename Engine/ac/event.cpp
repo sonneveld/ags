@@ -257,45 +257,7 @@ void process_event(EventHappened*evp) {
         }
         else if (theTransition == FADE_BOXOUT) 
         {
-            if (!gfxDriver->UsesMemoryBackBuffer())
-            {
-                gfxDriver->BoxOutEffect(false, get_fixed_pixel_size(16), 1000 / GetGameSpeed());
-            }
-            else
-            {
-                // First of all we render the game once again and save backbuffer from further editing.
-                // We put temporary bitmap as a new backbuffer for the transition period, and
-                // will be drawing saved image of the game over to that backbuffer, simulating "box-out".
-                set_palette_range(palette, 0, 255, 0);
-                construct_game_scene(true);
-                construct_game_screen_overlay(false);
-                gfxDriver->RenderToBackBuffer();
-                Bitmap *saved_backbuf = gfxDriver->GetMemoryBackBuffer();
-                Bitmap *temp_scr = new Bitmap(saved_backbuf->GetWidth(), saved_backbuf->GetHeight(), saved_backbuf->GetColorDepth());
-                gfxDriver->SetMemoryBackBuffer(temp_scr);
-                temp_scr->Clear();
-                render_to_screen();
-
-                const int speed = get_fixed_pixel_size(16);
-                const int yspeed = viewport.GetHeight() / (viewport.GetWidth() / speed);
-                int boxwid = speed, boxhit = yspeed;
-                while (boxwid < temp_scr->GetWidth())
-                {
-                    boxwid += speed;
-                    boxhit += yspeed;
-                    boxwid = Math::Clamp(boxwid, 0, viewport.GetWidth());
-                    boxhit = Math::Clamp(boxhit, 0, viewport.GetHeight());
-                    int lxp = viewport.GetWidth() / 2 - boxwid / 2;
-                    int lyp = viewport.GetHeight() / 2 - boxhit / 2;
-                    gfxDriver->Vsync();
-                    temp_scr->Blit(saved_backbuf, lxp, lyp, lxp, lyp, 
-                        boxwid, boxhit);
-                    render_to_screen();
-                    update_polled_mp3();
-                    WaitForNextFrame();
-                }
-                gfxDriver->SetMemoryBackBuffer(saved_backbuf);
-            }
+            gfxDriver->BoxOutEffect(false, get_fixed_pixel_size(16), 1000 / GetGameSpeed());
             play.screen_is_faded_out = 0;
         }
         else if (theTransition == FADE_CROSSFADE) 
@@ -307,10 +269,13 @@ void process_event(EventHappened*evp) {
 
             int transparency = 254;
 
+            // INNER GAME LOOP - software cross fade
             while (transparency > 0) {
                 // do the crossfade
                 ddb->SetTransparency(transparency);
+#ifdef AGS_DELETE_FOR_3_6
                 invalidate_screen();
+#endif
                 construct_game_scene(true);
                 construct_game_screen_overlay(false);
 
@@ -338,6 +303,8 @@ void process_event(EventHappened*evp) {
             color interpal[256];
 
             IDriverDependantBitmap *ddb = prepare_screen_for_transition_in();
+
+            // INNER GAME LOOP - software dissolve fade
             for (aa=0;aa<16;aa++) {
                 // merge the palette while dithering
                 if (game.color_depth == 1) 

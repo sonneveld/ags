@@ -119,7 +119,7 @@ void convert_objects_to_data_resolution(GameDataVersion filever)
     }
 }
 
-void engine_setup_system_gamesize()
+static void engine_setup_system_gamesize()
 {
     scsystem.width = game.GetGameRes().Width;
     scsystem.height = game.GetGameRes().Height;
@@ -145,7 +145,7 @@ void engine_init_resolution_settings(const Size game_size)
 }
 
 // Setup gfx driver callbacks and options
-void engine_post_gfxmode_driver_setup()
+static void engine_post_gfxmode_driver_setup()
 {
     gfxDriver->SetCallbackForPolling(update_polled_stuff_if_runtime);
     gfxDriver->SetCallbackToDrawScreen(draw_game_screen_callback, construct_engine_overlay);
@@ -153,7 +153,7 @@ void engine_post_gfxmode_driver_setup()
 }
 
 // Reset gfx driver callbacks
-void engine_pre_gfxmode_driver_cleanup()
+static void engine_pre_gfxmode_driver_cleanup()
 {
     gfxDriver->SetCallbackForPolling(nullptr);
     gfxDriver->SetCallbackToDrawScreen(nullptr, nullptr);
@@ -162,7 +162,7 @@ void engine_pre_gfxmode_driver_cleanup()
 }
 
 // Setup virtual screen
-void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitmaps)
+static void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitmaps)
 {
     if (recreate_bitmaps)
     {
@@ -172,18 +172,19 @@ void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitma
     }
 }
 
-void engine_pre_gfxmode_screen_cleanup()
+static void engine_pre_gfxmode_screen_cleanup()
 {
 }
 
 // Release virtual screen
-void engine_pre_gfxsystem_screen_destroy()
+static void engine_pre_gfxsystem_screen_destroy()
 {
 }
 
 // Setup color conversion parameters
-void engine_setup_color_conversions(int coldepth)
+static void engine_setup_color_conversions(int coldepth)
 {
+#ifdef DELETE_FOR_AGS_3_6
     // default shifts for how we store the sprite data1
     _rgb_r_shift_32 = 16;
     _rgb_g_shift_32 = 8;
@@ -256,27 +257,30 @@ void engine_setup_color_conversions(int coldepth)
         _rgb_r_shift_15 = 10;
 #endif
     }
-
+    
+#endif
     set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256);
 }
 
 // Setup drawing modes and color conversions;
 // they depend primarily on gfx driver capabilities and new color depth
-void engine_post_gfxmode_draw_setup(const DisplayMode &dm)
+static void engine_post_gfxmode_draw_setup(const DisplayMode &dm)
 {
     engine_setup_color_conversions(dm.ColorDepth);
     init_draw_method();
 }
 
 // Cleanup auxiliary drawing objects
-void engine_pre_gfxmode_draw_cleanup()
+static void engine_pre_gfxmode_draw_cleanup()
 {
     dispose_draw_method();
 }
 
 // Setup mouse control mode and graphic area
-void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
+static void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
 {
+#ifdef AGS_DELETE_FOR_3_6
+
     // Assign mouse control parameters.
     //
     // NOTE that we setup speed and other related properties regardless of
@@ -294,6 +298,11 @@ void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_des
     Debug::Printf(kDbgMsg_Init, "Mouse control: %s, base: %f, speed: %f", Mouse::IsControlEnabled() ? "on" : "off",
         Mouse::GetSpeedUnit(), Mouse::GetSpeed());
 
+#endif
+
+    // Since we're always use desktop resolution, we don't need to adjust mouse acceleration
+    Mouse::DisableControl();
+
     on_coordinates_scaling_changed();
 
     // If auto lock option is set, lock mouse to the game window
@@ -302,7 +311,7 @@ void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_des
 }
 
 // Reset mouse controls before changing gfx mode
-void engine_pre_gfxmode_mouse_cleanup()
+static void engine_pre_gfxmode_mouse_cleanup()
 {
     // Always disable mouse control and unlock mouse when releasing down gfx mode
     Mouse::DisableControl();
@@ -310,7 +319,7 @@ void engine_pre_gfxmode_mouse_cleanup()
 }
 
 // Fill in scsystem struct with display mode parameters
-void engine_setup_scsystem_screen(const DisplayMode &dm)
+static void engine_setup_scsystem_screen(const DisplayMode &dm)
 {
     scsystem.coldepth = dm.ColorDepth;
     scsystem.windowed = dm.Windowed;
@@ -338,7 +347,6 @@ void engine_post_gfxmode_setup(const Size &init_desktop)
     platform->PostAllegroInit(scsystem.windowed != 0);
 
     video_on_gfxmode_changed();
-    invalidate_screen();
 }
 
 void engine_pre_gfxmode_release()

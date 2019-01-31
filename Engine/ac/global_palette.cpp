@@ -24,11 +24,6 @@ extern color palette[256];
 
 
 void CyclePalette(int strt,int eend) {
-    // hi-color game must invalidate screen since the palette changes
-    // the effect of the drawing operations
-    if (game.color_depth > 1)
-        invalidate_screen();
-
     if ((strt < 0) || (strt > 255) || (eend < 0) || (eend > 255))
         quit("!CyclePalette: start and end must be 0-255");
 
@@ -45,9 +40,6 @@ void CyclePalette(int strt,int eend) {
 
 }
 void SetPalRGB(int inndx,int rr,int gg,int bb) {
-    if (game.color_depth > 1)
-        invalidate_screen();
-
     wsetrgb(inndx,rr,gg,bb,palette);
     set_palette_range(palette, inndx, inndx, 0);
 }
@@ -59,9 +51,6 @@ get_palette(pptr);
 }*/
 
 void UpdatePalette() {
-    if (game.color_depth > 1)
-        invalidate_screen();
-
     if (!play.fast_forward)  
         setpal();
 }

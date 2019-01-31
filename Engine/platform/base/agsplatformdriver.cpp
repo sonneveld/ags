@@ -136,7 +136,7 @@ void AGSPlatformDriver::SetGameWindowIcon() {
 
 int AGSPlatformDriver::ConvertKeycodeToScanCode(int keycode)
 {
-    keycode -= ('A' - KEY_A);
+    keycode -= ('A' - __allegro_KEY_A);
     return keycode;
 }
 
@@ -217,21 +217,6 @@ int cd_player_control(int cmdd, int datt) {
 #endif // AGS_HAS_CD_AUDIO
 
 void AGSPlatformDriver::Delay(int millis) {
-  auto now = AGS_Clock::now();
-  auto delayUntil = now + std::chrono::milliseconds(millis);
-
-  for (;;) {
-    if (now >= delayUntil) { break; }
-
-    auto duration = std::min<std::chrono::nanoseconds>(delayUntil - now, MaximumDelayBetweenPolling);
-    std::this_thread::sleep_for(duration);
-    now = AGS_Clock::now(); // update now
-
-    if (now >= delayUntil) { break; }
-
-    // don't allow it to check for debug messages, since this Delay()
-    // call might be from within a debugger polling loop
-    update_polled_mp3();
-    now = AGS_Clock::now(); // update now
-  }
+    // we shouldn't rely on delay here, but hopefully the main thread will show a loading screen.
+    std::this_thread::sleep_for(std::chrono::milliseconds(millis));
 }

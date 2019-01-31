@@ -31,6 +31,8 @@
 #include "media/audio/audio_system.h"
 #include "util/string_compat.h"
 
+#include "SDL.h"
+
 using namespace AGS::Engine;
 
 extern GameSetupStruct game;
@@ -103,28 +105,28 @@ int System_GetHardwareAcceleration()
 
 int System_GetNumLock()
 {
-    return (key_shifts & KB_NUMLOCK_FLAG) ? 1 : 0;
+    SDL_PumpEvents();
+    SDL_Keymod mod_state = SDL_GetModState();
+    return (mod_state & KMOD_NUM) ? 1 : 0;
 }
 
 int System_GetCapsLock()
 {
-    return (key_shifts & KB_CAPSLOCK_FLAG) ? 1 : 0;
+    SDL_PumpEvents();
+    SDL_Keymod mod_state = SDL_GetModState();
+    return (mod_state & KMOD_CAPS) ? 1 : 0;
 }
 
 int System_GetScrollLock()
 {
-    return (key_shifts & KB_SCROLOCK_FLAG) ? 1 : 0;
+    SDL_PumpEvents();
+    const Uint8 *state = SDL_GetKeyboardState(NULL);
+    return (state[SDL_SCANCODE_SCROLLLOCK]) ? 1 : 0;
 }
 
 void System_SetNumLock(int newValue)
 {
-    // doesn't work ... maybe allegro doesn't implement this on windows
-    int ledState = key_shifts & (KB_SCROLOCK_FLAG | KB_CAPSLOCK_FLAG);
-    if (newValue)
-    {
-        ledState |= KB_NUMLOCK_FLAG;
-    }
-    set_leds(ledState);
+    debug_script_log("System::set_NumLock is not available.");
 }
 
 int System_GetVsync() {
@@ -189,22 +191,9 @@ void System_SetVolume(int newvol)
 {
     if ((newvol < 0) || (newvol > 100))
         quit("!System.Volume: invalid volume - must be from 0-100");
-
-    if (newvol == play.digital_master_volume)
-        return;
-
     play.digital_master_volume = newvol;
-    set_volume((newvol * 255) / 100, (newvol * 255) / 100);
-
-    // allegro's set_volume can lose the volumes of all the channels
-    // if it was previously set low; so restore them
-    AudioChannelsLock lock;
-    for (int i = 0; i <= MAX_SOUND_CHANNELS; i++) 
-    {
-        auto* ch = lock.GetChannelIfPlaying(i);
-        if (ch)
-            ch->adjust_volume();
-    }
+    auto newvol_f = static_cast<float>(newvol) / 100.0;
+    audio_core_set_master_volume(newvol_f);
 }
 
 const char* System_GetRuntimeInfo()

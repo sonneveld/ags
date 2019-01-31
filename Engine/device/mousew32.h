@@ -23,6 +23,8 @@
 
 #include "util/geometry.h"
 
+#define DOMOUSE_NOCURSOR 5
+
 #define MAXCURSORS 20
 
 #include "util/geometry.h"
@@ -59,10 +61,6 @@ namespace Mouse
     void DisableControl();
     // Tell if the mouse movement control is enabled
     bool IsControlEnabled();
-    // Set base speed factor, which would serve as a mouse speed unit
-    void SetSpeedUnit(float f);
-    // Get base speed factor
-    float GetSpeedUnit();
     // Set speed factors
     void SetSpeed(float speed);
     // Get speed factor
@@ -84,7 +82,5 @@ namespace Mouse
 
 extern int mousex, mousey;
 extern int hotx, hoty;
-extern int disable_mgetgraphpos;
 extern char currentcursor;
-
 extern Common::Bitmap *mousecurs[MAXCURSORS];

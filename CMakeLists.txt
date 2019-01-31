@@ -1,3 +1,5 @@
+
+# https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/Life-Cycle-Considerations
 cmake_minimum_required(VERSION 3.13..3.14)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/CMake/c_flag_overrides.cmake)
@@ -14,6 +16,16 @@ option(AGS_NO_MP3_PLAYER "Disable MP3" OFF)
 option(AGS_NO_VIDEO_PLAYER "Disable Video" OFF)
 option(AGS_BUILTIN_PLUGINS "Built in plugins" OFF)
 set(AGS_BUILD_STR "" CACHE STRING "Engine Build Information")
+
+# Tools like ninja don't have a pseudo-terminal so compilers assume no coloured output
+option (AGS_FORCE_COLOURED_OUTPUT "Always produce ANSI-coloured output (GNU/Clang only)." OFF)
+if (${AGS_FORCE_COLOURED_OUTPUT})
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        add_compile_options (-fdiagnostics-color=always)
+    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        add_compile_options (-fcolor-diagnostics)
+    endif ()
+endif ()
 
 include(FetchContent)
 set(FETCHCONTENT_UPDATES_DISCONNECTED on)
@@ -111,7 +123,12 @@ elseif (LINUX)
     find_package(X11)
 endif()
 
-include(FetchAllegro)
+include(FindLocalSDL2)
+include(FindLocalPhysicsFS)
+include(FindLocalSdlSound)
+include(FindLocalOpenAL)
+include(FindLocalAllegro)
+
 include(FetchOgg)
 include(FetchVorbis)
 include(FetchTheora)

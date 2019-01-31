@@ -393,8 +393,6 @@ void convert_room_coordinates_to_data_res(RoomStruct *rstruc)
     rstruc->Height /= mul;
 }
 
-extern int convert_16bit_bgr;
-
 void update_letterbox_mode()
 {
     const Size real_room_sz = Size(data_to_game_coord(thisroom.Width), data_to_game_coord(thisroom.Height));
@@ -870,7 +868,6 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     init_room_drawdata();
 
     our_eip = 212;
-    invalidate_screen();
     for (cc=0;cc<croom->numobj;cc++) {
         if (objs[cc].on == 2)
             MergeObject(cc);
@@ -1010,7 +1007,6 @@ int bg_just_changed = 0;
 
 void on_background_frame_change () {
 
-    invalidate_screen();
     mark_current_background_dirty();
     invalidate_cached_walkbehinds();
 

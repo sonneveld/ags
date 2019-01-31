@@ -170,24 +170,38 @@ void PlayMusicResetQueue(int newmus) {
     newmusic(newmus);
 }
 
+
 void SeekMIDIPosition (int position) {
-    if (play.silent_midi)
-        midi_seek (position);
-    if (current_music_type == MUS_MIDI) {
-        midi_seek(position);
+    auto midiChIndex = first_channel_of_sound_type(MUS_MIDI);
+    if (midiChIndex < 0) { return; }
+
+    AudioChannelsLock lock;
+    auto *ch = lock.GetChannel(midiChIndex);
+
+    if (play.silent_midi) {
+        ch->seek(position);
+    }
+    else if (current_music_type == MUS_MIDI) {
+        ch->seek(position);
         debug_script_log("Seek MIDI position to %d", position);
     }
 }
 
 int GetMIDIPosition () {
+    auto midiChIndex = first_channel_of_sound_type(MUS_MIDI);
+    if (midiChIndex < 0) { return -1; }
+
+    AudioChannelsLock lock;
+    auto *ch = lock.GetChannel(midiChIndex);
+
     if (play.silent_midi)
-        return midi_pos;
+        return ch->get_pos();
     if (current_music_type != MUS_MIDI)
         return -1;
     if (play.fast_forward)
         return 99999;
 
-    return midi_pos;
+    return ch->get_pos();
 }
 
 int IsMusicPlaying() {
@@ -207,7 +221,7 @@ int IsMusicPlaying() {
         return 0;
     }
 
-    bool result = (ch->is_playing()) || (crossFading > 0 && (lock.GetChannelIfPlaying(crossFading) != nullptr));
+    bool result = (ch->is_active()) || (crossFading > 0 && (lock.GetChannelIfPlaying(crossFading) != nullptr));
     return result ? 1 : 0;
 }
 
@@ -351,7 +365,8 @@ void SetDigitalMasterVolume (int newvol) {
     if ((newvol<0) | (newvol>100))
         quit("!SetDigitalMasterVolume: invalid volume - must be from 0-100");
     play.digital_master_volume = newvol;
-    set_volume ((newvol * 255) / 100, -1);
+    auto newvol_f = static_cast<float>(newvol) / 100.0;
+    audio_core_set_master_volume(newvol_f);
 }
 
 int GetCurrentMusic() {
@@ -426,7 +441,6 @@ void PlaySilentMIDI (int mnum) {
     if (current_music_type == MUS_MIDI)
         quit("!PlaySilentMIDI: proper midi music is in progress");
 
-    set_volume (-1, 0);
     play.silent_midi = mnum;
     play.silent_midi_channel = SCHAN_SPEECH;
     stop_and_destroy_channel(play.silent_midi_channel);

@@ -18,6 +18,7 @@
 #ifndef __AGS_EE_GFX__GFXDRIVERBASE_H
 #define __AGS_EE_GFX__GFXDRIVERBASE_H
 
+#include <stdexcept>
 #include <vector>
 #include "gfx/ddb.h"
 #include "gfx/graphicsdriver.h"
@@ -58,6 +59,12 @@ struct SpriteBatchDesc
 };
 
 typedef std::vector<SpriteBatchDesc> SpriteBatchDescs;
+
+class NotImplemented : public std::logic_error
+{
+public:
+    NotImplemented() : std::logic_error("Function not yet implemented") { };
+};
 
 // The single sprite entry in the render list
 template<class T_DDB>
@@ -109,6 +116,8 @@ public:
     void        SetCallbackOnInit(GFXDRV_CLIENTCALLBACKINITGFX callback) override { _initGfxCallback = callback; }
     void        SetCallbackOnSurfaceUpdate(GFXDRV_CLIENTCALLBACKSURFACEUPDATE callback) override { _initSurfaceUpdateCallback = callback; }
     void        SetCallbackForNullSprite(GFXDRV_CLIENTCALLBACKXY callback) override { _nullSpriteCallback = callback; }
+
+    virtual void        UpdateDeviceScreen(const Size &screenSize) { throw NotImplemented(); }
 
 protected:
     // Called after graphics driver was initialized for use for the first time

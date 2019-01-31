@@ -181,6 +181,8 @@ public:
   virtual bool RequiresFullRedrawEachFrame() = 0;
   virtual bool HasAcceleratedTransform() = 0;
   virtual bool UsesMemoryBackBuffer() = 0;
+  virtual void UpdateDeviceScreen(const Size &screenSize) = 0;
+  virtual void ToggleFullscreen() = 0;
   virtual ~IGraphicsDriver() = default;
 };
 

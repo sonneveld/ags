@@ -86,8 +86,10 @@ void on_roomcamera_changed(Camera *cam);
 void mark_screen_dirty();
 bool is_screen_dirty();
 
+#ifdef AGS_DELETE_FOR_3_6
 // marks whole screen as needing a redraw
 void invalidate_screen();
+#endif
 // marks all the camera frame as needing a redraw
 void invalidate_camera_frame(int index);
 // marks certain rectangle on screen as needing a redraw

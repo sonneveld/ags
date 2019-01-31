@@ -411,14 +411,6 @@ PACKFILE *PackfileFromAsset(const AssetPath &path)
     return nullptr;
 }
 
-DUMBFILE *DUMBfileFromAsset(const AssetPath &path)
-{
-    PACKFILE *pf = PackfileFromAsset(path);
-    if (pf)
-        return dumbfile_open_packfile(pf);
-    return nullptr;
-}
-
 bool DoesAssetExistInLib(const AssetPath &assetname)
 {
     bool needsetback = false;
@@ -587,6 +579,20 @@ Stream *get_valid_file_stream_from_handle(int32_t handle, const char *operation_
 {
     ScriptFileHandle *sc_handle = check_valid_file_handle_int32(handle, operation_name);
     return sc_handle ? sc_handle->stream : nullptr;
+}
+
+WithAssetLibrary::WithAssetLibrary(const String &assetlib) 
+{
+    if (assetlib.IsEmpty()) { return; }
+    if (assetlib.CompareNoCase(ResPaths.GamePak.Name.GetCStr()) == 0) { return; }
+    AGS::Common::AssetManager::SetDataFile(get_known_assetlib(assetlib));
+    needsetback = true;
+}
+
+WithAssetLibrary::~WithAssetLibrary() 
+{
+    if (!needsetback) { return; }
+    AGS::Common::AssetManager::SetDataFile(ResPaths.GamePak.Path);
 }
 
 //=============================================================================

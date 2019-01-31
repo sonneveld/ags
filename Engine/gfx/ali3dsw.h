@@ -146,6 +146,7 @@ public:
 
     const char*GetDriverName() override { return "Software renderer"; }
     const char*GetDriverID() override { return "Software"; }
+    void UpdateDeviceScreen(const Size &screenSize) override;
     void SetTintMethod(TintMethod method) override;
     bool SetDisplayMode(const DisplayMode &mode, volatile int *loopTimer) override;
     bool SetNativeSize(const Size &src_size) override;
@@ -193,6 +194,8 @@ public:
     typedef std::shared_ptr<AllegroGfxFilter> PALSWFilter;
 
     void SetGraphicsFilter(PALSWFilter filter);
+
+    void ToggleFullscreen();
 
 private:
     PALSWFilter _filter;

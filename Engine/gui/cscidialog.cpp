@@ -136,6 +136,32 @@ void CSCIEraseWindow(int handl)
     clear_gui_screen();
 }
 
+static int asListboxKeys(SDL_Event keywas) {
+    if (keywas.type == SDL_KEYDOWN) {
+        switch (keywas.key.keysym.scancode) {
+            case SDL_SCANCODE_UP: return 372;
+            case SDL_SCANCODE_DOWN: return 380;
+            case SDL_SCANCODE_PAGEUP: return 373;
+            case SDL_SCANCODE_PAGEDOWN: return 381;
+            default: break;
+        }
+    }
+    return -1;
+}
+
+static int asTextboxKeys(SDL_Event keywas) {
+    if (keywas.type == SDL_KEYDOWN) {
+        switch (keywas.key.keysym.scancode) {
+            case SDL_SCANCODE_BACKSPACE: return 8;
+            default: break;
+        }
+    } else if (keywas.type == SDL_TEXTINPUT) {
+#pragma message ("SDL-TODO: need to emit more than one char!")
+        return keywas.text.text[0];
+    }
+    return -1;
+}
+
 int CSCIWaitMessage(CSCIMessage * cscim)
 {
     for (int uu = 0; uu < MAXCONTROLS; uu++) {
@@ -148,30 +174,46 @@ int CSCIWaitMessage(CSCIMessage * cscim)
 
     prepare_gui_screen(win_x, win_y, win_width, win_height, true);
 
+    // INNER GAME LOOP - legacy gui - wait for message
     while (1) {
+        process_pending_events();
         update_audio_system_on_game_loop();
         refresh_gui_screen();
 
         cscim->id = -1;
         cscim->code = 0;
         smcode = 0;
-        int keywas;
-        if (run_service_key_controls(keywas)) {
-            if (keywas == 13) {
+        
+        // test with ctrl-u and other debug features!!
+
+        SDL_Event keywas = getTextEventFromQueue();
+        auto keyAvailable = run_service_key_controls(keywas);
+        if (keyAvailable && keywas.type != 0) {
+
+            if (keywas.type == SDL_KEYDOWN && keywas.key.keysym.scancode == SDL_SCANCODE_RETURN) {   // return
                 cscim->id = finddefaultcontrol(CNF_DEFAULT);
                 cscim->code = CM_COMMAND;
-            } else if (keywas == 27) {
+            } else if (keywas.type == SDL_KEYDOWN && keywas.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {   // ESC
                 cscim->id = finddefaultcontrol(CNF_CANCEL);
                 cscim->code = CM_COMMAND;
-            } else if ((keywas < 32) && (keywas != 8)) ;
-            else if ((keywas >= 372) & (keywas <= 381) & (finddefaultcontrol(CNT_LISTBOX) >= 0))
-                vobjs[finddefaultcontrol(CNT_LISTBOX)]->processmessage(CTB_KEYPRESS, keywas, 0);
-            else if (finddefaultcontrol(CNT_TEXTBOX) >= 0)
-                vobjs[finddefaultcontrol(CNT_TEXTBOX)]->processmessage(CTB_KEYPRESS, keywas, 0);
-
-            if (cscim->id < 0) {
+            }
+            // else if ((keywas < 32) && (keywas != 8)) ;  // ctrl-? and not backspace
+            else if ((asListboxKeys(keywas) > 0) && (finddefaultcontrol(CNT_LISTBOX) >= 0)) { // arrow keys
+#pragma message ("SDL-TODO: we can't just use agskeys and ascii keys since we want to be able to use both.")
+                int wParam = asListboxKeys(keywas);
+                vobjs[finddefaultcontrol(CNT_LISTBOX)]->processmessage(CTB_KEYPRESS, wParam, 0);
                 cscim->code = CM_KEYPRESS;
-                cscim->wParam = keywas;
+                cscim->wParam = wParam;
+            }
+            else if ((asTextboxKeys(keywas) > 0) && finddefaultcontrol(CNT_TEXTBOX) >= 0) {
+                int wParam = asTextboxKeys(keywas);
+                vobjs[finddefaultcontrol(CNT_TEXTBOX)]->processmessage(CTB_KEYPRESS, wParam, 0);
+                cscim->code = CM_KEYPRESS;
+                cscim->wParam = wParam;
+            } else {
+                // empty keypress.
+                cscim->code = CM_KEYPRESS;
+                cscim->wParam = 0;
             }
         }
 

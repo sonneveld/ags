@@ -18,7 +18,7 @@
 
 #include "core/platform.h"
 
-#if AGS_PLATFORM_OS_WINDOWS
+#if AGS_PLATFORM_OS_WINDOWS && defined(AGS_DELETE_FOR_3_6)
 
 #include "platform/windows/gfx/ali3dd3d.h"
 
@@ -34,6 +34,8 @@
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
 #include "util/library.h"
+
+extern void process_pending_events();
 
 #ifndef AGS_NO_VIDEO_PLAYER
 extern int dxmedia_play_video_3d(const char*filename, IDirect3DDevice9 *device, bool useAVISound, int canskip, int stretch);
@@ -1786,11 +1788,14 @@ void D3DGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
 
   if (speed <= 0) speed = 16;
   speed *= 2;  // harmonise speeds with software driver which is faster
+  
+  // INNER GAME LOOP - d3d fade
   for (int a = 1; a < 255; a += speed)
   {
     d3db->SetTransparency(fadingOut ? a : (255 - a));
     this->_renderAndPresent(false);
 
+    process_events();
     if (_pollingCallback)
       _pollingCallback();
     WaitForNextFrame();
@@ -1847,6 +1852,7 @@ void D3DGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
   int boxWidth = speed;
   int boxHeight = yspeed;
 
+  // INNER GAME LOOP - d3d boxout
   while (boxWidth < _srcRect.GetWidth())
   {
     boxWidth += speed;
@@ -1871,6 +1877,7 @@ void D3DGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
     
     this->_renderAndPresent(false);
 
+    process_events();      
     if (_pollingCallback)
       _pollingCallback();
     platform->Delay(delay);

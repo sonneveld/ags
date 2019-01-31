@@ -314,7 +314,7 @@ public:
   AGSIFUNC(const char*) GetEngineVersion ();
   // register a script function with the system
   AGSIFUNC(void) RegisterScriptFunction (const char *name, void *address);
-#ifdef WINDOWS_VERSION
+#if defined(WINDOWS_VERSION) && defined(AGS_DELETE_FOR_3_6)
   // get game window handle
   AGSIFUNC(HWND) GetWindowHandle();
   // get reference to main DirectDraw interface
@@ -465,7 +465,7 @@ public:
   AGSIFUNC(void)   BlitSpriteRotated(int32 x, int32 y, BITMAP *, int32 angle);
 
   // *** BELOW ARE INTERFACE VERSION 14 AND ABOVE ONLY
-#ifdef WINDOWS_VERSION
+#if defined(WINDOWS_VERSION) && defined(AGS_DELETE_FOR_3_6)
   // get reference to main DirectSound interface
   AGSIFUNC(LPDIRECTSOUND) GetDirectSound();
 #endif
@@ -531,7 +531,7 @@ public:
   AGSIFUNC(void)   GetPathToFileInCompiledFolder(const char* fileName, char* buffer);
 
   // *** BELOW ARE INTERFACE VERSION 23 AND ABOVE ONLY
-#ifdef WINDOWS_VERSION
+#if defined(WINDOWS_VERSION) && defined(AGS_DELETE_FOR_3_6)
   // get reference to keyboard Direct Input device
   AGSIFUNC(LPDIRECTINPUTDEVICE) GetDirectInputKeyboard();
   // get reference to mouse Direct Input device

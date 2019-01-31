@@ -387,28 +387,8 @@ target_sources(engine
     media/audio/audio_system.h
     media/audio/audiodefines.h
     media/audio/audiointernaldefs.h
-    media/audio/clip_mydumbmod.cpp
-    media/audio/clip_mydumbmod.h
-    media/audio/clip_myjgmod.cpp
-    media/audio/clip_myjgmod.h
-    media/audio/clip_mymidi.cpp
-    media/audio/clip_mymidi.h
-    media/audio/clip_mymp3.cpp
-    media/audio/clip_mymp3.h
-    media/audio/clip_myogg.cpp
-    media/audio/clip_myogg.h
-    media/audio/clip_mystaticmp3.cpp
-    media/audio/clip_mystaticmp3.h
-    media/audio/clip_mystaticogg.cpp
-    media/audio/clip_mystaticogg.h
-    media/audio/clip_mywave.cpp
-    media/audio/clip_mywave.h
     media/audio/queuedaudioitem.cpp
     media/audio/queuedaudioitem.h
-    media/audio/sound.cpp
-    media/audio/sound.h
-    media/audio/soundcache.cpp
-    media/audio/soundcache.h
     media/audio/soundclip.cpp
     media/audio/soundclip.h
     media/video/VMR9Graph.h
@@ -490,18 +470,26 @@ target_sources(engine
 
     platform/ios/acplios.cpp
 
+    platform/windows/win_ex_handling.cpp
+    platform/windows/win_ex_handling.h
+    platform/windows/minidump.cpp
+    platform/windows/winapi_exclusive.h
+    gfx/ali3d_sdl_renderer.cpp
+    gfx/ali3d_sdl_renderer.h
+    gfx/gfxfilter_sdl_renderer.cpp
+    gfx/gfxfilter_sdl_renderer.h
+    gfx/ogl_headers.h
+    media/audio/audio_core.cpp
+    media/audio/audio_core.h
+    media/audio/clip_openal.cpp
+    media/audio/clip_openal.h
+    util/library_sdl2.h
 
     platform/windows/win_ex_handling.cpp
     platform/windows/win_ex_handling.h
     platform/windows/minidump.cpp
     platform/windows/winapi_exclusive.h
 )
-
-if(MACOS)
-    target_sources(engine PRIVATE 
-        platform/osx/alplmac.mm
-    )
-endif()
 
 if (AGS_BUILTIN_PLUGINS)
     target_compile_definitions(engine PRIVATE BUILTIN_PLUGINS)
@@ -572,6 +560,9 @@ target_link_libraries(engine PUBLIC
     AlOgg::AlOgg 
     HQ2X::hq2x
     Cda::Cda
+    SDL2::SDL2
+    SDL2_sound::SDL2_sound
+    External::OpenAL
 )
 
 # common has a circular dependency on engine
@@ -615,10 +606,10 @@ target_include_directories(ags PRIVATE .)
 
 target_sources(ags
     PRIVATE
-    main/main_allegro.cpp
+    main/main_sdl2.cpp
 )
 
-target_link_libraries(ags PRIVATE engine)
+target_link_libraries(ags PRIVATE engine SDL2::SDL2main)
 
 if (LINUX)
     # We may override `allegro_icon` and `load_midi_pf` depending on the version
@@ -653,10 +644,10 @@ if (MACOS)
 
     target_sources(ags-app
         PRIVATE
-        main/main_allegro.cpp
+        main/main_sdl2.cpp
     )
 
-    target_link_libraries(ags-app PRIVATE engine)
+    target_link_libraries(ags-app PRIVATE engine SDL2::SDL2main)
 
     set_target_properties(ags-app PROPERTIES
         RUNTIME_OUTPUT_NAME AGS

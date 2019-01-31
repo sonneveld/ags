@@ -23,6 +23,7 @@
 #include "debug/out.h"
 #include "main/main.h"
 #include "util/ini_util.h"
+#include "SDL.h"
 
 #if !AGS_PLATFORM_DEBUG
 #define USE_CUSTOM_EXCEPTION_HANDLER
@@ -54,7 +55,10 @@ static void DisplayException()
         excinfo.ExceptionCode, (intptr_t)excinfo.ExceptionAddress, our_eip, EngineVersion.LongString.GetCStr(), eip_guinum, eip_guiobj, script_callstack.GetCStr(),
         (miniDumpResultCode == 0) ? "An error file CrashInfo.dmp has been created. You may be asked to upload this file when reporting this problem on the AGS Forums." :
         "Unable to create an error dump file.", miniDumpResultCode);
-    MessageBoxA(win_get_window(), printfworkingspace, "Illegal exception", MB_ICONSTOP | MB_OK);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                         "Illegal exception",
+                         printfworkingspace,
+                         NULL);
 }
 
 int initialize_engine_with_exception_handling(

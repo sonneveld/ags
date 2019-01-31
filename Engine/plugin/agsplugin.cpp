@@ -63,6 +63,8 @@
 #include "gfx/gfx_util.h"
 #include "util/memory.h"
 #include "media/audio/audio_system.h"
+#include "main/game_run.h"
+#include "ac/sys_events.h"
 
 using namespace AGS::Common;
 using namespace AGS::Common::Memory;
@@ -119,7 +121,6 @@ struct EnginePlugin {
     char       *savedata;
     int         savedatasize;
     int         wantHook;
-    int         invalidatedRegion;
     void      (*engineStartup) (IAGSEngine *) = nullptr;
     void      (*engineShutdown) () = nullptr;
     int       (*onEvent) (int, int) = nullptr;
@@ -131,7 +132,6 @@ struct EnginePlugin {
     EnginePlugin() {
         filename[0] = 0;
         wantHook = 0;
-        invalidatedRegion = 0;
         savedata = nullptr;
         savedatasize = 0;
         builtin = false;
@@ -229,9 +229,9 @@ int IAGSEngine::GetSavedData (char *buffer, int32 bufsize) {
 
 void IAGSEngine::DrawText (int32 x, int32 y, int32 font, int32 color, char *text) 
 {
+    if (gfxDriver == nullptr) { return; }
     Bitmap *ds = gfxDriver->GetStageBackBuffer();
-    if (!ds)
-        return;
+    if (ds == nullptr) { return; }
     color_t text_color = ds->GetCompatibleColor(color);
     draw_and_invalidate_text(ds, x, y, font, text_color, text);
 }
@@ -250,26 +250,12 @@ unsigned char ** IAGSEngine::GetRawBitmapSurface (BITMAP *bmp)
     if (!is_linear_bitmap(bmp))
         quit("!IAGSEngine::GetRawBitmapSurface: invalid bitmap for access to surface");
     acquire_bitmap(bmp);
-
-    Bitmap *stage = gfxDriver->GetStageBackBuffer();
-    if (stage && bmp == stage->GetAllegroBitmap())
-        plugins[this->pluginId].invalidatedRegion = 0;
-
     return bmp->line;
 }
 
 void IAGSEngine::ReleaseBitmapSurface (BITMAP *bmp)
 {
     release_bitmap (bmp);
-
-    Bitmap *stage = gfxDriver->GetStageBackBuffer();
-    if (stage && bmp == stage->GetAllegroBitmap())
-    {
-        // plugin does not manaually invalidate stuff, so
-        // we must invalidate the whole screen to be safe
-        if (!plugins[this->pluginId].invalidatedRegion)
-            invalidate_screen();
-    }
 }
 
 void IAGSEngine::GetMousePosition (int32 *x, int32 *y) {
@@ -383,7 +369,6 @@ void IAGSEngine::BlitBitmap (int32 x, int32 y, BITMAP *bmp, int32 masked)
     if (!ds)
         return;
     wputblock_raw(ds, x, y, bmp, masked);
-    invalidate_rect(x, y, x + bmp->w, y + bmp->h, false);
 }
 
 void IAGSEngine::BlitSpriteTranslucent(int32 x, int32 y, BITMAP *bmp, int32 trans)
@@ -412,17 +397,19 @@ extern int  mgetbutton();
 
 void IAGSEngine::PollSystem () {
 
+    process_pending_events();
     domouse(DOMOUSE_NOCURSOR);
     update_polled_stuff_if_runtime();
     int mbut = mgetbutton();
     if (mbut > NONE)
         pl_run_plugin_hooks (AGSE_MOUSECLICK, mbut);
 
-    int kp;
-    if (run_service_key_controls(kp)) {
-        pl_run_plugin_hooks (AGSE_KEYPRESS, kp);
+    SDL_Event kgn = getTextEventFromQueue();
+    auto keyAvailable = run_service_key_controls(kgn);
+    int kc = asciiOrAgsKeyCodeFromEvent(kgn);
+    if (keyAvailable && kc > 0) {
+        pl_run_plugin_hooks (AGSE_KEYPRESS, kc);
     }
-
 }
 AGSCharacter* IAGSEngine::GetCharacter (int32 charnum) {
     if (charnum >= game.numcharacters)
@@ -591,17 +578,17 @@ void IAGSEngine::PlaySoundChannel (int32 channel, int32 soundType, int32 volume,
     else if (soundType == PSND_OGGSTATIC)
         newcha = my_load_static_ogg (asset_name, volume, (loop != 0));
     else if (soundType == PSND_MIDI) {
-        if (midi_pos >= 0)
+        auto midiChIndex = first_channel_of_sound_type(MUS_MIDI);
+        if (midiChIndex >= 0) {
             quit("!IAGSEngine::PlaySoundChannel: MIDI already in use");
+        }
         newcha = my_load_midi (asset_name, loop);
         newcha->set_volume (volume);
     }
-#ifndef PSP_NO_MOD_PLAYBACK
     else if (soundType == PSND_MOD) {
         newcha = my_load_mod (asset_name, loop);
         newcha->set_volume (volume);
     }
-#endif
     else
         quit("!IAGSEngine::PlaySoundChannel: unknown sound type");
 
@@ -609,8 +596,6 @@ void IAGSEngine::PlaySoundChannel (int32 channel, int32 soundType, int32 volume,
 }
 // Engine interface 12 and above are below
 void IAGSEngine::MarkRegionDirty(int32 left, int32 top, int32 right, int32 bottom) {
-    invalidate_rect(left, top, right, bottom, false);
-    plugins[this->pluginId].invalidatedRegion++;
 }
 AGSMouseCursor * IAGSEngine::GetMouseCursor(int32 cursor) {
     if ((cursor < 0) || (cursor >= game.numcursors))
@@ -675,8 +660,6 @@ void IAGSEngine::DisableSound() {
     shutdown_sound();
     usetup.digicard = DIGI_NONE;
     usetup.midicard = MIDI_NONE;
-    reserve_voices(0, 0);
-    install_sound(DIGI_NONE, MIDI_NONE, nullptr);
 }
 int IAGSEngine::CanRunScriptFunctionNow() {
     if (inside_script)

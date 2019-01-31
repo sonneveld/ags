@@ -26,7 +26,6 @@ using AGS::Common::String;
 using AGS::Engine::DisplayMode;
 
 Size get_desktop_size();
-String make_scaling_factor_string(uint32_t scaling);
 
 namespace AGS { namespace Engine { class IGfxModeList; }}
 bool find_nearest_supported_mode(const AGS::Engine::IGfxModeList &modes, const Size &wanted_size,
@@ -133,6 +132,8 @@ struct ActiveDisplaySetting
 // Initializes any possible gfx mode, using user config as a recommendation;
 // may try all available renderers and modes before succeeding (or failing)
 bool graphics_mode_init_any(const Size game_size, const ScreenSetup &setup, const ColorDepthOption &color_depth);
+
+#if 0
 // Return last saved display mode of the given kind
 ActiveDisplaySetting graphics_mode_get_last_setting(bool windowed);
 // Creates graphics driver of given id
@@ -152,6 +153,11 @@ bool graphics_mode_set_render_frame(const GameFrameSetup &frame_setup);
 bool graphics_mode_set_filter_any(const GfxFilterSetup &setup);
 // Set the scaling filter with given ID
 bool graphics_mode_set_filter(const String &filter_id);
+#endif 
+
+extern void graphics_mode_toggle_full_screen();
+extern void graphics_mode_on_window_size_changed();
+
 // Releases current graphic mode and shuts down renderer
 void graphics_mode_shutdown();
 

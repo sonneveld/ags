@@ -11,6 +11,10 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
+
+
+#ifdef AGS_DELETE_FOR_3_6
+
 //
 // Software drawing component. Optimizes drawing for software renderer using
 // dirty rectangles technique.
@@ -476,4 +480,89 @@ void update_room_invreg_and_reset(int view_index, Bitmap *ds, Bitmap *src, bool 
     
     update_invalid_region(ds, src, RoomCamRects[view_index], no_transform);
     RoomCamRects[view_index].Reset();
+}
+
+
+#endif
+
+#include "ac/draw_software.h"
+#include "util/scaling.h"
+
+using namespace AGS::Common;
+using namespace AGS::Engine;
+
+struct DirtyRects
+{
+    bool init = false;
+
+    // Size of the surface managed by this dirty rects object
+    Size SurfaceSize;
+    // Where the surface is rendered on screen
+    Rect Viewport;
+    // Room -> screen coordinate transformation
+    PlaneScaling Room2Screen;
+
+    bool IsInit() const;
+    // Initialize dirty rects for the given surface size
+    void Init(const Size &surf_size, const Rect &viewport);
+    void SetSurfaceOffsets(int x, int y);
+};
+
+
+bool DirtyRects::IsInit() const
+{
+    return init;
+}
+
+void DirtyRects::Init(const Size &surf_size, const Rect &viewport)
+{
+    SurfaceSize = surf_size;
+    Viewport = viewport;
+    Room2Screen.Init(surf_size, viewport);
+    init = true;
+}
+
+void DirtyRects::SetSurfaceOffsets(int x, int y)
+{
+    Room2Screen.SetSrcOffsets(x, y);
+}
+
+// TODO: support for multiple cameras (multiple DirtyRects objects)
+// Dirty rects object for the single room camera
+static DirtyRects RoomCamRects;
+
+void destroy_invalid_regions() { }
+
+void init_invalid_regions(int view_index, const Size &surf_size, const Rect &viewport)
+{
+    if (view_index < 0) return;
+    // TODO: multiple room viewport support
+    RoomCamRects.Init(surf_size, viewport);
+}
+
+void set_invalidrects_cameraoffs(int view_index, int x, int y)
+{
+    if (view_index < 0) return;
+    RoomCamRects.SetSurfaceOffsets(x, y);
+}
+
+// Note that this function is denied to perform any kind of scaling or other transformation
+// other than blitting with offset. This is mainly because destination could be a 32-bit virtual screen
+// while room background was 16-bit and Allegro lib does not support stretching between colour depths.
+// The no_transform flag here means essentially "no offset", and indicates that the function
+// must blit src on ds at 0;0. Otherwise, actual Viewport offset is used.
+void update_room_invreg_and_reset(int /*view_index*/, Bitmap *ds, Bitmap *src, bool no_transform)
+{
+    if (!RoomCamRects.IsInit())
+        return;
+    
+    if (!no_transform)
+        ds->SetClip(RoomCamRects.Viewport);
+
+    const int src_x = RoomCamRects.Room2Screen.X.GetSrcOffset();
+    const int src_y = RoomCamRects.Room2Screen.Y.GetSrcOffset();
+    const int dst_x = no_transform ? 0 : RoomCamRects.Viewport.Left;
+    const int dst_y = no_transform ? 0 : RoomCamRects.Viewport.Top;
+
+    ds->Blit(src, src_x, src_y, dst_x, dst_y, RoomCamRects.SurfaceSize.Width, RoomCamRects.SurfaceSize.Height);
 }

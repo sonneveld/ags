@@ -399,14 +399,6 @@ PACKFILE *PackfileFromAsset(const AssetPath &path)
     return nullptr;
 }
 
-DUMBFILE *DUMBfileFromAsset(const AssetPath &path)
-{
-    PACKFILE *pf = PackfileFromAsset(path);
-    if (pf)
-        return dumbfile_open_packfile(pf);
-    return nullptr;
-}
-
 bool DoesAssetExistInLib(const AssetPath &assetname)
 {
     bool needsetback = false;

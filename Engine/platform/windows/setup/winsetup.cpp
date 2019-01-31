@@ -14,7 +14,7 @@
 
 #include "core/platform.h"
 
-#if AGS_PLATFORM_OS_WINDOWS
+#if AGS_PLATFORM_OS_WINDOWS && defined(AGS_DELETE_FOR_3_6)
 
 #include <windows.h>
 #include <commctrl.h>

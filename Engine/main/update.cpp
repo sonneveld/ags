@@ -247,12 +247,14 @@ void update_overlay_timers()
 
 void update_speech_and_messages()
 {
+  bool is_voice = false;
   bool is_voice_playing = false;
   if (play.speech_has_voice)
   {
       AudioChannelsLock lock;
       auto *ch = lock.GetChannel(SCHAN_SPEECH);
-      is_voice_playing = ch && ch->is_playing();
+      is_voice = ch != nullptr;
+      is_voice_playing = is_voice && ch->is_active();
   }
   // determine if speech text should be removed
   if (play.messagetime>=0) {

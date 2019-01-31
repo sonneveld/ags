@@ -429,6 +429,7 @@ bool SetCustomSaveParent(const String &path)
     return false;
 }
 
+// set global variable 'saveGameDirectory'
 bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
 {
     if (!newFolder || newFolder[0] == 0)
@@ -1760,14 +1761,29 @@ void start_skipping_cutscene () {
 
 }
 
-void check_skip_cutscene_keypress (int kgn) {
-
-    CutsceneSkipStyle skip = get_cutscene_skipstyle();
-    if (skip == eSkipSceneAnyKey || skip == eSkipSceneKeyMouse ||
-        (kgn == 27 && (skip == eSkipSceneEscOnly || skip == eSkipSceneEscOrRMB)))
-    {
-        start_skipping_cutscene();
+bool check_skip_cutscene_keypress (int kgn) {
+    auto keyUsed = false;
+    switch (get_cutscene_skipstyle()) {
+        case eSkipSceneEscOnly: // esc only
+        case eSkipSceneEscOrRMB: // esc or right mouse button
+            if (kgn == ASCII_ESCAPE) {
+                start_skipping_cutscene();
+                keyUsed = true;
+            }
+            break;
+            
+        case eSkipSceneAnyKey: // any key
+        case eSkipSceneKeyMouse: // key or mouse click
+            start_skipping_cutscene();
+            keyUsed = true;
+            break;
+            
+        case eSkipSceneMouse: // mouse click
+        default:
+            // do nothing
+            break;
     }
+    return keyUsed;
 }
 
 // Helper functions used by StartCutscene/EndCutscene, but also
@@ -1953,10 +1969,6 @@ void display_switch_in_resume()
         }
     }
     } // -- AudioChannelsLock
-
-    // clear the screen if necessary
-    if (gfxDriver && gfxDriver->UsesMemoryBackBuffer())
-        gfxDriver->ClearRectangle(0, 0, game.GetGameRes().Width - 1, game.GetGameRes().Height - 1, nullptr);
 
     platform->ResumeApplication();
 }

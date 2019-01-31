@@ -89,7 +89,6 @@ SOUNDCLIP * load_sound_clip_from_old_style_number(bool isMusic, int indexNumber,
 
 int         init_mod_player(int numVoices);
 void        remove_mod_player();
-void        force_audiostream_include();
 int         get_volume_adjusted_for_distance(int volume, int sndX, int sndY, int sndMaxDist);
 void        update_directional_sound_vol();
 void        update_ambient_sound_vol ();
@@ -149,5 +148,7 @@ extern SOUNDCLIP *cachedQueuedMusic;
 
 // TODO: double check that ambient sounds array actually needs +1
 extern std::array<AmbientSound,MAX_SOUND_CHANNELS+1> ambient;
+
+int first_channel_of_sound_type(int legacySoundType);
 
 #endif // __AC_AUDIO_H

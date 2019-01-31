@@ -47,7 +47,6 @@ extern const char *loadSaveGameOnStartup;
 extern std::vector<ccInstance *> moduleInst;
 extern int numScriptModules;
 extern CharacterInfo*playerchar;
-extern int convert_16bit_bgr;
 
 void start_game_init_editor_debugging()
 {
@@ -85,7 +84,7 @@ void start_game_load_savegame_on_startup()
 
 void start_game() {
     set_cursor_mode(MODE_WALK);
-    Mouse::SetPosition(Point(160, 100));
+    Mouse::SetPosition(Point(play.GetMainViewport().GetWidth()/2, play.GetMainViewport().GetHeight()/2));
     newmusic(0);
 
     our_eip = -42;
@@ -126,16 +125,6 @@ void initialize_start_and_play_game(int override_start_room, const char *loadSav
     try { // BEGIN try for ALI3DEXception
 
         set_cursor_mode (MODE_WALK);
-
-        if (convert_16bit_bgr) {
-            // Disable text as speech while displaying the warning message
-            // This happens if the user's graphics card does BGR order 16-bit colour
-            int oldalways = game.options[OPT_ALWAYSSPCH];
-            game.options[OPT_ALWAYSSPCH] = 0;
-            // PSP: This is normal. Don't show a warning.
-            //Display ("WARNING: AGS has detected that you have an incompatible graphics card for this game. You may experience colour problems during the game. Try running the game with \"--15bit\" command line parameter and see if that helps.[[Click the mouse to continue.");
-            game.options[OPT_ALWAYSSPCH] = oldalways;
-        }
 
         srand (play.randseed);
         if (override_start_room)

@@ -18,6 +18,7 @@
 #include "gui/mytextbox.h"
 #include "gui/guidialoginternaldefs.h"
 #include "gfx/bitmap.h"
+#include "ac/sys_events.h"
 
 using AGS::Common::Bitmap;
 
@@ -65,7 +66,7 @@ int MyTextBox::processmessage(int mcode, int wParam, long lParam)
     } else if (mcode == CTB_GETTEXT)
         strcpy((char *)lParam, text);
     else if (mcode == CTB_KEYPRESS) {
-        if (wParam == 8) {
+        if (wParam == ASCII_BACKSPACE) {  // backspace
             if (text[0] != 0)
                 text[strlen(text) - 1] = 0;
 

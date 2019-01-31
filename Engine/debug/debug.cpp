@@ -34,6 +34,7 @@
 #include "util/textstreamwriter.h"
 #include "platform/base/agsplatformdriver.h"
 #include "debug/agseditordebugger.h"
+#include "SDL.h"
 
 #if AGS_PLATFORM_OS_WINDOWS
 #include <winalleg.h>
@@ -263,7 +264,7 @@ bool send_message_to_editor(const char *msg, const char *errorMsg)
 
     char messageToSend[STD_BUFFER_SIZE];
     sprintf(messageToSend, "<?xml version=\"1.0\" encoding=\"Windows-1252\"?><Debugger Command=\"%s\">", msg);
-#if AGS_PLATFORM_OS_WINDOWS
+#if AGS_PLATFORM_OS_WINDOWS && defined(FUTURE_WINDOWS_VERSION)
     sprintf(&messageToSend[strlen(messageToSend)], "  <EngineWindow>%d</EngineWindow> ", (int)win_get_window());
 #endif
     sprintf(&messageToSend[strlen(messageToSend)], "  <ScriptState><![CDATA[%s]]></ScriptState> ", callStack.GetCStr());
@@ -497,10 +498,13 @@ int scrlockWasDown = 0;
 void check_debug_keys() {
     if (play.debug_mode) {
         // do the run-time script debugging
+        
+        SDL_PumpEvents();
+        const Uint8 * keyboardState = SDL_GetKeyboardState(NULL);
 
-        if ((!key[KEY_SCRLOCK]) && (scrlockWasDown))
+        if ((!keyboardState[SDL_SCANCODE_SCROLLLOCK]) && (scrlockWasDown))
             scrlockWasDown = 0;
-        else if ((key[KEY_SCRLOCK]) && (!scrlockWasDown)) {
+        else if ((keyboardState[SDL_SCANCODE_SCROLLLOCK]) && (!scrlockWasDown)) {
 
             break_on_next_script_step = 1;
             scrlockWasDown = 1;

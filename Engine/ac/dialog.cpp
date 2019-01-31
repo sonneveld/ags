@@ -51,6 +51,7 @@
 #include "gfx/graphicsdriver.h"
 #include "ac/mouse.h"
 #include "media/audio/audio_system.h"
+#include "device/mousew32.h"
 
 using namespace AGS::Common;
 
@@ -822,7 +823,9 @@ void DialogOptions::Redraw()
     if (usingCustomRendering)
     {
       subBitmap->Blit(tempScrn, 0, 0, 0, 0, tempScrn->GetWidth(), tempScrn->GetHeight());
+#ifdef AGS_DELETE_FOR_3_6
       invalidate_rect(dirtyx, dirtyy, dirtyx + subBitmap->GetWidth(), dirtyy + subBitmap->GetHeight(), false);
+#endif
     }
     else
     {
@@ -848,8 +851,29 @@ void DialogOptions::Redraw()
     }
 }
 
+static int dialogOptionFromKey(SDL_Event event) {
+    if (event.type != SDL_TEXTINPUT) { return -1; }
+    
+    switch (event.text.text[0]) {
+        case '1':  return 0;
+        case '2':  return 1;
+        case '3':  return 2;
+        case '4':  return 3;
+        case '5':  return 4;
+        case '6':  return 5;
+        case '7':  return 6;
+        case '8':  return 7;
+        case '9':  return 8;
+        case '0':  return 9;
+    }
+    return -1;
+}
+
 bool DialogOptions::Run()
 {
+    // Run() can be called in a loop, so keep events going.
+    process_pending_events();
+
     const bool new_custom_render = usingCustomRendering && game.options[OPT_DIALOGOPTIONSAPI] >= 0;
 
       if (runGameLoopsInBackground)
@@ -870,44 +894,59 @@ bool DialogOptions::Run()
         run_function_on_non_blocking_thread(&runDialogOptionRepExecFunc);
       }
 
-      int gkey;
-      if (run_service_key_controls(gkey)) {
+    
+      SDL_Event gkey = getTextEventFromQueue();
+      auto keyAvailable = run_service_key_controls(gkey);
+      if (keyAvailable && gkey.type != 0) {
+          
         if (parserInput) {
           wantRefresh = true;
-          // type into the parser 
-          if ((gkey == 361) || ((gkey == ' ') && (strlen(parserInput->Text.GetCStr()) == 0))) {
+          // type into the parser
+            
+            bool repeat = false;
+            if (gkey.type == SDL_KEYDOWN) {
+                if (gkey.key.keysym.scancode == SDL_SCANCODE_F3) { repeat = true; }
+                if ((gkey.key.keysym.scancode = SDL_SCANCODE_SPACE) && (strlen(parserInput->Text.GetCStr()) == 0)) { repeat = true; }
+            }
+          if (repeat) {
             // write previous contents into textbox (F3 or Space when box is empty)
-            for (unsigned int i = strlen(parserInput->Text.GetCStr()); i < strlen(play.lastParserEntry); i++) {
+            for (size_t i = strlen(parserInput->Text.GetCStr()); i < strlen(play.lastParserEntry); i++) {
               parserInput->OnKeyPress(play.lastParserEntry[i]);
             }
             //ags_domouse(DOMOUSE_DISABLE);
             Redraw();
             return true; // continue running loop
-          }
-          else if ((gkey >= 32) || (gkey == 13) || (gkey == 8)) {
-            parserInput->OnKeyPress(gkey);
-            if (!parserInput->IsActivated) {
-              //ags_domouse(DOMOUSE_DISABLE);
-              Redraw();
-              return true; // continue running loop
-            }
+              
+          } else {
+              
+              int kp = asciiFromEvent(gkey);
+              if (kp > 0) {
+                  parserInput->OnKeyPress(kp);
+                  if (!parserInput->IsActivated) {
+                      //ags_domouse(DOMOUSE_DISABLE);
+                      Redraw();
+                      return true; // continue running loop
+                  }
+              }
           }
         }
         else if (new_custom_render)
         {
-            runDialogOptionKeyPressHandlerFunc.params[0].SetDynamicObject(&ccDialogOptionsRendering, &ccDialogOptionsRendering);
-            runDialogOptionKeyPressHandlerFunc.params[1].SetInt32(GetKeyForKeyPressCb(gkey));
-            run_function_on_non_blocking_thread(&runDialogOptionKeyPressHandlerFunc);
+            int key = asciiOrAgsKeyCodeFromEvent(gkey);
+            if (key > 0) {
+                runDialogOptionKeyPressHandlerFunc.params[0].SetDynamicObject(&ccDialogOptionsRendering, &ccDialogOptionsRendering);
+                runDialogOptionKeyPressHandlerFunc.params[1].SetInt32(key);
+                run_function_on_non_blocking_thread(&runDialogOptionKeyPressHandlerFunc);
+            }
         }
         // Allow selection of options by keyboard shortcuts
-        else if (game.options[OPT_DIALOGNUMBERED] >= kDlgOptKeysOnly &&
-                 gkey >= '1' && gkey <= '9')
+        else if (game.options[OPT_DIALOGNUMBERED] >= kDlgOptKeysOnly)
         {
-          gkey -= '1';
-          if (gkey < numdisp) {
-            chose = disporder[gkey];
-            return false; // end dialog options running loop
-          }
+            int index = dialogOptionFromKey(gkey);
+            if (index >= 0 && index < numdisp) {
+                chose = disporder[index];
+                return false; // end dialog options running loop
+            }
         }
       }
       mousewason=mouseison;

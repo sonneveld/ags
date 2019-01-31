@@ -12,38 +12,24 @@
 //
 //=============================================================================
 
-#ifndef __AC_MYJGMOD_H
-#define __AC_MYJGMOD_H
+#include "gfx/gfxfilter_sdl_renderer.h"
 
-#include "jgmod.h"
-#include "media/audio/soundclip.h"
-
-// MOD/XM (JGMOD)
-struct MYMOD:public SOUNDCLIP
+namespace AGS
 {
-    JGMOD *tune;
+namespace Engine
+{
+namespace SDLRenderer
+{
 
-    int poll();
+using namespace Common;
 
-    void set_volume(int newvol);
+const GfxFilterInfo SDLRendererGfxFilter::FilterInfo = GfxFilterInfo("StdScale", "Nearest-neighbour");
 
-    void destroy();
+const GfxFilterInfo &SDLRendererGfxFilter::GetInfo() const
+{
+    return FilterInfo;
+}
 
-    void seek(int patnum);
-
-    int get_pos();
-
-    int get_pos_ms();
-
-    int get_length_ms();
-
-    int get_voice();
-
-    int get_sound_type();
-
-    int play();
-
-    MYMOD();
-};
-
-#endif // __AC_MYJGMOD_H
+} // namespace ALSW
+} // namespace Engine
+} // namespace AGS

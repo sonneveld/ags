@@ -27,6 +27,9 @@
 
 #include "allegro.h"
 
+#include "SDL.h"
+#include "sdl2alleg.h"
+
 namespace AGS { namespace Common { class Bitmap; }}
 using namespace AGS; // FIXME later
 

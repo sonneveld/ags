@@ -20,6 +20,11 @@
 
 #define GUITEXTBOX_LEGACY_TEXTLEN 200
 
+#define ASCII_BACKSPACE (8)
+#define ASCII_TAB (9)
+#define ASCII_RETURN (13)
+#define ASCII_ESCAPE (27)
+
 std::vector<AGS::Common::GUITextBox> guitext;
 int numguitext = 0;
 
@@ -63,9 +68,9 @@ void GUITextBox::Draw(Bitmap *ds)
 void GUITextBox::OnKeyPress(int keycode)
 {
     guis_need_update = 1;
-    // TODO: use keycode constants
+
     // backspace, remove character
-    if (keycode == 8)
+    if (keycode == ASCII_BACKSPACE)
     {
         Text.ClipRight(1);
         return;
@@ -74,7 +79,7 @@ void GUITextBox::OnKeyPress(int keycode)
     if ((keycode >= 128) && (!font_supports_extended_characters(Font)))
         return;
     // return/enter
-    if (keycode == 13)
+    if (keycode == ASCII_RETURN)
     {
         IsActivated = true;
         return;

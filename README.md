@@ -1,3 +1,127 @@
+# Experimental SDL2 Port
+
+This requires the allegro fork with SDL2 as a platform. Refer to this branch:
+https://github.com/sonneveld/allegro/tree/sdl2
+
+The aim of this branch is to attempt to slowly migrate AGS to SDL2. To do this, Allegro4 has been
+patched to use SDL2 as the platform that provides input, audio, graphics, etc. That way we can still
+rely on Allegro for things like bitmap graphics drawing/conversion, audio mixing, midi rendering, etc.
+
+Current status is that games seem to work with the ported allegro library. AGS still calls allegro, which
+calls SDL2 functions. Work has started on replacing those Allegro calls with direct SDL2 calls.
+
+We might not be able to rid AGS completely of Allegro, but at least it will be kept at a minimum while 
+we use a slightly more up-to-date library.
+
+
+## Building AGS/SDL2 on Linux
+
+The following instructions are for Ubuntu 18.04. Other distributions may require slightly different instructions.
+
+Check out the sdl port of AGS:
+https://github.com/sonneveld/ags/tree/ags3-sdl2
+
+Set environment variables to point to source directories:
+
+    AGS_SRC=...
+    CMAKE_BUILD_TYPE=Debug   # or Release!
+    #CMAKE_BUILD_TYPE=Release
+
+Install dependencies:
+
+    apt-get -y update
+    apt-get -y --no-install-recommends install build-essential pkg-config 
+    apt-get -y --no-install-recommends install libsdl2-2.0 libsdl2-dev 
+    apt-get -y --no-install-recommends install curl ca-certificates
+    apt-get -y --no-install-recommends install git
+
+    curl -O -L https://github.com/Kitware/CMake/releases/download/v3.13.4/cmake-3.13.4-Linux-x86_64.tar.gz
+    tar -C /opt -xf cmake-3.13.4-Linux-x86_64.tar.gz
+    ENV PATH="/opt/cmake-3.13.4-Linux-x86_64/bin:${PATH}"
+
+Build AGS:
+
+    cd $AGS_SRC  # where you checked-out the source
+    mkdir build
+    cmake ..
+    make -j
+
+
+## Building AGS/SDL2 on macOS
+
+Check out the sdl ports of AGS and Allegro:
+https://github.com/sonneveld/ags/tree/ags3-sdl2
+
+Set environment variables to point to source directories:
+
+    AGS_SRC=...
+    CMAKE_BUILD_TYPE=Debug   # or Release!
+    #CMAKE_BUILD_TYPE=Release
+
+Install dependencies:
+
+    # Check out https://brew.sh/ for details on installing homebrew
+    brew install cmake
+
+Download SDL2 [ https://www.libsdl.org/release/SDL2-2.0.8.dmg ] and drag the SDL2.framework into /Library/Frameworks
+
+Build AGS
+
+    cd $AGS_SRC
+    mkdir build-sdl2-$CMAKE_BUILD_TYPE
+    cd build-sdl2-$CMAKE_BUILD_TYPE
+    cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
+    make -j
+
+After building, there should be an "AGS.app" bundle in your build directory. You can run this like a normal app.
+
+Bundling SDL2 framework with the app:
+
+    Copy SDL2.framework into AGS.app/Contents/Frameworks
+
+    # Tell the AGS binary to also search for @rpath based libraries within the bundle relative to itself.
+    install_name_tool -add_rpath "@executable_path/../Frameworks" AGS.app/Contents/MacOS/AGS
+
+
+
+
+
+
+*or* Build AGS for xcode if you want to develop and debug within
+
+    cd $AGS_SRC
+    mkdir build-sdl2-xcode-$CMAKE_BUILD_TYPE
+    cd build-sdl2-$CMAKE_BUILD_TYPE
+    cmake .. -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -GXcode
+    open AdventureGameStudio.xcodeproj
+
+
+## Building AGS/SDL2 on Windows
+
+These instructions have similiar requiements to the [original Windows build instructions](Windows/README.md), so it might be helpful to also read that documentation for further details.
+
+Download and install Visual Studio Community 2017 https://www.visualstudio.com/downloads/
+
+Download and install cmake https://cmake.org/download/
+
+Download SDL2 development libraries for MSVC https://www.libsdl.org/download-2.0.php . Install in AGS Source/SDL2-2.0.8
+
+Download OpenAL SDK and installer here https://www.openal.org/downloads/ 
+
+Build engine:
+
+- export SDL2DIR=C:/Users/sonneveld/source/repos/SDL2-2.0.9
+- or set SDL2_ROOT_DIR as a cmake variable
+- export OPENALDIR="C:/Program Files (x86)/OpenAL 1.1 SDK"
+
+
+- mkdir build
+- cd build
+- cmake ..
+- Open AGS.sln
+- Build AGS (for debug or release)
+
+
 # Adventure Game Studio
 
 Adventure Game Studio (AGS) - is the IDE and the engine meant for creating and running videogames of adventure (aka "quest") genre. It has potential, although limited, support for other genres as well.

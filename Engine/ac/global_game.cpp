@@ -494,9 +494,6 @@ int EndCutscene () {
     // Stop it fast-forwarding
     stop_fast_forwarding();
 
-    // make sure that the screen redraws
-    invalidate_screen();
-
     // Return whether the player skipped it
     return retval;
 }
@@ -599,6 +596,8 @@ void GetLocationName(int xxx,int yyy,char*tempo) {
         guis_need_update = 1;
     play.get_loc_name_last_time = onhs;
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 int IsKeyPressed (int keycode) {
 #ifdef ALLEGRO_KEYBOARD_HANDLER
@@ -736,6 +735,18 @@ int IsKeyPressed (int keycode) {
     // old allegro version
     quit("allegro keyboard handler not in use??");
 #endif
+}
+
+#endif
+
+// this is eKeyCode defined in agsdefns.sh
+int IsKeyPressed (int keycode) {
+    auto status = ags_iskeypressed(keycode);
+    if (status < 0) {
+        debug_script_log("IsKeyPressed: unsupported keycode %d", keycode);
+        return 0;
+    }
+    return status;
 }
 
 int SaveScreenShot(const char*namm) {

@@ -2,12 +2,12 @@
 #define APEG_OPENAL_SUPPORT_H__
 
 #ifdef __APPLE__
-#include <OpenAL/OpenAL.h>
+    #include <OpenAL/OpenAL.h>
 #else
-#include "al.h"
-#include "alc.h"
-// disabled until I add extension detection
-// #include "alext.h"
+    #include "AL/al.h"
+    #include "AL/alc.h"
+    // disabled until I add extension detection
+    // #include "AL/alext.h"
 #endif
 
 #endif

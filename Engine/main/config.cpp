@@ -149,7 +149,7 @@ void parse_scaling_option(const String &scaling_option, GameFrameSetup &frame_se
 }
 
 // Parses legacy filter ID and converts it into current scaling options
-bool parse_legacy_frame_config(const String &scaling_option, String &filter_id, GameFrameSetup &frame)
+static bool parse_legacy_frame_config(const String &scaling_option, String &filter_id, GameFrameSetup &frame)
 {
     struct
     {
@@ -192,6 +192,8 @@ String make_scaling_option(const GameFrameSetup &frame_setup)
     return make_scaling_option(frame_setup.ScaleDef, frame_setup.ScaleFactor);
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 uint32_t convert_scaling_to_fp(int scale_factor)
 {
     if (scale_factor >= 0)
@@ -199,6 +201,8 @@ uint32_t convert_scaling_to_fp(int scale_factor)
     else
         return kUnit / abs(scale_factor);
 }
+
+#endif
 
 int convert_fp_to_scaling(uint32_t scaling)
 {
@@ -320,6 +324,8 @@ String find_user_cfg_file()
 
 void config_defaults()
 {
+#ifdef AGS_DELETE_FOR_3_6
+
 #if AGS_PLATFORM_OS_WINDOWS
     usetup.Screen.DriverID = "D3D9";
 #else
@@ -330,6 +336,13 @@ void config_defaults()
 #endif
     usetup.midicard = MIDI_AUTODETECT;
     usetup.translation = "";
+
+#endif
+    usetup.digicard = DIGI_AUTODETECT;
+    usetup.midicard = MIDI_AUTODETECT;
+    usetup.Screen.DriverID = "OGL";
+
+    usetup.translation.Empty();
 }
 
 void read_game_data_location(const ConfigTree &cfg)
@@ -355,6 +368,7 @@ void read_game_data_location(const ConfigTree &cfg)
 
 void read_legacy_audio_config(const ConfigTree &cfg)
 {
+#ifdef AGS_DELETE_FOR_3_6
 #if AGS_PLATFORM_OS_WINDOWS
     int idx = INIreadint(cfg, "sound", "digiwinindx", -1);
     if (idx == 0)
@@ -377,6 +391,7 @@ void read_legacy_audio_config(const ConfigTree &cfg)
     else
         idx = MIDI_AUTODETECT;
     usetup.midicard = idx;
+#endif
 #endif
 }
 
@@ -486,6 +501,9 @@ void apply_config(const ConfigTree &cfg)
         // Legacy settings has to be translated into new options;
         // they must be read first, to let newer options override them, if ones are present
         read_legacy_audio_config(cfg);
+
+#ifdef AGS_DELETE_FOR_3_6
+
         if (psp_audio_enabled)
         {
             usetup.digicard = read_driverid(cfg, "sound", "digiid", usetup.digicard);
@@ -499,6 +517,11 @@ void apply_config(const ConfigTree &cfg)
             usetup.digicard = DIGI_NONE;
             usetup.midicard = MIDI_NONE;
         }
+
+#endif
+
+        usetup.digicard = read_driverid(cfg, "sound", "digiid", usetup.digicard);
+        usetup.midicard = read_driverid(cfg, "sound", "midiid", usetup.midicard);
 
         psp_audio_multithreaded = INIreadint(cfg, "sound", "threaded", psp_audio_multithreaded);
 
@@ -525,14 +548,9 @@ void apply_config(const ConfigTree &cfg)
         usetup.Screen.DisplayMode.ScreenSize.Size = Size(INIreadint(cfg, "graphics", "screen_width"),
                                                         INIreadint(cfg, "graphics", "screen_height"));
         usetup.Screen.DisplayMode.ScreenSize.MatchDeviceRatio = INIreadint(cfg, "graphics", "match_device_ratio", 1) != 0;
-        // TODO: move to config overrides (replace values during config load)
-#if AGS_PLATFORM_OS_MACOS
-        usetup.Screen.Filter.ID = "none";
-#else
         usetup.Screen.Filter.ID = INIreadstring(cfg, "graphics", "filter", "StdScale");
         parse_scaling_option(INIreadstring(cfg, "graphics", "game_scale_fs", "proportional"), usetup.Screen.FsGameFrame);
         parse_scaling_option(INIreadstring(cfg, "graphics", "game_scale_win", "max_round"), usetup.Screen.WinGameFrame);
-#endif
 
         usetup.Screen.DisplayMode.RefreshRate = INIreadint(cfg, "graphics", "refresh");
         usetup.Screen.DisplayMode.VSync = INIreadint(cfg, "graphics", "vsync") > 0;
@@ -550,7 +568,6 @@ void apply_config(const ConfigTree &cfg)
         usetup.translation = INIreadstring(cfg, "language", "translation");
 
         // TODO: move to config overrides (replace values during config load)
-
         // the config file specifies cache size in KB, here we convert it to bytes
         spriteset.SetMaxCacheSize(INIreadint (cfg, "misc", "cachemax", DEFAULTCACHESIZE / 1024) * 1024);
 

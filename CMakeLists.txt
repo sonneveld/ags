@@ -1,3 +1,5 @@
+
+# https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/Life-Cycle-Considerations
 cmake_minimum_required(VERSION 3.13..3.14)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/CMake/c_flag_overrides.cmake)
@@ -110,7 +112,13 @@ elseif (LINUX)
     find_package(X11)
 endif()
 
-include(FetchAllegro)
+include(FindLocalZstd)
+include(FindLocalSDL2)
+include(FindLocalPhysicsFS)
+include(FindLocalSdlSound)
+include(FindLocalOpenAL)
+include(FindLocalAllegro)
+
 include(FetchOgg)
 include(FetchVorbis)
 include(FetchTheora)

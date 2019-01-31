@@ -26,6 +26,9 @@
 //#include <libcda.h>
 //#include <pwd.h>
 //#include <sys/stat.h>
+#include <thread>
+#include "SDL.h"
+#include <unistd.h>
 #include "platform/base/agsplatformdriver.h"
 #include "util/directory.h"
 #include "ac/common.h"
@@ -60,12 +63,6 @@ struct AGSMac : AGSPlatformDriver {
 
 AGSMac::AGSMac()
 {
-  AGSMacInitPaths(psp_game_file_name, libraryApplicationSupport);
-  
-  snprintf(commonDataPath, PATH_MAX, "%s/uk.co.adventuregamestudio", libraryApplicationSupport);
-  AGS::Common::Directory::CreateDirectory(commonDataPath);
-
-  strcpy(psp_translation, "default");
 }
 
 int AGSMac::CDPlayerCommand(int cmdd, int datt) {
@@ -114,22 +111,22 @@ void AGSMac::ShutdownCDPlayer() {
 
 const char* AGSMac::GetAllUsersDataDirectory()
 {
-  return commonDataPath;
+  return SDL_GetPrefPath("Adventure Game Studio", "Data");
 }
 
 const char *AGSMac::GetUserSavedgamesDirectory()
 {
-  return libraryApplicationSupport;
+  return SDL_GetPrefPath("Adventure Game Studio", "Saved Games");
 }
 
 const char *AGSMac::GetUserConfigDirectory()
 {
-  return libraryApplicationSupport;
+  return SDL_GetPrefPath("Adventure Game Studio", "Config");
 }
 
 const char *AGSMac::GetAppOutputDirectory()
 {
-  return commonDataPath;
+  return SDL_GetPrefPath("Adventure Game Studio", "Logs");
 }
 
 const char *AGSMac::GetIllegalFileChars()

@@ -46,26 +46,28 @@
 #include "main/graphics_mode.h"
 #include "platform/base/agsplatformdriver.h"
 #include "util/math.h"
-#if AGS_SIMULATE_RIGHT_CLICK
-#include "ac/global_game.h" // j for IsKeyPressed
-#endif
+
+#include "util/mutex.h"
+#include "util/mutex_lock.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
 
+extern void process_pending_events();
 
+extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
 
-const char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
-const int NONE = -1, LEFT = 0, RIGHT = 1, MIDDLE = 2;
+static const char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
+static const int NONE = -1, LEFT = 0, RIGHT = 1, MIDDLE = 2;
 char currentcursor = 0;
 // virtual mouse cursor coordinates
 int mousex = 0, mousey = 0, numcurso = -1, hotx = 0, hoty = 0;
 // real mouse coordinates and bounds
-int real_mouse_x = 0, real_mouse_y = 0;
-int boundx1 = 0, boundx2 = 99999, boundy1 = 0, boundy2 = 99999;
-int disable_mgetgraphpos = 0;
-char ignore_bounds = 0;
+static int real_mouse_x = 0, real_mouse_y = 0;
+static int boundx1 = 0, boundx2 = 99999, boundy1 = 0, boundy2 = 99999;
+static int disable_mgetgraphpos = 0;
+char ignore_bounds = 1;
 extern char alpha_blend_cursor ;
 Bitmap *mousecurs[MAXCURSORS];
 extern color palette[256];
@@ -104,6 +106,8 @@ void mgraphconfine(int x1, int y1, int x2, int y2)
 
 void mgetgraphpos()
 {
+#ifdef AGS_DELETE_FOR_3_6
+
     poll_mouse();
     if (disable_mgetgraphpos)
     {
@@ -163,6 +167,12 @@ void mgetgraphpos()
             return;
     }
     else
+
+#endif
+
+#pragma message ("SDL-TODO: find out where mgetgraphpos is needed, are events polled before that?")
+    process_pending_events();
+
     {
         // Save real cursor coordinates provided by system
         real_mouse_x = mouse_x;
@@ -193,7 +203,7 @@ void msetcursorlimit(int x1, int y1, int x2, int y2)
   boundy2 = y2;
 }
 
-int hotxwas = 0, hotywas = 0;
+static int hotxwas = 0, hotywas = 0;
 void domouse(int str)
 {
   /*
@@ -206,6 +216,8 @@ void domouse(int str)
   const Rect &viewport = play.GetMainViewport();
 
   mgetgraphpos();
+
+  // temporarily adjust mousex/y. Original values returned at end of func.
   mousex -= hotx;
   mousey -= hoty;
 
@@ -220,6 +232,8 @@ void domouse(int str)
   hotxwas = hotx;
   hotywas = hoty;
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 int ismouseinbox(int lf, int tp, int rt, int bt)
 {
@@ -248,27 +262,21 @@ void mloadwcursor(char *namm)
   }
 }
 
+#endif
+
+extern int get_mouse_b();
+
 int butwas = 0;
 int mgetbutton()
 {
   int toret = NONE;
-  poll_mouse();
-  int butis = mouse_b;
+  int butis = get_mouse_b();
 
   if ((butis > 0) & (butwas > 0))
     return NONE;  // don't allow holding button down
 
   if (butis & 1)
-  {
     toret = LEFT;
-#if AGS_SIMULATE_RIGHT_CLICK
-    // j Ctrl-left click should be right-click
-    if (IsKeyPressed(405) || IsKeyPressed(406))
-    {
-      toret = RIGHT;
-    }
-#endif
-  }
   else if (butis & 2)
     toret = RIGHT;
   else if (butis & 4)
@@ -281,10 +289,7 @@ int mgetbutton()
 const int MB_ARRAY[3] = { 1, 2, 4 };
 int misbuttondown(int buno)
 {
-  poll_mouse();
-  if (mouse_b & MB_ARRAY[buno])
-    return TRUE;
-  return FALSE;
+  return get_mouse_b() & MB_ARRAY[buno];
 }
 
 void msetgraphpos(int xa, int ya)
@@ -302,7 +307,7 @@ void msethotspot(int xx, int yy)
 
 int minstalled()
 {
-  return install_mouse();
+  return 3;
 }
 
 void Mouse::AdjustPosition(int &x, int &y)
@@ -314,7 +319,14 @@ void Mouse::AdjustPosition(int &x, int &y)
 void Mouse::SetGraphicArea()
 {
     Rect dst_r = GameScaling.ScaleRange(play.GetMainViewport());
-    mgraphconfine(dst_r.Left, dst_r.Top, dst_r.Right, dst_r.Bottom);
+
+    Mouse::ControlRect = Rect(dst_r.Left, dst_r.Top, dst_r.Right, dst_r.Bottom);
+    set_mouse_range(Mouse::ControlRect.Left, Mouse::ControlRect.Top, Mouse::ControlRect.Right, Mouse::ControlRect.Bottom);
+    Debug::Printf("Mouse confined: (%d,%d)-(%d,%d) (%dx%d)",
+    Mouse::ControlRect.Left, Mouse::ControlRect.Top, Mouse::ControlRect.Right, Mouse::ControlRect.Bottom,
+    Mouse::ControlRect.GetWidth(), Mouse::ControlRect.GetHeight());
+
+
 }
 
 void Mouse::SetMoveLimit(const Rect &r)
@@ -367,6 +379,8 @@ bool Mouse::IsControlEnabled()
     return ControlEnabled;
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void Mouse::SetSpeedUnit(float f)
 {
     if (!ControlEnabled)
@@ -380,12 +394,16 @@ float Mouse::GetSpeedUnit()
     return SpeedUnit;
 }
 
+#endif
+
 void Mouse::SetSpeed(float speed)
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!ControlEnabled)
         return;
     SpeedVal = Math::Max(0.f, speed);
     Speed = SpeedUnit * SpeedVal;
+#endif
 }
 
 float Mouse::GetSpeed()

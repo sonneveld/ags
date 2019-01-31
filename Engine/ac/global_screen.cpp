@@ -73,7 +73,6 @@ void ShakeScreen(int severe) {
         }
 
         play.mouse_cursor_hidden--;
-        clear_letterbox_borders();
         play.shakesc_length = 0;
     }
     else
@@ -90,7 +89,6 @@ void ShakeScreen(int severe) {
 
             update_polled_stuff_if_runtime();
         }
-        clear_letterbox_borders();
         render_to_screen();
         delete tty;
     }
@@ -103,12 +101,6 @@ void ShakeScreenBackground (int delay, int amount, int length) {
     if (delay < 2) 
         quit("!ShakeScreenBackground: invalid delay parameter");
 
-    if (amount < play.shakesc_amount)
-    {
-        // from a bigger to smaller shake, clear up the borders
-        clear_letterbox_borders();
-    }
-
     play.shakesc_amount = amount;
     play.shakesc_delay = delay;
     play.shakesc_length = length;
@@ -117,8 +109,6 @@ void ShakeScreenBackground (int delay, int amount, int length) {
 void TintScreen(int red, int grn, int blu) {
     if ((red < 0) || (grn < 0) || (blu < 0) || (red > 100) || (grn > 100) || (blu > 100))
         quit("!TintScreen: RGB values must be 0-100");
-
-    invalidate_screen();
 
     if ((red == 0) && (grn == 0) && (blu == 0)) {
         play.screen_tint = -1;
@@ -133,14 +123,11 @@ void TintScreen(int red, int grn, int blu) {
 void my_fade_out(int spdd) {
     EndSkippingUntilCharStops();
 
-    if (play.fast_forward)
-        return;
+    if (play.fast_forward) { return; }
+    if (play.screen_is_faded_out != 0) { return; }
 
-    if (play.screen_is_faded_out == 0)
-        gfxDriver->FadeOut(spdd, play.fade_to_red, play.fade_to_green, play.fade_to_blue);
-
-    if (game.color_depth > 1)
-        play.screen_is_faded_out = 1;
+    gfxDriver->FadeOut(spdd, play.fade_to_red, play.fade_to_green, play.fade_to_blue);
+    play.screen_is_faded_out = 1;
 }
 
 void SetScreenTransition(int newtrans) {
@@ -174,8 +161,7 @@ void SetFadeColor(int red, int green, int blue) {
 void FadeIn(int sppd) {
     EndSkippingUntilCharStops();
 
-    if (play.fast_forward)
-        return;
+    if (play.fast_forward) { return; }
 
     my_fade_in(palette,sppd);
 }

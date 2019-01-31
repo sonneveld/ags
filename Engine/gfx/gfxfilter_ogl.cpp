@@ -12,9 +12,9 @@
 //
 //=============================================================================
 
-#include "core/platform.h"
+#include "gfx/ogl_support.h"
 
-#if AGS_PLATFORM_OS_WINDOWS || AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_LINUX
+#if AGS_OPENGL_DRIVER
 
 #include "gfx/gfxfilter_ogl.h"
 #include "ogl_headers.h"
@@ -48,4 +48,4 @@ const GfxFilterInfo &OGLGfxFilter::GetInfo() const
 } // namespace Engine
 } // namespace AGS
 
-#endif // only on Windows, Android and iOS
+#endif // AGS_OPENGL_DRIVER

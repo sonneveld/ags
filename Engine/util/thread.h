@@ -46,11 +46,10 @@ public:
 } // namespace Engine
 } // namespace AGS
 
-#if 0
-  // insert platforms here
-#else
+#ifdef AGS_HAS_STD_THREAD
 #include "thread_std.h"
+#else
+#include "thread_sdl2.h"
 #endif
-
 
 #endif // __AGS_EE_UTIL__THREAD_H

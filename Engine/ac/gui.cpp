@@ -522,7 +522,6 @@ void update_gui_disabled_status() {
             guis[aa].OnControlPositionChanged();
         }
         guis_need_update = 1;
-        invalidate_screen();
     }
 }
 

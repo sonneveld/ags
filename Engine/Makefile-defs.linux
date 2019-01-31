@@ -1,12 +1,14 @@
 INCDIR = ../Engine ../Common ../Common/libinclude ../Plugins
-LIBDIR =
+INCDIR += /usr/local/include
+LIBDIR = /usr/local/lib
 CFLAGS := -O2 -g -fsigned-char -Wfatal-errors -DNDEBUG -DALLEGRO_NO_FIX_ALIASES -DAGS_RUNTIME_PATCH_ALLEGRO -DAGS_HAS_CD_AUDIO -DAGS_CASE_SENSITIVE_FILESYSTEM -D_FILE_OFFSET_BITS=64 -DHAVE_FSEEKO -DALLEGRO_STATICLINK -DLINUX_VERSION -DDISABLE_MPEG_AUDIO -DBUILTIN_PLUGINS -DRTLD_NEXT $(shell pkg-config --cflags freetype2) $(CFLAGS)
-CXXFLAGS := -std=c++11 -fno-rtti -Wno-write-strings $(CXXFLAGS)
+CFLAGS += $(shell pkg-config --cflags sdl2)
+CXXFLAGS := -fno-rtti -Wno-write-strings -std=c++11 $(CXXFLAGS)
 LIBS := -rdynamic -laldmb -ldumb -Wl,-Bdynamic
-LIBS += $(shell pkg-config --libs allegro)
-LIBS += $(shell pkg-config --libs x11)
+LIBS += -lalleg-debug
 LIBS += $(shell pkg-config --libs ogg)
 LIBS += $(shell pkg-config --libs theora)
+LIBS += $(shell pkg-config --libs sdl2) 
 
 ifeq ($(USE_TREMOR), 1)
   LIBS += -lvorbisidec
@@ -41,6 +43,7 @@ endif
 
 BASE_PLATFORM = \
 platform/linux/acpllnx.cpp \
+platform/linux/binreloc.c \
 platform/util/pe.c \
 platform/util/libc.c
 

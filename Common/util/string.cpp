@@ -13,6 +13,7 @@
 //=============================================================================
 
 #include <algorithm>
+#include <stdexcept>
 #include <stdio.h> // sprintf
 #include <stdlib.h>
 #include <string.h>

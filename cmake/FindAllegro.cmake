@@ -2,7 +2,8 @@ include(ExternalProject)
 
 ExternalProject_Add (
     AllegroDebugProject
-    GIT_REPOSITORY "git@github.com:sonneveld/allegro.git"
+    GIT_REPOSITORY "https://github.com/sonneveld/allegro.git"
+    #GIT_REPOSITORY "git@github.com:sonneveld/allegro.git"
     #GIT_REPOSITORY "file://$ENV{HOME}/othernick/src/ags-paid/allegro"
     GIT_TAG "sdl2-flat"
     GIT_SHALLOW 1

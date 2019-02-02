@@ -18,11 +18,6 @@ if(NOT TARGET FreeType2::FreeType2)
     set_property(TARGET FreeType2::FreeType2 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${FREETYPE_INCLUDE_DIRS})
 endif()
 
-add_library(Allegro::Allegro STATIC IMPORTED)
-set_property(TARGET Allegro::Allegro PROPERTY IMPORTED_LOCATION ${ALLEGRO_PREFIX}/lib/liballeg-debug.a)
-set_property(TARGET Allegro::Allegro PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${ALLEGRO_PREFIX}/include)
-set_property(TARGET Allegro::Allegro PROPERTY INTERFACE_LINK_LIBRARIES SDL2::SDL2)
-
 add_library(alfont::alfont STATIC IMPORTED)
 set_property(TARGET alfont::alfont PROPERTY IMPORTED_LOCATION ${ALFONT_PREFIX}/lib/libalfont.a)
 set_property(TARGET alfont::alfont PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${ALFONT_PREFIX}/include)

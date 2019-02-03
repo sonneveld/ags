@@ -4,7 +4,7 @@
 # bundle game dir
 
 # https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/Life-Cycle-Considerations
-cmake_minimum_required (VERSION 3.5.1 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.11)
 
 project(AdventureGameStudio
     VERSION 3.4.1.13
@@ -45,7 +45,9 @@ if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
 
-find_package(Allegro)
+find_package(SDL2 REQUIRED)
+find_package(Allegro REQUIRED)
+find_package(alfont REQUIRED)
 
 # GLAD
 # ------------------------------------------------------------
@@ -76,7 +78,8 @@ target_compile_definitions(AGSCommon PRIVATE
 
 target_link_libraries(AGSCommon
     SDL2::SDL2
-    Allegro::Allegro)
+    allegro
+)
 
 
 # AGS
@@ -153,8 +156,8 @@ endif()
 target_link_libraries(AGS
     AGSCommon
     SDL2::SDL2main
-    Allegro::Allegro
-    alfont::alfont
+    allegro
+    alfont
     # Lua::Lua
     Ogg::Ogg
     Theora::Theora

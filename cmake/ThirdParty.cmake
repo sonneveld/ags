@@ -1,6 +1,4 @@
 
-find_package(SDL2 REQUIRED)
-
 find_package(OpenGL REQUIRED)
 if(OPENGL_FOUND)
     if(NOT TARGET OpenGL::GL)
@@ -28,30 +26,8 @@ if(BZIP2_FOUND)
     endif()
 endif()
 
-add_library(FreeType2::FreeType2 STATIC IMPORTED)
-set_property(TARGET FreeType2::FreeType2 PROPERTY IMPORTED_LOCATION ${FREETYPE2_PREFIX}/lib/libfreetype.a)
-set_property(TARGET FreeType2::FreeType2 PROPERTY INTERFACE_INCLUDE_DIRECTORIES 
-    ${FREETYPE2_PREFIX}/include 
-    ${FREETYPE2_PREFIX}/include/freetype2)
-set_property(TARGET FreeType2::FreeType2 PROPERTY INTERFACE_LINK_LIBRARIES ZLIB::ZLIB BZip2::BZip2)
 
-add_library(alfont::alfont STATIC IMPORTED)
-set_property(TARGET alfont::alfont PROPERTY IMPORTED_LOCATION ${ALFONT_PREFIX}/lib/libalfont.a)
-set_property(TARGET alfont::alfont PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${ALFONT_PREFIX}/include)
-set_property(TARGET alfont::alfont PROPERTY INTERFACE_LINK_LIBRARIES Allegro::Allegro)
 
-# add_library(DUMB::DUMB STATIC IMPORTED)
-# set_property(TARGET DUMB::DUMB PROPERTY IMPORTED_CONFIGURATIONS "Debug")
-# set_property(TARGET DUMB::DUMB PROPERTY IMPORTED_LOCATION ${DUMB_PREFIX}/lib/libdumb.a)
-# set_property(TARGET DUMB::DUMB PROPERTY IMPORTED_LOCATION_DEBUG ${DUMB_PREFIX}/lib/libdumbd.a)
-# set_property(TARGET DUMB::DUMB PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${DUMB_PREFIX}/include)
-
-# add_library(DUMB::AllegroDUMB STATIC IMPORTED)
-# set_property(TARGET DUMB::AllegroDUMB PROPERTY IMPORTED_CONFIGURATIONS "Debug")
-# set_property(TARGET DUMB::AllegroDUMB PROPERTY IMPORTED_LOCATION ${DUMB_PREFIX}/lib/libaldmb.a)
-# set_property(TARGET DUMB::AllegroDUMB PROPERTY IMPORTED_LOCATION_DEBUG ${DUMB_PREFIX}/lib/libaldmd.a)
-# set_property(TARGET DUMB::AllegroDUMB PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${DUMB_PREFIX}/include)
-# set_property(TARGET DUMB::AllegroDUMB PROPERTY INTERFACE_LINK_LIBRARIES Allegro::Allegro DUMB::DUMB)
 
 add_library(Lua::Lua STATIC IMPORTED)
 set_property(TARGET Lua::Lua PROPERTY IMPORTED_LOCATION ${LUA_PREFIX}/lib/liblua.a)

@@ -18,11 +18,6 @@ if(NOT TARGET FreeType2::FreeType2)
     set_property(TARGET FreeType2::FreeType2 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${FREETYPE_INCLUDE_DIRS})
 endif()
 
-add_library(alfont::alfont STATIC IMPORTED)
-set_property(TARGET alfont::alfont PROPERTY IMPORTED_LOCATION ${ALFONT_PREFIX}/lib/libalfont.a)
-set_property(TARGET alfont::alfont PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${ALFONT_PREFIX}/include)
-set_property(TARGET alfont::alfont PROPERTY INTERFACE_LINK_LIBRARIES Allegro::Allegro)
-
 function (pkg_target _prefix _module _target)
     pkg_check_modules(${_prefix} REQUIRED ${_module})
     add_library(${_target} INTERFACE IMPORTED)

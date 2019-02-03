@@ -67,6 +67,11 @@ void String::ReadCount(Stream *in, size_t count)
     __data.resize(count);
     count = in->Read(&__data[0], count);
     __data.resize(count);
+    
+    auto nullchar = __data.find('\0');
+    if (nullchar != std::string::npos) {
+        __data.resize(nullchar);
+    }
 }
 
 void String::Write(Stream *out) const

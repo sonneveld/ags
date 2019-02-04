@@ -20,11 +20,10 @@
 
 #include "ac/dynobj/cc_agsdynamicobject.h"
 
-struct ScriptUserObject : ICCDynamicObject
+struct ScriptUserObject final : ICCDynamicObject
 {
 public:
     ScriptUserObject();
-    virtual ~ScriptUserObject();
 
     static ScriptUserObject *CreateManaged(size_t size);
     void            Create(const char *data, size_t size);
@@ -49,6 +48,9 @@ public:
     virtual void    WriteInt16(const char *address, intptr_t offset, int16_t val);
     virtual void    WriteInt32(const char *address, intptr_t offset, int32_t val);
     virtual void    WriteFloat(const char *address, intptr_t offset, float val);
+
+protected:
+    virtual ~ScriptUserObject();
 
 private:
     // NOTE: we use signed int for Size at the moment, because the managed

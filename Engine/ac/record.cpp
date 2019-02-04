@@ -250,10 +250,10 @@ int my_readkey() {
         // F11-F12
         else if ((gott==357) || (gott==358)) gott+=76;
         // insert / numpad insert
-        else if ((scancode == KEY_0_PAD) || (scancode == KEY_INSERT))
+        else if ((scancode == __allegro_KEY_0_PAD) || (scancode == __allegro_KEY_INSERT))
             gott = AGS_KEYCODE_INSERT;
         // delete / numpad delete
-        else if ((scancode == KEY_DEL_PAD) || (scancode == KEY_DEL))
+        else if ((scancode == __allegro_KEY_DEL_PAD) || (scancode == __allegro_KEY_DEL))
             gott = AGS_KEYCODE_DELETE;
         // Home
         else if (gott == 378) gott = 371;
@@ -286,7 +286,7 @@ int my_readkey() {
     {
       gott = gott & 0x00ff;
 #if defined(MAC_VERSION)
-      if (scancode==KEY_BACKSPACE) {
+      if (scancode==__allegro_KEY_BACKSPACE) {
         gott = 8; //j backspace on mac
       }
 #endif

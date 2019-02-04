@@ -199,7 +199,12 @@ foreach(target_var AGS AGSCommon)
         $<$<PLATFORM_ID:Linux>:_GLIBCXX_USE_CXX11_ABI>
 
         DISABLE_MPEG_AUDIO # apeg-1.2.1
+
         ALLEGRO_STATICLINK # used by allegro (if statically linked)
+        ALLEGRO_NO_COMPATIBILITY
+        ALLEGRO_NO_FIX_CLASS
+        ALLEGRO_NO_FIX_ALIASES
+        ALLEGRO_NO_KEY_DEFINES
     )
 
 endforeach(target_var)
@@ -231,7 +236,7 @@ foreach(target_var AGS AGSCommon glad)
         # Refer to https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc/
 
         target_compile_options(${target_var} PRIVATE
-            $<$<CONFIG:Debug>: -Og >
+            $<$<CONFIG:Debug>: -O0 >
             $<$<CONFIG:Release>: -O2 >
 
             -fsigned-char

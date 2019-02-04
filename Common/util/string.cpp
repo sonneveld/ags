@@ -64,14 +64,9 @@ void String::ReadCount(Stream *in, size_t count)
     if (!in) { return; }
     if (count <= 0) { return; }
 
-    __data.resize(count);
-    count = in->Read(&__data[0], count);
-    __data.resize(count);
-    
-    auto nullchar = __data.find('\0');
-    if (nullchar != std::string::npos) {
-        __data.resize(nullchar);
-    }
+    std::vector<char> buf(count+1, '\0');
+    count = in->Read(&buf[0], count);
+    __data.assign(&buf[0]);
 }
 
 void String::Write(Stream *out) const
@@ -299,7 +294,7 @@ void String::Free()
 
 void String::MakeLower()
 {
-    strlwr(&__data[0]);
+    std::transform (__data.begin(), __data.end(), __data.begin(), tolower);
 }
 
 void String::Prepend(const char *cstr)
@@ -319,16 +314,7 @@ void String::Replace(char what, char with)
     if (!what) { return; }
     if (!with) { return; }
     if (what == with) { return; }
-
-    auto rep_ptr = &__data[0];
-    while (*rep_ptr)
-    {
-        if (*rep_ptr == what)
-        {
-            *rep_ptr = with;
-        }
-        rep_ptr++;
-    }
+    std::replace(__data.begin(), __data.end(), what, with);
 }
 
 void String::ReplaceMid(size_t from, size_t count, const char *cstr)

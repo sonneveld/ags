@@ -99,8 +99,7 @@ extern volatile int psp_audio_multithreaded;
 void update_mp3();
 void update_mp3_thread();
 
-extern volatile int mvolcounter;
-extern int update_music_at;
+extern uint64_t update_music_at;
 
 // crossFading is >0 (channel number of new track), or -1 (old
 // track fading out, no new track)

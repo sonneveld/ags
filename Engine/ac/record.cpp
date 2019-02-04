@@ -37,6 +37,7 @@
 #include "util/file.h"
 #include "util/filestream.h"
 #include "gfx/graphicsdriver.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -46,7 +47,6 @@ extern GameState play;
 extern int disable_mgetgraphpos;
 extern int mousex,mousey;
 extern unsigned int loopcounter,lastcounter;
-extern volatile unsigned long globalTimerCounter;
 extern SOUNDCLIP *channels[MAX_SOUND_CHANNELS+1];
 extern int pluginSimulatedClick;
 extern int displayed_room;
@@ -82,7 +82,7 @@ SDL_Event getTextEventFromQueue() {
         textEventQueue.pop();
     }
     
-    if ((globalTimerCounter < play.ignore_user_input_until_time)) {
+    if ((getGlobalTimerCounterMs() < play.ignore_user_input_until_time)) {
         // ignoring user input
         result =  { 0 };
     }
@@ -132,7 +132,7 @@ int rec_getch () {
 #pragma message ("SDL-TODO: still used in invwindow.  need to check where kbhit was used.. why was ignored?")
 int rec_kbhit () {
     int result = keypressed();
-    if ((result) && (globalTimerCounter < play.ignore_user_input_until_time))
+    if ((result) && (getGlobalTimerCounterMs() < play.ignore_user_input_until_time))
     {
         // ignoring user input
         my_readkey();
@@ -164,7 +164,7 @@ int rec_mgetbutton() {
         result = mgetbutton();
     }
 
-    if ((result >= 0) && (globalTimerCounter < play.ignore_user_input_until_time))
+    if ((result >= 0) && (getGlobalTimerCounterMs() < play.ignore_user_input_until_time))
     {
         // ignoring user input
         result = NONE;

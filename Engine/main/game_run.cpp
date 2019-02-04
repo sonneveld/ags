@@ -52,6 +52,7 @@
 #include "plugin/plugin_engine_internal.h"
 #include "script/script.h"
 #include "ac/spritecache.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 
@@ -81,7 +82,6 @@ extern RoomStatus*croom;
 extern CharacterExtras *charextra;
 extern SpriteCache spriteset;
 extern unsigned int loopcounter,lastcounter;
-extern volatile int timerloop;
 extern int cur_mode,cur_cursor;
 
 // Checks if user interface should remain disabled for now
@@ -652,7 +652,7 @@ void PollUntilNextFrame()
 {
     // make sure we poll, cos a low framerate (eg 5 fps) could stutter
     // mp3 music
-    while (timerloop == 0 && play.fast_forward == 0) {
+    while (getAgsTicks() == currentFrameTicks && play.fast_forward == 0) {
         update_polled_stuff_if_runtime();
         SDL_Delay(1);
     }
@@ -674,7 +674,7 @@ void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int
 
     ccNotifyScriptStillAlive ();
     our_eip=1;
-    timerloop=0;
+    currentFrameTicks = getAgsTicks();
 
     game_loop_check_problems_at_start();
 

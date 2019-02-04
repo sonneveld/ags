@@ -32,6 +32,7 @@
 #include "script/script.h"
 #include "gfx/ddb.h"
 #include "gfx/graphicsdriver.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -44,7 +45,6 @@ extern GameState play;
 extern color palette[256];
 extern IGraphicsDriver *gfxDriver;
 extern AGSPlatformDriver *platform;
-extern volatile int timerloop;
 extern color old_palette[256];
 
 int in_enters_screen=0,done_es_error = 0;
@@ -282,7 +282,7 @@ void process_event(EventHappened*evp) {
                 int boxwid = get_fixed_pixel_size(16);
                 int boxhit = multiply_up_coordinate(native_size.Height / 20);
                 while (boxwid < temp_scr->GetWidth()) {
-                    timerloop = 0;
+                    currentFrameTicks = getAgsTicks();
                     boxwid += get_fixed_pixel_size(16);
                     boxhit += multiply_up_coordinate(native_size.Height / 20);
                     boxwid = Math::Clamp(boxwid, 0, viewport.GetWidth());
@@ -294,7 +294,7 @@ void process_event(EventHappened*evp) {
                         boxwid, boxhit);
                     render_to_screen(viewport.Left, viewport.Top);
                     update_mp3();
-                    while (timerloop == 0) {
+                    while (getAgsTicks() == currentFrameTicks) {
                         SDL_Delay(1);
                     }
                 }
@@ -312,7 +312,7 @@ void process_event(EventHappened*evp) {
             int transparency = 254;
 
             while (transparency > 0) {
-                timerloop=0;
+                currentFrameTicks = getAgsTicks();
                 // do the crossfade
                 ddb->SetTransparency(transparency);
                 invalidate_screen();
@@ -326,7 +326,7 @@ void process_event(EventHappened*evp) {
                 }
 				render_to_screen();
                 update_polled_stuff_if_runtime();
-                while (timerloop == 0) {
+                while (getAgsTicks() == currentFrameTicks) {
                     SDL_Delay(1);
                 }
                 transparency -= 16;
@@ -346,7 +346,7 @@ void process_event(EventHappened*evp) {
             IDriverDependantBitmap *ddb = prepare_screen_for_transition_in();
 
             for (aa=0;aa<16;aa++) {
-                timerloop=0;
+                currentFrameTicks = getAgsTicks();
                 // merge the palette while dithering
                 if (game.color_depth == 1) 
                 {
@@ -366,7 +366,7 @@ void process_event(EventHappened*evp) {
                 gfxDriver->DrawSprite(0, 0, ddb);
 				render_to_screen();
                 update_polled_stuff_if_runtime();
-                while (timerloop == 0) {
+                while (getAgsTicks() == currentFrameTicks) {
                     SDL_Delay(1);
                 }
             }

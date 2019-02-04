@@ -32,13 +32,13 @@
 #include "media/audio/audio.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
+#include "ac/timer.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
 
 extern char ignore_bounds; // from mousew32
 extern IGraphicsDriver *gfxDriver;
-extern volatile int timerloop; // ac_timer
 extern GameSetup usetup;
 
 //extern void get_save_game_path(int slotNum, char *buffer);
@@ -176,7 +176,7 @@ int CSCIWaitMessage(CSCIMessage * cscim)
     prepare_gui_screen(win_x, win_y, win_width, win_height, true);
 
     while (1) {
-        timerloop = 0;
+        currentFrameTicks = getAgsTicks();
         NextIteration();
         process_pending_events();
         refresh_gui_screen();
@@ -234,7 +234,7 @@ int CSCIWaitMessage(CSCIMessage * cscim)
             break;
 
         update_polled_audio_and_crossfade();
-        while (timerloop == 0) {
+        while (getAgsTicks() == currentFrameTicks) {
             SDL_Delay(1);
         }
     }

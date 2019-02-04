@@ -42,6 +42,7 @@
 #include "gfx/gfx_util.h"
 #include "util/string_utils.h"
 #include "device/mousew32.h"
+#include "ac/timer.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
@@ -50,10 +51,7 @@ extern GameState play;
 extern GameSetupStruct game;
 extern int longestline;
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];
-extern volatile int timerloop;
 extern AGSPlatformDriver *platform;
-extern volatile unsigned long globalTimerCounter;
-extern int time_between_timers;
 extern int frames_per_second;
 extern int loops_per_character;
 extern SpriteCache spriteset;
@@ -269,7 +267,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
         int countdown = GetTextDisplayTime (todis);
         int skip_setting = user_to_internal_skip_speech((SkipSpeechStyle)play.skip_display);
         while (1) {
-            timerloop = 0;
+            currentFrameTicks = getAgsTicks();
             NEXT_ITERATION();
             /*      if (!play.mouse_cursor_hidden)
             domouse(0);
@@ -315,7 +313,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
 
             if ((countdown < 1) && (skip_setting & SKIP_AUTOTIMER))
             {
-                play.ignore_user_input_until_time = globalTimerCounter + (play.ignore_user_input_after_text_timeout_ms / time_between_timers);
+                play.ignore_user_input_until_time = getGlobalTimerCounterMs() + play.ignore_user_input_after_text_timeout_ms;
                 break;
             }
             // if skipping cutscene, don't get stuck on No Auto Remove

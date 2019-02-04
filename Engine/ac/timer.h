@@ -18,10 +18,11 @@
 #ifndef __AGS_EE_AC__TIMER_H
 #define __AGS_EE_AC__TIMER_H
 
-#if defined(WINDOWS_VERSION)
-void __cdecl dj_timer_handler();
-#else
-extern "C" void dj_timer_handler();
-#endif
+#include <stdint.h>
+
+extern void setTimerFps(int fps);
+extern uint32_t getGlobalTimerCounterMs();
+extern uint64_t getAgsTicks();
+extern uint64_t currentFrameTicks;
 
 #endif // __AGS_EE_AC__TIMER_H

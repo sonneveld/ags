@@ -25,6 +25,7 @@
 #include "platform/base/agsplatformdriver.h"
 
 #include "sdl2alleg.h"
+#include "ac/timer.h"
 
 #if defined(PSP_VERSION)
 // PSP: Includes for sceKernelDelayThread.
@@ -567,7 +568,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *currentVirtScreen, int 
 
    for (a = 0; a < 256; a+=speed)
    {
-       int timerValue = *_loopTimer;
+       auto timerValue = getAgsTicks();
        bmp_buff->Fill(clearColor);
        set_trans_blender(0,0,0,a);
        bmp_buff->TransBlendBlt(bmp_orig, 0, 0);
@@ -580,7 +581,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_in(Bitmap *currentVirtScreen, int 
            _pollingCallback();
          platform->Delay(1);
        }
-       while (timerValue == *_loopTimer);
+       while (timerValue == getAgsTicks());
    }
    delete bmp_buff;
 
@@ -607,7 +608,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(int speed, int targetColourRed
 			
             for (a = 255-speed; a > 0; a-=speed)
             {
-                int timerValue = *_loopTimer;
+                auto timerValue = getAgsTicks();
                 bmp_buff->Fill(clearColor);
                 set_trans_blender(0,0,0,a);
                 bmp_buff->TransBlendBlt(bmp_orig, 0, 0);
@@ -620,7 +621,7 @@ void ALSoftwareGraphicsDriver::highcolor_fade_out(int speed, int targetColourRed
                     _pollingCallback();
                   platform->Delay(1);
                 }
-                while (timerValue == *_loopTimer);
+                while (timerValue == getAgsTicks());
             }
             delete bmp_buff;
         }

@@ -24,10 +24,9 @@
 #include "main/game_run.h"
 #include "media/audio/audio.h"
 #include "gfx/bitmap.h"
+#include "ac/timer.h"
 
 using AGS::Common::Bitmap;
-
-extern volatile int timerloop;
 
 extern int windowbackgroundcolor, pushbuttondarkcolor;
 extern int pushbuttonlightcolor;
@@ -77,7 +76,7 @@ int MyPushButton::pressedon(int mousex, int mousey)
 {
     int wasstat;
     while (mbutrelease(LEFT) == 0) {
-        timerloop = 0;
+        currentFrameTicks = getAgsTicks();
         wasstat = state;
         NextIteration();
         state = mouseisinarea(mousex, mousey);
@@ -93,7 +92,7 @@ int MyPushButton::pressedon(int mousex, int mousey)
 
         refresh_gui_screen();
 
-        while (timerloop == 0) {
+        while (getAgsTicks() == currentFrameTicks) {
             SDL_Delay(1);
         }
     }

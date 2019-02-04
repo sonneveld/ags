@@ -45,13 +45,13 @@
 
 #include "util/mutex.h"
 #include "util/mutex_lock.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
 
 extern void process_pending_events();
 
-extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
 
 const char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
@@ -147,9 +147,9 @@ int get_mouse_b()
     
     int result = _button_state | _accumulated_button_state;
     
-    if (globalTimerCounter >= _clear_at_global_timer_counter) {
+    if (getGlobalTimerCounterMs() >= _clear_at_global_timer_counter) {
         _accumulated_button_state = 0;
-        _clear_at_global_timer_counter = globalTimerCounter + 2;
+        _clear_at_global_timer_counter = getGlobalTimerCounterMs() + 50;
     }
     return result;
 }

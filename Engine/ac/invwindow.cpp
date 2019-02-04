@@ -35,6 +35,7 @@
 #include "ac/dynobj/cc_character.h"
 #include "ac/dynobj/cc_inventory.h"
 #include "util/math.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 
@@ -45,7 +46,6 @@ extern ScriptInvItem scrInv[MAX_INV];
 extern int mouse_ifacebut_xoffs,mouse_ifacebut_yoffs;
 extern SpriteCache spriteset;
 extern int mousex,mousey;
-extern volatile int timerloop;
 extern int evblocknum;
 extern CharacterInfo*playerchar;
 extern AGSPlatformDriver *platform;
@@ -354,7 +354,7 @@ bool InventoryScreen::Run()
         return false; // end inventory screen loop
     }
 
-        timerloop = 0;
+        currentFrameTicks = getAgsTicks();
         NEXT_ITERATION();
         refresh_gui_screen();
         //domouse(0);

@@ -66,7 +66,6 @@ extern int displayed_room;
 extern int game_paused;
 extern SpriteCache spriteset;
 extern int frames_per_second;
-extern int time_between_timers;
 extern char gamefilenamebuf[200];
 extern GameSetup usetup;
 extern unsigned int load_new_game;

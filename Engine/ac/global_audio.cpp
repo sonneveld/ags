@@ -26,6 +26,7 @@
 #include "main/engine.h"
 #include "media/audio/audio.h"
 #include "media/audio/sound.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 
@@ -529,7 +530,6 @@ int play_speech(int charid,int sndid) {
     apply_volume_drop_modifier(true);
     update_music_volume();
     update_music_at = 0;
-    mvolcounter = 0;
 
     update_ambient_sound_vol();
 
@@ -548,8 +548,7 @@ void stop_speech() {
         play.music_master_volume = play.music_vol_was;
         // update the music in a bit (fixes two speeches follow each other
         // and music going up-then-down)
-        update_music_at = 20;
-        mvolcounter = 1;
+        update_music_at = getAgsTicks() + 20;
         stop_and_destroy_channel (SCHAN_SPEECH);
         curLipLine = -1;
 

@@ -1406,8 +1406,6 @@ int initialize_engine(int argc,char*argv[])
 
     //engine_pre_init_gfx();
 
-    LOCK_VARIABLE(timerloop);
-    LOCK_FUNCTION(dj_timer_handler);
     set_game_speed(40);
 
     our_eip=-20;

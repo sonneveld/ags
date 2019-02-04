@@ -15,21 +15,24 @@
 #include "ac/timer.h"
 #include "util/wgt2allg.h" // END_OF_FUNCTION macro
 
-extern volatile int mvolcounter;
-
 unsigned int loopcounter=0,lastcounter=0;
-volatile unsigned long globalTimerCounter = 0;
 
-volatile int timerloop=0;
-int time_between_timers=25;  // in milliseconds
-// our timer, used to keep game running at same speed on all systems
-#if defined(WINDOWS_VERSION)
-void __cdecl dj_timer_handler() {
-#else
-extern "C" void dj_timer_handler() {
-#endif
-    timerloop++;
-    globalTimerCounter++;
-    if (mvolcounter > 0) mvolcounter++;
+uint64_t currentFrameTicks = 0;
+
+static int startFps = 40;
+static uint64_t startTicksOffset = 0;
+static uint64_t startPlatformOffset = 0;
+
+void setTimerFps(int fps) {
+    startTicksOffset = getAgsTicks();
+    startPlatformOffset = SDL_GetPerformanceCounter();
+    startFps = 40;
 }
-END_OF_FUNCTION(dj_timer_handler);
+
+uint32_t getGlobalTimerCounterMs() {
+    return SDL_GetTicks();
+}
+
+uint64_t getAgsTicks() {
+    return startTicksOffset + (SDL_GetPerformanceCounter() - startPlatformOffset) * startFps / SDL_GetPerformanceFrequency();
+}

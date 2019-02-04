@@ -32,6 +32,7 @@
 #include <math.h>
 #include "util/stream.h"
 #include "core/assetmanager.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 
@@ -688,8 +689,7 @@ int crossFading = 0, crossFadeVolumePerStep = 0, crossFadeStep = 0;
 int crossFadeVolumeAtStart = 0;
 SOUNDCLIP *cachedQueuedMusic = NULL;
 
-volatile int mvolcounter = 0;
-int update_music_at=0;
+uint64_t update_music_at=0;
 
 
 
@@ -832,11 +832,10 @@ void update_mp3()
 void update_polled_mp3() {
     update_mp3();
 
-        if (mvolcounter > update_music_at) {
+        if (update_music_at > 0 && getAgsTicks() > update_music_at) {
             update_music_volume();
             apply_volume_drop_modifier(false);
             update_music_at = 0;
-            mvolcounter = 0;
             update_ambient_sound_vol();
         }
 }

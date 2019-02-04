@@ -23,6 +23,7 @@
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
 #include "util/math.h"
+#include "ac/timer.h"
 
 extern void process_pending_events();
 
@@ -1679,7 +1680,7 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
   speed *= 2;  // harmonise speeds with software driver which is faster
   for (int a = 1; a < 255; a += speed)
   {
-    int timerValue = *_loopTimer;
+    auto timerValue = getAgsTicks();
     d3db->SetTransparency(fadingOut ? a : (255 - a));
     this->_render(flipTypeLastTime, false);
 
@@ -1690,7 +1691,7 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
         _pollingCallback();
       SDL_Delay(1);
     }
-    while (timerValue == *_loopTimer);
+    while (timerValue == getAgsTicks());
 
   }
 

@@ -44,7 +44,6 @@ using namespace AGS::Engine;
 extern int proper_exit;
 extern AGSPlatformDriver *platform;
 extern IGraphicsDriver *gfxDriver;
-extern volatile int timerloop;
 
 
 IGfxDriverFactory *GfxFactory = NULL;
@@ -217,7 +216,7 @@ bool simple_create_gfx_driver_and_init_mode(const String &gfx_driver_id,
     // the best time and place to set the tint method
     gfxDriver->SetTintMethod(TintReColourise);  // must be called before SetDisplayMode because it determins shaders loaded
 
-    if (!gfxDriver->SetDisplayMode(dm, &timerloop)) {
+    if (!gfxDriver->SetDisplayMode(dm, nullptr)) {
         Debug::Printf(kDbgMsg_Error, "Failed to init gfx mode. Error: %s", get_allegro_error());
         return false;
     }

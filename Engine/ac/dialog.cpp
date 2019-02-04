@@ -51,6 +51,7 @@
 #include "gfx/gfx_util.h"
 #include "gfx/graphicsdriver.h"
 #include "device/mousew32.h"
+#include "ac/timer.h"
 
 using namespace AGS::Common;
 
@@ -60,7 +61,6 @@ extern ccInstance *dialogScriptsInst;
 extern int in_new_room;
 extern CharacterInfo*playerchar;
 extern SpriteCache spriteset;
-extern volatile int timerloop;
 extern AGSPlatformDriver *platform;
 extern int cur_mode,cur_cursor;
 extern IGraphicsDriver *gfxDriver;
@@ -882,7 +882,7 @@ bool DialogOptions::Run()
       }
       else
       {
-        timerloop = 0;
+        currentFrameTicks = getAgsTicks();
         NEXT_ITERATION();
 
         render_graphics(ddb, dirtyx, dirtyy);

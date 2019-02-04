@@ -295,7 +295,7 @@ void process_event(EventHappened*evp) {
                     render_to_screen(viewport.Left, viewport.Top);
                     update_mp3();
                     while (getAgsTicks() == currentFrameTicks) {
-                        SDL_Delay(1);
+                        SDL_Delay(0);
                     }
                 }
                 gfxDriver->SetMemoryBackBuffer(saved_backbuf, viewport.Left, viewport.Top);
@@ -327,7 +327,7 @@ void process_event(EventHappened*evp) {
 				render_to_screen();
                 update_polled_stuff_if_runtime();
                 while (getAgsTicks() == currentFrameTicks) {
-                    SDL_Delay(1);
+                    SDL_Delay(0);
                 }
                 transparency -= 16;
             }
@@ -367,7 +367,7 @@ void process_event(EventHappened*evp) {
 				render_to_screen();
                 update_polled_stuff_if_runtime();
                 while (getAgsTicks() == currentFrameTicks) {
-                    SDL_Delay(1);
+                    SDL_Delay(0);
                 }
             }
             saved_viewport_bitmap->Release();

@@ -1689,7 +1689,7 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
       process_pending_events();
       if (_pollingCallback)
         _pollingCallback();
-      SDL_Delay(1);
+      SDL_Delay(0);
     }
     while (timerValue == getAgsTicks());
 

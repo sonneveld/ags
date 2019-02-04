@@ -654,7 +654,7 @@ void PollUntilNextFrame()
     // mp3 music
     while (getAgsTicks() == currentFrameTicks && play.fast_forward == 0) {
         update_polled_stuff_if_runtime();
-        SDL_Delay(1);
+        SDL_Delay(0);
     }
 }
 

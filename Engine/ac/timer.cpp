@@ -13,17 +13,20 @@
 //=============================================================================
 
 #include "ac/timer.h"
-#include "util/wgt2allg.h" // END_OF_FUNCTION macro
+#include "util/wgt2allg.h"
 
 unsigned int loopcounter=0,lastcounter=0;
 
 uint64_t currentFrameTicks = 0;
 
+static uint64_t cachedPerformanceFrequency = 1000;
 static int startFps = 40;
 static uint64_t startTicksOffset = 0;
 static uint64_t startPlatformOffset = 0;
 
 void setTimerFps(int fps) {
+    cachedPerformanceFrequency = SDL_GetPerformanceFrequency();  // should only change between system reboots
+    SDL_assert(cachedPerformanceFrequency > 0);
     startTicksOffset = getAgsTicks();
     startPlatformOffset = SDL_GetPerformanceCounter();
     startFps = 40;
@@ -34,5 +37,5 @@ uint32_t getGlobalTimerCounterMs() {
 }
 
 uint64_t getAgsTicks() {
-    return startTicksOffset + (SDL_GetPerformanceCounter() - startPlatformOffset) * startFps / SDL_GetPerformanceFrequency();
+    return startTicksOffset + (SDL_GetPerformanceCounter() - startPlatformOffset) * startFps / cachedPerformanceFrequency;
 }

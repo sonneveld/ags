@@ -1967,7 +1967,7 @@ void display_switch_out_suspend()
         }
     }
 
-    rest(1000);
+    SDL_Delay(1000);
 
     // restore the callbacks
     SetMultitasking(0);

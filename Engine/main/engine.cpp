@@ -499,12 +499,6 @@ void engine_init_keyboard()
     install_keyboard();
 }
 
-void engine_init_timer()
-{
-    Debug::Printf(kDbgMsg_Init, "Install timer");
-    install_timer();
-}
-
 typedef char AlIDStr[5];
 
 void AlIDToChars(int al_id, AlIDStr &id_str)
@@ -1382,8 +1376,6 @@ int initialize_engine(int argc,char*argv[])
     engine_init_keyboard();
 
     our_eip = -183;
-
-    engine_init_timer();
 
     our_eip = -182;
 

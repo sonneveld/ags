@@ -650,10 +650,12 @@ void game_loop_update_fps()
 
 void PollUntilNextFrame()
 {
-    // make sure we poll, cos a low framerate (eg 5 fps) could stutter
-    // mp3 music
-    while (getAgsTicks() == currentFrameTicks && play.fast_forward == 0) {
+    if (play.fast_forward != 0) { return; }
+    for (;;) {
+        if (getAgsTicks() != currentFrameTicks) { break; }
+        // make sure we poll, cos a low framerate (eg 5 fps) could stutter mp3 music
         update_polled_stuff_if_runtime();
+        if (getAgsTicks() != currentFrameTicks) { break; }
         SDL_Delay(0);
     }
 }

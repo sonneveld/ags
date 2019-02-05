@@ -95,12 +95,8 @@
 #define int32 int
 #endif
 
-#ifdef WINDOWS_VERSION
-#define AGS_INLINE inline
-#else
 // the linux compiler won't allow extern inline
 #define AGS_INLINE
-#endif
 
 // object flags (currently only a char)
 #define OBJF_NOINTERACT        1  // not clickable

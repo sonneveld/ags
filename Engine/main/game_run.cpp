@@ -255,12 +255,12 @@ void check_mouse_controls()
         //    else RunTextScriptIParam(gameinst,"on_mouse_click",aa+1);
     }
     mbut = check_mouse_wheel();
-    if (mbut !=0)
+    if (mbut != 0)
         lock_mouse_on_click();
     if (mbut < 0)
-        setevent (EV_TEXTSCRIPT, TS_MCLICK, 9);
+        setevent (EV_TEXTSCRIPT, TS_MCLICK, 9);  // eMouseWheelSouth
     else if (mbut > 0)
-        setevent (EV_TEXTSCRIPT, TS_MCLICK, 8);
+        setevent (EV_TEXTSCRIPT, TS_MCLICK, 8);  // eMouseWheelNorth
 }
 
 static int isScancode(SDL_Event event, int scancode) {

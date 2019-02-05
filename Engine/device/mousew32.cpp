@@ -136,7 +136,6 @@ extern "C" void _ags_mouse_callback(int flags)
         _button_state &= ~4;
     }
 }
-END_OF_FUNCTION(_ags_mouse_callback)
 
 int get_mouse_b()
 {
@@ -369,8 +368,6 @@ void msethotspot(int xx, int yy)
 
 int minstalled()
 {
-  // only useful for DOS
-  LOCK_FUNCTION(_ags_mouse_callback);
   mouse_callback = &_ags_mouse_callback;
     
   int nbuts = install_mouse();

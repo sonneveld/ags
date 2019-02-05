@@ -174,14 +174,15 @@ int rec_mgetbutton() {
 }
 
 int check_mouse_wheel () {
+    if (game.options[OPT_MOUSEWHEEL] == 0) { return 0; }
+    if (mouse_z == mouse_z_was) { return 0; }
+
     int result = 0;
-    if ((mouse_z != mouse_z_was) && (game.options[OPT_MOUSEWHEEL] != 0)) {
-        if (mouse_z > mouse_z_was)
-            result = 1;
-        else
-            result = -1;
-        mouse_z_was = mouse_z;
-    }
+    if (mouse_z > mouse_z_was)
+        result = 1;   // eMouseWheelNorth
+    else
+        result = -1;  // eMouseWheelSouth
+    mouse_z_was = mouse_z;
     return result;
 }
 

@@ -26,6 +26,9 @@
 //#include <libcda.h>
 //#include <pwd.h>
 //#include <sys/stat.h>
+#include <thread>
+#include "SDL.h"
+#include <unistd.h>
 #include "platform/base/agsplatformdriver.h"
 #include "util/directory.h"
 #include "ac/common.h"

@@ -19,28 +19,54 @@
 // ********* LINUX PLACEHOLDER DRIVER *********
 
 #include <stdio.h>
+#include <unistd.h>
 #include <allegro.h>
-#include <xalleg.h>
 #include "ac/runtime_defines.h"
 #include "gfx/gfxdefines.h"
 #include "platform/base/agsplatformdriver.h"
 #include "plugin/agsplugin.h"
+#include "media/audio/audio.h"
 #include "util/string.h"
 #include <libcda.h>
 
 #include <pwd.h>
 #include <sys/stat.h>
 
+#include "binreloc.h"
+#include "main/config.h"
+
 using AGS::Common::String;
 
 
 // Replace the default Allegro icon. The original defintion is in the
 // Allegro 4.4 source under "src/x/xwin.c".
+extern "C" {
 #include "icon.xpm"
+}
 void* allegro_icon = icon_xpm;
+
+// PSP variables
+int psp_video_framedrop = 1;
+int psp_audio_enabled = 1;
+int psp_midi_enabled = 1;
+int psp_ignore_acsetup_cfg_file = 0;
+int psp_clear_cache_on_room_change = 0;
+
+int psp_midi_preload_patches = 0;
+int psp_audio_cachesize = 10;
+char psp_game_file_name[256];
+
+int psp_gfx_renderer = 0;
+int psp_gfx_scaling = 1;
+int psp_gfx_smoothing = 0;
+int psp_gfx_super_sampling = 1;
+int psp_gfx_smooth_sprites = 1;
+char psp_translation[100];
+
 String LinuxOutputDirectory;
 
 struct AGSLinux : AGSPlatformDriver {
+  AGSLinux();
 
   int  CDPlayerCommand(int cmdd, int datt) override;
   void DisplayAlert(const char*, ...) override;
@@ -57,11 +83,27 @@ struct AGSLinux : AGSPlatformDriver {
   void PostAllegroExit() override;
   void SetGameWindowIcon() override;
   void ShutdownCDPlayer() override;
-  bool LockMouseToWindow() override;
-  void UnlockMouse() override;
-  void GetSystemDisplayModes(std::vector<Engine::DisplayMode> &dms) override;
 };
 
+AGSLinux::AGSLinux() {
+  // TODO: why is psp_game_file_name needed for linux builds?  
+  // Setting it prevents proper discovery of AGS games.
+  // Might be a left over from preparing AGS for Steam on Linux
+  strcpy(psp_game_file_name, "agsgame.dat");
+  strcpy(psp_translation, "default");
+
+  BrInitError e = BR_INIT_ERROR_DISABLED;
+  if (br_init(&e)) {
+    char *exedir = br_find_exe_dir(NULL);
+    if (exedir) {
+      chdir(exedir);
+      free(exedir);
+    }
+  }
+
+  // force private modules
+  setenv("ALLEGRO_MODULES", ".", 1);
+}
 
 int AGSLinux::CDPlayerCommand(int cmdd, int datt) {
   return cd_player_control(cmdd, datt);
@@ -158,6 +200,7 @@ const char* AGSLinux::GetAllegroFailUserHint()
 }
 
 eScriptSystemOSID AGSLinux::GetSystemOSID() {
+  // override performed if `override.os` is set in config.
   return eOS_Linux;
 }
 
@@ -183,28 +226,42 @@ AGSPlatformDriver* AGSPlatformDriver::GetDriver() {
   return instance;
 }
 
-bool AGSLinux::LockMouseToWindow()
-{
-    return XGrabPointer(_xwin.display, _xwin.window, False,
-        PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
-        GrabModeAsync, GrabModeAsync, _xwin.window, None, CurrentTime) == GrabSuccess;
+#if 0
+void AGSLinux::ReplaceSpecialPaths(const char *sourcePath, char *destPath) {
+  // MYDOCS is what is used in acplwin.cpp
+  if(strncasecmp(sourcePath, "$MYDOCS$", 8) == 0) {
+    struct passwd *p = getpwuid(getuid());
+    strcpy(destPath, p->pw_dir);
+    strcat(destPath, "/.local");
+    mkdir(destPath, 0755);
+    strcat(destPath, "/share");
+    mkdir(destPath, 0755);
+    strcat(destPath, &sourcePath[8]);
+    mkdir(destPath, 0755);
+  // SAVEGAMEDIR is what is actually used in ac.cpp
+  } else if(strncasecmp(sourcePath, "$SAVEGAMEDIR$", 13) == 0) {
+    struct passwd *p = getpwuid(getuid());
+    strcpy(destPath, p->pw_dir);
+    strcat(destPath, "/.local");
+    mkdir(destPath, 0755);
+    strcat(destPath, "/share");
+    mkdir(destPath, 0755);
+    strcat(destPath, &sourcePath[8]);
+    mkdir(destPath, 0755);
+  } else if(strncasecmp(sourcePath, "$APPDATADIR$", 12) == 0) {
+    struct passwd *p = getpwuid(getuid());
+    strcpy(destPath, p->pw_dir);
+    strcat(destPath, "/.local");
+    mkdir(destPath, 0755);
+    strcat(destPath, "/share");
+    mkdir(destPath, 0755);
+    strcat(destPath, &sourcePath[12]);
+    mkdir(destPath, 0755);
+  } else {
+    strcpy(destPath, sourcePath);
+  }
 }
 
-void AGSLinux::UnlockMouse()
-{
-    XUngrabPointer(_xwin.display, CurrentTime);
-}
-
-void AGSLinux::GetSystemDisplayModes(std::vector<Engine::DisplayMode> &dms)
-{
-    dms.clear();
-    GFX_MODE_LIST *gmlist = get_gfx_mode_list(GFX_XWINDOWS_FULLSCREEN);
-    for (int i = 0; i < gmlist->num_modes; ++i)
-    {
-        const GFX_MODE &m = gmlist->mode[i];
-        dms.push_back(Engine::DisplayMode(Engine::GraphicResolution(m.width, m.height, m.bpp)));
-    }
-    destroy_gfx_mode_list(gmlist);
-}
+#endif
 
 #endif

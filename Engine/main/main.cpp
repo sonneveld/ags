@@ -12,18 +12,9 @@
 //
 //=============================================================================
 
-//
-// Entry point of the application here.
-//
-//
-// For Windows main() function is really called _mangled_main and is called
-// not by system, but from insides of allegro library.
-// (See allegro\platform\alwin.h)
-// What about other platforms?
-//
-
 #include "core/platform.h"
 #define AGS_PLATFORM_DEFINES_PSP_VARS (AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_ANDROID)
+
 
 #include "ac/common.h"
 #include "ac/gamesetup.h"

@@ -423,6 +423,7 @@ bool SetCustomSaveParent(const String &path)
     return false;
 }
 
+// set global variable 'saveGameDirectory'
 bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
 {
     if (!newFolder || newFolder[0] == 0)

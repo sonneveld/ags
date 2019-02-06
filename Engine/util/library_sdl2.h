@@ -15,12 +15,13 @@
 #ifndef __AGS_EE_UTIL__LIBRARY_SDL2_H
 #define __AGS_EE_UTIL__LIBRARY_SDL2_H
 
+#include "core/platform.h"
 #include "SDL.h"
 #include "util/string.h"
 #include "debug/out.h"
 
 // FIXME: Replace with a unified way to get the directory which contains the engine binary
-#if defined (ANDROID_VERSION)
+#if AGS_PLATFORM_OS_ANDROID
 extern char android_app_directory[256];
 #else
 extern AGS::Common::String appDirectory;
@@ -52,14 +53,14 @@ namespace AGS
                     platformLibraryName = path;
                     platformLibraryName.Append("/");
                 }
-#if !defined (WINDOWS_VERSION)    
+#if ! AGS_PLATFORM_OS_WINDOWS
                 platformLibraryName.Append("lib");
 #endif
                 platformLibraryName.Append(libraryName);
                 
-#if defined (WINDOWS_VERSION)
+#if AGS_PLATFORM_OS_WINDOWS
                 platformLibraryName.Append(".dll");
-#elif defined (MAC_VERSION)
+#elif AGS_PLATFORM_OS_MACOS
                 platformLibraryName.Append(".dylib");
 #else
                 platformLibraryName.Append(".so");
@@ -84,7 +85,7 @@ namespace AGS
                 AGS::Common::Debug::Printf("SDL_LoadObject returned: %s", SDL_GetError());
                 
                 // Try the engine directory
-#if defined (ANDROID_VERSION)
+#if AGS_PLATFORM_OS_ANDROID
                 char buffer[200];
                 sprintf(buffer, "%s%s", android_app_directory, "/lib");
                 _library = SDL_LoadObject(BuildPath(buffer, libraryName).GetCStr());

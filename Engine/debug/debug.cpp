@@ -261,7 +261,7 @@ bool send_message_to_editor(const char *msg, const char *errorMsg)
 
     char messageToSend[STD_BUFFER_SIZE];
     sprintf(messageToSend, "<?xml version=\"1.0\" encoding=\"Windows-1252\"?><Debugger Command=\"%s\">", msg);
-#if AGS_PLATFORM_OS_WINDOWS
+#if AGS_PLATFORM_OS_WINDOWS && defined(FUTURE_WINDOWS_VERSION)
     sprintf(&messageToSend[strlen(messageToSend)], "  <EngineWindow>%d</EngineWindow> ", (int)win_get_window());
 #endif
     sprintf(&messageToSend[strlen(messageToSend)], "  <ScriptState><![CDATA[%s]]></ScriptState> ", callStack.GetCStr());

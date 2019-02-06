@@ -52,7 +52,9 @@ namespace AGS
                     platformLibraryName = path;
                     platformLibraryName.Append("/");
                 }
+#if !defined (WINDOWS_VERSION)    
                 platformLibraryName.Append("lib");
+#endif
                 platformLibraryName.Append(libraryName);
                 
 #if defined (WINDOWS_VERSION)

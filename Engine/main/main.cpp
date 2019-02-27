@@ -373,7 +373,7 @@ void main_init_crt_report()
 String GetPathInASCII(const String &path)
 {
     char ascii_buffer[MAX_PATH];
-    if (GetShortPathNameA(path, ascii_buffer, MAX_PATH) == 0)
+    if (GetShortPathNameA(path.GetCStr(), ascii_buffer, MAX_PATH) == 0)
     {
         Debug::Printf(kDbgMsg_Error, "Unable to determine path: GetShortPathNameA failed.\nArg: %s", path.GetCStr());
         return "";
@@ -497,7 +497,7 @@ int ags_entry_point(int argc, char *argv[]) {
 
     if (justDisplayVersion)
     {
-        platform->WriteStdOut(get_engine_string());
+        platform->WriteStdOut(get_engine_string().GetCStr());
         return 0;
     }
 
@@ -508,7 +508,7 @@ int ags_entry_point(int argc, char *argv[]) {
     }
 
     init_debug();
-    Debug::Printf(kDbgMsg_Init, get_engine_string());
+    Debug::Printf(kDbgMsg_Init, get_engine_string().GetCStr());
 
     main_init_crt_report();
 

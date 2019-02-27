@@ -205,7 +205,7 @@ bool engine_check_run_setup(const String &exe_path, ConfigTree &cfg)
             allegro_exit();
             char quotedpath[MAX_PATH];
             snprintf(quotedpath, MAX_PATH, "\"%s\"", exe_path.GetCStr());
-            _spawnl (_P_OVERLAY, exe_path, quotedpath, NULL);
+            _spawnl (_P_OVERLAY, exe_path.GetCStr(), quotedpath, NULL);
     }
 #endif
 
@@ -236,7 +236,7 @@ String find_game_data_in_directory(const String &path)
     String pattern = path;
     pattern.Append("/*");
 
-    if (al_findfirst(pattern, &ff, FA_ALL & ~(FA_DIREC)) != 0)
+    if (al_findfirst(pattern.GetCStr(), &ff, FA_ALL & ~(FA_DIREC)) != 0)
         return "";
     // Select first found data file; files with standart names (*.ags) have
     // higher priority over files with custom names.
@@ -705,7 +705,7 @@ void engine_init_directories()
 
     ResPaths.DataDir = usetup.data_files_dir;
     ResPaths.GamePak.Path = usetup.main_data_filepath;
-    ResPaths.GamePak.Name = get_filename(usetup.main_data_filepath);
+    ResPaths.GamePak.Name = get_filename(usetup.main_data_filepath.GetCStr());
 
     set_install_dir(usetup.install_dir, usetup.install_audio_dir, usetup.install_voice_dir);
     if (!usetup.install_dir.IsEmpty())
@@ -1137,7 +1137,7 @@ void engine_init_game_settings()
 void engine_setup_scsystem_auxiliary()
 {
     // ScriptSystem::aci_version is only 10 chars long
-    strncpy(scsystem.aci_version, EngineVersion.LongString, 10);
+    strncpy(scsystem.aci_version, EngineVersion.LongString.GetCStr(), 10);
     if (usetup.override_script_os >= 0)
     {
         scsystem.os = usetup.override_script_os;
@@ -1233,7 +1233,7 @@ HError define_gamedata_location_checkall(const String &exe_path)
     // Read game data location from the default config file.
     // This is an optional setting that may instruct which game file to use as a primary asset library.
     ConfigTree cfg;
-    String def_cfg_file = find_default_cfg_file(exe_path);
+    String def_cfg_file = find_default_cfg_file(exe_path.GetCStr());
     IniUtil::Read(def_cfg_file, cfg);
     read_game_data_location(cfg);
     if (!usetup.main_data_filename.IsEmpty())
@@ -1269,11 +1269,11 @@ bool define_gamedata_location(const String &exe_path)
     // derive missing ones from available.
     if (usetup.main_data_filename.IsEmpty())
     {
-        usetup.main_data_filename = get_filename(usetup.main_data_filepath);
+        usetup.main_data_filename = get_filename(usetup.main_data_filepath.GetCStr());
     }
     else if (usetup.main_data_filepath.IsEmpty())
     {
-        if (usetup.data_files_dir.IsEmpty() || !is_relative_filename(usetup.main_data_filename))
+        if (usetup.data_files_dir.IsEmpty() || !is_relative_filename(usetup.main_data_filename.GetCStr()))
             usetup.main_data_filepath = usetup.main_data_filename;
         else
             usetup.main_data_filepath = Path::ConcatPaths(usetup.data_files_dir, usetup.main_data_filename);
@@ -1308,7 +1308,7 @@ bool engine_init_gamedata(const String &exe_path)
 void engine_read_config(const String &exe_path, ConfigTree &cfg)
 {
     // Read default configuration file
-    String def_cfg_file = find_default_cfg_file(exe_path);
+    String def_cfg_file = find_default_cfg_file(exe_path.GetCStr());
     IniUtil::Read(def_cfg_file, cfg);
 
     // Disabled on Windows because people were afraid that this config could be mistakenly

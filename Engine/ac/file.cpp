@@ -80,10 +80,10 @@ int File_Delete(const char *fnmm) {
   if (!ResolveScriptPath(fnmm, false, path, alt_path))
     return 0;
 
-  if (::remove(path) == 0)
+  if (::remove(path.GetCStr()) == 0)
       return 1;
   if (errno == ENOENT && !alt_path.IsEmpty() && alt_path.Compare(path) != 0)
-      return ::remove(alt_path) == 0 ? 1 : 0;
+      return ::remove(alt_path.GetCStr()) == 0 ? 1 : 0;
   return 0;
 }
 
@@ -260,7 +260,7 @@ String FixSlashAfterToken(const String &path)
 
 String MakeSpecialSubDir(const String &sp_dir)
 {
-    if (is_relative_filename(sp_dir))
+    if (is_relative_filename(sp_dir.GetCStr()))
         return sp_dir;
     String full_path = sp_dir;
     if (full_path.GetLast() != '/' && full_path.GetLast() != '\\')
@@ -285,7 +285,7 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
     path.Empty();
     alt_path.Empty();
 
-    bool is_absolute = !is_relative_filename(orig_sc_path);
+    bool is_absolute = !is_relative_filename(orig_sc_path.GetCStr());
     if (is_absolute && !read_only)
     {
         debug_script_warn("Attempt to access file '%s' denied (cannot write to absolute path)", orig_sc_path.GetCStr());
@@ -394,7 +394,7 @@ PACKFILE *PackfileFromAsset(const AssetPath &path)
     AssetLocation loc;
     if (LocateAsset(path, loc))
     {
-        PACKFILE *pf = pack_fopen(loc.FileName, File::GetCMode(kFile_Open, kFile_Read));
+        PACKFILE *pf = pack_fopen(loc.FileName.GetCStr(), File::GetCMode(kFile_Open, kFile_Read).GetCStr());
         if (pf)
         {
             pack_fseek(pf, loc.Offset);
@@ -468,13 +468,13 @@ void get_install_dir_path(char* buffer, const char *fileName)
 
 String find_assetlib(const String &filename)
 {
-    String libname = cbuf_to_string_and_free( ci_find_file(ResPaths.DataDir, filename) );
+    String libname = cbuf_to_string_and_free( ci_find_file(ResPaths.DataDir.GetCStr(), filename.GetCStr()) );
     if (AssetManager::IsDataFile(libname))
         return libname;
     if (Path::ComparePaths(ResPaths.DataDir, installDirectory) != 0)
     {
       // Hack for running in Debugger
-      libname = cbuf_to_string_and_free( ci_find_file(installDirectory, filename) );
+      libname = cbuf_to_string_and_free( ci_find_file(installDirectory.GetCStr(), filename.GetCStr()) );
       if (AssetManager::IsDataFile(libname))
         return libname;
     }
@@ -501,7 +501,7 @@ Stream *find_open_asset(const String &filename)
     if (!asset_s && Path::ComparePaths(ResPaths.DataDir, installDirectory) != 0)
     {
         // Just in case they're running in Debug, try standalone file in compiled folder
-        asset_s = ci_fopen(String::FromFormat("%s/%s", installDirectory.GetCStr(), filename.GetCStr()));
+        asset_s = ci_fopen(String::FromFormat("%s/%s", installDirectory.GetCStr(), filename.GetCStr()).GetCStr());
     }
     return asset_s;
 }
@@ -555,7 +555,7 @@ ScriptFileHandle *check_valid_file_handle_ptr(Stream *stream_ptr, const char *op
   }
 
   String exmsg = String::FromFormat("!%s: invalid file handle; file not previously opened or has been closed", operation_name);
-  quit(exmsg);
+  quit(exmsg.GetCStr());
   return nullptr;
 }
 
@@ -573,7 +573,7 @@ ScriptFileHandle *check_valid_file_handle_int32(int32_t handle, const char *oper
   }
 
   String exmsg = String::FromFormat("!%s: invalid file handle; file not previously opened or has been closed", operation_name);
-  quit(exmsg);
+  quit(exmsg.GetCStr());
   return nullptr;
 }
 

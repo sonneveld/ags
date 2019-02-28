@@ -49,7 +49,7 @@ public:
 
   AGS::Common::String BuildPath(const char *path, AGS::Common::String libraryName)
   {
-    AGS::Common::String platformLibraryName = "";
+    AGS::Common::String platformLibraryName = {};
     if (path)
     {
       platformLibraryName = path;

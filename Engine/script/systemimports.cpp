@@ -38,7 +38,7 @@ int SystemImports::add(const String &name, const RuntimeScriptValue &value, ccIn
     ixof = imports.size();
     for (size_t i = 0; i < imports.size(); ++i)
     {
-        if (imports[i].Name == nullptr)
+        if (imports[i].Name.IsEmpty())
         {
             ixof = i;
             break;
@@ -59,7 +59,7 @@ void SystemImports::remove(const String &name) {
     if (idx < 0)
         return;
     btree.erase(imports[idx].Name);
-    imports[idx].Name = nullptr;
+    imports[idx].Name.Empty();
     imports[idx].Value.Invalidate();
     imports[idx].InstancePtr = nullptr;
 }
@@ -91,7 +91,7 @@ int SystemImports::get_index_of(const String &name)
     String mangled_name = String::FromFormat("%s$", name.GetCStr());
     // if it's a function with a mangled name, allow it
     it = btree.lower_bound(mangled_name);
-    if (it != btree.end() && it->first.CompareLeft(mangled_name) == 0)
+    if (it != btree.end() && it->first.StartsWith(mangled_name))
         return it->second;
 
     if (name.GetLength() > 3)
@@ -116,13 +116,13 @@ void SystemImports::RemoveScriptExports(ccInstance *inst)
 
     for (size_t i = 0; i < imports.size(); ++i)
     {
-        if (imports[i].Name == nullptr)
+        if (imports[i].Name.IsEmpty())
             continue;
 
         if (imports[i].InstancePtr == inst)
         {
             btree.erase(imports[i].Name);
-            imports[i].Name = nullptr;
+            imports[i].Name.Empty();
             imports[i].Value.Invalidate();
             imports[i].InstancePtr = nullptr;
         }

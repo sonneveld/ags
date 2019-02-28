@@ -82,7 +82,7 @@ public:
     {
         auto it = _dic.find(String(key));
         if (it == _dic.end()) return nullptr;
-        return it->second.GetNullableCStr();
+        return it->second.GetCStr();
     }
     bool Remove(const char *key) override
     {
@@ -108,7 +108,7 @@ public:
     void GetValues(std::vector<const char*> &buf) const override
     {
         for (auto it = _dic.begin(); it != _dic.end(); ++it)
-            buf.push_back(it->second.GetNullableCStr()); // values may be null
+            buf.push_back(it->second.GetCStr()); // values may be null
     }
 
 private:
@@ -142,7 +142,7 @@ private:
             SerializeInt((int)it->first.GetLength());
             memcpy(&serbuffer[bytesSoFar], it->first.GetCStr(), it->first.GetLength());
             bytesSoFar += it->first.GetLength();
-            if (it->second.GetNullableCStr()) // values may be null
+            if (it->second.GetCStr()) // values may be null
             {
                 SerializeInt((int)it->second.GetLength());
                 memcpy(&serbuffer[bytesSoFar], it->second.GetCStr(), it->second.GetLength());

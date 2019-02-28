@@ -67,7 +67,7 @@ void write_driverid(ConfigTree &cfg, const String &sectn, const String &item, in
 bool INIreaditem(const ConfigTree &cfg, const String &sectn, const String &item, String &value);
 int INIreadint(const ConfigTree &cfg, const String &sectn, const String &item, int def_value = 0);
 float INIreadfloat(const ConfigTree &cfg, const String &sectn, const String &item, float def_value = 0.f);
-String INIreadstring(const ConfigTree &cfg, const String &sectn, const String &item, const String &def_value = "");
+String INIreadstring(const ConfigTree &cfg, const String &sectn, const String &item, const String &def_value = {});
 void INIwriteint(ConfigTree &cfg, const String &sectn, const String &item, int value);
 void INIwritestring(ConfigTree &cfg, const String &sectn, const String &item, const String &value);
 void INIwriteint(ConfigTree &cfg, const String &sectn, const String &item, int value);

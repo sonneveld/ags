@@ -41,17 +41,17 @@ void LogFile::PrintMessage(const DebugMessage &msg)
         if (!OpenFile(fp, _openMode))
         {
             Debug::Printf("Unable to write log to '%s'.", _filePath.GetCStr());
-            _filePath = "";
+            _filePath.Empty();
             return;
         }
     }
 
     if (!msg.GroupName.IsEmpty())
     {
-        _file->Write(msg.GroupName, msg.GroupName.GetLength());
+        _file->Write(msg.GroupName.GetCStr(), msg.GroupName.GetLength());
         _file->Write(" : ", 3);
     }
-    _file->Write(msg.Text, msg.Text.GetLength());
+    _file->Write(msg.Text.GetCStr(), msg.Text.GetLength());
     _file->WriteInt8('\n');
     // We should flush after every write to the log; this will make writing
     // bit slower, but will increase the chances that all latest output

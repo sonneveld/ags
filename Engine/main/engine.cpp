@@ -196,7 +196,7 @@ bool engine_check_run_setup(const String &exe_path, ConfigTree &cfg)
             allegro_exit();
             char quotedpath[MAX_PATH];
             snprintf(quotedpath, MAX_PATH, "\"%s\"", exe_path.GetCStr());
-            _spawnl (_P_OVERLAY, exe_path, quotedpath, NULL);
+            _spawnl (_P_OVERLAY, exe_path.GetCStr(), quotedpath, NULL);
     }
 #endif
 
@@ -227,7 +227,7 @@ String find_game_data_in_directory(const String &path)
     String pattern = path;
     pattern.Append("/*");
 
-    if (al_findfirst(pattern, &ff, FA_ALL & ~(FA_DIREC)) != 0)
+    if (al_findfirst(pattern.GetCStr(), &ff, FA_ALL & ~(FA_DIREC)) != 0)
         return "";
     // Select first found data file; files with standart names (*.ags) have
     // higher priority over files with custom names.
@@ -238,16 +238,16 @@ String find_game_data_in_directory(const String &path)
         // digital sound libraries.
         // NOTE: we could certainly benefit from any kind of flag in file lib
         // that would tell us this is the main lib without extra parsing.
-        if (test_file.CompareRightNoCase(".vox") == 0)
+        if (test_file.EndsWithNoCase(".vox"))
             continue;
 
         // *.ags is a standart cross-platform file pattern for AGS games,
         // ac2game.dat is a legacy file name for very old games,
         // *.exe is a MS Win executable; it is included to this case because
         // users often run AGS ports with Windows versions of games.
-        bool is_std_name = test_file.CompareRightNoCase(".ags") == 0 ||
+        bool is_std_name = test_file.EndsWithNoCase(".ags") ||
             test_file.CompareNoCase("ac2game.dat") == 0 ||
-            test_file.CompareRightNoCase(".exe") == 0;
+            test_file.EndsWithNoCase(".exe");
         if (is_std_name || first_nonstd_fn.IsEmpty())
         {
             test_file.Format("%s/%s", path.GetCStr(), ff.name);
@@ -695,7 +695,7 @@ void engine_init_directories()
 
     ResPaths.DataDir = usetup.data_files_dir;
     ResPaths.GamePak.Path = usetup.main_data_filepath;
-    ResPaths.GamePak.Name = get_filename(usetup.main_data_filepath);
+    ResPaths.GamePak.Name = get_filename(usetup.main_data_filepath.GetCStr());
 
     set_install_dir(usetup.install_dir, usetup.install_audio_dir, usetup.install_voice_dir);
     if (!usetup.install_dir.IsEmpty())
@@ -761,7 +761,7 @@ int check_write_access() {
 
   our_eip = -1897;
 
-  if (::remove(tempPath))
+  if (::remove(tempPath.GetCStr()))
     return 0;
 
   return 1;
@@ -1126,7 +1126,7 @@ void engine_init_game_settings()
 void engine_setup_scsystem_auxiliary()
 {
     // ScriptSystem::aci_version is only 10 chars long
-    strncpy(scsystem.aci_version, EngineVersion.LongString, 10);
+    strncpy(scsystem.aci_version, EngineVersion.LongString.GetCStr(), 10);
     if (usetup.override_script_os >= 0)
     {
         scsystem.os = usetup.override_script_os;
@@ -1222,7 +1222,7 @@ HError define_gamedata_location_checkall(const String &exe_path)
     // Read game data location from the default config file.
     // This is an optional setting that may instruct which game file to use as a primary asset library.
     ConfigTree cfg;
-    String def_cfg_file = find_default_cfg_file(exe_path);
+    String def_cfg_file = find_default_cfg_file(exe_path.GetCStr());
     IniUtil::Read(def_cfg_file, cfg);
     read_game_data_location(cfg);
     if (!usetup.main_data_filename.IsEmpty())
@@ -1258,11 +1258,11 @@ bool define_gamedata_location(const String &exe_path)
     // derive missing ones from available.
     if (usetup.main_data_filename.IsEmpty())
     {
-        usetup.main_data_filename = get_filename(usetup.main_data_filepath);
+        usetup.main_data_filename = get_filename(usetup.main_data_filepath.GetCStr());
     }
     else if (usetup.main_data_filepath.IsEmpty())
     {
-        if (usetup.data_files_dir.IsEmpty() || !is_relative_filename(usetup.main_data_filename))
+        if (usetup.data_files_dir.IsEmpty() || !is_relative_filename(usetup.main_data_filename.GetCStr()))
             usetup.main_data_filepath = usetup.main_data_filename;
         else
             usetup.main_data_filepath = Path::ConcatPaths(usetup.data_files_dir, usetup.main_data_filename);
@@ -1297,7 +1297,7 @@ bool engine_init_gamedata(const String &exe_path)
 void engine_read_config(const String &exe_path, ConfigTree &cfg)
 {
     // Read default configuration file
-    String def_cfg_file = find_default_cfg_file(exe_path);
+    String def_cfg_file = find_default_cfg_file(exe_path.GetCStr());
     IniUtil::Read(def_cfg_file, cfg);
 
     // Disabled on Windows because people were afraid that this config could be mistakenly

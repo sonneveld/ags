@@ -27,8 +27,8 @@ AssetInfo::AssetInfo()
 }
 void AssetLibInfo::Unload()
 {
-    BaseFileName = "";
-    BaseFilePath = "";
+    BaseFileName.Empty();
+    BaseFilePath.Empty();
     LibFileNames.clear();
     AssetInfos.clear();
 }

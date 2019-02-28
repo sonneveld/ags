@@ -20,7 +20,7 @@ namespace Directory
 
 bool CreateDirectory(const String &path)
 {
-    return mkdir(path
+    return mkdir(path.GetCStr()
 #if ! AGS_PLATFORM_OS_WINDOWS
         , 0755
 #endif
@@ -29,7 +29,7 @@ bool CreateDirectory(const String &path)
 
 String SetCurrentDirectory(const String &path)
 {
-    chdir(path);
+    chdir(path.GetCStr());
     return GetCurrentDirectory();
 }
 

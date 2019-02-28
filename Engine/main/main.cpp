@@ -405,7 +405,7 @@ int ags_entry_point(int argc, char *argv[]) {
 
     if (justDisplayVersion)
     {
-        platform->WriteStdOut(get_engine_string());
+        platform->WriteStdOut(get_engine_string().GetCStr());
         return 0;
     }
 
@@ -416,7 +416,7 @@ int ags_entry_point(int argc, char *argv[]) {
     }
 
     init_debug();
-    Debug::Printf(kDbgMsg_Init, get_engine_string());
+    Debug::Printf(kDbgMsg_Init, get_engine_string().GetCStr());
 
     main_set_gamedir(argc, argv);    
 

@@ -94,7 +94,7 @@ int INIreadint(const ConfigTree &cfg, const String &sectn, const String &item, i
     if (!INIreaditem(cfg, sectn, item, str))
         return def_value;
 
-    return atoi(str);
+    return atoi(str.GetCStr());
 }
 
 float INIreadfloat(const ConfigTree &cfg, const String &sectn, const String &item, float def_value)
@@ -103,7 +103,7 @@ float INIreadfloat(const ConfigTree &cfg, const String &sectn, const String &ite
     if (!INIreaditem(cfg, sectn, item, str))
         return def_value;
 
-    return atof(str);
+    return atof(str.GetCStr());
 }
 
 String INIreadstring(const ConfigTree &cfg, const String &sectn, const String &item, const String &def_value)
@@ -161,7 +161,7 @@ bool parse_legacy_frame_config(const String &scaling_option, String &filter_id, 
 
     for (int i = 0; i < 6; i++)
     {
-        if (scaling_option.CompareLeftNoCase(legacy_filters[i].LegacyName) == 0)
+        if (scaling_option.StartsWithNoCase(legacy_filters[i].LegacyName))
         {
             filter_id = legacy_filters[i].CurrentName;
             frame.ScaleDef = legacy_filters[i].Scaling == 0 ? kFrame_MaxRound : kFrame_IntScale;
@@ -300,7 +300,7 @@ String find_default_cfg_file(const char *alt_cfg_file)
         strcpy(conffilebuf, alt_cfg_file);
         fix_filename_case(conffilebuf);
         fix_filename_slashes(conffilebuf);
-        INIgetdirec(conffilebuf, DefaultConfigFileName);
+        INIgetdirec(conffilebuf, DefaultConfigFileName.GetCStr());
         filename = conffilebuf;
     }
     return filename;

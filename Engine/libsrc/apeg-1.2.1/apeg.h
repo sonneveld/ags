@@ -75,13 +75,27 @@ typedef struct APEG_STREAM {
 #define APEG_HAS_VIDEO	(APEG_MPG_VIDEO|APEG_THEORA_VIDEO)
 #define APEG_HAS_AUDIO	(APEG_MPG_AUDIO|APEG_VORBIS_AUDIO)
 
+APEG_STREAM *apeg_open_stream_ex(void *ptr);  // ** USED
+void apeg_close_stream(APEG_STREAM *stream);// ** USED
+int apeg_play_apeg_stream(APEG_STREAM *stream_to_play, BITMAP *bmp, int loop, int (*callback)(BITMAP*tempBuffer));// ** USED
+int apeg_ignore_audio(int ignore);// ** USED
+void apeg_set_stream_reader(int (*init)(void *ptr),
+                            int (*read)(void *buffer, int bytes, void *ptr),
+                            void (*skip)(int bytes, void *ptr));   // ** USED
+void apeg_set_display_depth(int depth);// ** USED
+void apeg_enable_framedrop(int framedrop);// ** USED
+void apeg_disable_length_detection(int skipdetect);// ** USED (true)
+void apeg_get_video_size(APEG_STREAM *stream, int *w, int *h); // ** USED
+
+
+
+
+
 
 APEG_STREAM *apeg_open_stream(const char *filename);
 APEG_STREAM *apeg_open_memory_stream(void *buffer, int length);
-APEG_STREAM *apeg_open_stream_ex(void *ptr);
 int apeg_advance_stream(APEG_STREAM *stream, int loop);
 int apeg_reset_stream(APEG_STREAM *stream);
-void apeg_close_stream(APEG_STREAM *stream);
 
 int apeg_play_mpg(const char *filename, BITMAP *target, int loop,
                   int (*callback)(void));
@@ -89,15 +103,10 @@ int apeg_play_memory_mpg(void *buffer, BITMAP *target, int loop,
                          int (*callback)(BITMAP*));
 int apeg_play_mpg_ex(void *ptr, BITMAP *target, int loop,
                      int (*callback)(BITMAP*));
-int apeg_play_apeg_stream(APEG_STREAM *stream_to_play, BITMAP *bmp, int loop, int (*callback)(BITMAP*tempBuffer));
 
 int apeg_ignore_video(int ignore);
-int apeg_ignore_audio(int ignore);
 
 void apeg_set_memory_stream_size(int size);
-void apeg_set_stream_reader(int (*init)(void *ptr),
-                            int (*read)(void *buffer, int bytes, void *ptr),
-                            void (*skip)(int bytes, void *ptr));
 
 
 void apeg_set_display_callbacks(int (*init)(APEG_STREAM *stream, int coded_w,
@@ -106,16 +115,12 @@ void apeg_set_display_callbacks(int (*init)(APEG_STREAM *stream, int coded_w,
                                                  unsigned char **src,
                                                  void *ptr),
                                 void *ptr);
-void apeg_set_display_depth(int depth);
 void apeg_set_quality(int quality);
 
-void apeg_enable_framedrop(int framedrop);
-void apeg_disable_length_detection(int skipdetect);
 
 void apeg_reset_colors(APEG_STREAM *stream);
 
 
-void apeg_get_video_size(APEG_STREAM *stream, int *w, int *h);
 void apeg_set_stream_rate(APEG_STREAM *stream, float rate);
 
 

@@ -380,6 +380,7 @@
     <ClCompile Include="..\..\Engine\libsrc\glad\src\glad_wgl.c" />
     <ClCompile Include="..\..\Engine\libsrc\hq2x\hq2x3x.cpp" />
     <ClCompile Include="..\..\Engine\libsrc\libcda-0.5\windows.c" />
+    <ClCompile Include="..\..\Engine\libsrc\openal-soft-1.19.1\examples\common\alhelpers.c" />
     <ClCompile Include="..\..\Engine\main\config.cpp" />
     <ClCompile Include="..\..\Engine\main\engine.cpp" />
     <ClCompile Include="..\..\Engine\main\engine_setup.cpp" />
@@ -393,17 +394,9 @@
     <ClCompile Include="..\..\Engine\main\update.cpp" />
     <ClCompile Include="..\..\Engine\media\audio\ambientsound.cpp" />
     <ClCompile Include="..\..\Engine\media\audio\audio.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_mydumbmod.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_myjgmod.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_mymidi.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_mymp3.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_myogg.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_mystaticmp3.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_mystaticogg.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\clip_mywave.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\audio_core.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\clip_openal.cpp" />
     <ClCompile Include="..\..\Engine\media\audio\queuedaudioitem.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\sound.cpp" />
-    <ClCompile Include="..\..\Engine\media\audio\soundcache.cpp" />
     <ClCompile Include="..\..\Engine\media\audio\soundclip.cpp" />
     <ClCompile Include="..\..\Engine\media\video\video.cpp" />
     <ClCompile Include="..\..\Engine\platform\base\agsplatformdriver.cpp" />
@@ -685,8 +678,6 @@
     <ClInclude Include="..\..\Engine\media\audio\clip_mystaticogg.h" />
     <ClInclude Include="..\..\Engine\media\audio\clip_mywave.h" />
     <ClInclude Include="..\..\Engine\media\audio\queuedaudioitem.h" />
-    <ClInclude Include="..\..\Engine\media\audio\sound.h" />
-    <ClInclude Include="..\..\Engine\media\audio\soundcache.h" />
     <ClInclude Include="..\..\Engine\media\audio\soundclip.h" />
     <ClInclude Include="..\..\Engine\media\video\video.h" />
     <ClInclude Include="..\..\Engine\media\video\VMR9Graph.h" />

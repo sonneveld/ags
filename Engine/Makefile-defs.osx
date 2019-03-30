@@ -1,18 +1,19 @@
 USE_BUILT_IN_LIBSRC = 1
 USE_MIDI_PATCH = 0
 
-INCDIR = ../Engine ../Common ../Common/libinclude ../Plugins ../OSX/include ../OSX/include/freetype2 ../Engine/libsrc/glad/include
-LIBDIR = ../OSX/lib
+INCDIR = ../Engine ../Common ../Common/libinclude ../Plugins ../OSX/include ../OSX/include/freetype2 ../Engine/libsrc/glad/include ./opt-$(shell uname)/include 
+LIBDIR = ./opt-$(shell uname)/lib ../OSX/lib
 
 CFLAGS := -O2 -g \
     -fsigned-char -fno-strict-aliasing -fwrapv \
     -Wunused-result \
     -Wno-logical-op-parentheses -Wno-unused-value \
-    -Werror=write-strings -Werror=format-security -Werror=implicit-function-declaration \
+    -Werror=write-strings -Werror=format-security -Werror=implicit-function-declaration -Werror=return-type \
     -DNDEBUG \
     -DALLEGRO_STATICLINK -DALLEGRO_NO_COMPATIBILITY -DALLEGRO_NO_FIX_ALIASES -DALLEGRO_NO_FIX_CLASS \
     -DMAC_VERSION -DBUILTIN_PLUGINS -DHAVE_FSEEKO -DDISABLE_MPEG_AUDIO \
     -D_FILE_OFFSET_BITS=64 -DRTLD_NEXT \
+    $(shell pkg-config sdl2 --cflags) \
     $(CFLAGS)
 ifdef BUILD_STR
   CFLAGS += -DBUILD_STR=\"$(BUILD_STR)\"
@@ -29,8 +30,11 @@ LIBS := -framework Cocoa \
     -framework AudioToolbox \
     -framework CoreVideo\
     -framework IOKit \
+    -framework OpenAL \
     -lz -ldl -lpthread -lm -lc -lstdc++ -lbz2 \
-    -lalleg -ltheora -logg -lvorbis -lvorbisfile -lfreetype -logg
+    -lalleg -ltheora -logg -lvorbis -lvorbisfile -lfreetype -logg \
+    $(shell pkg-config sdl2 --libs) \
+    -lSDL2_sound
 
 ifneq ($(USE_BUILT_IN_LIBSRC), 1)
 ALDUMB :=
@@ -45,7 +49,7 @@ CFLAGS   += $(addprefix -I,$(INCDIR))
 CXXFLAGS += $(CFLAGS)
 MMFLAGS  += $(CFLAGS)
 ASFLAGS  += $(CFLAGS)
-LDFLAGS  := $(addprefix -L,$(LIBDIR))
+LDFLAGS  := -Wl,-search_paths_first $(addprefix -L,$(LIBDIR))
 
 BASE_PLATFORM = \
 platform/osx/acplmac.cpp \

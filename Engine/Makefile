@@ -18,7 +18,7 @@ ifneq ($(USE_MIDI_PATCH), 1)
 AL_MIDI_PATCH :=
 endif
 
-OBJS_C_CPP_MM = $(ALFONT) $(ALMP3) $(ALOGG) $(APEG) $(AASTR) $(HQ2X3X) $(AL_MIDI_PATCH) $(CDA) $(ALDUMB) $(GLAD) $(PLUGINS) $(BASE) $(BASE_PLATFORM)
+OBJS_C_CPP_MM = $(ALFONT)                   $(APEG) $(AASTR) $(HQ2X3X) $(AL_MIDI_PATCH) $(CDA)           $(GLAD) $(PLUGINS) $(BASE) $(BASE_PLATFORM)
 OBJS := $(OBJS_C_CPP_MM:.mm=.o)
 OBJS := $(OBJS:.cpp=.o)
 OBJS := $(OBJS:.c=.o)
@@ -29,9 +29,14 @@ DEPFILES = $(OBJS:.o=.d) $(OBJS_COMMON:.o=.d)
 
 -include config.mak
 
-.PHONY: printflags clean install uninstall rebuild
+.PHONY: printflags clean install uninstall rebuild sdlsound
+
+default: ags
 
 all: printflags ags
+
+sdlsound:
+	cd libsrc/SDL_sound-9262f9205898-20180720/ ; ./build.sh
 
 ags: $(OBJS) common.a 
 	@echo "Linking engine..."

@@ -5,6 +5,9 @@
 cmake_minimum_required(VERSION 2.8.4)
 
 project(SDL_sound)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+
 set(SDLSOUND_VERSION 1.9.0)
 
 # Increment this if/when we break backwards compatibility.
@@ -28,8 +31,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "SunPro")
 endif()
 
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
-
+include_directories(${SDL2_INCLUDE_DIR})
 
 # Decoders ...
 # These are (mostly) on by default now, so these options are only useful for
@@ -171,7 +173,7 @@ install(TARGETS ${SDLSOUND_INSTALL_TARGETS}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
-install(FILES SDL_sound.h DESTINATION include)
+install(FILES src/SDL_sound.h DESTINATION include)
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

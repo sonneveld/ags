@@ -915,11 +915,8 @@ void AGSWin32::PlayVideo(const char *name, int skip, int flags) {
 
   if (useSound)
   {
-    if (opts.mod_player)
-      reserve_voices(NUM_DIGI_VOICES, -1);
-    install_sound(usetup.digicard,usetup.midicard,NULL);
-    if (opts.mod_player)
-      init_mod_player(NUM_MOD_DIGI_VOICES);
+    audio_core_init();
+    opts.mod_player = 1;
   }
 
   set_palette_range(palette, 0, 255, 0);

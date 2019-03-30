@@ -599,17 +599,15 @@ void IAGSEngine::PlaySoundChannel (int32 channel, int32 soundType, int32 volume,
     else if (soundType == PSND_OGGSTATIC)
         newcha = my_load_static_ogg (asset_name, volume, (loop != 0));
     else if (soundType == PSND_MIDI) {
-        if (midi_pos >= 0)
+        if (audio_core_get_midi_pos() >= 0)
             quit("!IAGSEngine::PlaySoundChannel: MIDI already in use");
         newcha = my_load_midi (asset_name, loop);
         newcha->set_volume (volume);
     }
-#ifndef PSP_NO_MOD_PLAYBACK
     else if (soundType == PSND_MOD) {
         newcha = my_load_mod (asset_name, loop);
         newcha->set_volume (volume);
     }
-#endif
     else
         quit("!IAGSEngine::PlaySoundChannel: unknown sound type");
 
@@ -683,7 +681,6 @@ void IAGSEngine::DisableSound() {
     shutdown_sound();
     usetup.digicard = DIGI_NONE;
     usetup.midicard = MIDI_NONE;
-    install_sound(usetup.digicard,usetup.midicard,NULL);
 }
 int IAGSEngine::CanRunScriptFunctionNow() {
     if (inside_script)

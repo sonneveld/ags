@@ -89,7 +89,6 @@ SOUNDCLIP * load_sound_clip_from_old_style_number(bool isMusic, int indexNumber,
 
 int         init_mod_player(int numVoices);
 void        remove_mod_player();
-void        force_audiostream_include();
 int         get_volume_adjusted_for_distance(int volume, int sndX, int sndY, int sndMaxDist);
 void        update_directional_sound_vol();
 void        update_ambient_sound_vol ();

@@ -26,7 +26,6 @@
 #include "ac/audioclip.h"
 #include "ac/gamesetup.h"
 #include "ac/path_helper.h"
-#include "media/audio/sound.h"
 #include "debug/debug_log.h"
 #include "debug/debugger.h"
 #include "ac/common.h"
@@ -37,6 +36,8 @@
 #include "core/assetmanager.h"
 #include "ac/timer.h"
 #include "main/game_run.h"
+#include "media/audio/audio_core.h"
+#include "media/audio/clip_openal.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -55,7 +56,7 @@ SOUNDCLIP *AudioChannelsLock::GetChannel(int index)
 SOUNDCLIP *AudioChannelsLock::GetChannelIfPlaying(int index)
 {
     auto *ch = _channels[index];
-    return (ch != nullptr && ch->is_playing()) ? ch : nullptr;
+    return (ch != nullptr && ch->is_active()) ? ch : nullptr;
 }
 
 SOUNDCLIP *AudioChannelsLock::SetChannel(int index, SOUNDCLIP* ch)
@@ -268,11 +269,7 @@ SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
         soundClip = my_load_midi(asset_name, repeat);
         break;
     case eAudioFileMOD:
-#ifndef PSP_NO_MOD_PLAYBACK
         soundClip = my_load_mod(asset_name, repeat);
-#else
-        soundClip = NULL;
-#endif
         break;
     default:
         quitprintf("AudioClip.Play: invalid audio file type encountered: %d", audioClip->fileType);
@@ -586,12 +583,6 @@ SOUNDCLIP *load_sound_clip_from_old_style_number(bool isMusic, int indexNumber, 
 
 //=============================================================================
 
-void force_audiostream_include() {
-    // This should never happen, but the call is here to make it
-    // link the audiostream libraries
-    stop_audio_stream(NULL);
-}
-
 // TODO: double check that ambient sounds array actually needs +1
 std::array<AmbientSound,MAX_SOUND_CHANNELS+1> ambient;
 
@@ -709,12 +700,7 @@ void stop_all_sound_and_music()
 void shutdown_sound() 
 {
     stop_all_sound_and_music();
-
-#ifndef PSP_NO_MOD_PLAYBACK
-    if (opts.mod_player)
-        remove_mod_player();
-#endif
-    remove_sound();
+    audio_core_shutdown();
 }
 
 // the sound will only be played if there is a free channel or
@@ -732,7 +718,7 @@ static int play_sound_priority (int val1, int priority) {
             if (ch)
                 stop_and_destroy_channel (i);
         }
-        else if (ch == nullptr || !ch->is_playing()) {
+        else if (ch == nullptr || !ch->is_active()) {
             // PlaySoundEx will destroy the previous channel value.
             const int usechan = PlaySoundEx(val1, i);
             if (usechan >= 0)

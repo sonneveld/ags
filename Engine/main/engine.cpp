@@ -517,145 +517,16 @@ void engine_init_keyboard()
 #endif
 }
 
-typedef char AlIDStr[5];
-
-void AlIDToChars(int al_id, AlIDStr &id_str)
-{
-    id_str[0] = (al_id >> 24) & 0xFF;
-    id_str[1] = (al_id >> 16) & 0xFF;
-    id_str[2] = (al_id >> 8) & 0xFF;
-    id_str[3] = (al_id) & 0xFF;
-    id_str[4] = 0;
-}
-
-void AlDigiToChars(int digi_id, AlIDStr &id_str)
-{
-    if (digi_id == DIGI_NONE)
-        strcpy(id_str, "None");
-    else if (digi_id == DIGI_AUTODETECT)
-        strcpy(id_str, "Auto");
-    else
-        AlIDToChars(digi_id, id_str);
-}
-
-void AlMidiToChars(int midi_id, AlIDStr &id_str)
-{
-    if (midi_id == MIDI_NONE)
-        strcpy(id_str, "None");
-    else if (midi_id == MIDI_AUTODETECT)
-        strcpy(id_str, "Auto");
-    else
-        AlIDToChars(midi_id, id_str);
-}
-
-bool try_install_sound(int digi_id, int midi_id, String *p_err_msg = NULL)
-{
-    if (install_sound(digi_id, midi_id, NULL) == 0)
-        return true;
-    // Allegro does not let you try digital and MIDI drivers separately,
-    // and does not indicate which driver failed by return value.
-    // Therefore we try to guess.
-    if (p_err_msg)
-        *p_err_msg = get_allegro_error();
-    if (midi_id != MIDI_NONE)
-    {
-        Debug::Printf(kDbgMsg_Error, "Failed to init one of the drivers; Error: '%s'.\nWill try to start without MIDI", get_allegro_error());
-        if (install_sound(digi_id, MIDI_NONE, NULL) == 0)
-            return true;
-    }
-    if (digi_id != DIGI_NONE)
-    {
-        Debug::Printf(kDbgMsg_Error, "Failed to init one of the drivers; Error: '%s'.\nWill try to start without DIGI", get_allegro_error());
-        if (install_sound(DIGI_NONE, midi_id, NULL) == 0)
-            return true;
-    }
-    Debug::Printf(kDbgMsg_Error, "Failed to init sound drivers. Error: %s", get_allegro_error());
-    return false;
-}
-
 void engine_init_sound()
 {
-    if (opts.mod_player)
-        reserve_voices(NUM_DIGI_VOICES, -1);
-    // maybe this line will solve the sound volume? [??? wth is this]
-    set_volume_per_voice(1);
-
-    Debug::Printf("Initialize sound drivers");
-
-    // TODO: apply those options during config reading instead
-    if (!psp_audio_enabled)
-    {
-        usetup.digicard = DIGI_NONE;
-        usetup.midicard = MIDI_NONE;
-    }
-
-    if (!psp_midi_enabled)
-        usetup.midicard = MIDI_NONE;
-
-    AlIDStr digi_id;
-    AlIDStr midi_id;
-    AlDigiToChars(usetup.digicard, digi_id);
-    AlMidiToChars(usetup.midicard, midi_id);
-    Debug::Printf(kDbgMsg_Init, "Sound settings: digital driver ID: '%s' (0x%x), MIDI driver ID: '%s' (0x%x)",
-        digi_id, usetup.digicard, midi_id, usetup.midicard);
-
-    String err_msg;
-    bool sound_res = try_install_sound(usetup.digicard, usetup.midicard, &err_msg);
-    if (!sound_res && opts.mod_player)
-    {
-        Debug::Printf("Resetting to default sound parameters and trying again.");
-        reserve_voices(-1, -1); // this resets voice number to defaults
-        opts.mod_player = 0;
-        sound_res = try_install_sound(DIGI_AUTODETECT, MIDI_AUTODETECT);
-    }
-    if (!sound_res)
-    {
-        Debug::Printf("Everything failed, installing dummy no-sound drivers.");
-        reserve_voices(0, 0);
-        install_sound(DIGI_NONE, MIDI_NONE, NULL);
-    }
-    // Only display a warning if they wanted a sound card
-    const bool digi_failed = usetup.digicard != DIGI_NONE && digi_card == DIGI_NONE;
-    const bool midi_failed = usetup.midicard != MIDI_NONE && midi_card == MIDI_NONE;
-    if (digi_failed || midi_failed)
-    {
-        platform->DisplayAlert("Warning: cannot enable %s.\nProblem: %s.\n\nYou may supress this message by disabling %s in the game setup.",
-            (digi_failed && midi_failed ? "game audio" : (digi_failed ? "digital audio" : "MIDI audio") ),
-            (err_msg.IsEmpty() ? "No compatible drivers found in the system." : err_msg.GetCStr()),
-            (digi_failed && midi_failed ? "sound" : (digi_failed ? "digital sound" : "MIDI sound") ));
-    }
-
-    usetup.digicard = digi_card;
-    usetup.midicard = midi_card;
-
-    AlDigiToChars(usetup.digicard, digi_id);
-    AlMidiToChars(usetup.midicard, midi_id);
-    Debug::Printf(kDbgMsg_Init, "Installed digital driver ID: '%s' (0x%x), MIDI driver ID: '%s' (0x%x)",
-        digi_id, usetup.digicard, midi_id, usetup.midicard);
-
+    Debug::Printf("Initialise sound drivers");
+    audio_core_init();
+    opts.mod_player = 1;
     our_eip = -181;
-
-    if (usetup.digicard == DIGI_NONE)
-    {
-        // disable speech and music if no digital sound
-        // therefore the MIDI soundtrack will be used if present,
-        // and the voice mode should not go to Voice Only
-        play.want_speech = -2;
-        play.separate_music_lib = 0;
-    }
-
-#ifdef WINDOWS_VERSION
-    if (usetup.digicard == DIGI_DIRECTX(0))
-    {
-        // DirectX mixer seems to buffer an extra sample itself
-        use_extra_sound_offset = 1;
-    }
-#endif
 }
 
 void engine_init_debug()
 {
-    //set_volume(255,-1);
     if ((debug_flags & (~DBG_DEBUGMODE)) >0) {
         platform->DisplayAlert("Engine debugging enabled.\n"
             "\nNOTE: You have selected to enable one or more engine debugging options.\n"
@@ -856,26 +727,6 @@ int engine_check_font_was_loaded()
     }
 
     return RETURN_CONTINUE;
-}
-
-void engine_init_modxm_player()
-{
-#ifndef PSP_NO_MOD_PLAYBACK
-    if (game.options[OPT_NOMODMUSIC])
-        opts.mod_player = 0;
-
-    if (opts.mod_player) {
-        Debug::Printf(kDbgMsg_Init, "Initializing MOD/XM player");
-
-        if (init_mod_player(NUM_MOD_DIGI_VOICES) < 0) {
-            platform->DisplayAlert("Warning: install_mod: MOD player failed to initialize.");
-            opts.mod_player=0;
-        }
-    }
-#else
-    opts.mod_player = 0;
-    Debug::Printf(kDbgMsg_Init, "Compiled without MOD/XM player");
-#endif
 }
 
 // Do the preload graphic if available
@@ -1202,45 +1053,11 @@ void engine_setup_scsystem_auxiliary()
     }
 }
 
-void engine_update_mp3_thread()
-{
-    update_mp3_thread();
-    // reduce polling period to encourage more multithreading bugs.
-#ifndef _DEBUG
-    platform->Delay(50);
-#endif
-}
-
-void engine_start_multithreaded_audio()
-{
-  // PSP: Initialize the sound cache.
-  clear_sound_cache();
-
-  // Create sound update thread. This is a workaround for sound stuttering.
-  if (psp_audio_multithreaded)
-  {
-    if (!audioThread.CreateAndStart(engine_update_mp3_thread, true))
-    {
-      Debug::Printf(kDbgMsg_Init, "Failed to start audio thread, audio will be processed on the main thread");
-      psp_audio_multithreaded = 0;
-    }
-    else
-    {
-      Debug::Printf(kDbgMsg_Init, "Audio thread started");
-    }
-  }
-  else
-  {
-    Debug::Printf(kDbgMsg_Init, "Audio is processed on the main thread");
-  }
-}
-
 void engine_prepare_to_start_game()
 {
     Debug::Printf("Prepare to start game");
 
     engine_setup_scsystem_auxiliary();
-    engine_start_multithreaded_audio();
 
 #if defined(ANDROID_VERSION)
     if (psp_load_latest_savegame)
@@ -1460,8 +1277,6 @@ int initialize_engine(int argc,char*argv[])
     }
 
     our_eip = -179;
-
-    engine_init_modxm_player();
 
     engine_init_resolution_settings(game.GetGameRes());
 

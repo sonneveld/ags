@@ -6,11 +6,11 @@
 
 #include "media/audio/audio.h"
 
-#include "media/audio/soundcache.h"
-
 #include "media/audio/soundclip.h"
-#include "media/audio/sound.h"
 
 #include "media/audio/queuedaudioitem.h"
+
+#include "media/audio/audio_core.h"
+#include "media/audio/clip_openal.h"
 
 #endif

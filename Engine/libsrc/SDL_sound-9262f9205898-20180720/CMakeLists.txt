@@ -5,6 +5,9 @@
 cmake_minimum_required(VERSION 2.8.4)
 
 project(SDL_sound)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+
 set(SDLSOUND_VERSION 1.9.0)
 
 # Increment this if/when we break backwards compatibility.
@@ -28,8 +31,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "SunPro")
 endif()
 
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
-
+include_directories(${SDL2_INCLUDE_DIR})
 
 # Decoders ...
 # These are (mostly) on by default now, so these options are only useful for
@@ -127,6 +129,8 @@ if(SDLSOUND_BUILD_STATIC)
     if(NOT MSVC)
         set_target_properties(SDL2_sound-static PROPERTIES OUTPUT_NAME "SDL2_sound")
     endif()
+    target_link_libraries(SDL2_sound-static ${SDL2_LIBRARIES} ${OPTIONAL_LIBRARY_LIBS} ${OTHER_LDFLAGS})
+    target_include_directories(SDL2_sound-static INTERFACE src)
     set(SDLSOUND_LIB_TARGET SDL2_sound-static)
     set(SDLSOUND_INSTALL_TARGETS ${SDLSOUND_INSTALL_TARGETS} ";SDL2_sound-static")
 endif()
@@ -138,6 +142,7 @@ if(SDLSOUND_BUILD_SHARED)
     set_target_properties(SDL2_sound PROPERTIES VERSION ${SDLSOUND_VERSION})
     set_target_properties(SDL2_sound PROPERTIES SOVERSION ${SDLSOUND_SOVERSION})
     target_link_libraries(SDL2_sound ${SDL2_LIBRARIES} ${OPTIONAL_LIBRARY_LIBS} ${OTHER_LDFLAGS})
+    target_include_directories(SDL2_sound INTERFACE src)
     set(SDLSOUND_LIB_TARGET SDL2_sound)
     set(SDLSOUND_INSTALL_TARGETS ${SDLSOUND_INSTALL_TARGETS} ";SDL2_sound")
 endif()
@@ -171,7 +176,7 @@ install(TARGETS ${SDLSOUND_INSTALL_TARGETS}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
-install(FILES SDL_sound.h DESTINATION include)
+install(FILES src/SDL_sound.h DESTINATION include)
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

@@ -1,0 +1,33 @@
+﻿<?xml version="1.0"?>
+<NintendoSdkMeta>
+    <Core>
+        <Name>Application</Name>
+        <ApplicationId>0x01004b9000490000</ApplicationId>
+        <Is64BitInstruction>True</Is64BitInstruction>
+        <ProcessAddressSpace>AddressSpace64Bit</ProcessAddressSpace>
+    </Core>
+
+    <!-- この nmeta ファイルは AuthoringEditor で GUI を用いて生成、編集出来ます -->
+    <!-- This nmeta file can be created and edited by GUI AuthoringEditor provides. -->
+    <Application>
+        <Title>
+            <Language>AmericanEnglish</Language>
+            <Name>Name</Name>
+            <Publisher>Publisher</Publisher>
+        </Title>
+        <Icon>
+            <Language>AmericanEnglish</Language>
+            <IconPath>./NintendoSDK_Application.bmp</IconPath>
+        </Icon>
+        <DisplayVersion>1.0.0</DisplayVersion>
+        <SupportedLanguage>AmericanEnglish</SupportedLanguage>
+        <Rating>
+            <Organization>ESRB</Organization>
+            <Age>0</Age>
+        </Rating>
+        <UserAccountSaveDataSize>0x0000000000400000</UserAccountSaveDataSize>
+        <UserAccountSaveDataJournalSize>0x0000000000100000</UserAccountSaveDataJournalSize>
+        <LogoType>LicensedByNintendo</LogoType>
+        <ReleaseVersion>0</ReleaseVersion>
+    </Application>
+</NintendoSdkMeta>

@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptviewport.h"
-#include "ac/gamestate.h"
+#include "ee_ac.h"
 
 const char *ScriptViewport::GetType()
 {

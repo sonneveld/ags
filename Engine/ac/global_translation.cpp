@@ -12,18 +12,14 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "ac/common.h"
-#include "ac/display.h"
-#include "ac/gamestate.h"
 #include "ac/global_translation.h"
-#include "ac/string.h"
-#include "ac/tree_map.h"
-#include "platform/base/agsplatformdriver.h"
-#include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
-#include "util/memory.h"
-#include "core/types.h"
+
+#include <string.h>
+#include "cn_core.h"
+#include "ee_ac.h"
+#include "ee_platform.h"
+#include "ee_plugin.h"
+#include "ee_util.h"
 
 using namespace AGS::Common::Memory;
 

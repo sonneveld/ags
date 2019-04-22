@@ -17,49 +17,17 @@
 //=============================================================================
 
 #include "ac/character.h"
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/view.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/event.h"
-#include "ac/game.h"
-#include "ac/global_audio.h"
-#include "ac/global_character.h"
-#include "ac/global_game.h"
-#include "ac/global_object.h"
-#include "ac/global_region.h"
-#include "ac/global_room.h"
-#include "ac/global_translation.h"
-#include "ac/gui.h"
-#include "ac/lipsync.h"
-#include "ac/mouse.h"
-#include "ac/object.h"
-#include "ac/overlay.h"
-#include "ac/properties.h"
-#include "ac/room.h"
-#include "ac/screenoverlay.h"
-#include "ac/string.h"
-#include "ac/system.h"
-#include "ac/viewframe.h"
-#include "ac/walkablearea.h"
-#include "gui/guimain.h"
-#include "ac/route_finder.h"
-#include "ac/gamestate.h"
-#include "debug/debug_log.h"
-#include "main/game_run.h"
-#include "main/update.h"
-#include "ac/spritecache.h"
-#include "util/string_utils.h"
+
 #include <math.h>
-#include "gfx/graphicsdriver.h"
-#include "platform/base/override_defines.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_character.h"
-#include "ac/dynobj/cc_inventory.h"
-#include "script/script_runtime.h"
-#include "gfx/gfx_def.h"
-#include "media/audio/audio_system.h"
+#include "ee_ac.h"
+#include "ee_gui.h"
+#include "ee_debug.h"
+#include "ee_main.h"
+#include "ee_util.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 
@@ -2858,7 +2826,7 @@ int GetLipSyncFrame (const char *curtex, int *stroffs) {
             if (strchr(tptr, '/'))
                 lenthisbit = strchr(tptr, '/') - tptr;
 
-            if ((strnicmp (curtex, tptr, lenthisbit) == 0) && (lenthisbit > bestfit_len)) {
+            if ((ags_strnicmp (curtex, tptr, lenthisbit) == 0) && (lenthisbit > bestfit_len)) {
                 bestfit = aa;
                 bestfit_len = lenthisbit;
             }
@@ -2906,10 +2874,6 @@ int update_lip_sync(int talkview, int talkloop, int *talkframeptr) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
 
 extern ScriptString myScriptStringImpl;
 

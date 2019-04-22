@@ -12,43 +12,19 @@
 //
 //=============================================================================
 
+#include "game/savegame_components.h"
+
 #include <map>
 
-#include "ac/audiocliptype.h"
-#include "ac/character.h"
-#include "ac/common.h"
-#include "ac/dialogtopic.h"
-#include "ac/draw.h"
-#include "ac/dynamicsprite.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/gui.h"
-#include "ac/mouse.h"
-#include "ac/movelist.h"
-#include "ac/roomstatus.h"
-#include "ac/screenoverlay.h"
-#include "ac/spritecache.h"
-#include "ac/view.h"
-#include "ac/system.h"
-#include "ac/dynobj/cc_serializer.h"
-#include "debug/out.h"
-#include "game/savegame_components.h"
-#include "gfx/bitmap.h"
-#include "gui/animatingguibutton.h"
-#include "gui/guibutton.h"
-#include "gui/guiinv.h"
-#include "gui/guilabel.h"
-#include "gui/guilistbox.h"
-#include "gui/guimain.h"
-#include "gui/guislider.h"
-#include "gui/guitextbox.h"
-#include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
-#include "script/cc_error.h"
-#include "script/script.h"
-#include "util/filestream.h" // TODO: needed only because plugins expect file handle
-#include "media/audio/audio_system.h"
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_gui.h"
+#include "ee_plugin.h"
+#include "ee_script.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using namespace Common;
 

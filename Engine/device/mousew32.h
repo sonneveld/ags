@@ -21,6 +21,9 @@
 //
 //=============================================================================
 
+#ifndef __AGS_EE_DEVICE_MOUSEW32_H
+#define __AGS_EE_DEVICE_MOUSEW32_H
+
 #include "util/geometry.h"
 
 #define MAXCURSORS 20
@@ -29,6 +32,8 @@
 
 namespace AGS { namespace Common { class Bitmap; } }
 using namespace AGS; // FIXME later
+
+const int NONE = -1, LEFT = 0, RIGHT = 1, MIDDLE = 2;
 
 void msetgraphpos(int,int);
 // Sets the area of the screen within which the mouse can move
@@ -88,3 +93,5 @@ extern int disable_mgetgraphpos;
 extern char currentcursor;
 
 extern Common::Bitmap *mousecurs[MAXCURSORS];
+
+#endif

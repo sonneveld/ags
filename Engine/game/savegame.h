@@ -17,7 +17,7 @@
 
 #include "util/stdtr1compat.h"
 #include TR1INCLUDE(memory)
-#include "ac/game_version.h"
+#include "cn_ac.h"
 #include "util/error.h"
 #include "util/version.h"
 

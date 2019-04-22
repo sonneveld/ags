@@ -17,7 +17,7 @@
 //=============================================================================
 
 #include "util/wgt2allg.h"
-#include "gfx/bitmap.h"
+#include "ee_gfx.h"
 
 // Note: define if needed for platform
 //#define SWAP_RB_HICOL_FOR_32to24_32

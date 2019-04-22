@@ -12,19 +12,13 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_game.h"
 #include "ac/global_gui.h"
-#include "ac/gui.h"
-#include "ac/guicontrol.h"
-#include "ac/mouse.h"
-#include "ac/string.h"
-#include "debug/debug_log.h"
-#include "gui/guimain.h"
-#include "script/runtimescriptvalue.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gui.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 
@@ -45,7 +39,7 @@ int FindGUIID (const char* GUIName) {
             continue;
         if (strcmp(guis[ii].Name, GUIName) == 0)
             return ii;
-        if ((guis[ii].Name[0u] == 'g') && (stricmp(guis[ii].Name.GetCStr() + 1, GUIName) == 0))
+        if ((guis[ii].Name[0u] == 'g') && (ags_stricmp(guis[ii].Name.GetCStr() + 1, GUIName) == 0))
             return ii;
     }
     quit("FindGUIID: No matching GUI found: GUI may have been deleted");

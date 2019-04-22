@@ -13,8 +13,9 @@
 //=============================================================================
 
 #include "ac/movelist.h"
-#include "ac/common.h"
-#include "util/stream.h"
+
+#include "cn_ac.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

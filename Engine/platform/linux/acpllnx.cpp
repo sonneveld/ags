@@ -12,20 +12,21 @@
 //
 //=============================================================================
 
-#if !defined(LINUX_VERSION)
-#error This file should only be included on the Linux or BSD build
-#endif
+#include "core/platform.h"
+
+#ifdef LINUX_VERSION
 
 // ********* LINUX PLACEHOLDER DRIVER *********
+
+#include "ee_platform.h"
 
 #include <stdio.h>
 #include <allegro.h>
 #include <xalleg.h>
-#include "ac/runtime_defines.h"
-#include "gfx/gfxdefines.h"
-#include "platform/base/agsplatformdriver.h"
-#include "plugin/agsplugin.h"
-#include "util/string.h"
+#include "ee_ac.h"
+#include "ee_gfx.h"
+#include "ee_plugin.h"
+#include "ee_util.h"
 #include <libcda.h>
 
 #include <pwd.h>
@@ -211,3 +212,5 @@ void AGSLinux::GetSystemDisplayModes(std::vector<Engine::DisplayMode> &dms)
     }
     destroy_gfx_mode_list(gmlist);
 }
+
+#endif

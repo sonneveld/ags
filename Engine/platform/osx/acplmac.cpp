@@ -12,24 +12,23 @@
 //
 //=============================================================================
 
-#if !defined(MAC_VERSION)
-#error This file should only be included on the Mac build
-#endif
+#include "core/platform.h"
+
+#ifdef MAC_VERSION
 
 // ********* MacOS PLACEHOLDER DRIVER *********
 
-//#include "util/wgt2allg.h"
-//#include "gfx/ali3d.h"
-//#include "ac/runtime_defines.h"
-//#include "main/config.h"
-//#include "plugin/agsplugin.h"
+#include "ee_platform.h"
+
+#include "ee_ac.h"
+//#include "ee_util.h"
+//#include "ee_gfx.h"
+//#include "ee_main.h"
+//#include "ee_plugin.h"
 //#include <libcda.h>
 //#include <pwd.h>
 //#include <sys/stat.h>
-#include <unistd.h>
-#include "platform/base/agsplatformdriver.h"
-#include "util/directory.h"
-#include "ac/common.h"
+#include "ee_util.h"
 
 void AGSMacInitPaths(char gamename[256], char appdata[PATH_MAX]);
 void AGSMacGetBundleDir(char gamepath[PATH_MAX]);
@@ -86,7 +85,7 @@ AGSMac::AGSMac()
   AGSMacInitPaths(psp_game_file_name, libraryApplicationSupport);
   
   snprintf(commonDataPath, PATH_MAX, "%s/uk.co.adventuregamestudio", libraryApplicationSupport);
-  AGS::Common::Directory::CreateDirectory(commonDataPath);
+  AGS::Common::Directory::EnsureDirectoryExists(commonDataPath);
 
   strcpy(psp_translation, "default");
 }
@@ -176,3 +175,5 @@ AGSPlatformDriver* AGSPlatformDriver::GetDriver() {
     instance = new AGSMac();
   return instance;
 }
+
+#endif

@@ -12,12 +12,10 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/label.h"
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_translation.h"
-#include "ac/string.h"
+
+#include <string.h>
+#include "ee_ac.h"
 
 extern GameSetupStruct game;
 
@@ -84,10 +82,9 @@ void Label_SetFont(GUILabel *guil, int fontnum) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_debug.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptString myScriptStringImpl;
 

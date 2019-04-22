@@ -15,6 +15,7 @@
 #ifndef __AC_MYWAVE_H
 #define __AC_MYWAVE_H
 
+#include "allegro.h"
 #include "media/audio/soundclip.h"
 
 // My new MP3STREAM wrapper

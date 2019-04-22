@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 
-#include "ac/characterinfo.h"
+#include "cn_ac.h"
 #include "ac/runtime_defines.h"
 #include "game/roomstruct.h"
 #include "game/viewport.h"

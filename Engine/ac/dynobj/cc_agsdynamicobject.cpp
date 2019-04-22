@@ -12,11 +12,12 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "core/types.h"
 #include "ac/dynobj/cc_agsdynamicobject.h"
-#include "ac/common.h"               // quit()
-#include "util/bbop.h"
+
+#include <string.h>
+#include "cn_core.h"
+#include "cn_ac.h"               // quit()
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

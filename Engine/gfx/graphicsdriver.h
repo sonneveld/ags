@@ -21,6 +21,9 @@
 
 #include "util/stdtr1compat.h"
 #include TR1INCLUDE(memory)
+
+#include "allegro.h"
+
 #include "gfx/gfxdefines.h"
 #include "gfx/gfxmodelist.h"
 #include "util/geometry.h"

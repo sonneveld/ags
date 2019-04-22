@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include "debug/assert.h"
 #include "util/alignedstream.h"
+
+#include "cn_debug.h"
 #include "util/math.h"
 
 namespace AGS

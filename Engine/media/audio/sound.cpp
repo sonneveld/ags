@@ -16,27 +16,17 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
-#include "ac/file.h"
-#include "media/audio/audiodefines.h"
 #include "media/audio/sound.h"
-#include "media/audio/audiointernaldefs.h"
-#include "media/audio/clip_mywave.h"
+
+#include "ee_util.h"
+#include "ee_ac.h"
+#include "ee_media.h"
 #ifndef NO_MP3_PLAYER
-#include "media/audio/clip_mymp3.h"
-#include "media/audio/clip_mystaticmp3.h"
 #endif
-#include "media/audio/clip_myogg.h"
-#include "media/audio/clip_mystaticogg.h"
-#include "media/audio/clip_mymidi.h"
 #ifdef JGMOD_MOD_PLAYER
-#include "media/audio/clip_myjgmod.h"
 #endif
 #ifdef DUMB_MOD_PLAYER
-#include "media/audio/clip_mydumbmod.h"
 #endif
-#include "media/audio/soundcache.h"
-#include "util/mutex_lock.h"
 
 #if defined JGMOD_MOD_PLAYER && defined DUMB_MOD_PLAYER
 #error JGMOD_MOD_PLAYER and DUMB_MOD_PLAYER macros cannot be defined at the same time.

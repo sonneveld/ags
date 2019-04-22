@@ -12,12 +12,13 @@
 //
 //=============================================================================
 
-#include <alfont.h>
-#include "core/assetmanager.h"
 #include "font/ttffontrenderer.h"
-#include "util/stream.h"
+
+#include <alfont.h>
+#include "cn_core.h"
+#include "cn_ac.h"
+#include "cn_util.h"
 #if !defined(WINDOWS_VERSION) // TODO: factor out the hack in LoadFromDiskEx
-#include "ac/gamestructdefines.h"
 #include "font/fonts.h"
 #endif
 

@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "plugin/pluginobjectreader.h"
-#include "ac/runtime_defines.h"
+#include "ee_ac.h"
 
 PluginObjectReader pluginReaders[MAX_PLUGIN_OBJECT_READERS];
 int numPluginReaders = 0;

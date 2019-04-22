@@ -12,14 +12,12 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
-#include "media/audio/audiodefines.h"
 #include "media/audio/clip_mywave.h"
-#include "media/audio/audiointernaldefs.h"
-#include "media/audio/soundcache.h"
-#include "util/mutex_lock.h"
 
-#include "platform/base/agsplatformdriver.h"
+#include "ee_util.h"
+#include "ee_media.h"
+
+#include "ee_platform.h"
 
 void MYWAVE::poll()
 {

@@ -12,10 +12,11 @@
 //
 //=============================================================================
 
-#include <time.h>
 #include "ac/datetime.h"
-#include "platform/base/agsplatformdriver.h"
-#include "script/runtimescriptvalue.h"
+
+#include <time.h>
+#include "ee_platform.h"
+#include "ee_script.h"
 
 ScriptDateTime* DateTime_Now_Core() {
     ScriptDateTime *sdt = new ScriptDateTime();
@@ -65,9 +66,7 @@ int DateTime_GetRawTime(ScriptDateTime *sdt) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_debug.h"
 
 // ScriptDateTime* ()
 RuntimeScriptValue Sc_DateTime_Now(const RuntimeScriptValue *params, int32_t param_count)

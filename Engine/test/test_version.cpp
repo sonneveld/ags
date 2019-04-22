@@ -15,8 +15,8 @@
 #ifdef _DEBUG
 
 #include <string.h>
-#include "debug/assert.h"
-#include "util/version.h"
+#include "ee_debug.h"
+#include "ee_util.h"
 
 using AGS::Common::Version;
 

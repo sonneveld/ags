@@ -12,31 +12,20 @@
 //
 //=============================================================================
 
+#include "media/audio/audio.h"
+
 #include <cmath>
 
-#include "util/wgt2allg.h"
-#include "media/audio/audio.h"
-#include "ac/audiocliptype.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/dynobj/cc_audioclip.h"
-#include "ac/dynobj/cc_audiochannel.h"
-#include "ac/gamestate.h"
-#include "script/script_runtime.h"
-#include "ac/audiochannel.h"
-#include "ac/audioclip.h"
-#include "ac/gamesetup.h"
-#include "ac/path_helper.h"
-#include "media/audio/sound.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "ac/common.h"
-#include "ac/file.h"
-#include "ac/global_audio.h"
+#include "cn_core.h"
+#include "cn_ac_dynobj.h"
+#include "ee_ac.h"
+#include "ee_util.h"
+#include "ee_ac_dynobj.h"
+#include "ee_script.h"
+#include "ee_media.h"
+#include "ee_debug.h"
 #include <math.h>
-#include "util/stream.h"
-#include "core/assetmanager.h"
-#include "ac/timer.h"
-#include "main/game_run.h"
+#include "ee_main.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

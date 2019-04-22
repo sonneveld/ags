@@ -12,13 +12,12 @@
 //
 //=============================================================================
 
-#include "media/audio/audiodefines.h"
 #include "media/audio/clip_mystaticogg.h"
-#include "media/audio/audiointernaldefs.h"
-#include "media/audio/soundcache.h"
-#include "util/mutex_lock.h"
 
-#include "platform/base/agsplatformdriver.h"
+#include "ee_media.h"
+#include "ee_util.h"
+
+#include "ee_platform.h"
 
 extern "C" {
     extern int alogg_is_end_of_oggstream(ALOGG_OGGSTREAM *ogg);

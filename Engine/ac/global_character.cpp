@@ -17,25 +17,12 @@
 //=============================================================================
 
 #include "ac/global_character.h"
-#include "ac/common.h"
-#include "ac/view.h"
-#include "ac/character.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/event.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_overlay.h"
-#include "ac/global_translation.h"
-#include "ac/object.h"
-#include "ac/overlay.h"
-#include "ac/properties.h"
-#include "ac/screenoverlay.h"
-#include "ac/string.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "main/game_run.h"
-#include "script/script.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_main.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 

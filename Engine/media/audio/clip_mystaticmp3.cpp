@@ -12,16 +12,14 @@
 //
 //=============================================================================
 
-#include "media/audio/audiodefines.h"
 
 #ifndef NO_MP3_PLAYER
 
 #include "media/audio/clip_mystaticmp3.h"
-#include "media/audio/audiointernaldefs.h"
-#include "media/audio/soundcache.h"
-#include "util/mutex_lock.h"
+#include "ee_media.h"
+#include "ee_util.h"
 
-#include "platform/base/agsplatformdriver.h"
+#include "ee_platform.h"
 
 extern int our_eip;
 

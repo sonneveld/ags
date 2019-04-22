@@ -12,15 +12,11 @@
 //
 //=============================================================================
 
-#include <set>
 #include "ac/listbox.h"
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_game.h"
-#include "ac/path_helper.h"
-#include "ac/string.h"
-#include "gui/guimain.h"
+
+#include <set>
+#include "ee_ac.h"
+#include "ee_gui.h"
 
 using namespace AGS::Common;
 
@@ -376,10 +372,9 @@ GUIListBox* is_valid_listbox (int guin, int objn) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_debug.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptString myScriptStringImpl;
 

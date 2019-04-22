@@ -12,11 +12,11 @@
 //
 //=============================================================================
 
-#include "font/fonts.h"
-#include "gui/guimain.h"
 #include "gui/guitextbox.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
+
+#include "gui/guimain.h"
+#include "cn_font.h"
+#include "cn_util.h"
 
 #define GUITEXTBOX_LEGACY_TEXTLEN 200
 

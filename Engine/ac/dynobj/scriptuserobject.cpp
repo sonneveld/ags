@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include <memory.h>
 #include "scriptuserobject.h"
+
+#include <memory.h>
 
 // return the type name of the object
 const char *ScriptUserObject::GetType()

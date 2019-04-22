@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_gui.h"
-#include "ac/dynobj/scriptgui.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptGUI *scrGui;
 

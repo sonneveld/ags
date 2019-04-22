@@ -11,9 +11,10 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
-#include <stdarg.h>
 #include "debug/debugmanager.h"
-#include "util/string_types.h"
+
+#include <stdarg.h>
+#include "cn_util.h"
 
 namespace AGS
 {

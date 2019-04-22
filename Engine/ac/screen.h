@@ -18,6 +18,8 @@
 #ifndef __AGS_EE_AC__SCREEN_H
 #define __AGS_EE_AC__SCREEN_H
 
+#include "allegro.h"
+
 namespace AGS { namespace Common { class Bitmap; } }
 namespace AGS { namespace Engine { class IDriverDependantBitmap; } }
 

@@ -13,7 +13,8 @@
 //=============================================================================
 
 #include "gfx/bitmap.h"
-#include "util/memory.h"
+
+#include "cn_util.h"
 
 namespace AGS
 {

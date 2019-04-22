@@ -13,8 +13,8 @@
 //=============================================================================
 
 #include "game/customproperties.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
+
+#include "cn_util.h"
 
 namespace AGS
 {

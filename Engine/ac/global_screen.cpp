@@ -12,20 +12,12 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/gamesetup.h"
-#include "ac/draw.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_game.h"
 #include "ac/global_screen.h"
-#include "ac/runtime_defines.h"
-#include "ac/screen.h"
-#include "debug/debug_log.h"
-#include "platform/base/agsplatformdriver.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_platform.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

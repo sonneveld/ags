@@ -18,6 +18,8 @@
 //
 //=============================================================================
 
+#ifdef WINDOWS_VERSION
+
 //#define ALLEGRO_STATICLINK  // already defined in project settings
 #include <allegro.h>
 #include <winalleg.h>
@@ -27,11 +29,10 @@
 #include <mmstream.h>	// Multimedia stream interfaces
 #include <ddstream.h>	// DirectDraw multimedia stream interfaces
 #include <initguid.h>   // Defines DEFINE_GUID macro and enables GUID initialization
-#include "ac/draw.h"
-#include "gfx/bitmap.h"
-#include "gfx/graphicsdriver.h"
-#include "main/game_run.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ee_ac.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -426,3 +427,5 @@ int WINAPI WinMain(
   return 0;
 }
 #endif
+
+#endif // WINDOWS_VERSION

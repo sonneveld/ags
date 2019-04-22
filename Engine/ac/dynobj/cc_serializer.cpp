@@ -12,19 +12,15 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/dynobj/cc_serializer.h"
-#include "ac/dynobj/all_dynamicclasses.h"
-#include "ac/dynobj/all_scriptclasses.h"
-#include "ac/dynobj/scriptcontainers.h"
-#include "ac/dynobj/scriptfile.h"
-#include "ac/dynobj/scriptuserobject.h"
-#include "ac/game.h"
-#include "debug/debug_log.h"
+
+#include <string.h>
+#include "ee_ac_dynobj.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
 
 #undef _WINGDI_ // FIXME later (prevents conflict with BITMAP declaration)
-#include "plugin/agsplugin.h"
-#include "plugin/pluginobjectreader.h"
+#include "ee_plugin.h"
 
 extern CCGUIObject ccDynamicGUIObject;
 extern CCCharacter ccDynamicCharacter;

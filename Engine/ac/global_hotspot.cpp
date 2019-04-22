@@ -13,21 +13,11 @@
 //=============================================================================
 
 #include "ac/global_hotspot.h"
-#include "ac/common.h"
-#include "ac/common_defines.h"
-#include "ac/characterinfo.h"
-#include "ac/draw.h"
-#include "ac/event.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_character.h"
-#include "ac/global_translation.h"
-#include "ac/hotspot.h"
-#include "ac/properties.h"
-#include "ac/roomstatus.h"
-#include "ac/string.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "script/script.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 

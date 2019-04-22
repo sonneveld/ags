@@ -12,11 +12,11 @@
 //
 //=============================================================================
 
-#include <cmath>
 #include "ac/math.h"
-#include "ac/common.h" // quit
-#include "platform/base/override_defines.h"
-#include "util/math.h"
+
+#include <cmath>
+#include "cn_ac.h" // quit
+#include "ee_util.h"
 
 int FloatToInt(float value, int roundDirection)
 {
@@ -162,9 +162,8 @@ int __Rand(int upto)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_debug.h"
+#include "ee_script.h"
 
 // float (float value)
 RuntimeScriptValue Sc_Math_ArcCos(const RuntimeScriptValue *params, int32_t param_count)

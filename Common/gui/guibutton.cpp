@@ -12,11 +12,11 @@
 //
 //=============================================================================
 
-#include "ac/spritecache.h"
 #include "gui/guibutton.h"
+
+#include "cn_ac.h"
 #include "gui/guimain.h" // TODO: extract helper functions
-#include "util/stream.h"
-#include "util/string_utils.h"
+#include "cn_util.h"
 
 std::vector<AGS::Common::GUIButton> guibuts;
 int numguibuts = 0;

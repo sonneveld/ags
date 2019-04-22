@@ -15,10 +15,9 @@
 #ifdef _DEBUG
 
 #include <string.h>
-#include "ac/game_version.h"
-#include "debug/assert.h"
-#include "script/script_api.h"
-#include "script/runtimescriptvalue.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_script.h"
 
 const char *ScriptVSprintf__(char *buffer, size_t buf_length, const char *format, ...)
 {

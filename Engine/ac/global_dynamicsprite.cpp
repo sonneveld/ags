@@ -13,14 +13,10 @@
 //=============================================================================
 
 #include "ac/global_dynamicsprite.h"
-#include "util/wgt2allg.h" // Allegro RGB, PALETTE
-#include "ac/draw.h"
-#include "ac/dynamicsprite.h"
-#include "ac/path_helper.h"
-#include "ac/spritecache.h"
-#include "ac/runtime_defines.h" //MAX_PATH
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
+
+#include "ee_util.h"
+#include "ee_ac.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

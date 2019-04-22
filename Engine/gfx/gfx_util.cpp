@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "gfx/gfx_util.h"
-#include "gfx/blender.h"
+#include "ee_gfx.h"
 
 // CHECKME: is this hack still relevant?
 #if defined(IOS_VERSION) || defined(ANDROID_VERSION)

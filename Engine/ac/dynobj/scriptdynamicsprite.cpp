@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptdynamicsprite.h"
-#include "ac/dynamicsprite.h"
+#include "ee_ac.h"
 
 int ScriptDynamicSprite::Dispose(const char *address, bool force) {
     // always dispose

@@ -12,23 +12,15 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/mouse.h"
-#include "ac/string.h"
 #include "ac/system.h"
-#include "ac/dynobj/scriptsystem.h"
-#include "debug/debug_log.h"
-#include "main/engine.h"
-#include "main/main.h"
-#include "gfx/graphicsdriver.h"
-#include "ac/dynobj/cc_audiochannel.h"
-#include "main/graphics_mode.h"
-#include "ac/global_debug.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_main.h"
+#include "ee_gfx.h"
+#include "ee_media.h"
+#include "ee_util.h"
 
 using namespace AGS::Engine;
 
@@ -131,7 +123,7 @@ int System_GetVsync() {
 }
 
 void System_SetVsync(int newValue) {
-    if(stricmp(gfxDriver->GetDriverID(), "D3D9") != 0)
+    if(ags_stricmp(gfxDriver->GetDriverID(), "D3D9") != 0)
         scsystem.vsync = newValue;
 }
 
@@ -229,10 +221,7 @@ void System_SetRenderAtScreenResolution(int enable)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_script.h"
 
 extern ScriptString myScriptStringImpl;
 

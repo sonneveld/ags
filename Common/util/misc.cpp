@@ -41,16 +41,15 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined (WINDOWS_VERSION)
-#include <unistd.h>
+#include <stdio.h>
 #include <dirent.h>
-#include <string.h>
+#include <sys/types.h>
 #include <sys/stat.h>
-#endif
-#include <allegro.h>
+
+#include "allegro.h"
 #include "util/file.h"
-#include "util/stdio_compat.h"
 #include "util/stream.h"
+#include "util/string.h"
 
 using namespace AGS::Common;
 

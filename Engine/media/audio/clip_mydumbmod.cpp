@@ -16,8 +16,7 @@
 
 #ifdef DUMB_MOD_PLAYER
 
-#include "media/audio/clip_mydumbmod.h"
-#include "media/audio/audiointernaldefs.h"
+#include "ee_media.h"
 
 void al_duh_set_loop(AL_DUH_PLAYER *dp, int loop) {
     DUH_SIGRENDERER *sr = al_duh_get_sigrenderer(dp);

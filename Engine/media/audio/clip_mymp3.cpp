@@ -12,17 +12,14 @@
 //
 //=============================================================================
 
-#include "media/audio/audiodefines.h"
+#include "media/audio/clip_mymp3.h"
+
+#include "ee_ac.h"               // quit()
+#include "ee_media.h"
+#include "ee_util.h"
+#include "ee_platform.h"
 
 #ifndef NO_MP3_PLAYER
-
-#include "media/audio/clip_mymp3.h"
-#include "media/audio/audiointernaldefs.h"
-#include "ac/common.h"               // quit()
-#include "util/mutex_lock.h"
-
-#include "platform/base/agsplatformdriver.h"
-
 
 void MYMP3::poll()
 {

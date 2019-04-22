@@ -13,12 +13,10 @@
 //=============================================================================
 
 #include "ac/global_walkablearea.h"
-#include "ac/common.h"
-#include "ac/common_defines.h"
-#include "ac/draw.h"
-#include "ac/walkablearea.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
 
 using namespace AGS::Common;
 

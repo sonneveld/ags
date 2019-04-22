@@ -18,7 +18,7 @@
 #ifndef __AGS_EE_AC__ROOMOBJECT_H
 #define __AGS_EE_AC__ROOMOBJECT_H
 
-#include "ac/common_defines.h"
+#include "cn_ac.h"
 
 namespace AGS { namespace Common { class Stream; }}
 using namespace AGS; // FIXME later

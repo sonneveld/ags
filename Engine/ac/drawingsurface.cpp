@@ -12,26 +12,14 @@
 //
 //=============================================================================
 
-#include "ac/draw.h"
 #include "ac/drawingsurface.h"
-#include "ac/common.h"
-#include "ac/charactercache.h"
-#include "ac/display.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_translation.h"
-#include "ac/objectcache.h"
-#include "ac/roomobject.h"
-#include "ac/roomstatus.h"
-#include "ac/string.h"
-#include "debug/debug_log.h"
-#include "font/fonts.h"
-#include "gui/guimain.h"
-#include "ac/spritecache.h"
-#include "script/runtimescriptvalue.h"
-#include "gfx/gfx_def.h"
-#include "gfx/gfx_util.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_font.h"
+#include "ee_gui.h"
+#include "ee_script.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -450,9 +438,6 @@ int DrawingSurface_GetPixel(ScriptDrawingSurface *sds, int x, int y) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // void (ScriptDrawingSurface *sds, int colour)
 RuntimeScriptValue Sc_DrawingSurface_Clear(void *self, const RuntimeScriptValue *params, int32_t param_count)

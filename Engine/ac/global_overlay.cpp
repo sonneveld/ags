@@ -13,19 +13,9 @@
 //=============================================================================
 
 #include "ac/global_overlay.h"
-#include "ac/common.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_translation.h"
-#include "ac/overlay.h"
-#include "ac/runtime_defines.h"
-#include "ac/screenoverlay.h"
-#include "ac/string.h"
-#include "ac/spritecache.h"
-#include "ac/system.h"
-#include "gfx/bitmap.h"
+
+#include "ee_ac.h"
+#include "ee_gfx.h"
 
 using namespace Common;
 using namespace Engine;

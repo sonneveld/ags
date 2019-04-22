@@ -16,19 +16,18 @@
 //
 //=============================================================================
 
+#ifdef WINDOWS_VERSION
+
+#include "platform/windows/gfx/ali3dd3d.h"
+
 #include <allegro.h>
 #include <allegro/platform/aintwin.h>
-#include "ac/timer.h"
-#include "debug/assert.h"
-#include "debug/out.h"
-#include "gfx/ali3dexception.h"
-#include "gfx/gfxfilter_d3d.h"
-#include "gfx/gfxfilter_aad3d.h"
-#include "gfx/gfx_util.h"
-#include "main/main_allegro.h"
-#include "platform/base/agsplatformdriver.h"
-#include "platform/windows/gfx/ali3dd3d.h"
-#include "util/library.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 
@@ -2049,3 +2048,5 @@ bool D3DGraphicsFactory::Init()
 } // namespace D3D
 } // namespace Engine
 } // namespace AGS
+
+#endif // WINDOWS_VERSION

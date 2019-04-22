@@ -12,16 +12,12 @@
 //
 //=============================================================================
 
-#include <cctype> //isalnum()
-#include "util/string_utils.h" //strlwr()
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
 #include "ac/parser.h"
-#include "ac/string.h"
-#include "ac/wordsdictionary.h"
-#include "debug/debug_log.h"
-#include "util/string.h"
+
+#include <cctype> //isalnum()
+#include "ee_util.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
 
 using namespace AGS::Common;
 
@@ -60,7 +56,7 @@ int find_word_in_dictionary (const char *lookfor) {
         return -1;
 
     for (j = 0; j < game.dict->num_words; j++) {
-        if (stricmp(lookfor, game.dict->word[j]) == 0) {
+        if (ags_stricmp(lookfor, game.dict->word[j]) == 0) {
             return game.dict->wordnum[j];
         }
     }
@@ -295,10 +291,8 @@ int parse_sentence (const char *src_text, int *numwords, short*wordarray, short*
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptString myScriptStringImpl;
 

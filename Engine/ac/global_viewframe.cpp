@@ -13,11 +13,10 @@
 //=============================================================================
 
 #include "ac/global_viewframe.h"
-#include "ac/common.h"
-#include "ac/view.h"
-#include "ac/gamesetupstruct.h"
-#include "debug/debug_log.h"
-#include "media/audio/audio_system.h"
+
+#include "cn_ac.h"
+#include "ee_debug.h"
+#include "ee_media.h"
 
 extern GameSetupStruct game;
 extern ViewStruct*views;

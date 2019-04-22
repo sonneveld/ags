@@ -17,12 +17,9 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptcamera.h"
-#include "ac/dynobj/scriptviewport.h"
-#include "ac/dynobj/scriptuserobject.h"
-#include "ac/draw.h"
-#include "ac/gamestate.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_ac_dynobj.h"
+#include "ee_ac.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 

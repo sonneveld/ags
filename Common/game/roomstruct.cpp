@@ -12,10 +12,11 @@
 //
 //=============================================================================
 
-#include "ac/common.h" // update_polled_stuff_if_runtime
-#include "game/room_file.h"
 #include "game/roomstruct.h"
-#include "gfx/bitmap.h"
+
+#include "cn_ac.h" // update_polled_stuff_if_runtime
+#include "game/room_file.h"
+#include "cn_gfx.h"
 
 namespace AGS
 {

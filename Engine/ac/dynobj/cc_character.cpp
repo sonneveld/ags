@@ -13,10 +13,8 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_character.h"
-#include "ac/characterinfo.h"
-#include "ac/global_character.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/game_version.h"
+
+#include "ee_ac.h"
 
 extern GameSetupStruct game;
 

@@ -13,14 +13,11 @@
 //=============================================================================
 
 #include "ac/region.h"
-#include "ac/common_defines.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_region.h"
-#include "ac/roomstatus.h"
-#include "ac/dynobj/cc_region.h"
-#include "game/roomstruct.h"
-#include "script/runtimescriptvalue.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_game.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 
@@ -133,9 +130,7 @@ void generate_light_table()
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_debug.h"
 
 // ScriptRegion *(int xx, int yy)
 RuntimeScriptValue Sc_GetRegionAtRoom(const RuntimeScriptValue *params, int32_t param_count)

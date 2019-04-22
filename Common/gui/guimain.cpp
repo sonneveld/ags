@@ -12,20 +12,19 @@
 //
 //=============================================================================
 
+#include "gui/guimain.h"
+
 #include <algorithm>
-#include "ac/game_version.h"
-#include "ac/spritecache.h"
-#include "debug/out.h"
-#include "font/fonts.h"
 #include "gui/guibutton.h"
 #include "gui/guiinv.h"
 #include "gui/guilabel.h"
 #include "gui/guilistbox.h"
-#include "gui/guimain.h"
 #include "gui/guislider.h"
 #include "gui/guitextbox.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
+#include "cn_ac.h"
+#include "cn_debug.h"
+#include "cn_font.h"
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

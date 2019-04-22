@@ -11,8 +11,9 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
-#include "debug/debugmanager.h"
+
 #include "debug/messagebuffer.h"
+#include "ee_debug.h"
 
 namespace AGS
 {

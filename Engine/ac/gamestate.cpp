@@ -12,20 +12,16 @@
 //
 //=============================================================================
 
-#include "ac/draw.h"
-#include "ac/game_version.h"
 #include "ac/gamestate.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/timer.h"
-#include "ac/dynobj/scriptsystem.h"
-#include "debug/debug_log.h"
-#include "device/mousew32.h"
-#include "game/customproperties.h"
-#include "game/roomstruct.h"
-#include "main/engine.h"
-#include "media/audio/audio_system.h"
-#include "util/alignedstream.h"
-#include "util/string_utils.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_device.h"
+#include "ee_game.h"
+#include "ee_main.h"
+#include "ee_media.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

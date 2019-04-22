@@ -13,9 +13,8 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_guiobject.h"
-#include "ac/dynobj/scriptgui.h"
-#include "gui/guimain.h"
-#include "gui/guiobject.h"
+#include "ee_ac_dynobj.h"
+#include "ee_gui.h"
 
 using AGS::Common::GUIObject;
 

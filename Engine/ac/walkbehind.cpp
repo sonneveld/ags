@@ -13,11 +13,9 @@
 //=============================================================================
 
 #include "ac/walkbehind.h"
-#include "ac/common.h"
-#include "ac/common_defines.h"
-#include "ac/gamestate.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
+
+#include "ee_ac.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
+#include "util/textstreamwriter.h"
+
 #include <stdarg.h>
 #include <stdio.h> // sprintf
-#include "util/textstreamwriter.h"
 #include "util/stream.h"
 
 namespace AGS

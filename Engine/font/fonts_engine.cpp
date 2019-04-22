@@ -18,7 +18,8 @@
 
 // Headers, as they are in acfonts.cpp
 #pragma unmanaged
-#include "ac/gamesetupstruct.h"
+
+#include "ee_ac.h"
 #include "alfont.h"
 
 // For engine these are defined in ac.cpp

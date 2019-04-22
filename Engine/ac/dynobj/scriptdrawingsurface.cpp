@@ -13,14 +13,10 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptdrawingsurface.h"
-#include "ac/spritecache.h"
-#include "ac/runtime_defines.h"
-#include "ac/common.h"
-#include "ac/drawingsurface.h"
-#include "ac/gamestate.h"
-#include "ac/gamesetupstruct.h"
-#include "game/roomstruct.h"
-#include "gfx/bitmap.h"
+
+#include "ee_ac.h"
+#include "ee_game.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 

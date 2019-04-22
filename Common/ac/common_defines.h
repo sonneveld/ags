@@ -15,6 +15,8 @@
 #ifndef __AC_DEFINES_H
 #define __AC_DEFINES_H
 
+#include "core/platform.h"
+
 #define EXIT_NORMAL 91
 #define EXIT_CRASH  92
 
@@ -97,10 +99,9 @@
 #define int32 int
 #endif
 
-#ifdef WINDOWS_VERSION
+#ifdef AGS_PLAT_HAS_EXTERN_INLINE
 #define AGS_INLINE inline
 #else
-// the linux compiler won't allow extern inline
 #define AGS_INLINE
 #endif
 

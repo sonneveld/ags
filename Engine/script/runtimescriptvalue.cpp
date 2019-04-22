@@ -1,9 +1,9 @@
 
-#include "script/cc_error.h"
 #include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_dynamicobject.h"
-#include "ac/statobj/staticobject.h"
-#include "util/memory.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
+#include "ee_ac_statobj.h"
+#include "ee_util.h"
 
 #include <string.h> // for memcpy()
 

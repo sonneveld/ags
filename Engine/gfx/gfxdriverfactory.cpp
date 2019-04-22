@@ -13,20 +13,16 @@
 //=============================================================================
 
 #include "gfx/gfxdriverfactory.h"
-#include "gfx/ali3dsw.h"
-#include "gfx/gfxfilter_allegro.h"
+#include "ee_gfx.h"
 
 #if defined(WINDOWS_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION) || defined(LINUX_VERSION)
-#include "gfx/ali3dogl.h"
-#include "gfx/gfxfilter_ogl.h"
 #endif
 
 #if defined(WINDOWS_VERSION)
-#include "platform/windows/gfx/ali3dd3d.h"
-#include "gfx/gfxfilter_d3d.h"
+#include "ee_platform.h"
 #endif
 
-#include "main/main_allegro.h"
+#include "ee_main.h"
 
 namespace AGS
 {

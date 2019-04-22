@@ -12,10 +12,11 @@
 //
 //=============================================================================
 
+#include "ac/tree_map.h"
+
 #include <string.h>
 #include <stdlib.h>
-#include "ac/common.h"
-#include "ac/tree_map.h"
+#include "cn_ac.h"
 
 TreeMap::TreeMap() {
     left = nullptr;

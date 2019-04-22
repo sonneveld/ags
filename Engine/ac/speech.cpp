@@ -12,10 +12,10 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/runtime_defines.h"
 #include "ac/speech.h"
-#include "debug/debug_log.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
 
 int user_to_internal_skip_speech(SkipSpeechStyle userval)
 {
@@ -84,13 +84,7 @@ SkipSpeechStyle internal_skip_speech_to_user(int internal_val)
 //
 //=============================================================================
 
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_audio.h"
-#include "ac/global_display.h"
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_script.h"
 
 extern GameSetupStruct game;
 extern GameState play;

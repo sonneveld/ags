@@ -19,7 +19,7 @@
 #define __CC_DYNAMICOBJECT_H
 
 #include <utility>
-#include "core/types.h"
+#include "cn_core.h"
 #include "script/runtimescriptvalue.h"
 
 // Forward declaration

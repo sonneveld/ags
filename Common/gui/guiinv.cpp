@@ -12,11 +12,12 @@
 //
 //=============================================================================
 
-#include <math.h>
-#include "ac/game_version.h"
 #include "gui/guiinv.h"
+
+#include <math.h>
 #include "gui/guimain.h"
-#include "util/stream.h"
+#include "cn_ac.h"
+#include "cn_util.h"
 
 std::vector<AGS::Common::GUIInvWindow> guiinv;
 int numguiinv = 0;

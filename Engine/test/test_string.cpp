@@ -15,9 +15,8 @@
 #ifdef _DEBUG
 
 #include <string.h>
-#include "util/path.h"
-#include "util/string.h"
-#include "debug/assert.h"
+#include "ee_util.h"
+#include "ee_debug.h"
 
 using namespace AGS::Common;
 

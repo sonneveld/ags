@@ -13,15 +13,11 @@
 //=============================================================================
 
 #include "gui/guidialog.h"
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/game.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "gui/cscidialog.h"
+
+#include "ee_ac.h"
+#include "ee_gui.h"
 #include <cctype> //isdigit()
-#include "gfx/bitmap.h"
-#include "gfx/graphicsdriver.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

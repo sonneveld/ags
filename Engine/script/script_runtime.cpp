@@ -24,16 +24,14 @@
 //
 //=============================================================================
 
+#include "script/script_runtime.h"
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include "script/script_runtime.h"
-#include "script/script_common.h"
-#include "script/cc_error.h"
-#include "script/cc_options.h"
-#include "ac/dynobj/cc_dynamicarray.h"
-#include "script/systemimports.h"
-#include "ac/statobj/staticobject.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
+#include "ee_ac_statobj.h"
 
 extern ccInstance *current_instance; // in script/cc_instance
 

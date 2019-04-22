@@ -16,8 +16,9 @@
 #define __AC_AUDIO_H
 
 #include <array>
+#include "cn_ac.h"
+#include "cn_ac_dynobj.h"
 #include "media/audio/audiodefines.h"
-#include "ac/dynobj/scriptaudioclip.h"
 #include "ac/dynobj/scriptaudiochannel.h"
 #include "media/audio/ambientsound.h"
 #include "util/mutex.h"

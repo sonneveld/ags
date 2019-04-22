@@ -12,12 +12,13 @@
 //
 //=============================================================================
 
-#include "ac/characterinfo.h"
 #include "ac/gamesetupstructbase.h"
+
+#include "ac/characterinfo.h"
 #include "ac/game_version.h"
 #include "ac/wordsdictionary.h"
-#include "script/cc_script.h"
-#include "util/stream.h"
+#include "cn_script.h"
+#include "cn_util.h"
 
 using AGS::Common::Stream;
 

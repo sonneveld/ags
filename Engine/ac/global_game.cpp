@@ -12,52 +12,19 @@
 //
 //=============================================================================
 
+#include "ac/global_game.h"
+
 #include <cmath>
 
-#include "ac/audiocliptype.h"
-#include "ac/global_game.h"
-#include "ac/common.h"
-#include "ac/view.h"
-#include "ac/character.h"
-#include "ac/draw.h"
-#include "ac/dynamicsprite.h"
-#include "ac/event.h"
-#include "ac/game.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_character.h"
-#include "ac/global_gui.h"
-#include "ac/global_hotspot.h"
-#include "ac/global_inventoryitem.h"
-#include "ac/global_translation.h"
-#include "ac/gui.h"
-#include "ac/hotspot.h"
-#include "ac/keycode.h"
-#include "ac/mouse.h"
-#include "ac/object.h"
-#include "ac/path_helper.h"
-#include "ac/sys_events.h"
-#include "ac/room.h"
-#include "ac/roomstatus.h"
-#include "ac/string.h"
-#include "ac/system.h"
-#include "debug/debugger.h"
-#include "debug/debug_log.h"
-#include "gui/guidialog.h"
-#include "main/engine.h"
-#include "main/game_start.h"
-#include "main/game_run.h"
-#include "main/graphics_mode.h"
-#include "script/script.h"
-#include "script/script_runtime.h"
-#include "ac/spritecache.h"
-#include "gfx/bitmap.h"
-#include "gfx/graphicsdriver.h"
-#include "core/assetmanager.h"
-#include "main/game_file.h"
-#include "util/string_utils.h"
-#include "media/audio/audio_system.h"
+#include "cn_core.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gui.h"
+#include "ee_main.h"
+#include "ee_script.h"
+#include "ee_gfx.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 
@@ -122,7 +89,7 @@ void RestoreGameSlot(int slnum) {
 void DeleteSaveSlot (int slnum) {
     String nametouse;
     nametouse = get_save_game_path(slnum);
-    unlink (nametouse);
+    ::remove (nametouse);
     if ((slnum >= 1) && (slnum <= MAXSAVEGAMES)) {
         String thisname;
         for (int i = MAXSAVEGAMES; i > slnum; i--) {

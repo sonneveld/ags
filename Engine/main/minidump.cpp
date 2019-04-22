@@ -17,7 +17,7 @@
 #include <stdio.h> // sprintf
 #include "windows.h"
 #include <crtdbg.h>
-#include "main/main.h"
+#include "ee_main.h"
 
 CONTEXT cpustate;
 EXCEPTION_RECORD excinfo;

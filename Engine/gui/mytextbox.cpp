@@ -12,12 +12,13 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "util/wgt2allg.h"
-#include "font/fonts.h"
 #include "gui/mytextbox.h"
-#include "gui/guidialoginternaldefs.h"
-#include "gfx/bitmap.h"
+
+#include <string.h>
+#include "ee_util.h"
+#include "ee_font.h"
+#include "ee_gui.h"
+#include "ee_gfx.h"
 
 using AGS::Common::Bitmap;
 

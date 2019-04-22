@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "cc_dynamicarray.h"
+
+#include <string.h>
 
 // return the type name of the object
 const char *CCDynamicArray::GetType() {

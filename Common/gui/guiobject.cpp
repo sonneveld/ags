@@ -12,10 +12,11 @@
 //
 //=============================================================================
 
-#include "ac/common.h" // quit
-#include "gui/guimain.h"
 #include "gui/guiobject.h"
-#include "util/stream.h"
+
+#include "gui/guimain.h"
+#include "cn_ac.h" // quit
+#include "cn_util.h"
 
 namespace AGS
 {

@@ -12,18 +12,17 @@
 //
 //=============================================================================
 
+#include "script/script_api.h"
+
 #include <stdio.h>
 #include <string.h>
-#include "ac/game_version.h"
-#include "script/cc_error.h"
-#include "script/runtimescriptvalue.h"
-#include "script/script_api.h"
-#include "util/math.h"
+#include "ee_ac.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 namespace Math = AGS::Common::Math;
 
 #if defined (WINDOWS_VERSION)
-#include "util/c99_snprintf.h"
 #endif
 
 enum FormatParseResult

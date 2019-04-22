@@ -12,8 +12,11 @@
 //
 //=============================================================================
 
-#include <stdio.h> // sprintf
+#ifdef WINDOWS_VERSION
+
 #include "platform/windows/debug/namedpipesagsdebugger.h"
+
+#include <stdio.h> // sprintf
 
 void NamedPipesAGSDebugger::SendAcknowledgement()
 {
@@ -34,10 +37,10 @@ bool NamedPipesAGSDebugger::Initialize()
     // can't use a single duplex pipe as it was deadlocking
     char pipeNameBuffer[MAX_PATH];
     sprintf(pipeNameBuffer, "\\\\.\\pipe\\AGSEditorDebuggerGameToEd%s", _instanceToken);
-    _hPipeSending = CreateFile(pipeNameBuffer, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,0, NULL);
+    _hPipeSending = CreateNewFile(pipeNameBuffer, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,0, NULL);
 
     sprintf(pipeNameBuffer, "\\\\.\\pipe\\AGSEditorDebuggerEdToGame%s", _instanceToken);
-    _hPipeReading = CreateFile(pipeNameBuffer, GENERIC_READ, 0, NULL, OPEN_EXISTING,0, NULL);
+    _hPipeReading = CreateNewFile(pipeNameBuffer, GENERIC_READ, 0, NULL, OPEN_EXISTING,0, NULL);
 
     if ((_hPipeReading == INVALID_HANDLE_VALUE) ||
         (_hPipeSending == INVALID_HANDLE_VALUE))
@@ -91,3 +94,5 @@ char* NamedPipesAGSDebugger::GetNextMessage()
     }
 
 }
+
+#endif // WINDOWS_VERSION

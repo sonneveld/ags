@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
-#include <aastr.h>
 #include "gfx/allegrobitmap.h"
-#include "debug/assert.h"
+
+#include <aastr.h>
+#include "cn_debug.h"
 
 extern void __my_setcolor(int *ctset, int newcol, int wantColDep);
 

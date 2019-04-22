@@ -21,30 +21,26 @@
 //
 //=============================================================================
 
+#include "device/mousew32.h"
+
 #if defined (WINDOWS_VERSION)
 #include <dos.h>
 #include <conio.h>
 #include <process.h>
 #endif
 
-#include "util/wgt2allg.h"
+#include "ee_util.h"
 
 #ifndef TRUE
 #define TRUE 1
 #define FALSE 0
 #endif
 
-#include "ac/gamestate.h"
-#include "debug/out.h"
-#include "device/mousew32.h"
-#include "gfx/bitmap.h"
-#include "gfx/gfx_util.h"
-#include "main/graphics_mode.h"
-#include "platform/base/agsplatformdriver.h"
-#include "util/math.h"
-#if defined(MAC_VERSION)
-#include "ac/global_game.h" // j for IsKeyPressed
-#endif
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -53,7 +49,6 @@ using namespace AGS::Engine;
 extern char lib_file_name[13];
 
 const char *mouselibcopyr = "MouseLib32 (c) 1994, 1998 Chris Jones";
-const int NONE = -1, LEFT = 0, RIGHT = 1, MIDDLE = 2;
 char currentcursor = 0;
 // virtual mouse cursor coordinates
 int mousex = 0, mousey = 0, numcurso = -1, hotx = 0, hoty = 0;

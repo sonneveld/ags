@@ -13,9 +13,8 @@
 //=============================================================================
 
 #include "ac/global_timer.h"
-#include "ac/runtime_defines.h"
-#include "ac/common.h"
-#include "ac/gamestate.h"
+
+#include "ee_ac.h"
 
 extern GameState play;
 

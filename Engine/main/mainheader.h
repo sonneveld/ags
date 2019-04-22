@@ -35,7 +35,6 @@
 #if defined (WINDOWS_VERSION)
 #include <process.h>
 #include <shlwapi.h>
-#undef CreateFile  // undef the declaration from winbase.h
 #endif
 
 #if defined(ANDROID_VERSION)

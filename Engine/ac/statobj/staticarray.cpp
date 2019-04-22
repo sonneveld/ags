@@ -1,7 +1,8 @@
 
-#include <string.h>
 #include "ac/statobj/staticarray.h"
-#include "ac/dynobj/cc_dynamicobject.h"
+
+#include <string.h>
+#include "ee_ac_dynobj.h"
 
 void StaticArray::Create(int elem_legacy_size, int elem_real_size, int elem_count)
 {

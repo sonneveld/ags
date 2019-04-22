@@ -13,9 +13,8 @@
 //=============================================================================
 
 #include "ac/global_listbox.h"
-#include "ac/common.h"
-#include "ac/listbox.h"
-#include "ac/string.h"
+
+#include "ee_ac.h"
 
 void ListBoxClear(int guin, int objn) {
   GUIListBox*guisl=is_valid_listbox(guin,objn);

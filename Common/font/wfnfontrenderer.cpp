@@ -12,13 +12,14 @@
 //
 //=============================================================================
 
-#include "ac/common.h" // our_eip
-#include "core/assetmanager.h"
-#include "debug/out.h"
-#include "font/wfnfont.h"
 #include "font/wfnfontrenderer.h"
-#include "gfx/bitmap.h"
-#include "util/stream.h"
+
+#include "cn_ac.h" // our_eip
+#include "cn_core.h"
+#include "cn_debug.h"
+#include "font/wfnfont.h"
+#include "cn_gfx.h"
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

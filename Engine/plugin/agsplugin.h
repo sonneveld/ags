@@ -21,6 +21,17 @@
 #ifndef _AGS_PLUGIN_H
 #define _AGS_PLUGIN_H
 
+#ifdef AGS_PLUGIN_IMPLEMENTATION
+
+#include "cn_core.h"
+#include "cn_ac.h"
+
+#if !defined(_WIN32) && !defined(HWND)
+typedef int HWND;
+#endif
+
+#else
+
 // If the plugin isn't using DDraw, don't require the headers
 #ifndef DIRECTDRAW_VERSION
 typedef void *LPDIRECTDRAW2;
@@ -41,21 +52,21 @@ typedef char BITMAP;
 #endif
 
 // If not using windows.h, define HWND
-#if !defined(_WINDOWS_) && !defined(HWND)
+#if !defined(_WINDOWS_)
 typedef int HWND;
 #endif
 
 // This file is distributed as part of the Plugin API docs, so
 // ensure that WINDOWS_VERSION is defined (if applicable)
-#if defined(_WINDOWS_) || defined(_WIN32)
-  #ifndef WINDOWS_VERSION
+#if defined(_WIN32) && !defined(WINDOWS_VERSION)
   #define WINDOWS_VERSION
-  #endif
 #endif
 
+#endif // AGS_PLUGIN_IMPLEMENTATION
+
 // DOS engine doesn't know about stdcall / neither does Linux version
-#if !defined (WINDOWS_VERSION)
-#define __stdcall
+#if !defined (_WIN32)
+  #define __stdcall
 #endif
 
 #ifndef int32
@@ -281,6 +292,8 @@ public:
   virtual void Unserialize(int key, const char *serializedData, int dataSize) = 0;
 };
 
+#ifndef IAGSFontRenderer_DEFINED
+#define IAGSFontRenderer_DEFINED
 class IAGSFontRenderer {
 public:
   virtual bool LoadFromDisk(int fontNumber, int fontSize) = 0;
@@ -292,6 +305,7 @@ public:
   virtual void AdjustYCoordinateForFont(int *ycoord, int fontNumber) = 0;
   virtual void EnsureTextValidForFont(char *text, int fontNumber) = 0;
 };
+#endif
 
 // The plugin-to-engine interface
 class IAGSEngine {

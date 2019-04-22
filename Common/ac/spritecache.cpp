@@ -22,15 +22,14 @@
 #pragma warning (disable: 4996 4312)  // disable deprecation warnings
 #endif
 
+#include "ac/spritecache.h"
+
 #include "ac/common.h" // quit
 #include "ac/gamestructdefines.h"
-#include "ac/spritecache.h"
-#include "core/assetmanager.h"
-#include "debug/out.h"
-#include "gfx/bitmap.h"
-#include "util/compress.h"
-#include "util/file.h"
-#include "util/stream.h"
+#include "cn_core.h"
+#include "cn_debug.h"
+#include "cn_gfx.h"
+#include "cn_util.h"
 
 using namespace AGS::Common;
 
@@ -506,7 +505,7 @@ void SpriteCache::UnCompressSprite(Bitmap *sprite, Stream *in)
 
 int SpriteCache::SaveToFile(const char *filnam, bool compressOutput)
 {
-    Stream *output = Common::File::CreateFile(filnam);
+    Stream *output = Common::File::CreateNewFile(filnam);
     if (output == nullptr)
         return -1;
 
@@ -654,7 +653,7 @@ int SpriteCache::SaveSpriteIndex(const char *filename, int spriteFileIDCheck, sp
                                     const std::vector<int16_t> &spritewidths, const std::vector<int16_t> &spriteheights, const std::vector<soff_t> &spriteoffs)
 {
     // write the sprite index file
-    Stream *spindex_out = File::CreateFile(spindexfilename);
+    Stream *spindex_out = File::CreateNewFile(spindexfilename);
     // write "SPRINDEX" id
     spindex_out->WriteArray(&spindexid[0], strlen(spindexid), 1);
     // write version
@@ -741,7 +740,7 @@ HError SpriteCache::InitFile(const char *filnam)
 
     // failed, delete the index file because it's invalid
     // TODO: refactor loading process and make it NOT delete file running the game!!
-    unlink(spindexfilename);
+    ::remove(spindexfilename);
 
     return RebuildSpriteIndex(_stream.get(), topmost, vers);
 }

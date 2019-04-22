@@ -15,9 +15,8 @@
 #ifdef _DEBUG
 
 #include <string.h>
-#include "debug/assert.h"
-#include "util/alignedstream.h"
-#include "util/file.h"
+#include "ee_debug.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

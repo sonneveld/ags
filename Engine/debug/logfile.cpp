@@ -12,10 +12,10 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "debug/logfile.h"
-#include "util/file.h"
-#include "util/stream.h"
+
+#include <string.h>
+#include "ee_util.h"
 
 namespace AGS
 {

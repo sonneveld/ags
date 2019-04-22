@@ -18,21 +18,15 @@
 
 // Headers, as they are in acgui.cpp
 #pragma unmanaged
-#include "ac/game_version.h"
-#include "ac/system.h"
-#include "font/fonts.h"
+
+// implements guimain
 #include "gui/guimain.h"
-#include "gui/guibutton.h"
-#include "gui/guilabel.h"
-#include "gui/guilistbox.h"
-#include "gui/guitextbox.h"
+
+#include "ee_ac.h"
+#include "ee_font.h"
+#include "ee_gui.h"
 #include <ctype.h>
-#include "ac/gamesetupstruct.h"
-#include "ac/global_translation.h"
-#include "ac/string.h"
-#include "ac/spritecache.h"
-#include "gfx/bitmap.h"
-#include "gfx/blender.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 

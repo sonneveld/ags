@@ -16,8 +16,7 @@
 
 #ifdef JGMOD_MOD_PLAYER
 
-#include "media/audio/clip_myjgmod.h"
-#include "media/audio/audiointernaldefs.h"
+#include "ee_media.h"
 
 int MYMOD::poll()
 {

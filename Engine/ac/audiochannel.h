@@ -18,7 +18,7 @@
 #ifndef __AGS_EE_AC__AUDIOCHANNEL_H
 #define __AGS_EE_AC__AUDIOCHANNEL_H
 
-#include "ac/dynobj/scriptaudioclip.h"
+#include "cn_ac.h"
 #include "ac/dynobj/scriptaudiochannel.h"
 
 int     AudioChannel_GetID(ScriptAudioChannel *channel);

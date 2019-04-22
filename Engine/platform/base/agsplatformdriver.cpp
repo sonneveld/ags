@@ -16,17 +16,14 @@
 //
 //=============================================================================
 
-#include <thread>
-#include "util/wgt2allg.h"
 #include "platform/base/agsplatformdriver.h"
-#include "ac/common.h"
-#include "ac/runtime_defines.h"
-#include "util/string_utils.h"
-#include "util/stream.h"
-#include "gfx/bitmap.h"
-#include "plugin/agsplugin.h"
-#include "ac/timer.h"
-#include "media/audio/audio_system.h"
+
+#include <thread>
+#include "ee_ac.h"
+#include "ee_util.h"
+#include "ee_gfx.h"
+#include "ee_plugin.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

@@ -45,9 +45,6 @@ public:
 #if defined(WINDOWS_VERSION)
 #include "library_windows.h"
 
-#elif defined(PSP_VERSION)
-#include "library_psp.h"
-
 #elif defined(LINUX_VERSION) \
    || defined(MAC_VERSION) \
    || defined(ANDROID_VERSION)

@@ -16,27 +16,16 @@
 // Quit game procedure
 //
 
-#include "ac/cdaudio.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/roomstatus.h"
-#include "ac/translation.h"
-#include "debug/agseditordebugger.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "debug/out.h"
-#include "font/fonts.h"
-#include "main/config.h"
-#include "main/engine.h"
-#include "main/main.h"
-#include "main/mainheader.h"
 #include "main/quit.h"
-#include "ac/spritecache.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "core/assetmanager.h"
-#include "plugin/plugin_engine.h"
-#include "media/audio/audio_system.h"
+
+#include "cn_core.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_font.h"
+#include "ee_main.h"
+#include "ee_gfx.h"
+#include "ee_plugin.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -214,7 +203,7 @@ void quit_delete_temp_files()
     al_ffblk	dfb;
     int	dun = al_findfirst("~ac*.tmp",&dfb,FA_SEARCH);
     while (!dun) {
-        unlink(dfb.name);
+        ::remove(dfb.name);
         dun = al_findnext(&dfb);
     }
     al_findclose (&dfb);

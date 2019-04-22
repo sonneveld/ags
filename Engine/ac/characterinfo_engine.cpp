@@ -13,19 +13,12 @@
 //=============================================================================
 
 #include "ac/characterinfo.h"
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/character.h"
-#include "ac/characterextras.h"
-#include "ac/gamestate.h"
-#include "ac/global_character.h"
-#include "ac/math.h"
-#include "ac/viewframe.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "main/maindefines_ex.h"	// RETURN_CONTINUE
-#include "main/update.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_main.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 

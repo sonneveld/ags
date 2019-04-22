@@ -12,18 +12,11 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/object.h"
-#include "ac/character.h"
-#include "ac/draw.h"
-#include "ac/gamestate.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/object.h"
-#include "ac/roomobject.h"
-#include "ac/roomstatus.h"
 #include "ac/walkablearea.h"
-#include "game/roomstruct.h"
-#include "gfx/bitmap.h"
+
+#include "ee_ac.h"
+#include "ee_game.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 

@@ -12,10 +12,10 @@
 //
 //=============================================================================
 
-#include "media/audio/audiodefines.h"
-#include "util/wgt2allg.h"
 #include "media/audio/clip_mymidi.h"
-#include "media/audio/audiointernaldefs.h"
+
+#include "ee_media.h"
+#include "ee_util.h"
 
 void MYMIDI::poll()
 {

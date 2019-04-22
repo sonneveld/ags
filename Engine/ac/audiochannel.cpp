@@ -13,13 +13,12 @@
 //=============================================================================
 
 #include "ac/audiochannel.h"
-#include "ac/gamestate.h"
-#include "ac/global_audio.h"
-#include "ac/dynobj/cc_audioclip.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "script/runtimescriptvalue.h"
-#include "media/audio/audio_system.h"
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_script.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 
@@ -223,9 +222,6 @@ void AudioChannel_SetRoomLocation(ScriptAudioChannel *channel, int xPos, int yPo
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // int | ScriptAudioChannel *channel
 RuntimeScriptValue Sc_AudioChannel_GetID(void *self, const RuntimeScriptValue *params, int32_t param_count)

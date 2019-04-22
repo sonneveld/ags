@@ -14,16 +14,14 @@
 
 #if defined(WINDOWS_VERSION) || defined(ANDROID_VERSION) || defined(IOS_VERSION) || defined(LINUX_VERSION)
 
-#include <algorithm>
-#include "gfx/ali3dexception.h"
 #include "gfx/ali3dogl.h"
-#include "gfx/gfxfilter_ogl.h"
-#include "gfx/gfxfilter_aaogl.h"
-#include "gfx/gfx_util.h"
-#include "main/main_allegro.h"
-#include "platform/base/agsplatformdriver.h"
-#include "util/math.h"
-#include "ac/timer.h"
+
+#include <algorithm>
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_util.h"
+#include "ee_ac.h"
 
 #if defined(ANDROID_VERSION)
 

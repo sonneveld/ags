@@ -18,21 +18,6 @@
 #ifndef __AGS_CN_CORE__TYPES_H
 #define __AGS_CN_CORE__TYPES_H
 
-#if defined (_WINDOWS) && !defined (WINDOWS_VERSION)
-#define WINDOWS_VERSION
-#endif
-
-#if defined(WINDOWS_VERSION)
-    // MSVC didn't report correct __cplusplus value until 2017
-    #if !defined(_MSC_VER) || (_MSC_VER < 1900)
-    #error Visual Studio 2015 or later required.
-    #endif
-#else
-    #if __cplusplus < 201103L
-    #error C++11 or later required.
-    #endif
-#endif
-
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h> // for size_t
@@ -45,13 +30,13 @@
 #endif
 
 #ifndef FORCEINLINE
-#if defined(_MSC_VER)
-#define FORCEINLINE __forceinline
-#elif defined (__GNUC__)
-#define FORCEINLINE inline __attribute__((__always_inline__))
-#else
-#define FORCEINLINE inline
-#endif
+    #if defined(_MSC_VER)
+        #define FORCEINLINE __forceinline
+    #elif __has_attribute(always_inline)
+        #define FORCEINLINE __attribute__((always_inline))
+    #else
+        #define FORCEINLINE
+    #endif
 #endif
 
 // Detect 64 bit environment

@@ -12,29 +12,16 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "ac/common.h"
-#include "ac/dynobj/cc_dynamicarray.h"
-#include "ac/dynobj/managedobjectpool.h"
-#include "gui/guidefines.h"
-#include "script/cc_error.h"
 #include "script/cc_instance.h"
-#include "debug/debug_log.h"
-#include "debug/out.h"
-#include "script/cc_options.h"
-#include "script/script.h"
-#include "script/script_runtime.h"
-#include "script/systemimports.h"
-#include "util/bbop.h"
-#include "util/stream.h"
-#include "util/misc.h"
-#include "util/textstreamwriter.h"
-#include "ac/dynobj/scriptstring.h"
-#include "ac/dynobj/scriptuserobject.h"
-#include "ac/statobj/agsstaticobject.h"
-#include "ac/statobj/staticarray.h"
-#include "util/memory.h"
-#include "util/string_utils.h" // linux strnicmp definition
+
+#include <string.h>
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_gui.h"
+#include "ee_script.h"
+#include "ee_debug.h"
+#include "ee_util.h"
+#include "ee_ac_statobj.h"
 
 using namespace AGS::Common;
 using namespace AGS::Common::Memory;

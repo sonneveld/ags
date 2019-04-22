@@ -18,7 +18,7 @@
 #ifndef __AGS_EE_AC__GLOBALCHARACTER_H
 #define __AGS_EE_AC__GLOBALCHARACTER_H
 
-#include "ac/characterinfo.h"
+#include "cn_ac.h"
 
 void StopMoving(int chaa);
 void ReleaseCharacterView(int chat);

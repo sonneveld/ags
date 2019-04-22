@@ -15,7 +15,7 @@
 #ifndef __AGS_EE_GFX__GFXDEFINES_H
 #define __AGS_EE_GFX__GFXDEFINES_H
 
-#include "core/types.h"
+#include "cn_core.h"
 
 namespace AGS
 {

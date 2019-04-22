@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/cdaudio.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ee_platform.h"
 
 int use_cdplayer=0;
 bool triedToUseCdAudioCommand = false;

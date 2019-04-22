@@ -18,6 +18,8 @@
 #ifndef __AGS_EE_SCRIPT__EXPORTS_H
 #define __AGS_EE_SCRIPT__EXPORTS_H
 
+#include "cn_ac.h"
+
 void setup_script_exports(ScriptAPIVersion base_api, ScriptAPIVersion compat_api);
 
 #endif // __AGS_EE_SCRIPT__EXPORTS_H

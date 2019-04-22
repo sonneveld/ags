@@ -13,26 +13,13 @@
 //=============================================================================
 
 #include "event.h"
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_game.h"
-#include "ac/global_room.h"
-#include "ac/global_screen.h"
-#include "ac/gui.h"
-#include "ac/roomstatus.h"
-#include "ac/screen.h"
-#include "script/cc_error.h"
-#include "platform/base/agsplatformdriver.h"
-#include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
-#include "script/script.h"
-#include "gfx/bitmap.h"
-#include "gfx/ddb.h"
-#include "gfx/graphicsdriver.h"
-#include "media/audio/audio_system.h"
-#include "ac/timer.h"
+
+#include "ee_ac.h"
+#include "ee_script.h"
+#include "ee_platform.h"
+#include "ee_plugin.h"
+#include "ee_gfx.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

@@ -12,15 +12,11 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/keycode.h"
-#include "ac/mouse.h"
 #include "ac/sys_events.h"
-#include "device/mousew32.h"
-#include "platform/base/agsplatformdriver.h"
-#include "ac/timer.h"
+
+#include "ee_ac.h"
+#include "ee_device.h"
+#include "ee_platform.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

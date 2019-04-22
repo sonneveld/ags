@@ -15,31 +15,4 @@
 #ifndef __AGS_CN_CORE__ENDIANNESS_H
 #define __AGS_CN_CORE__ENDIANNESS_H
 
-#if !defined(AGS_BIG_ENDIAN) && !defined(AGS_LITTLE_ENDIAN)
-
-#if defined(WINDOWS_VERSION)
-#define AGS_LITTLE_ENDIAN
-
-#elif defined(LINUX_VERSION)
-#include <endian.h>
-#if !(__BYTE_ORDER == __LITTLE_ENDIAN)
-#define AGS_BIG_ENDIAN
-#else
-#define AGS_LITTLE_ENDIAN
-#endif
-
-#elif defined(MAC_VERSION)
-#include <machine/endian.h>
-#if !(BYTE_ORDER == LITTLE_ENDIAN)
-#define AGS_BIG_ENDIAN
-#else
-#define AGS_LITTLE_ENDIAN
-#endif
-
-#else
-#error Unsupported platform.
-#endif
-
-#endif // !AGS_BIG_ENDIAN && !AGS_LITTLE_ENDIAN
-
 #endif // __AGS_CN_CORE__ENDIANNESS_H

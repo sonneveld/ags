@@ -12,79 +12,21 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/view.h"
-#include "ac/audiocliptype.h"
-#include "ac/audiochannel.h"
-#include "ac/character.h"
-#include "ac/charactercache.h"
-#include "ac/characterextras.h"
-#include "ac/dialogtopic.h"
-#include "ac/draw.h"
-#include "ac/dynamicsprite.h"
-#include "ac/event.h"
 #include "ac/game.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_audio.h"
-#include "ac/global_character.h"
-#include "ac/global_display.h"
-#include "ac/global_game.h"
-#include "ac/global_gui.h"
-#include "ac/global_object.h"
-#include "ac/global_translation.h"
-#include "ac/gui.h"
-#include "ac/hotspot.h"
-#include "ac/lipsync.h"
-#include "ac/mouse.h"
-#include "ac/movelist.h"
-#include "ac/objectcache.h"
-#include "ac/overlay.h"
-#include "ac/path_helper.h"
-#include "ac/sys_events.h"
-#include "ac/region.h"
-#include "ac/richgamemedia.h"
-#include "ac/room.h"
-#include "ac/roomobject.h"
-#include "ac/roomstatus.h"
-#include "ac/runtime_defines.h"
-#include "ac/screenoverlay.h"
-#include "ac/spritecache.h"
-#include "ac/string.h"
-#include "ac/system.h"
-#include "ac/timer.h"
-#include "ac/translation.h"
-#include "ac/dynobj/all_dynamicclasses.h"
-#include "ac/dynobj/all_scriptclasses.h"
-#include "ac/dynobj/cc_audiochannel.h"
-#include "ac/dynobj/cc_audioclip.h"
-#include "debug/debug_log.h"
-#include "debug/out.h"
-#include "device/mousew32.h"
-#include "font/fonts.h"
-#include "game/savegame.h"
-#include "game/savegame_internal.h"
-#include "gui/animatingguibutton.h"
-#include "gfx/bitmap.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/gfxfilter.h"
-#include "gui/guidialog.h"
-#include "main/engine.h"
-#include "main/graphics_mode.h"
-#include "main/main.h"
-#include "media/audio/audio_system.h"
-#include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
-#include "script/cc_error.h"
-#include "script/runtimescriptvalue.h"
-#include "script/script.h"
-#include "script/script_runtime.h"
-#include "util/alignedstream.h"
-#include "util/directory.h"
-#include "util/filestream.h" // TODO: needed only because plugins expect file handle
-#include "util/path.h"
-#include "util/string_utils.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_device.h"
+#include "ee_font.h"
+#include "ee_game.h"
+#include "ee_gui.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_media.h"
+#include "ee_plugin.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -419,7 +361,7 @@ bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
     if (newSaveGameDir.IsEmpty())
         return false;
 
-    if (!Directory::CreateDirectory(newSaveGameDir))
+    if (!Directory::EnsureDirectoryExists(newSaveGameDir))
         return false;
     newSaveGameDir.AppendChar('/');
 
@@ -441,7 +383,7 @@ bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
         delete restartGameFile;
 
         sprintf(restartGamePath, "%s""agssave.%d%s", newSaveGameDir.GetCStr(), RESTART_POINT_SAVE_GAME_NUMBER, saveGameSuffix.GetCStr());
-        restartGameFile = Common::File::CreateFile(restartGamePath);
+        restartGameFile = Common::File::CreateNewFile(restartGamePath);
         restartGameFile->Write(mbuffer, fileSize);
         delete restartGameFile;
         free(mbuffer);
@@ -1000,7 +942,7 @@ long write_screen_shot_for_vista(Stream *out, Bitmap *screenshot)
         Stream *temp_in = Common::File::OpenFileRead(tempFileName);
         temp_in->Read(buffer, fileSize);
         delete temp_in;
-        unlink(tempFileName);
+        ::remove(tempFileName);
 
         out->Write(buffer, fileSize);
         free(buffer);
@@ -2026,9 +1968,6 @@ bool unserialize_audio_script_object(int index, const char *objectType, const ch
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // int  (int audioType);
 RuntimeScriptValue Sc_Game_IsAudioPlaying(const RuntimeScriptValue *params, int32_t param_count)

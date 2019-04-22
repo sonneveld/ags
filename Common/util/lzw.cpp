@@ -16,8 +16,10 @@
 //
 //=============================================================================
 
+#include "util/lzw.h"
+
 #include <stdlib.h>
-#include "ac/common.h" // quit
+#include "cn_ac.h" // quit
 #include "util/stream.h"
 
 using namespace AGS::Common;
@@ -25,10 +27,6 @@ using namespace AGS::Common;
 #ifdef _MANAGED
 // ensure this doesn't get compiled to .NET IL
 #pragma unmanaged
-#endif
-
-#if defined (WINDOWS_VERSION)
-#include <io.h>
 #endif
 
 int insert(int, int);

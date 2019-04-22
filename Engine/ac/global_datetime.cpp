@@ -12,10 +12,10 @@
 //
 //=============================================================================
 
-#include <time.h>
 #include "ac/global_datetime.h"
-#include "ac/datetime.h"
-#include "ac/common.h"
+
+#include <time.h>
+#include "ee_ac.h"
 
 int sc_GetTime(int whatti) {
     ScriptDateTime *sdt = DateTime_Now_Core();

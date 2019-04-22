@@ -16,7 +16,7 @@
 //
 //=============================================================================
 
-#include "ac/gamestructdefines.h"
+#include "script/exports.h"
 
 extern void RegisterAudioChannelAPI();
 extern void RegisterAudioClipAPI();

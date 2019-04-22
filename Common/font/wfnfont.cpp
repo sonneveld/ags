@@ -12,11 +12,11 @@
 //
 //=============================================================================
 
-#include <algorithm>
 #include "font/wfnfont.h"
-#include "debug/out.h"
-#include "util/memory.h"
-#include "util/stream.h"
+
+#include <algorithm>
+#include "cn_debug.h"
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

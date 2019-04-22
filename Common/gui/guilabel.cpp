@@ -12,12 +12,12 @@
 //
 //=============================================================================
 
-#include "ac/game_version.h"
-#include "font/fonts.h"
 #include "gui/guilabel.h"
+
 #include "gui/guimain.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
+#include "cn_ac.h"
+#include "cn_font.h"
+#include "cn_util.h"
 
 std::vector<AGS::Common::GUILabel> guilabels;
 int numguilabels = 0;

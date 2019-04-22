@@ -12,13 +12,12 @@
 //
 //=============================================================================
 
-#include "ac/asset_helper.h"
 #include "ac/audioclip.h"
-#include "ac/audiochannel.h"
-#include "ac/gamesetupstruct.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_audiochannel.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_ac.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
+#include "ee_media.h"
 
 extern GameSetupStruct game;
 extern ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
@@ -75,9 +74,7 @@ ScriptAudioChannel* AudioClip_PlayQueued(ScriptAudioClip *clip, int priority, in
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_debug.h"
 
 // int | ScriptAudioClip *clip
 RuntimeScriptValue Sc_AudioClip_GetFileType(void *self, const RuntimeScriptValue *params, int32_t param_count)

@@ -18,7 +18,7 @@
 #ifndef __AGS_EE_AC__INVWINDOW_H
 #define __AGS_EE_AC__INVWINDOW_H
 
-#include "ac/characterinfo.h"
+#include "cn_ac.h"
 #include "ac/dynobj/scriptinvitem.h"
 #include "gui/guiinv.h"
 

@@ -13,16 +13,12 @@
 //=============================================================================
 
 #include "ac/string.h"
-#include "ac/common.h"
-#include "ac/display.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_translation.h"
-#include "ac/runtime_defines.h"
-#include "ac/dynobj/scriptstring.h"
-#include "debug/debug_log.h"
-#include "util/string_utils.h"
-#include "script/runtimescriptvalue.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_util.h"
+#include "ee_script.h"
 
 extern char lines[MAXLINE][200];
 extern int  numlines;
@@ -99,7 +95,7 @@ int String_CompareTo(const char *thisString, const char *otherString, bool caseS
         return strcmp(thisString, otherString);
     }
     else {
-        return stricmp(thisString, otherString);
+        return ags_stricmp(thisString, otherString);
     }
 }
 
@@ -109,7 +105,7 @@ int String_StartsWith(const char *thisString, const char *checkForString, bool c
         return (strncmp(thisString, checkForString, strlen(checkForString)) == 0) ? 1 : 0;
     }
     else {
-        return (strnicmp(thisString, checkForString, strlen(checkForString)) == 0) ? 1 : 0;
+        return (ags_strnicmp(thisString, checkForString, strlen(checkForString)) == 0) ? 1 : 0;
     }
 }
 
@@ -128,7 +124,7 @@ int String_EndsWith(const char *thisString, const char *checkForString, bool cas
     }
     else 
     {
-        return (stricmp(&thisString[checkAtOffset], checkForString) == 0) ? 1 : 0;
+        return (ags_stricmp(&thisString[checkAtOffset], checkForString) == 0) ? 1 : 0;
     }
 }
 
@@ -146,7 +142,7 @@ const char* String_Replace(const char *thisString, const char *lookForText, cons
         }
         else
         {
-            matchHere = (strnicmp(&thisString[i], lookForText, strlen(lookForText)) == 0);
+            matchHere = (ags_strnicmp(&thisString[i], lookForText, strlen(lookForText)) == 0);
         }
 
         if (matchHere)
@@ -170,14 +166,14 @@ const char* String_Replace(const char *thisString, const char *lookForText, cons
 const char* String_LowerCase(const char *thisString) {
     char *buffer = (char*)malloc(strlen(thisString) + 1);
     strcpy(buffer, thisString);
-    strlwr(buffer);
+    ags_strlwr(buffer);
     return CreateNewScriptString(buffer, false);
 }
 
 const char* String_UpperCase(const char *thisString) {
     char *buffer = (char*)malloc(strlen(thisString) + 1);
     strcpy(buffer, thisString);
-    strupr(buffer);
+    ags_strupr(buffer);
     return CreateNewScriptString(buffer, false);
 }
 
@@ -198,8 +194,8 @@ int StrContains (const char *s1, const char *s2) {
     char *tempbuf2 = (char*)malloc(strlen(s2) + 1);
     strcpy(tempbuf1, s1);
     strcpy(tempbuf2, s2);
-    strlwr(tempbuf1);
-    strlwr(tempbuf2);
+    ags_strlwr(tempbuf1);
+    ags_strlwr(tempbuf2);
 
     char *offs = strstr (tempbuf1, tempbuf2);
     free(tempbuf1);
@@ -323,10 +319,6 @@ void my_strncpy(char *dest, const char *src, int len) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/math.h"
 
 // int (const char *thisString)
 RuntimeScriptValue Sc_String_IsNullOrEmpty(const RuntimeScriptValue *params, int32_t param_count)

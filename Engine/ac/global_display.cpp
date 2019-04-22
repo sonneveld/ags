@@ -12,26 +12,14 @@
 //
 //=============================================================================
 
-#include <stdarg.h>
-#include "ac/common.h"
-#include "ac/character.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_character.h"
 #include "ac/global_display.h"
-#include "ac/global_screen.h"
-#include "ac/global_translation.h"
-#include "ac/runtime_defines.h"
-#include "ac/speech.h"
-#include "ac/string.h"
-#include "ac/topbarsettings.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "main/game_run.h"
-#include "util/c99_snprintf.h"
+
+#include <stdarg.h>
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_main.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

@@ -13,13 +13,10 @@
 //=============================================================================
 
 #include "gui/guiinv.h"
-#include "gui/guimain.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/characterextras.h"
-#include "ac/spritecache.h"
-#include "gfx/bitmap.h"
+
+#include "ee_gui.h"
+#include "ee_ac.h"
+#include "ee_gfx.h"
 
 
 extern GameSetupStruct game;

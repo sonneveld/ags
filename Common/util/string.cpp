@@ -12,14 +12,15 @@
 //
 //=============================================================================
 
+#include "util/string.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "util/math.h"
 #include "util/stream.h"
-#include "util/string.h"
-#include "util/string_utils.h" // stricmp
+#include "util/string_utils.h" // ags_stricmp
 
 namespace AGS
 {
@@ -156,7 +157,7 @@ int String::Compare(const char *cstr) const
 
 int String::CompareNoCase(const char *cstr) const
 {
-    return stricmp(GetCStr(), cstr ? cstr : "");
+    return ags_stricmp(GetCStr(), cstr ? cstr : "");
 }
 
 int String::CompareLeft(const char *cstr, size_t count) const
@@ -168,7 +169,7 @@ int String::CompareLeft(const char *cstr, size_t count) const
 int String::CompareLeftNoCase(const char *cstr, size_t count) const
 {
     cstr = cstr ? cstr : "";
-    return strnicmp(GetCStr(), cstr, count != -1 ? count : strlen(cstr));
+    return ags_strnicmp(GetCStr(), cstr, count != -1 ? count : strlen(cstr));
 }
 
 int String::CompareMid(const char *cstr, size_t from, size_t count) const
@@ -182,7 +183,7 @@ int String::CompareMidNoCase(const char *cstr, size_t from, size_t count) const
 {
     cstr = cstr ? cstr : "";
     from = Math::Min(from, GetLength());
-    return strnicmp(GetCStr() + from, cstr, count != -1 ? count : strlen(cstr));
+    return ags_strnicmp(GetCStr() + from, cstr, count != -1 ? count : strlen(cstr));
 }
 
 int String::CompareRight(const char *cstr, size_t count) const
@@ -198,7 +199,7 @@ int String::CompareRightNoCase(const char *cstr, size_t count) const
     cstr = cstr ? cstr : "";
     count = count != -1 ? count : strlen(cstr);
     size_t off = Math::Min(GetLength(), count);
-    return strnicmp(GetCStr() + GetLength() - off, cstr, count);
+    return ags_strnicmp(GetCStr() + GetLength() - off, cstr, count);
 }
 
 size_t String::FindChar(char c, size_t from) const
@@ -621,7 +622,7 @@ void String::MakeLower()
     if (_meta)
     {
         BecomeUnique();
-        strlwr(_meta->CStr);
+        ags_strlwr(_meta->CStr);
     }
 }
 
@@ -630,7 +631,7 @@ void String::MakeUpper()
     if (_meta)
     {
         BecomeUnique();
-        strupr(_meta->CStr);
+        ags_strupr(_meta->CStr);
     }
 }
 

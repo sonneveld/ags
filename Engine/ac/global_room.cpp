@@ -13,23 +13,11 @@
 //=============================================================================
 
 #include "ac/global_room.h"
-#include "ac/common.h"
-#include "ac/character.h"
-#include "ac/characterinfo.h"
-#include "ac/draw.h"
-#include "ac/event.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_character.h"
-#include "ac/global_game.h"
-#include "ac/movelist.h"
-#include "ac/properties.h"
-#include "ac/room.h"
-#include "ac/roomstatus.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "script/script.h"
-#include "util/math.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 using namespace Common;
 

@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/view.h"
-#include "util/alignedstream.h"
+
+#include <string.h>
+#include "cn_util.h"
 
 using AGS::Common::AlignedStream;
 using AGS::Common::Stream;

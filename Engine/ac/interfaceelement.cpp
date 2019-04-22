@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/interfaceelement.h"
+
+#include <string.h>
 
 InterfaceElement::InterfaceElement() {
     vtextxp = 0; vtextyp = 1; strcpy(vtext,"@SCORETEXT@$r@GAMENAME@");

@@ -13,31 +13,13 @@
 //=============================================================================
 
 #include "ac/global_debug.h"
-#include "ac/common.h"
-#include "ac/characterinfo.h"
-#include "ac/draw.h"
-#include "ac/game.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_character.h"
-#include "ac/global_display.h"
-#include "ac/global_room.h"
-#include "ac/movelist.h"
-#include "ac/properties.h"
-#include "ac/sys_events.h"
-#include "ac/tree_map.h"
-#include "ac/walkablearea.h"
-#include "gfx/gfxfilter.h"
-#include "gui/guidialog.h"
-#include "script/cc_options.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "main/main.h"
-#include "ac/spritecache.h"
-#include "gfx/bitmap.h"
-#include "gfx/graphicsdriver.h"
-#include "main/graphics_mode.h"
+
+#include "ee_ac.h"
+#include "ee_gfx.h"
+#include "ee_gui.h"
+#include "ee_script.h"
+#include "ee_debug.h"
+#include "ee_main.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

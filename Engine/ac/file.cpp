@@ -12,30 +12,16 @@
 //
 //=============================================================================
 
-#include "aldumb.h"
-#include "ac/asset_helper.h"
-#include "ac/audiocliptype.h"
 #include "ac/file.h"
-#include "ac/common.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_file.h"
-#include "ac/path_helper.h"
-#include "ac/runtime_defines.h"
-#include "ac/string.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "util/misc.h"
-#include "platform/base/agsplatformdriver.h"
-#include "util/stream.h"
-#include "core/assetmanager.h"
-#include "core/asset.h"
-#include "main/engine.h"
-#include "main/game_file.h"
-#include "util/directory.h"
-#include "util/path.h"
-#include "util/string.h"
-#include "util/string_utils.h"
+
+#include "aldumb.h"
+
+#include "cn_core.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_util.h"
+#include "ee_platform.h"
+#include "ee_main.h"
 
 using namespace AGS::Common;
 
@@ -73,10 +59,10 @@ int File_Delete(const char *fnmm) {
   if (!ResolveScriptPath(fnmm, false, path, alt_path))
     return 0;
 
-  if (unlink(path) == 0)
+  if (::remove(path) == 0)
       return 1;
   if (errno == ENOENT && !alt_path.IsEmpty() && alt_path.Compare(path) != 0)
-      return unlink(alt_path) == 0 ? 1 : 0;
+      return ::remove(alt_path) == 0 ? 1 : 0;
   return 0;
 }
 
@@ -259,7 +245,7 @@ String MakeSpecialSubDir(const String &sp_dir)
     if (full_path.GetLast() != '/' && full_path.GetLast() != '\\')
         full_path.AppendChar('/');
     full_path.Append(game.saveGameFolderName);
-    Directory::CreateDirectory(full_path);
+    Directory::EnsureDirectoryExists(full_path);
     return full_path;
 }
 
@@ -268,7 +254,7 @@ String MakeAppDataPath()
     String app_data_path = usetup.shared_data_dir;
     if (app_data_path.IsEmpty())
         app_data_path = MakeSpecialSubDir(PathOrCurDir(platform->GetAllUsersDataDirectory()));
-    Directory::CreateDirectory(app_data_path);
+    Directory::EnsureDirectoryExists(app_data_path);
     app_data_path.AppendChar('/');
     return app_data_path;
 }
@@ -582,10 +568,8 @@ Stream *get_valid_file_stream_from_handle(int32_t handle, const char *operation_
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptString myScriptStringImpl;
 

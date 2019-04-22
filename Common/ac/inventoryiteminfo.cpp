@@ -13,8 +13,8 @@
 //=============================================================================
 
 #include "ac/inventoryiteminfo.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
+
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

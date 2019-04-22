@@ -16,25 +16,14 @@
 // Game initialization
 //
 
-#include "ac/common.h"
-#include "ac/characterinfo.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_game.h"
-#include "ac/mouse.h"
-#include "ac/room.h"
-#include "ac/screen.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "debug/out.h"
-#include "gfx/ali3dexception.h"
-#include "main/mainheader.h"
-#include "main/game_run.h"
 #include "main/game_start.h"
-#include "script/script.h"
-#include "media/audio/audio_system.h"
-#include "ac/timer.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_script.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

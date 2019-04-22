@@ -18,8 +18,8 @@
 #ifndef __AGS_EE_AC__ROOM_H
 #define __AGS_EE_AC__ROOM_H
 
+#include "cn_ac.h"
 #include "ac/dynobj/scriptdrawingsurface.h"
-#include "ac/characterinfo.h"
 #include "game/roomstruct.h"
 
 ScriptDrawingSurface* Room_GetDrawingSurfaceForBackground(int backgroundNumber);

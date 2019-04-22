@@ -20,8 +20,8 @@
 
 #include "util/stdtr1compat.h"
 #include TR1INCLUDE(memory)
-#include "core/types.h"
-#include "ac/common_defines.h"
+#include "cn_core.h"
+#include "cn_ac.h"
 #include "gfx/gfx_def.h"
 #include "util/wgt2allg.h"
 

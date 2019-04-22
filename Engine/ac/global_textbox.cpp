@@ -13,12 +13,9 @@
 //=============================================================================
 
 #include "ac/global_textbox.h"
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/string.h"
-#include "ac/textbox.h"
-#include "gui/guimain.h"
-#include "gui/guitextbox.h"
+
+#include "ee_ac.h"
+#include "ee_gui.h"
 
 using namespace AGS::Common;
 

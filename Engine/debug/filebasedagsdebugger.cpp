@@ -13,11 +13,9 @@
 //=============================================================================
 
 #include "debug/filebasedagsdebugger.h"
-#include "ac/file.h"                    // filelength()
-#include "util/stream.h"
-#include "util/textstreamwriter.h"
-#include "util/wgt2allg.h"              // exists()
-#include "platform/base/agsplatformdriver.h"
+#include "ee_ac.h"
+#include "ee_util.h"
+#include "ee_platform.h"
 
 using AGS::Common::Stream;
 using AGS::Common::TextStreamWriter;
@@ -28,7 +26,7 @@ bool FileBasedAGSDebugger::Initialize()
 {
     if (exists(SENT_MESSAGE_FILE_NAME))
     {
-        unlink(SENT_MESSAGE_FILE_NAME);
+        ::remove(SENT_MESSAGE_FILE_NAME);
     }
     return true;
 }
@@ -44,7 +42,7 @@ bool FileBasedAGSDebugger::SendMessageToEditor(const char *message)
         platform->YieldCPU();
     }
 
-    Stream *out = Common::File::CreateFile(SENT_MESSAGE_FILE_NAME);
+    Stream *out = Common::File::CreateNewFile(SENT_MESSAGE_FILE_NAME);
     // CHECKME: originally the file was opened as "wb" for some reason,
     // which means the message should be written as a binary array;
     // or shouldn't it?
@@ -70,7 +68,7 @@ char* FileBasedAGSDebugger::GetNextMessage()
     char *msg = (char*)malloc(fileSize + 1);
     in->Read(msg, fileSize);
     delete in;
-    unlink("dbgsend.tmp");
+    ::remove("dbgsend.tmp");
     msg[fileSize] = 0;
     return msg;
 }

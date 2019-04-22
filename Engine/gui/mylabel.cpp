@@ -12,14 +12,12 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "ac/display.h"
-#include "ac/gamesetup.h"
-#include "ac/string.h"
-#include "font/fonts.h"
-#include "gui/guidefines.h"
 #include "gui/mylabel.h"
-#include "gui/guidialoginternaldefs.h"
+
+#include <string.h>
+#include "ee_ac.h"
+#include "ee_font.h"
+#include "ee_gui.h"
 
 using Common::Bitmap;
 

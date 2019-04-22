@@ -13,9 +13,8 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_dialog.h"
-#include "ac/dialog.h"
-#include "ac/dialogtopic.h"
-#include "ac/gamestructdefines.h"
+
+#include "ee_ac.h"
 
 // return the type name of the object
 const char *CCDialog::GetType() {

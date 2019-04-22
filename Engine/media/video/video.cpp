@@ -12,28 +12,16 @@
 //
 //=============================================================================
 
-#include "video.h"
+#include "media/video/video.h"
+
 #include "apeg.h"
-#include "debug/debug_log.h"
-#include "debug/out.h"
-#include "ac/asset_helper.h"
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/game_version.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_display.h"
-#include "ac/mouse.h"
-#include "ac/sys_events.h"
-#include "ac/runtime_defines.h"
-#include "ac/system.h"
-#include "core/assetmanager.h"
-#include "gfx/bitmap.h"
-#include "gfx/ddb.h"
-#include "gfx/graphicsdriver.h"
-#include "main/game_run.h"
-#include "util/stream.h"
-#include "media/audio/audio_system.h"
+#include "cn_core.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

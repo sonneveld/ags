@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
-#include "core/types.h"
 #include "gfx/blender.h"
-#include "util/wgt2allg.h"
+
+#include "cn_core.h"
+#include "ee_util.h"
 
 extern "C" {
     unsigned long _blender_trans16(unsigned long x, unsigned long y, unsigned long n);

@@ -20,7 +20,7 @@
 #define __AGS_EE_SCRIPT__SCRIPTAPI_H
 
 #include <stdarg.h>
-#include "core/types.h"
+#include "cn_core.h"
 #include "ac/runtime_defines.h"
 #include "ac/statobj/agsstaticobject.h"
 #include "debug/out.h"

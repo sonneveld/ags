@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include "stdio.h"
 #include "gfx/gfxfilter_aad3d.h"
+
+#include "stdio.h"
 
 #ifdef WINDOWS_VERSION
 #include <d3d9.h>

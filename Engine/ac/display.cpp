@@ -12,39 +12,19 @@
 //
 //=============================================================================
 
+#include "ac/display.h"
+
 #include <cmath>
 
-#include "ac/display.h"
-#include "ac/common.h"
-#include "font/agsfontrenderer.h"
-#include "font/fonts.h"
-#include "ac/character.h"
-#include "ac/draw.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_audio.h"
-#include "ac/global_game.h"
-#include "ac/gui.h"
-#include "ac/mouse.h"
-#include "ac/overlay.h"
-#include "ac/sys_events.h"
-#include "ac/screenoverlay.h"
-#include "ac/speech.h"
-#include "ac/string.h"
-#include "ac/system.h"
-#include "ac/topbarsettings.h"
-#include "debug/debug_log.h"
-#include "gui/guibutton.h"
-#include "gui/guimain.h"
-#include "main/game_run.h"
-#include "platform/base/agsplatformdriver.h"
-#include "ac/spritecache.h"
-#include "gfx/gfx_util.h"
-#include "util/string_utils.h"
-#include "ac/mouse.h"
-#include "media/audio/audio_system.h"
-#include "ac/timer.h"
+#include "ee_font.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gui.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_gfx.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;

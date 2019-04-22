@@ -13,9 +13,10 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_object.h"
-#include "ac/dynobj/scriptobject.h"
-#include "ac/common_defines.h"
-#include "game/roomstruct.h"
+
+#include "cn_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_game.h"
 
 extern ScriptObject scrObj[MAX_ROOM_OBJECTS];
 

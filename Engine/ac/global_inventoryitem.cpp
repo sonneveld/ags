@@ -12,19 +12,10 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_gui.h"
 #include "ac/global_inventoryitem.h"
-#include "ac/global_translation.h"
-#include "ac/inventoryitem.h"
-#include "ac/invwindow.h"
-#include "ac/properties.h"
-#include "ac/string.h"
-#include "gui/guimain.h"
-#include "gui/guiinv.h"
-#include "ac/event.h"
-#include "ac/gamestate.h"
+
+#include "ee_ac.h"
+#include "ee_gui.h"
 
 using namespace AGS::Common;
 

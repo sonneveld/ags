@@ -1,4 +1,6 @@
 
+#include "util/directory.h"
+
 #include <errno.h>
 #if defined (WINDOWS_VERSION)
 #include <direct.h>
@@ -6,7 +8,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
-#include "util/directory.h"
 #include "util/path.h"
 
 namespace AGS
@@ -17,7 +18,7 @@ namespace Common
 namespace Directory
 {
 
-bool CreateDirectory(const String &path)
+bool EnsureDirectoryExists(const String &path)
 {
     return mkdir(path
 #if !defined (WINDOWS_VERSION)
@@ -26,13 +27,13 @@ bool CreateDirectory(const String &path)
         ) == 0 || errno == EEXIST;
 }
 
-String SetCurrentDirectory(const String &path)
+String ChangeWorkingDirectory(const String &path)
 {
     chdir(path);
-    return GetCurrentDirectory();
+    return GetWorkingDirectory();
 }
 
-String GetCurrentDirectory()
+String GetWorkingDirectory()
 {
     char buf[512];
     getcwd(buf, 512);

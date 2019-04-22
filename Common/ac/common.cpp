@@ -13,7 +13,8 @@
 //=============================================================================
 
 #include "ac/common.h"
-#include "util/string.h"
+
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

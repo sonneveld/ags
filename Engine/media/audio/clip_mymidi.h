@@ -15,6 +15,7 @@
 #ifndef __AC_MYMIDI_H
 #define __AC_MYMIDI_H
 
+#include "allegro.h"
 #include "media/audio/soundclip.h"
 
 // MIDI

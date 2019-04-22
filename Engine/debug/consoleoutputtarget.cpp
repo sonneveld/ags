@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "consoleoutputtarget.h"
-#include "debug/debug_log.h"
+
+#include <string.h>
+#include "ee_debug.h"
 
 namespace AGS
 {

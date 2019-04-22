@@ -12,28 +12,17 @@
 //
 //=============================================================================
 
-#include <cctype>
-#include "util/wgt2allg.h"
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/gamesetup.h"
-#include "ac/gamestate.h"
-#include "ac/gui.h"
-#include "ac/keycode.h"
-#include "ac/mouse.h"
-#include "ac/sys_events.h"
-#include "ac/runtime_defines.h"
-#include "font/fonts.h"
 #include "gui/cscidialog.h"
-#include "gui/guidialog.h"
-#include "gui/guimain.h"
-#include "gui/mycontrols.h"
-#include "main/game_run.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "media/audio/audio_system.h"
-#include "platform/base/agsplatformdriver.h"
-#include "ac/timer.h"
+
+#include <cctype>
+#include "ee_util.h"
+#include "ee_ac.h"
+#include "ee_font.h"
+#include "ee_gui.h"
+#include "ee_main.h"
+#include "ee_gfx.h"
+#include "ee_media.h"
+#include "ee_platform.h"
 
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;

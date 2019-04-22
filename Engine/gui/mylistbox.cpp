@@ -12,15 +12,14 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "util/wgt2allg.h"
-#include "ac/common.h"
-#include "ac/gamesetup.h"
-#include "font/fonts.h"
-#include "gfx/bitmap.h"
-#include "gui/guidialog.h"
-#include "gui/guidialoginternaldefs.h"
 #include "gui/mylistbox.h"
+
+#include <string.h>
+#include "ee_util.h"
+#include "ee_ac.h"
+#include "ee_font.h"
+#include "ee_gfx.h"
+#include "ee_gui.h"
 
 using AGS::Common::Bitmap;
 

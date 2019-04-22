@@ -12,9 +12,11 @@
 //
 //=============================================================================
 
-#include "gfx/bitmap.h"
 #include "gfx/gfxfilter_hqx.h"
-#include "gfx/hq2x3x.h"
+
+#include "hq2x3x.h"
+
+#include "ee_gfx.h"
 
 namespace AGS
 {

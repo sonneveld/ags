@@ -13,9 +13,10 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_region.h"
-#include "ac/dynobj/scriptregion.h"
-#include "ac/common_defines.h"
-#include "game/roomstruct.h"
+
+#include "cn_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_game.h"
 
 extern ScriptRegion scrRegion[MAX_ROOM_REGIONS];
 

@@ -12,10 +12,11 @@
 //
 //=============================================================================
 
-#include "ac/spritecache.h"
-#include "gui/guimain.h"
 #include "gui/guislider.h"
-#include "util/stream.h"
+
+#include "gui/guimain.h"
+#include "cn_ac.h"
+#include "cn_util.h"
 
 std::vector<AGS::Common::GUISlider> guislider;
 int numguislider = 0;

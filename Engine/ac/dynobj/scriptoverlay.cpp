@@ -13,10 +13,8 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptoverlay.h"
-#include "ac/common.h"
-#include "ac/overlay.h"
-#include "ac/runtime_defines.h"
-#include "ac/screenoverlay.h"
+
+#include "ee_ac.h"
 
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];
 

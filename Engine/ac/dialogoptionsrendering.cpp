@@ -12,13 +12,12 @@
 //
 //=============================================================================
 
-#include "ac/dialog.h"
-#include "ac/dialogtopic.h"
 #include "ac/dialogoptionsrendering.h"
-#include "ac/gamestructdefines.h"
-#include "debug/debug_log.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_dialog.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 extern DialogTopic *dialog;
 extern CCDialog ccDynamicDialog;
@@ -151,9 +150,6 @@ void DialogOptionsRendering_SetActiveOptionID(ScriptDialogOptionsRendering *dlgO
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 RuntimeScriptValue Sc_DialogOptionsRendering_Update(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {

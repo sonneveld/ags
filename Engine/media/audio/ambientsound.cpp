@@ -13,9 +13,8 @@
 //=============================================================================
 
 #include "media/audio/ambientsound.h"
-#include "media/audio/audio.h"
-#include "media/audio/soundclip.h"
-#include "util/stream.h"
+#include "ee_media.h"
+#include "ee_util.h"
 
 using AGS::Common::Stream;
 

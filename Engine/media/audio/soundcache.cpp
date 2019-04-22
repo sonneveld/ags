@@ -12,15 +12,13 @@
 //
 //=============================================================================
 
+#include "media/audio/soundcache.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "ac/file.h"
-#include "util/wgt2allg.h"
-#include "media/audio/soundcache.h"
-#include "media/audio/audiointernaldefs.h"
-#include "util/mutex.h"
-#include "util/mutex_lock.h"
-#include "util/string.h"
+#include "ee_ac.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using namespace Common;
 

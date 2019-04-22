@@ -12,11 +12,11 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "ac/common.h" // quit
 #include "game/interactions.h"
-#include "util/alignedstream.h"
-#include "util/math.h"
+
+#include <string.h>
+#include "cn_ac.h" // quit
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

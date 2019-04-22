@@ -15,7 +15,7 @@
 #ifdef _DEBUG
 
 #include "util/memory.h"
-#include "debug/assert.h"
+#include "ee_debug.h"
 
 using namespace AGS::Common;
 

@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptstring.h"
-#include "ac/string.h"
+#include "ee_ac.h"
 #include <stdlib.h>
 #include <string.h>
 

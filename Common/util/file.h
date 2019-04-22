@@ -18,7 +18,7 @@
 #ifndef __AGS_CN_UTIL__FILE_H
 #define __AGS_CN_UTIL__FILE_H
 
-#include "util/string.h"
+#include "core/types.h"
 
 namespace AGS
 {
@@ -27,6 +27,7 @@ namespace Common
 
 // Forward declarations
 class Stream;
+class String;
 
 enum FileOpenMode
 {
@@ -63,7 +64,7 @@ namespace File
     Stream      *OpenFile(const String &filename, FileOpenMode open_mode, FileWorkMode work_mode);
     // Convenience helpers
     // Create a totally new file, overwrite existing one
-    inline Stream *CreateFile(const String &filename)
+    inline Stream *CreateNewFile(const String &filename)
     {
         return OpenFile(filename, kFile_CreateAlways, kFile_Write);
     }

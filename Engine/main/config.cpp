@@ -16,23 +16,14 @@
 // Game configuration
 //
 
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_translation.h"
-#include "ac/path_helper.h"
-#include "ac/spritecache.h"
-#include "ac/system.h"
-#include "debug/debug_log.h"
-#include "main/mainheader.h"
 #include "main/config.h"
-#include "platform/base/agsplatformdriver.h"
-#include "util/directory.h"
-#include "util/ini_util.h"
-#include "util/textstreamreader.h"
-#include "util/path.h"
-#include "util/string_utils.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -227,7 +218,7 @@ void graphics_mode_get_defaults(bool windowed, ScreenSizeSetup &scsz_setup, Game
 String find_default_cfg_file(const char *alt_cfg_file)
 {
     // Try current directory for config first; else try exe dir
-    String filename = String::FromFormat("%s/%s", Directory::GetCurrentDirectory().GetCStr(), DefaultConfigFileName.GetCStr());
+    String filename = String::FromFormat("%s/%s", Directory::GetWorkingDirectory().GetCStr(), DefaultConfigFileName.GetCStr());
     if (!Common::File::TestReadFile(filename))
     {
         char conffilebuf[512];

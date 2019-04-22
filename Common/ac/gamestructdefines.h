@@ -18,8 +18,8 @@
 #ifndef __AGS_CN_AC__GAMESTRUCTDEFINES_H
 #define __AGS_CN_AC__GAMESTRUCTDEFINES_H
 
-#include "util/geometry.h"
 #include "core/types.h"
+#include "util/geometry.h"
 
 #define PAL_GAMEWIDE        0
 #define PAL_LOCKED          1

@@ -16,13 +16,11 @@
 //
 //=============================================================================
 
-#include "gfx/ali3dexception.h"
 #include "gfx/ali3dsw.h"
-#include "gfx/gfxfilter_allegro.h"
-#include "gfx/gfxfilter_hqx.h"
-#include "gfx/gfx_util.h"
-#include "main/main_allegro.h"
-#include "platform/base/agsplatformdriver.h"
+
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
 
 #if defined(PSP_VERSION)
 // PSP: Includes for sceKernelDelayThread.
@@ -47,7 +45,7 @@ extern "C" DDRAW_SURFACE *gfx_directx_primary_surface;
 extern int dxmedia_play_video (const char*, bool, int, int);
 #endif // WINDOWS_VERSION
 
-#include "ac/timer.h"
+#include "ee_ac.h"
 
 
 namespace AGS

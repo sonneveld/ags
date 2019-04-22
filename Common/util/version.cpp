@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include <ctype.h>
 #include "util/version.h"
+
+#include <ctype.h>
 
 namespace AGS
 {

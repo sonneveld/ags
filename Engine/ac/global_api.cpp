@@ -17,59 +17,14 @@
 //=============================================================================
 
 #include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_script.h"
 
-#include "ac/cdaudio.h"
-#include "ac/dynamicsprite.h"
-#include "ac/event.h"
-#include "ac/game.h"
-#include "ac/global_audio.h"
-#include "ac/global_button.h"
-#include "ac/global_character.h"
-#include "ac/global_datetime.h"
-#include "ac/global_debug.h"
-#include "ac/global_dialog.h"
-#include "ac/global_display.h"
-#include "ac/global_drawingsurface.h"
-#include "ac/global_dynamicsprite.h"
-#include "ac/global_file.h"
-#include "ac/global_game.h"
-#include "ac/global_gui.h"
-#include "ac/global_hotspot.h"
-#include "ac/global_inventoryitem.h"
-#include "ac/global_invwindow.h"
-#include "ac/global_label.h"
-#include "ac/global_listbox.h"
-#include "ac/global_mouse.h"
-#include "ac/global_object.h"
-#include "ac/global_overlay.h"
-#include "ac/global_palette.h"
-#include "ac/global_parser.h"
-#include "ac/global_record.h"
-#include "ac/global_region.h"
-#include "ac/global_room.h"
-#include "ac/global_slider.h"
-#include "ac/global_screen.h"
-#include "ac/global_string.h"
-#include "ac/global_textbox.h"
-#include "ac/global_timer.h"
-#include "ac/global_translation.h"
-#include "ac/global_video.h"
-#include "ac/global_viewframe.h"
-#include "ac/global_viewport.h"
-#include "ac/global_walkablearea.h"
-#include "ac/global_walkbehind.h"
-#include "ac/math.h"
-#include "ac/mouse.h"
-#include "ac/parser.h"
-#include "ac/string.h"
-#include "ac/room.h"
-#include "media/video/video.h"
-#include "util/string_utils.h"
-#include "media/audio/audio_system.h"
+#include "ee_ac.h"
+#include "ee_media.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
-#include "ac/dynobj/scriptstring.h"
+#include "ee_ac_dynobj.h"
 extern ScriptString myScriptStringImpl;
 
 // void (char*texx, ...)
@@ -2080,8 +2035,8 @@ RuntimeScriptValue Sc_sc_strcat(const RuntimeScriptValue *params, int32_t param_
 
 RuntimeScriptValue Sc_stricmp(const RuntimeScriptValue *params, int32_t param_count)
 {
-    // Calling C stdlib function stricmp
-    API_SCALL_INT_POBJ2(stricmp, const char, const char);
+    // Calling C stdlib function ags_stricmp
+    API_SCALL_INT_POBJ2(ags_stricmp, const char, const char);
 }
 
 RuntimeScriptValue Sc_strcmp(const RuntimeScriptValue *params, int32_t param_count)
@@ -2993,7 +2948,7 @@ void RegisterGlobalAPI()
     ccAddExternalFunctionForPlugin("StopMusic",                (void*)scr_StopMusic);
     ccAddExternalFunctionForPlugin("StopObjectMoving",         (void*)StopObjectMoving);
     ccAddExternalFunctionForPlugin("StrCat",                   (void*)_sc_strcat);
-    ccAddExternalFunctionForPlugin("StrCaseComp",              (void*)stricmp);
+    ccAddExternalFunctionForPlugin("StrCaseComp",              (void*)ags_stricmp);
     ccAddExternalFunctionForPlugin("StrComp",                  (void*)strcmp);
     ccAddExternalFunctionForPlugin("StrContains",              (void*)StrContains);
     ccAddExternalFunctionForPlugin("StrCopy",                  (void*)_sc_strcpy);

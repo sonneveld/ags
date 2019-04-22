@@ -12,11 +12,9 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
 #include "ac/global_palette.h"
+
+#include "ee_ac.h"
 
 extern GameSetupStruct game;
 extern GameState play;

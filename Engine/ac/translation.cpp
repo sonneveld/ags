@@ -12,20 +12,12 @@
 //
 //=============================================================================
 
-#include "ac/asset_helper.h"
-#include "ac/common.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_game.h"
-#include "ac/runtime_defines.h"
 #include "ac/translation.h"
-#include "ac/tree_map.h"
-#include "ac/wordsdictionary.h"
-#include "debug/out.h"
-#include "util/misc.h"
-#include "util/stream.h"
-#include "core/assetmanager.h"
+
+#include "cn_core.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

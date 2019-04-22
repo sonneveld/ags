@@ -13,17 +13,10 @@
 //=============================================================================
 
 #include "ac/inventoryitem.h"
-#include "ac/characterinfo.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_inventoryitem.h"
-#include "ac/global_translation.h"
-#include "ac/mouse.h"
-#include "ac/properties.h"
-#include "ac/runtime_defines.h"
-#include "ac/string.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_inventory.h"
+
+#include "ee_ac.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 
 extern GameSetupStruct game;
@@ -123,10 +116,7 @@ void set_inv_item_cursorpic(int invItemId, int piccy)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_debug.h"
 
 extern ScriptString myScriptStringImpl;
 

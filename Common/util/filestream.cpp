@@ -14,6 +14,9 @@
 
 #include "util/filestream.h"
 
+#include "util/stdio_compat.h"
+#include "util/string.h"
+
 namespace AGS
 {
 namespace Common

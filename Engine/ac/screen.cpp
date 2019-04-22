@@ -12,21 +12,14 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_game.h"
-#include "ac/global_screen.h"
 #include "ac/screen.h"
-#include "ac/dynobj/scriptviewport.h"
-#include "ac/dynobj/scriptuserobject.h"
-#include "script/script_runtime.h"
-#include "platform/base/agsplatformdriver.h"
-#include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
-#include "gfx/bitmap.h"
-#include "gfx/graphicsdriver.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_script.h"
+#include "ee_platform.h"
+#include "ee_plugin.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

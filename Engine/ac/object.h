@@ -20,7 +20,7 @@
 #ifndef __AGS_EE_AC__OBJECT_H
 #define __AGS_EE_AC__OBJECT_H
 
-#include "ac/common_defines.h"
+#include "cn_ac.h"
 #include "ac/dynobj/scriptobject.h"
 
 namespace AGS { namespace Common { class Bitmap; } }

@@ -12,13 +12,12 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
 #include "ac/properties.h"
-#include "ac/string.h"
-#include "ac/dynobj/scriptstring.h"
-#include "script/runtimescriptvalue.h"
-#include "util/string_utils.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

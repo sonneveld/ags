@@ -12,20 +12,16 @@
 //
 //=============================================================================
 
-#include "ac/common.h" // update_polled_stuff
-#include "ac/common_defines.h"
-#include "ac/gamestructdefines.h"
-#include "ac/wordsdictionary.h" // TODO: extract string decryption
-#include "core/assetmanager.h"
-#include "debug/out.h"
-#include "game/customproperties.h"
 #include "game/room_file.h"
+
+#include "game/customproperties.h"
 #include "game/roomstruct.h"
-#include "gfx/bitmap.h"
-#include "script/cc_error.h"
-#include "script/cc_script.h"
-#include "util/compress.h"
-#include "util/string_utils.h"
+#include "cn_ac.h"
+#include "cn_core.h"
+#include "cn_debug.h"
+#include "cn_gfx.h"
+#include "cn_script.h"
+#include "cn_util.h"
 
 // default number of hotspots to read from the room file
 #define MIN_ROOM_HOTSPOTS  20

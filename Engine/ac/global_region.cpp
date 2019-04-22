@@ -13,15 +13,12 @@
 //=============================================================================
 
 #include "ac/global_region.h"
-#include "ac/common.h"
-#include "ac/game_version.h"
-#include "ac/draw.h"
-#include "ac/region.h"
-#include "ac/roomstatus.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "gfx/bitmap.h"
-#include "script/script.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
 
 
 using namespace AGS::Common;

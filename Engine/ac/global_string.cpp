@@ -12,13 +12,11 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "ac/common.h"
 #include "ac/global_string.h"
-#include "ac/global_translation.h"
-#include "ac/runtime_defines.h"
-#include "ac/string.h"
-#include "util/string_utils.h" //strlwr()
+
+#include <string.h>
+#include "ee_ac.h"
+#include "ee_util.h"
 
 extern int MAXSTRLEN;
 
@@ -49,13 +47,13 @@ void _sc_strcat(char*s1, const char*s2) {
 void _sc_strlower (char *desbuf) {
     VALIDATE_STRING(desbuf);
     check_strlen (desbuf);
-    strlwr (desbuf);
+    ags_strlwr (desbuf);
 }
 
 void _sc_strupper (char *desbuf) {
     VALIDATE_STRING(desbuf);
     check_strlen (desbuf);
-    strupr (desbuf);
+    ags_strupr (desbuf);
 }
 
 /*int _sc_strcmp (char *s1, char *s2) {
@@ -63,7 +61,7 @@ return strcmp (get_translation (s1), get_translation(s2));
 }
 
 int _sc_stricmp (char *s1, char *s2) {
-return stricmp (get_translation (s1), get_translation(s2));
+return ags_stricmp (get_translation (s1), get_translation(s2));
 }*/
 
 void _sc_strcpy(char*destt, const char *text) {

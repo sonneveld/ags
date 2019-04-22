@@ -12,11 +12,11 @@
 //
 //=============================================================================
 
-#include "font/fonts.h"
 #include "gui/guilistbox.h"
+
 #include "gui/guimain.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
+#include "cn_font.h"
+#include "cn_util.h"
 
 std::vector<AGS::Common::GUIListBox> guilist;
 int numguilist = 0;

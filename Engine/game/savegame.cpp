@@ -12,47 +12,19 @@
 //
 //=============================================================================
 
-#include "ac/character.h"
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/dynamicsprite.h"
-#include "ac/event.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/gamesetup.h"
-#include "ac/global_audio.h"
-#include "ac/global_character.h"
-#include "ac/gui.h"
-#include "ac/mouse.h"
-#include "ac/overlay.h"
-#include "ac/region.h"
-#include "ac/richgamemedia.h"
-#include "ac/room.h"
-#include "ac/roomstatus.h"
-#include "ac/spritecache.h"
-#include "ac/system.h"
-#include "ac/timer.h"
-#include "debug/out.h"
-#include "device/mousew32.h"
-#include "gfx/bitmap.h"
-#include "gfx/ddb.h"
-#include "gfx/graphicsdriver.h"
 #include "game/savegame.h"
-#include "game/savegame_components.h"
-#include "game/savegame_internal.h"
-#include "main/engine.h"
-#include "main/main.h"
-#include "platform/base/agsplatformdriver.h"
-#include "plugin/agsplugin.h"
-#include "plugin/plugin_engine.h"
-#include "script/script.h"
-#include "script/cc_error.h"
-#include "util/alignedstream.h"
-#include "util/file.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_device.h"
+#include "ee_gfx.h"
+#include "ee_game.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_plugin.h"
+#include "ee_script.h"
+#include "ee_util.h"
+#include "ee_media.h"
 
 using namespace Common;
 using namespace Engine;
@@ -699,7 +671,7 @@ void WriteDescription(Stream *out, const String &user_text, const Bitmap *user_i
 
 PStream StartSavegame(const String &filename, const String &user_text, const Bitmap *user_image)
 {
-    Stream *out = Common::File::CreateFile(filename);
+    Stream *out = Common::File::CreateNewFile(filename);
     if (!out)
         return PStream();
 

@@ -12,22 +12,14 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/game.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
 #include "ac/global_drawingsurface.h"
-#include "ac/global_translation.h"
-#include "ac/string.h"
-#include "debug/debug_log.h"
-#include "font/fonts.h"
-#include "game/roomstruct.h"
-#include "gui/guidefines.h"
-#include "ac/spritecache.h"
-#include "gfx/gfx_def.h"
-#include "gfx/gfx_util.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_font.h"
+#include "ee_game.h"
+#include "ee_gui.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

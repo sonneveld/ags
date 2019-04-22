@@ -13,8 +13,9 @@
 //=============================================================================
 
 #include "media/audio/queuedaudioitem.h"
-#include "ac/common_defines.h"
-#include "util/stream.h"
+
+#include "ee_ac.h"
+#include "ee_util.h"
 
 using AGS::Common::Stream;
 

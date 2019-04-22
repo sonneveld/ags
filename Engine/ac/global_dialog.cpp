@@ -13,15 +13,10 @@
 //=============================================================================
 
 #include "ac/global_dialog.h"
-#include "ac/common.h"
-#include "ac/dialog.h"
-#include "ac/dialogtopic.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "debug/out.h"
-#include "script/script.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 

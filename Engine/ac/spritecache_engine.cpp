@@ -23,9 +23,10 @@
 #pragma warning (disable: 4996 4312)  // disable deprecation warnings
 #endif
 
-#include "ac/gamestructdefines.h"
 #include "ac/spritecache.h"
-#include "util/compress.h"
+
+#include "cn_ac.h"
+#include "ee_util.h"
 
 //=============================================================================
 // Engine-specific implementation split out of sprcache.cpp

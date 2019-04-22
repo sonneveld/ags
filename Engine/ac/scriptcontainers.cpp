@@ -15,15 +15,13 @@
 // Containers script API.
 //
 //=============================================================================
-#include "ac/common.h" // quit
-#include "ac/dynobj/cc_dynamicarray.h"
-#include "ac/dynobj/cc_dynamicobject.h"
-#include "ac/dynobj/scriptdict.h"
-#include "ac/dynobj/scriptset.h"
-#include "ac/dynobj/scriptstring.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "util/bbop.h"
+
+#include "ac/dynobj/scriptcontainers.h"
+
+#include "cn_ac.h" // quit
+#include "ee_ac_dynobj.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 extern ScriptString myScriptStringImpl;
 

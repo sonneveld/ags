@@ -13,20 +13,10 @@
 //=============================================================================
 
 #include "ac/overlay.h"
-#include "ac/common.h"
-#include "ac/view.h"
-#include "ac/characterextras.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_overlay.h"
-#include "ac/global_translation.h"
-#include "ac/runtime_defines.h"
-#include "ac/screenoverlay.h"
-#include "ac/string.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "script/runtimescriptvalue.h"
+
+#include "ee_ac.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -277,9 +267,7 @@ void recreate_overlay_ddbs()
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_debug.h"
 
 // ScriptOverlay* (int x, int y, int slot, int transparent)
 RuntimeScriptValue Sc_Overlay_CreateGraphical(const RuntimeScriptValue *params, int32_t param_count)

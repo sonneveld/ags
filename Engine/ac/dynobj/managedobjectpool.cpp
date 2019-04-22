@@ -11,14 +11,13 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
-#include <vector>
 #include "ac/dynobj/managedobjectpool.h"
-#include "ac/dynobj/cc_dynamicarray.h" // globalDynamicArray, constants
-#include "debug/out.h"
-#include "util/string_utils.h"               // fputstring, etc
-#include "script/cc_error.h"
-#include "script/script_common.h"
-#include "util/stream.h"
+
+#include <vector>
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_util.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 

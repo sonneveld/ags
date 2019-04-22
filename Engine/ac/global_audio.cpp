@@ -12,20 +12,15 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/game.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
 #include "ac/global_audio.h"
-#include "ac/lipsync.h"
-#include "ac/path_helper.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "game/roomstruct.h"
-#include "main/engine.h"
-#include "media/audio/audio_system.h"
-#include "ac/timer.h"
+
+#include "cn_ac_dynobj.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_main.h"
+#include "ee_media.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 
@@ -605,7 +600,7 @@ bool play_voice_speech(int charid, int sndid)
     curLipLine = -1;  // See if we have voice lip sync for this line
     curLipLinePhoneme = -1;
     for (ii = 0; ii < numLipLines; ii++) {
-        if (stricmp(splipsync[ii].filename, voice_file) == 0) {
+        if (ags_stricmp(splipsync[ii].filename, voice_file) == 0) {
             curLipLine = ii;
             break;
         }

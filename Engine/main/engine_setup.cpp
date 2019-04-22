@@ -12,27 +12,18 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/game_version.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/runtime_defines.h"
-#include "ac/walkbehind.h"
-#include "ac/dynobj/scriptsystem.h"
-#include "debug/out.h"
-#include "device/mousew32.h"
-#include "font/fonts.h"
-#include "gfx/ali3dexception.h"
-#include "gfx/graphicsdriver.h"
-#include "gui/guimain.h"
-#include "gui/guiinv.h"
-#include "main/graphics_mode.h"
 #include "main/engine_setup.h"
-#include "media/video/video.h"
-#include "platform/base/agsplatformdriver.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_device.h"
+#include "ee_font.h"
+#include "ee_gfx.h"
+#include "ee_gui.h"
+#include "ee_main.h"
+#include "ee_media.h"
+#include "ee_platform.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

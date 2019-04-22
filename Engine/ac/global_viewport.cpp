@@ -13,8 +13,8 @@
 //=============================================================================
 
 #include "ac/global_viewport.h"
-#include "ac/draw.h"
-#include "debug/debug_log.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
 
 void SetViewport(int offsx, int offsy) {
     offsx = data_to_game_coord(offsx);

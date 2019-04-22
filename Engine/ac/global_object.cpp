@@ -13,29 +13,12 @@
 //=============================================================================
 
 #include "ac/global_object.h"
-#include "ac/common.h"
-#include "ac/object.h"
-#include "ac/view.h"
-#include "ac/character.h"
-#include "ac/draw.h"
-#include "ac/event.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_character.h"
-#include "ac/global_translation.h"
-#include "ac/object.h"
-#include "ac/objectcache.h"
-#include "ac/properties.h"
-#include "ac/roomobject.h"
-#include "ac/roomstatus.h"
-#include "ac/string.h"
-#include "ac/viewframe.h"
-#include "debug/debug_log.h"
-#include "main/game_run.h"
-#include "script/script.h"
-#include "ac/spritecache.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "gfx/gfx_def.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_main.h"
+#include "ee_script.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 

@@ -15,7 +15,7 @@
 #ifdef _DEBUG
 
 #include "debug/assert.h"
-#include "util/scaling.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

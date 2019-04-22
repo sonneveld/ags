@@ -13,14 +13,10 @@
 //=============================================================================
 
 #include "ac/roomobject.h"
-#include "ac/common.h"
-#include "ac/common_defines.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/runtime_defines.h"
-#include "ac/viewframe.h"
-#include "main/update.h"
-#include "util/stream.h"
+
+#include "ee_ac.h"
+#include "ee_main.h"
+#include "ee_util.h"
 
 using AGS::Common::Stream;
 

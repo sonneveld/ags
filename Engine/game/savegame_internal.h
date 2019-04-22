@@ -19,7 +19,8 @@
 #include TR1INCLUDE(memory)
 #include <vector>
 
-#include "ac/common_defines.h"
+#include "cn_ac.h"
+#include "game/roomstruct.h"
 #include "media/audio/audiodefines.h"
 
 

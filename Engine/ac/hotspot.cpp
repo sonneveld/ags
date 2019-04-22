@@ -12,18 +12,13 @@
 //
 //=============================================================================
 
-#include "ac/dynobj/cc_hotspot.h"
 #include "ac/hotspot.h"
-#include "ac/draw.h"
-#include "ac/gamestate.h"
-#include "ac/global_hotspot.h"
-#include "ac/global_translation.h"
-#include "ac/properties.h"
-#include "ac/roomstatus.h"
-#include "ac/string.h"
-#include "game/roomstruct.h"
-#include "gfx/bitmap.h"
-#include "script/runtimescriptvalue.h"
+
+#include "ee_ac_dynobj.h"
+#include "ee_ac.h"
+#include "ee_game.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
 
 using namespace AGS::Common;
 
@@ -135,10 +130,7 @@ int get_hotspot_at(int xpp,int ypp) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_debug.h"
 
 extern ScriptString myScriptStringImpl;
 

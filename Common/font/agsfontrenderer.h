@@ -17,6 +17,8 @@
 
 struct BITMAP;
 
+#ifndef IAGSFontRenderer_DEFINED
+#define IAGSFontRenderer_DEFINED
 // WARNING: this interface is exposed for plugins and declared for the second time in agsplugin.h
 class IAGSFontRenderer
 {
@@ -35,6 +37,7 @@ public:
   virtual void AdjustYCoordinateForFont(int *ycoord, int fontNumber) = 0;
   virtual void EnsureTextValidForFont(char *text, int fontNumber) = 0;
 };
+#endif
 
 // Font render params, mainly for dealing with various compatibility issues and
 // broken fonts. NOTE: currently left empty as a result of rewrite, but may be

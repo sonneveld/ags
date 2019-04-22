@@ -13,7 +13,8 @@
 //=============================================================================
 
 #include "ac/slider.h"
-#include "ac/common.h"
+
+#include "cn_ac.h"
 
 // *** SLIDER FUNCTIONS
 
@@ -114,9 +115,8 @@ void Slider_SetHandleOffset(GUISlider *guisl, int newOffset)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
+#include "ee_debug.h"
+#include "ee_script.h"
 
 // int (GUISlider *guisl)
 RuntimeScriptValue Sc_Slider_GetBackgroundGraphic(void *self, const RuntimeScriptValue *params, int32_t param_count)

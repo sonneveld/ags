@@ -12,16 +12,56 @@
 //
 //=============================================================================
 
+#include "util/string_utils.h"
+
 #include <errno.h>
 #include <stdlib.h>
-#include "gui/guidefines.h" // MAXLINE
+#include <string.h>
+#include <ctype.h>
+#include "cn_gui.h" // MAXLINE
 #include "util/math.h"
-#include "util/string_utils.h"
 #include "util/stream.h"
 
 using namespace AGS::Common;
 
 #define STD_BUFFER_SIZE 3000
+
+extern "C" char *ags_strlwr(char *s) {
+    for (auto p = s; *p; p++) {
+        *p = tolower(*p);
+    }
+   return s;
+}
+
+extern "C" char *ags_strupr(char *s) {
+    for (auto p = s; *p; p++) {
+        *p = toupper(*p);
+    }
+    return s;
+}
+
+extern "C" int ags_stricmp(const char *s1, const char *s2) {
+#ifdef WINDOWS_VERSION
+    return stricmp(s1, s2);
+#else
+    return strcasecmp(s1, s2);
+#endif
+}
+
+extern "C" int ags_strnicmp(const char *s1, const char *s2, size_t n) {
+#ifdef WINDOWS_VERSION
+    return strnicmp(s1, s2, n);
+#else
+    return strncasecmp(s1, s2, n);
+#endif
+}
+
+extern "C" char *ags_strdup(const char *s) {
+    char *result = (char *)malloc(strlen(s) + 1);
+    strcpy(result, s);
+    return result;
+}
+
 
 // Turn [ into \n and turn \[ into [
 void unescape(char *buffer) {

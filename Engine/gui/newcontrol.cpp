@@ -13,8 +13,7 @@
 //=============================================================================
 
 #include "gui/newcontrol.h"
-#include "gui/guidialog.h"
-#include "gui/guidialoginternaldefs.h"
+#include "ee_gui.h"
 
 extern int topwindowhandle;
 

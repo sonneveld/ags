@@ -20,7 +20,7 @@
 #ifndef __AGS_EE_STATOBJ__STATICOBJECT_H
 #define __AGS_EE_STATOBJ__STATICOBJECT_H
 
-#include "core/types.h"
+#include "cn_core.h"
 
 struct ICCStaticObject {
     virtual ~ICCStaticObject() = default;

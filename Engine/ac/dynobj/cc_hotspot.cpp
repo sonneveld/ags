@@ -13,9 +13,10 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_hotspot.h"
-#include "ac/dynobj/scripthotspot.h"
-#include "ac/common_defines.h"
-#include "game/roomstruct.h"
+
+#include "cn_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_game.h"
 
 extern ScriptHotspot scrHotspot[MAX_ROOM_HOTSPOTS];
 

@@ -12,18 +12,16 @@
 //
 //=============================================================================
 
-#include <string.h>
-#include "util/wgt2allg.h"
-#include "ac/common.h"
-#include "ac/mouse.h"
-#include "font/fonts.h"
 #include "gui/mypushbutton.h"
-#include "gui/guidialog.h"
-#include "gui/guidialoginternaldefs.h"
-#include "main/game_run.h"
-#include "gfx/bitmap.h"
-#include "platform/base/agsplatformdriver.h"
-#include "ac/timer.h"
+
+#include <string.h>
+#include "ee_util.h"
+#include "ee_ac.h"
+#include "ee_font.h"
+#include "ee_gui.h"
+#include "ee_main.h"
+#include "ee_gfx.h"
+#include "ee_platform.h"
 
 using AGS::Common::Bitmap;
 

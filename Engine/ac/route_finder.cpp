@@ -17,12 +17,11 @@
 //=============================================================================
 
 #include "ac/route_finder.h"
-#include "ac/common.h"   // quit()
-#include "ac/movelist.h"     // MoveList
-#include "ac/common_defines.h"
+
 #include <string.h>
 #include <math.h>
-#include "gfx/bitmap.h"
+#include "ee_ac.h"
+#include "ee_gfx.h"
 
 #include "route_finder_jps.inl"
 

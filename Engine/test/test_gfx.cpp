@@ -15,8 +15,8 @@
 #ifdef _DEBUG
 
 #include <stdlib.h>
-#include "gfx/gfx_def.h"
-#include "debug/assert.h"
+#include "ee_gfx.h"
+#include "ee_debug.h"
 
 namespace GfxDef = AGS::Common::GfxDef;
 

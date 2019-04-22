@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/characterinfo.h"
-#include "util/stream.h"
+
+#include <string.h>
+#include "cn_util.h"
 
 using AGS::Common::Stream;
 

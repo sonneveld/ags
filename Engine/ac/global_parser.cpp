@@ -12,11 +12,10 @@
 //
 //=============================================================================
 
-#include <cstring> //strcpy()
 #include "ac/global_parser.h"
-#include "ac/common.h"
-#include "ac/gamestate.h"
-#include "ac/string.h"
+
+#include <cstring> //strcpy()
+#include "ee_ac.h"
 
 extern GameState play;
 

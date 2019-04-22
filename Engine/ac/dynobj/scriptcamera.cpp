@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/dynobj/scriptcamera.h"
-#include "ac/gamestate.h"
+#include "ee_ac.h"
 
 const char *ScriptCamera::GetType()
 {

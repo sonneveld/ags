@@ -12,20 +12,13 @@
 //
 //=============================================================================
 
-#include "ac/common.h"
 #include "ac/guicontrol.h"
-#include "ac/global_gui.h"
-#include "debug/debug_log.h"
-#include "gui/guibutton.h"
-#include "gui/guiinv.h"
-#include "gui/guilabel.h"
-#include "gui/guilistbox.h"
-#include "gui/guimain.h"
-#include "gui/guislider.h"
-#include "gui/guitextbox.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_gui.h"
-#include "ac/dynobj/cc_guiobject.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gui.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 using namespace AGS::Common;
 
@@ -232,9 +225,6 @@ void GUIControl_BringToFront(GUIObject *guio) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // void (GUIObject *guio)
 RuntimeScriptValue Sc_GUIControl_BringToFront(void *self, const RuntimeScriptValue *params, int32_t param_count)

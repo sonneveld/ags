@@ -12,16 +12,14 @@
 //
 //=============================================================================
 
-#include "ac/gamesetupstruct.h"
 #include "ac/viewframe.h"
-#include "debug/debug_log.h"
-#include "ac/spritecache.h"
-#include "gfx/bitmap.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_audioclip.h"
-#include "ac/draw.h"
-#include "ac/game_version.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
+#include "ee_ac.h"
+#include "ee_media.h"
 
 using AGS::Common::Bitmap;
 using AGS::Common::Graphics;
@@ -185,9 +183,6 @@ void DrawViewFrame(Bitmap *ds, const ViewFrame *vframe, int x, int y, bool alpha
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // int (ScriptViewFrame *svf)
 RuntimeScriptValue Sc_ViewFrame_GetFlipped(void *self, const RuntimeScriptValue *params, int32_t param_count)

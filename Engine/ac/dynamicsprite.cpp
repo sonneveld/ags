@@ -12,27 +12,15 @@
 //
 //=============================================================================
 
-#include <math.h>
 #include "ac/dynamicsprite.h"
-#include "ac/common.h"
-#include "ac/charactercache.h"
-#include "ac/draw.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_dynamicsprite.h"
-#include "ac/global_game.h"
-#include "ac/math.h"    // M_PI
-#include "ac/objectcache.h"
-#include "ac/path_helper.h"
-#include "ac/roomobject.h"
-#include "ac/roomstatus.h"
-#include "ac/system.h"
-#include "debug/debug_log.h"
-#include "game/roomstruct.h"
-#include "gui/guibutton.h"
-#include "ac/spritecache.h"
-#include "platform/base/override_defines.h"
-#include "gfx/graphicsdriver.h"
-#include "script/runtimescriptvalue.h"
+
+#include <math.h>
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_game.h"
+#include "ee_gui.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
 
 using namespace Common;
 using namespace Engine;
@@ -513,9 +501,6 @@ void free_dynamic_sprite (int gotSlot) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // void (ScriptDynamicSprite *sds, int width, int height, int x, int y)
 RuntimeScriptValue Sc_DynamicSprite_ChangeCanvasSize(void *self, const RuntimeScriptValue *params, int32_t param_count)

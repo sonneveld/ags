@@ -13,12 +13,9 @@
 //=============================================================================
 
 #include "ac/global_button.h"
-#include "ac/common.h"
-#include "ac/button.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/string.h"
-#include "gui/guimain.h"
-#include "gui/guibutton.h"
+
+#include "ee_ac.h"
+#include "ee_gui.h"
 
 using namespace AGS::Common;
 

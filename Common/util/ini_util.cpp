@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
+#include "util/ini_util.h"
+
 #include <memory>
 #include "util/file.h"
-#include "util/ini_util.h"
 #include "util/inifile.h"
 #include "util/stream.h"
 #include "util/textstreamwriter.h"
@@ -66,7 +67,7 @@ bool IniUtil::Read(const String &file, ConfigTree &tree)
 
 void IniUtil::Write(const String &file, const ConfigTree &tree)
 {
-    UStream fs(File::CreateFile(file));
+    UStream fs(File::CreateNewFile(file));
     TextStreamWriter writer(fs.get());
 
     for (ConfigNode it_sec = tree.begin(); it_sec != tree.end(); ++it_sec)
@@ -166,7 +167,7 @@ bool IniUtil::Merge(const String &file, const ConfigTree &tree)
     }
 
     // Write the resulting set of lines
-    UStream fs(File::CreateFile(file));
+    UStream fs(File::CreateNewFile(file));
     if (!fs.get())
         return false;
     ini.Write(fs.get());

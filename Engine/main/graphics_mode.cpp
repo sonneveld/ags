@@ -16,20 +16,14 @@
 // Graphics initialization
 //
 
-#include <algorithm>
-#include "ac/draw.h"
-#include "debug/debugger.h"
-#include "debug/out.h"
-#include "gfx/ali3dexception.h"
-#include "gfx/bitmap.h"
-#include "gfx/gfxdriverfactory.h"
-#include "gfx/gfxfilter.h"
-#include "gfx/graphicsdriver.h"
-#include "main/config.h"
-#include "main/engine_setup.h"
 #include "main/graphics_mode.h"
-#include "main/main_allegro.h"
-#include "platform/base/agsplatformdriver.h"
+
+#include <algorithm>
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
 
 // Don't try to figure out the window size on the mac because the port resizes itself.
 #if defined(MAC_VERSION) || defined(ALLEGRO_SDL2) || defined(IOS_VERSION) || defined(PSP_VERSION) || defined(ANDROID_VERSION)

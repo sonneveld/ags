@@ -17,6 +17,8 @@
 //
 //=============================================================================
 
+#ifdef WINDOWS_VERSION
+
 //#define ALLEGRO_STATICLINK  // already defined in project settings
 #include <allegro.h>
 #include <winalleg.h>
@@ -29,12 +31,12 @@
 #define _D3DTYPES_H_
 #define _STRSAFE_H_INCLUDED_
 typedef float D3DVALUE, *LPD3DVALUE;
-#include "ac/common.h"
-#include "main/game_run.h"
-#include "media/video/VMR9Graph.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ee_ac.h"
+#include "ee_main.h"
+#include "ee_media.h"
+#include "ee_platform.h"
 //#include <atlbase.h>
-#include "media/audio/audio_system.h"
+#include "ee_media.h"
 
 #define USES_CONVERSION int _convert = 0; _convert; UINT _acp = CP_ACP; _acp; LPCWSTR _lpw = NULL; _lpw; LPCSTR _lpa = NULL; _lpa
 
@@ -957,5 +959,4 @@ BOOL CVMR9Graph::SetLayerZOrder(int nLayer, DWORD dwZOrder)
 	return TRUE;
 }
 
-
-
+#endif // WINDOWS_VERSION

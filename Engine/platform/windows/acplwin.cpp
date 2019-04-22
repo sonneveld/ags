@@ -12,33 +12,24 @@
 //
 //=============================================================================
 
-#ifndef WINDOWS_VERSION
-#error This file should only be included on the Windows build
-#endif
+#ifdef WINDOWS_VERSION
 
 // ********* WINDOWS *********
+
+#include "platform/base/agsplatformdriver.h"
 
 #include <string.h>
 #include <allegro.h>
 #include <allegro/platform/aintwin.h>
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_display.h"
-#include "ac/runtime_defines.h"
-#include "ac/string.h"
-#include "debug/out.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "main/engine.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_plugin.h"
+#include "ee_util.h"
+#include "ee_media.h"
 #include "platform/windows/setup/winsetup.h"
-#include "plugin/agsplugin.h"
-#include "util/file.h"
-#include "util/stream.h"
-#include "util/string_utils.h"
-#include "media/audio/audio_system.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -290,7 +281,7 @@ void AGSWin32::add_tasks_for_game(const char *guidAsText, const char *gameEXE, c
   // Remove any existing "Play.lnk" from a previous version
   char shortcutLocation[MAX_PATH];
   sprintf(shortcutLocation, "%s\\Play.lnk", pathBuffer);
-  unlink(shortcutLocation);
+  ::remove(shortcutLocation);
 
   // Generate the shortcut file name (because it can appear on
   // the start menu's Recent area)
@@ -372,7 +363,7 @@ void delete_files_in_directory(const char *directoryName, const char *fileMask)
   al_ffblk dfb;
   int	dun = al_findfirst(srchBuffer, &dfb, FA_SEARCH);
   while (!dun) {
-    unlink(dfb.name);
+    ::remove(dfb.name);
     dun = al_findnext(&dfb);
   }
   al_findclose(&dfb);
@@ -400,7 +391,7 @@ void AGSWin32::update_game_explorer(bool add)
   }
   else 
   {
-    strupr(game.guid);
+    ags_strupr(game.guid);
     WCHAR wstrTemp[MAX_PATH] = {0};
     GUID guid = GUID_NULL;
     MultiByteToWideChar(CP_ACP, 0, game.guid, MAX_GUID_LENGTH, wstrTemp, MAX_GUID_LENGTH);
@@ -1072,3 +1063,6 @@ LPDIRECTINPUTDEVICE IAGSEngine::GetDirectInputKeyboard() {
 LPDIRECTINPUTDEVICE IAGSEngine::GetDirectInputMouse() {
   return mouse_dinput_device;
 }
+
+
+#endif

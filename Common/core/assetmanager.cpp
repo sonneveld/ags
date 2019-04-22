@@ -13,10 +13,8 @@
 //=============================================================================
 
 #include "core/assetmanager.h"
-#include "util/misc.h" // ci_fopen
-#include "util/multifilelib.h"
-#include "util/path.h"
-#include "util/string_utils.h"
+
+#include "cn_util.h"
 
 
 namespace AGS

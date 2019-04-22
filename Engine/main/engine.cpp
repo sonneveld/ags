@@ -16,54 +16,20 @@
 // Engine initialization
 //
 
+#include "main/engine.h"
+
 #include <errno.h>
 
-#include "main/mainheader.h"
-#include "ac/asset_helper.h"
-#include "ac/common.h"
-#include "ac/character.h"
-#include "ac/characterextras.h"
-#include "ac/characterinfo.h"
-#include "ac/draw.h"
-#include "ac/game.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_character.h"
-#include "ac/global_game.h"
-#include "ac/gui.h"
-#include "ac/lipsync.h"
-#include "ac/objectcache.h"
-#include "ac/path_helper.h"
-#include "ac/sys_events.h"
-#include "ac/roomstatus.h"
-#include "ac/speech.h"
-#include "ac/spritecache.h"
-#include "ac/translation.h"
-#include "ac/viewframe.h"
-#include "ac/dynobj/scriptobject.h"
-#include "ac/dynobj/scriptsystem.h"
-#include "core/assetmanager.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "debug/out.h"
-#include "font/agsfontrenderer.h"
-#include "font/fonts.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/ddb.h"
-#include "main/config.h"
-#include "main/game_file.h"
-#include "main/game_start.h"
-#include "main/engine.h"
-#include "main/engine_setup.h"
-#include "main/graphics_mode.h"
-#include "main/main.h"
-#include "main/main_allegro.h"
-#include "media/audio/audio_system.h"
-#include "platform/util/pe.h"
-#include "util/directory.h"
-#include "util/error.h"
-#include "util/misc.h"
-#include "util/path.h"
+#include "ee_ac.h"
+#include "cn_core.h"
+#include "ee_main.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_font.h"
+#include "ee_gfx.h"
+#include "ee_media.h"
+#include "ee_platform.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -294,7 +260,7 @@ bool search_for_game_data_file(String &filename, String &search_path)
         if (filename.IsEmpty() || !Common::AssetManager::IsDataFile(filename))
         {
             // 3.2 Look in current directory
-            search_path = Directory::GetCurrentDirectory();
+            search_path = Directory::GetWorkingDirectory();
             filename = find_game_data_in_directory(search_path);
             if (filename.IsEmpty())
             {
@@ -720,14 +686,14 @@ int check_write_access() {
   // The Save Game Dir is the only place that we should write to
   char tempPath[MAX_PATH];
   sprintf(tempPath, "%s""tmptest.tmp", saveGameDirectory);
-  Stream *temp_s = Common::File::CreateFile(tempPath);
+  Stream *temp_s = Common::File::CreateNewFile(tempPath);
   if (!temp_s)
       // TODO: move this somewhere else (Android platform driver init?)
 #if defined(ANDROID_VERSION)
   {
 	  put_backslash(android_base_directory);
 	  sprintf(tempPath, "%s""tmptest.tmp", android_base_directory);
-	  temp_s = Common::File::CreateFile(tempPath);
+	  temp_s = Common::File::CreateNewFile(tempPath);
 	  if (temp_s == NULL) return 0;
 	  else SetCustomSaveParent(android_base_directory);
   }
@@ -742,7 +708,7 @@ int check_write_access() {
 
   our_eip = -1897;
 
-  if (unlink(tempPath))
+  if (::remove(tempPath))
     return 0;
 
   return 1;
@@ -1199,7 +1165,7 @@ HError define_gamedata_location_checkall(const String &exe_path)
             return HError::None();
         }
         // Otherwise switch working dir to this path and look for config there
-        Directory::SetCurrentDirectory(Path::GetDirectoryPath(cmdGameDataPath));
+        Directory::ChangeWorkingDirectory(Path::GetDirectoryPath(cmdGameDataPath));
     }
     // Read game data location from the default config file.
     // This is an optional setting that may instruct which game file to use as a primary asset library.

@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/global_mouse.h"
-#include "ac/gamestate.h"
+#include "ee_ac.h"
 
 extern GameState play;
 

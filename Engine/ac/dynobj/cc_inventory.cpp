@@ -13,8 +13,9 @@
 //=============================================================================
 
 #include "ac/dynobj/cc_inventory.h"
-#include "ac/dynobj/scriptinvitem.h"
-#include "ac/characterinfo.h"
+
+#include "cn_ac.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptInvItem scrInv[MAX_INV];
 

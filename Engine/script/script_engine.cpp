@@ -22,10 +22,8 @@
 //=============================================================================
 
 #include <stdlib.h>
-#include "script/cc_instance.h"
-#include "script/cc_error.h"
-#include "util/file.h"
-#include "util/stream.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 namespace AGS { namespace Common { class RoomStruct; } }
 using namespace AGS::Common;

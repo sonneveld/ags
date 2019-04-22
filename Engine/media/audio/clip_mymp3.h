@@ -15,6 +15,8 @@
 #ifndef __AC_MYMP3_H
 #define __AC_MYMP3_H
 
+#ifndef NO_MP3_PLAYER
+
 #include "almp3.h"
 #include "media/audio/soundclip.h"
 
@@ -46,5 +48,7 @@ protected:
 private:
     void adjust_stream();
 };
+
+#endif // NO_MP3_PLAYER
 
 #endif // __AC_MYMP3_H

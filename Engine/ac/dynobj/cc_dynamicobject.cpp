@@ -26,14 +26,14 @@
 
 //#define DEBUG_MANAGED_OBJECTS
 
+#include "ac/dynobj/cc_dynamicobject.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "ac/dynobj/cc_dynamicobject.h"
-#include "ac/dynobj/managedobjectpool.h"
-#include "debug/out.h"
-#include "script/cc_error.h"
-#include "script/script_common.h"
-#include "util/stream.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_script.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

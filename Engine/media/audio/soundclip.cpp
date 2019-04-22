@@ -12,11 +12,10 @@
 //
 //=============================================================================
 
-#include "util/wgt2allg.h"
-#include "media/audio/audio.h"
-#include "media/audio/audiodefines.h"
 #include "media/audio/soundclip.h"
-#include "media/audio/audiointernaldefs.h"
+
+#include "ee_util.h"
+#include "ee_media.h"
 
 int SOUNDCLIP::play_from(int position) 
 {

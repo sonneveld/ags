@@ -12,9 +12,10 @@
 //
 //=============================================================================
 
+#include "script/systemimports.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "script/systemimports.h"
 
 
 extern void quit(const char *);

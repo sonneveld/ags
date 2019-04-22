@@ -12,14 +12,14 @@
 //
 //=============================================================================
 
+#include "font/fonts.h"
+
 #include <vector>
 #include <alfont.h>
-#include "ac/common.h" // set_our_eip
-#include "ac/gamestructdefines.h"
-#include "font/fonts.h"
 #include "font/ttffontrenderer.h"
 #include "font/wfnfontrenderer.h"
-#include "gfx/bitmap.h"
+#include "cn_ac.h"
+#include "cn_gfx.h"
 
 using namespace AGS::Common;
 

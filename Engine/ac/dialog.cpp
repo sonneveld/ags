@@ -13,44 +13,17 @@
 //=============================================================================
 
 #include "ac/dialog.h"
-#include "ac/common.h"
-#include "ac/character.h"
-#include "ac/characterinfo.h"
-#include "ac/dialogtopic.h"
-#include "ac/display.h"
-#include "ac/draw.h"
-#include "ac/gamestate.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_character.h"
-#include "ac/global_dialog.h"
-#include "ac/global_display.h"
-#include "ac/global_game.h"
-#include "ac/global_gui.h"
-#include "ac/global_room.h"
-#include "ac/global_translation.h"
-#include "ac/keycode.h"
-#include "ac/overlay.h"
-#include "ac/mouse.h"
-#include "ac/parser.h"
-#include "ac/sys_events.h"
-#include "ac/string.h"
-#include "ac/dynobj/scriptdialogoptionsrendering.h"
-#include "ac/dynobj/scriptdrawingsurface.h"
-#include "ac/system.h"
-#include "debug/debug_log.h"
-#include "font/fonts.h"
-#include "script/cc_instance.h"
-#include "gui/guimain.h"
-#include "gui/guitextbox.h"
-#include "main/game_run.h"
-#include "platform/base/agsplatformdriver.h"
-#include "script/script.h"
-#include "ac/spritecache.h"
-#include "gfx/ddb.h"
-#include "gfx/gfx_util.h"
-#include "gfx/graphicsdriver.h"
-#include "ac/mouse.h"
-#include "media/audio/audio_system.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_font.h"
+#include "ee_script.h"
+#include "ee_gui.h"
+#include "ee_main.h"
+#include "ee_platform.h"
+#include "ee_gfx.h"
+#include "ee_media.h"
 
 using namespace AGS::Common;
 
@@ -1226,10 +1199,6 @@ void do_conversation(int dlgnum)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
 
 extern ScriptString myScriptStringImpl;
 

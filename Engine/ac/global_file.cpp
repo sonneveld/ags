@@ -12,14 +12,11 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/global_file.h"
-#include "ac/common.h"
-#include "ac/file.h"
-#include "ac/path_helper.h"
-#include "ac/runtime_defines.h"
-#include "ac/string.h"
-#include "util/stream.h"
+
+#include <string.h>
+#include "ee_ac.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

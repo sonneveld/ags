@@ -12,13 +12,13 @@
 //
 //=============================================================================
 
+#include "ac/roomstatus.h"
+
 #include <string.h> // memset
 #include <stdlib.h> // free
-#include "ac/common.h"
-#include "ac/game_version.h"
-#include "ac/roomstatus.h"
-#include "game/customproperties.h"
-#include "util/alignedstream.h"
+#include "cn_ac.h"
+#include "ee_game.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 

@@ -12,34 +12,27 @@
 //
 //=============================================================================
 
-#if !defined (WINDOWS_VERSION)
-#error This file should only be included on the Windows build
-#endif
+#ifdef WINDOWS_VERSION
 
 #include <windows.h>
 #include <commctrl.h>
 #include <crtdbg.h>
 #include <shlobj.h>
 #include <shlwapi.h>
-#include "util/stdtr1compat.h"
+#include "ee_util.h"
 #include TR1INCLUDE(memory)
 #include <algorithm>
 #include <set>
 #include <vector>
-#include "ac/gamestructdefines.h"
+#include "ee_ac.h"
 #undef RGB
 #undef PALETTE
 #define RGB void*
 #define PALETTE void*
-#include "gfx/gfxdriverfactory.h"
-#include "gfx/gfxfilter.h"
-#include "gfx/graphicsdriver.h"
-#include "main/config.h"
-#include "main/graphics_mode.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ee_gfx.h"
+#include "ee_main.h"
+#include "ee_platform.h"
 #include "resource/resource.h"
-#include "util/file.h"
-#include "util/string_utils.h"
 
 #define AL_ID(a,b,c,d)     (((a)<<24) | ((b)<<16) | ((c)<<8) | (d))
 
@@ -1275,3 +1268,5 @@ SetupReturnValue WinSetup(const ConfigTree &cfg_in, ConfigTree &cfg_out,
 
 } // namespace Engine
 } // namespace AGS
+
+#endif // WINDOWS_VERSION

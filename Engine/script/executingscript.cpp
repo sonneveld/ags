@@ -12,10 +12,10 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "executingscript.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
+
+#include <string.h>
+#include "ee_debug.h"
 
 QueuedScript::QueuedScript()
     : Instance(kScInstGame)

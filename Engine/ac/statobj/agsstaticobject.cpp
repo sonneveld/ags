@@ -1,8 +1,8 @@
 
-#include <string.h>
 #include "ac/statobj/agsstaticobject.h"
-#include "ac/game.h"
-#include "ac/gamestate.h"
+
+#include <string.h>
+#include "ee_ac.h"
 
 AGSStaticObject GlobalStaticManager;
 StaticGame      GameStaticManager;

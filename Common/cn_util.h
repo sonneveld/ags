@@ -1,0 +1,37 @@
+#ifndef __AGS_CN_UTIL_COLLATED_H
+#define __AGS_CN_UTIL_COLLATED_H
+
+#include "api/stream_api.h"
+
+#include "util/alignedstream.h"
+#include "util/bbop.h"
+#include "util/compress.h"
+#include "util/datastream.h"
+#include "util/directory.h"
+#include "util/error.h"
+#include "util/file.h"
+#include "util/filestream.h"
+#include "util/geometry.h"
+#include "util/ini_util.h"
+#include "util/inifile.h"
+#include "util/lzw.h"
+#include "util/math.h"
+#include "util/memory.h"
+#include "util/misc.h"
+#include "util/multifilelib.h"
+#include "util/path.h"
+#include "util/proxystream.h"
+#include "util/stdio_compat.h"
+#include "util/stdtr1compat.h"
+#include "util/stream.h"
+#include "util/string.h"
+#include "util/string_types.h"
+#include "util/string_utils.h"
+#include "util/textreader.h"
+#include "util/textstreamreader.h"
+#include "util/textstreamwriter.h"
+#include "util/textwriter.h"
+#include "util/version.h"
+#include "util/wgt2allg.h"
+
+#endif

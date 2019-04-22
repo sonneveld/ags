@@ -13,37 +13,16 @@
 //=============================================================================
 
 #include "ac/gui.h"
-#include "ac/common.h"
-#include "ac/draw.h"
-#include "ac/event.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_character.h"
-#include "ac/global_game.h"
-#include "ac/global_gui.h"
-#include "ac/global_inventoryitem.h"
-#include "ac/global_screen.h"
-#include "ac/guicontrol.h"
-#include "ac/interfacebutton.h"
-#include "ac/invwindow.h"
-#include "ac/mouse.h"
-#include "ac/runtime_defines.h"
-#include "ac/system.h"
-#include "ac/dynobj/cc_guiobject.h"
-#include "ac/dynobj/scriptgui.h"
-#include "script/cc_instance.h"
-#include "debug/debug_log.h"
-#include "device/mousew32.h"
-#include "gfx/gfxfilter.h"
-#include "gui/guibutton.h"
-#include "gui/guimain.h"
-#include "script/script.h"
-#include "script/script_runtime.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "ac/dynobj/cc_gui.h"
-#include "ac/dynobj/cc_guiobject.h"
-#include "script/runtimescriptvalue.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_script.h"
+#include "ee_debug.h"
+#include "ee_device.h"
+#include "ee_gfx.h"
+#include "ee_gui.h"
+#include "ee_util.h"
+
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -409,15 +388,15 @@ void replace_macro_tokens(const char *text, String &fixed_text) {
             }
             macroname[idd]=0; 
             tempo[0]=0;
-            if (stricmp(macroname,"score")==0)
+            if (ags_stricmp(macroname,"score")==0)
                 sprintf(tempo,"%d",play.score);
-            else if (stricmp(macroname,"totalscore")==0)
+            else if (ags_stricmp(macroname,"totalscore")==0)
                 sprintf(tempo,"%d",MAXSCORE);
-            else if (stricmp(macroname,"scoretext")==0)
+            else if (ags_stricmp(macroname,"scoretext")==0)
                 sprintf(tempo,"%d of %d",play.score,MAXSCORE);
-            else if (stricmp(macroname,"gamename")==0)
+            else if (ags_stricmp(macroname,"gamename")==0)
                 strcpy(tempo, play.game_name);
-            else if (stricmp(macroname,"overhotspot")==0) {
+            else if (ags_stricmp(macroname,"overhotspot")==0) {
                 // While game is in Wait mode, no overhotspot text
                 if (!IsInterfaceEnabled())
                     tempo[0] = 0;
@@ -702,9 +681,6 @@ void gui_on_mouse_down(const int guin, const int mbut)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
 
 // void GUI_Centre(ScriptGUI *sgui)
 RuntimeScriptValue Sc_GUI_Centre(void *self, const RuntimeScriptValue *params, int32_t param_count)

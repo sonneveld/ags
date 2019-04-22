@@ -17,9 +17,12 @@
 #pragma unmanaged
 #endif
 
+#include "util/compress.h"
+
 #include <stdlib.h>
-#include "ac/common.h"	// quit, update_polled_stuff
-#include "gfx/bitmap.h"
+#include <stdio.h>
+#include "cn_ac.h"	// quit, update_polled_stuff
+#include "cn_gfx.h"
 #include "util/compress.h"
 #include "util/lzw.h"
 #include "util/misc.h"
@@ -310,7 +313,7 @@ void save_lzw(Stream *out, const Bitmap *bmpp, const color *pall)
 
   // Delete temp file
   delete lz_temp_s;
-  unlink(lztempfnm);
+  ::remove(lztempfnm);
 
   // Seek back to the end of the output stream
   out->Seek(toret, kSeekBegin);

@@ -20,8 +20,8 @@
 
 #if defined (OBSOLETE)
 
-#include "ac/common.h"
-#include "util/stream.h"
+#include "cn_ac.h"
+#include "cn_util.h"
 
 using namespace AGS::Common;
 

@@ -13,26 +13,13 @@
 //=============================================================================
 
 #include "ac/mouse.h"
-#include "ac/common.h"
-#include "ac/characterinfo.h"
-#include "ac/draw.h"
-#include "ac/dynobj/scriptmouse.h"
-#include "ac/dynobj/scriptsystem.h"
-#include "ac/gamesetup.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/gamestate.h"
-#include "ac/global_mouse.h"
-#include "ac/global_plugin.h"
-#include "ac/global_screen.h"
-#include "ac/system.h"
-#include "ac/viewframe.h"
-#include "debug/debug_log.h"
-#include "gui/guibutton.h"
-#include "gui/guimain.h"
-#include "device/mousew32.h"
-#include "ac/spritecache.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/gfxfilter.h"
+
+#include "ee_ac.h"
+#include "ee_ac_dynobj.h"
+#include "ee_debug.h"
+#include "ee_gui.h"
+#include "ee_device.h"
+#include "ee_gfx.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -426,10 +413,7 @@ int find_previous_enabled_cursor(int startwith) {
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/global_game.h"
+#include "ee_script.h"
 
 // void  (int curs, int newslot)
 RuntimeScriptValue Sc_ChangeCursorGraphic(const RuntimeScriptValue *params, int32_t param_count)

@@ -16,11 +16,8 @@
 
 #include <string.h>
 #include <algorithm>
-#include "debug/assert.h"
-#include "util/file.h"
-#include "util/ini_util.h"
-#include "util/inifile.h"
-#include "util/stream.h"
+#include "ee_debug.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 
@@ -70,7 +67,7 @@ const char *IniFileText2 = ""
 
 void Test_IniFile()
 {
-    Stream *fs = File::CreateFile("test.ini");
+    Stream *fs = File::CreateNewFile("test.ini");
     fs->Write(IniFileText, strlen(IniFileText));
     delete fs;
 
@@ -178,7 +175,7 @@ void Test_IniFile()
         ini.InsertItem(sec, sec->End(), "item5_2","value5_2");
         ini.InsertItem(sec, sec->End(), "item5_3","value5_3");
 
-        fs = File::CreateFile("test.ini");
+        fs = File::CreateNewFile("test.ini");
         ini.Write(fs);
         delete fs;
 

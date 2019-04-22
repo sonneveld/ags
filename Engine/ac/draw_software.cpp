@@ -33,11 +33,12 @@
 //
 //=============================================================================
 
+#include "ac/draw_software.h"
+
 #include <string.h>
 #include <vector>
-#include "ac/draw_software.h"
-#include "gfx/bitmap.h"
-#include "util/scaling.h"
+#include "ee_gfx.h"
+#include "ee_util.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;

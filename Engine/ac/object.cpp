@@ -13,28 +13,13 @@
 //=============================================================================
 
 #include "ac/object.h"
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/draw.h"
-#include "ac/character.h"
-#include "ac/global_object.h"
-#include "ac/global_translation.h"
-#include "ac/objectcache.h"
-#include "ac/properties.h"
-#include "ac/room.h"
-#include "ac/roomstatus.h"
-#include "ac/runtime_defines.h"
-#include "ac/string.h"
-#include "ac/system.h"
-#include "ac/walkablearea.h"
-#include "debug/debug_log.h"
-#include "main/game_run.h"
-#include "ac/route_finder.h"
-#include "gfx/graphicsdriver.h"
-#include "gfx/bitmap.h"
-#include "gfx/gfx_def.h"
-#include "script/runtimescriptvalue.h"
-#include "ac/dynobj/cc_object.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_main.h"
+#include "ee_gfx.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 using namespace AGS::Common;
 
@@ -530,10 +515,6 @@ int check_click_on_object(int roomx, int roomy, int mood)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
 
 extern ScriptString myScriptStringImpl;
 

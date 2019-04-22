@@ -12,26 +12,19 @@
 //
 //=============================================================================
 
+// implements from debug_log.h and debugger.h
+#include "debug/debug_log.h"
+#include "ee_debug.h"
+
 #include <memory>
 #include <limits>
-#include "ac/common.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/runtime_defines.h"
-#include "debug/debug_log.h"
-#include "debug/debugger.h"
-#include "debug/debugmanager.h"
-#include "debug/out.h"
-#include "debug/consoleoutputtarget.h"
-#include "debug/logfile.h"
-#include "debug/messagebuffer.h"
-#include "main/config.h"
-#include "media/audio/audio_system.h"
-#include "plugin/plugin_engine.h"
-#include "script/script.h"
-#include "script/script_common.h"
-#include "script/cc_error.h"
-#include "util/textstreamwriter.h"
-#include "platform/base/agsplatformdriver.h"
+#include "ee_ac.h"
+#include "ee_main.h"
+#include "ee_media.h"
+#include "ee_plugin.h"
+#include "ee_script.h"
+#include "ee_util.h"
+#include "ee_platform.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -50,11 +43,11 @@ char editor_debugger_instance_token[100];
 IAGSEditorDebugger *editor_debugger = nullptr;
 int break_on_next_script_step = 0;
 volatile int game_paused_in_debugger = 0;
-HWND editor_window_handle = 0;
 
 #ifdef WINDOWS_VERSION
 
-#include "platform/windows/debug/namedpipesagsdebugger.h"
+
+HWND editor_window_handle = 0;
 
 IAGSEditorDebugger *GetEditorDebugger(const char *instanceToken)
 {
@@ -332,8 +325,10 @@ int check_for_messages_from_editor()
 
         if (strncmp(msgPtr, "START", 5) == 0)
         {
+#ifdef WINDOWS_VERSION
             const char *windowHandle = strstr(msgPtr, "EditorWindow") + 14;
             editor_window_handle = (HWND)atoi(windowHandle);
+#endif
         }
         else if (strncmp(msgPtr, "READY", 5) == 0)
         {

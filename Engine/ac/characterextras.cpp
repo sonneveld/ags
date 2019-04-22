@@ -13,7 +13,7 @@
 //=============================================================================
 
 #include "ac/characterextras.h"
-#include "util/stream.h"
+#include "ee_util.h"
 
 using AGS::Common::Stream;
 

@@ -13,16 +13,10 @@
 //=============================================================================
 
 #include "ac/button.h"
-#include "ac/common.h"
-#include "ac/gui.h"
-#include "ac/view.h"
-#include "ac/gamesetupstruct.h"
-#include "ac/global_translation.h"
-#include "ac/string.h"
-#include "ac/viewframe.h"
-#include "debug/debug_log.h"
-#include "gui/animatingguibutton.h"
-#include "gui/guimain.h"
+
+#include "ee_ac.h"
+#include "ee_debug.h"
+#include "ee_gui.h"
 
 using namespace AGS::Common;
 
@@ -306,10 +300,8 @@ void Button_SetTextAlignment(GUIButton *butt, int align)
 //
 //=============================================================================
 
-#include "debug/out.h"
-#include "script/script_api.h"
-#include "script/script_runtime.h"
-#include "ac/dynobj/scriptstring.h"
+#include "ee_script.h"
+#include "ee_ac_dynobj.h"
 
 extern ScriptString myScriptStringImpl;
 

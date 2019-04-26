@@ -2189,6 +2189,7 @@ CharacterInfo *GetCharacterAtScreen(int xx, int yy) {
     return &game.chars[hsnum];
 }
 
+__attribute__((annotate("static Character::GetAtRoomXY^2")))
 CharacterInfo *GetCharacterAtRoom(int x, int y)
 {
     int hsnum = is_pos_on_character(x, y);

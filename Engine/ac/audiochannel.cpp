@@ -135,6 +135,7 @@ int AudioChannel_GetVolume(ScriptAudioChannel *channel)
     return 0;
 }
 
+ __attribute__((annotate("AudioChannel::set_Volume")))
 int AudioChannel_SetVolume(ScriptAudioChannel *channel, int newVolume)
 {
     if ((newVolume < 0) || (newVolume > 100))
@@ -162,6 +163,10 @@ int AudioChannel_GetSpeed(ScriptAudioChannel *channel)
     return 0;
 }
 
+
+ __attribute__((annotate("AudioChannel::set_Speed")))
+// For compatibility with  Ahmet Kamil's (aka Gord10) custom engine
+ __attribute__((annotate("AudioChannel::SetSpeed^1")))
 void AudioChannel_SetSpeed(ScriptAudioChannel *channel, int new_speed)
 {
     AudioChannelsLock lock;

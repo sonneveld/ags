@@ -48,16 +48,31 @@ void get_new_size_for_sprite (int ee, int ww, int hh, int &newwid, int &newhit)
 // RGB mask value so that the blit calls work correctly
 void set_rgb_mask_using_alpha_channel(Bitmap *image)
 {
-    int x, y;
+    auto h = image->GetHeight();
+    auto w = image->GetWidth();
 
-    for (y=0; y < image->GetHeight(); y++) 
-    {
-        unsigned int*psrc = (unsigned int *)image->GetScanLine(y);
+    for (int y=0; y < h; y++) {
+        auto psrc = reinterpret_cast<unsigned int *>(image->GetScanLine(y));
 
-        for (x=0; x < image->GetWidth(); x++) 
-        {
+        for (int x=0; x < w; x++) {
             if ((psrc[x] & 0xff000000) == 0x00000000)
                 psrc[x] = MASK_COLOR_32;
+        }
+    }
+}
+
+void force_opaque_alpha_channel(Bitmap *image)
+{
+    auto h = image->GetHeight();
+    auto w = image->GetWidth();
+
+    for (int y = 0; y < h; y++) {
+        auto psrc = reinterpret_cast<unsigned int *>(image->GetScanLine(y));
+
+        for (int x = 0; x < w; x++) {
+            if (psrc[x] != MASK_COLOR_32) {
+                psrc[x] |= 0xff000000;
+            }
         }
     }
 }

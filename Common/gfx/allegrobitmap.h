@@ -132,7 +132,7 @@ public:
     }
 
     // Get scanline for direct reading
-	inline const unsigned char *GetScanLine(int index) const
+	inline unsigned char *GetScanLine(int index) const
     {
         return (index >= 0 && index < GetHeight()) ? _alBitmap->line[index] : nullptr;
     }

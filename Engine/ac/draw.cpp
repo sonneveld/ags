@@ -342,6 +342,8 @@ Bitmap *AdjustBitmapForUseWithDisplayMode(Bitmap* bitmap, bool has_alpha)
                 // (this adjustment is probably needed for DrawingSurface ops)
                 if (has_alpha)
                     set_rgb_mask_using_alpha_channel(new_bitmap);
+                else
+                    force_opaque_alpha_channel(new_bitmap);
                 break;
         }
     } else if (game_col_depth == 8 || game_col_depth == 16) {

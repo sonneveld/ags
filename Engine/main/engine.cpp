@@ -447,7 +447,6 @@ void engine_init_keyboard()
 #endif
 }
 
-#endif
 
 bool try_install_sound(int digi_id, int midi_id, String *p_err_msg = nullptr)
 {
@@ -590,7 +589,6 @@ void engine_init_audio()
         usetup.mod_player = 0;
     }
 
-#ifdef AGS_DELETE_FOR_3_6
 
 #if AGS_PLATFORM_OS_WINDOWS
     if (digi_card == DIGI_DIRECTX(0))
@@ -600,12 +598,31 @@ void engine_init_audio()
     }
 #endif
 
-#endif
 }
+
+#endif
+
+
+void engine_init_audio()
+{
+    Debug::Printf("Initialise sound drivers");
+    audio_core_init();
+    usetup.mod_player = 1;
+    our_eip = -181;
+
+    if (usetup.digicard == DIGI_NONE)
+    {
+        // disable speech and music if no digital sound
+        // therefore the MIDI soundtrack will be used if present,
+        // and the voice mode should not go to Voice Only
+        play.want_speech = -2;
+        play.separate_music_lib = 0;
+    }
+}
+
 
 void engine_init_debug()
 {
-    //set_volume(255,-1);
     if ((debug_flags & (~DBG_DEBUGMODE)) >0) {
         platform->DisplayAlert("Engine debugging enabled.\n"
             "\nNOTE: You have selected to enable one or more engine debugging options.\n"
@@ -809,6 +826,8 @@ int engine_check_font_was_loaded()
     return RETURN_CONTINUE;
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void engine_init_modxm_player()
 {
 #ifndef PSP_NO_MOD_PLAYBACK
@@ -828,6 +847,8 @@ void engine_init_modxm_player()
     Debug::Printf(kDbgMsg_Init, "Compiled without MOD/XM player");
 #endif
 }
+
+#endif
 
 // Do the preload graphic if available
 void show_preload()
@@ -1155,6 +1176,8 @@ void engine_setup_scsystem_auxiliary()
     }
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void engine_update_mp3_thread()
 {
     update_mp3_thread();
@@ -1188,12 +1211,16 @@ void engine_start_multithreaded_audio()
   }
 }
 
+#endif
+
 void engine_prepare_to_start_game()
 {
     Debug::Printf("Prepare to start game");
 
     engine_setup_scsystem_auxiliary();
+#ifdef AGS_DELETE_FOR_3_6
     engine_start_multithreaded_audio();
+#endif
 
 #if AGS_PLATFORM_OS_ANDROID
     if (psp_load_latest_savegame)
@@ -1475,7 +1502,9 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     our_eip = -179;
 
+#ifdef AGS_DELETE_FOR_3_6
     engine_init_modxm_player();
+#endif
 
     engine_init_resolution_settings(game.GetGameRes());
 

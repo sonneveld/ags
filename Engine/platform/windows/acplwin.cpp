@@ -845,7 +845,6 @@ int AGSWin32::InitializeCDPlayer() {
 #ifndef AGS_NO_VIDEO_PLAYER
 
 void AGSWin32::PlayVideo(const char *name, int skip, int flags) {
-
 }
 
 #endif

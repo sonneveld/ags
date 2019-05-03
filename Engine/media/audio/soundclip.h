@@ -50,6 +50,7 @@ struct SOUNDCLIP
     int directionalVolModifier;
     bool repeat;
     void *sourceClip;
+    int legacy_music_type;
 
     virtual void poll() = 0;
     virtual void destroy() = 0;
@@ -60,18 +61,18 @@ struct SOUNDCLIP
     virtual int get_pos() = 0;    // return 0 to indicate seek not supported
     virtual int get_pos_ms() = 0; // this must always return valid value if poss
     virtual int get_length_ms() = 0; // return total track length in ms (or 0)
-    virtual int get_sound_type() = 0;
+    virtual int get_sound_type() { return legacy_music_type; }
     virtual int play() = 0;
 
-    virtual int play_from(int position);
+    virtual int play_from(int position) = 0;
 
-    virtual void set_panning(int newPanning);
-    virtual void set_speed(int new_speed) { speed = new_speed; }
+    virtual void set_panning(int newPanning) = 0;
+    virtual void set_speed(int new_speed) = 0;
 
-    virtual void pause();
-    virtual void resume();
-
-    inline bool is_playing() const { return state_ == SoundClipPlaying || state_ == SoundClipPaused; }
+    virtual void pause() = 0;
+    virtual void resume() = 0;
+    
+    virtual bool is_active() = 0;  // true if playing or paused. false if never played or stopped.
 
     inline int get_speed() const
     {
@@ -146,8 +147,6 @@ struct SOUNDCLIP
 
 protected:
 
-    SoundClipState state_;
-
     // mute mode overrides the volume; if set, any volume assigned is stored
     // in properties, but not applied to playback itself
     bool muted;
@@ -155,16 +154,13 @@ protected:
     // speed of playback, in clip ms per real second
     int speed; 
 
-    // Return the allegro voice number (or -1 if none)
-    // Used by generic pause/resume functions.
-    virtual int get_voice() = 0;
-
     // helper function for calculating volume with applied modifiers
     inline int get_final_volume() const
     {
         int final_vol = vol + volModifier + directionalVolModifier;
         return final_vol >= 0 ? final_vol : 0;
     }
+
 };
 
 #endif // __AC_SOUNDCLIP_H

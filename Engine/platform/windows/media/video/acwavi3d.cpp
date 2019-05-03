@@ -66,7 +66,6 @@ inline LPWSTR WINAPI AtlA2WHelper(LPWSTR lpw, LPCSTR lpa, int nChars)
 // Interface from main game
 
 extern int ags_mgetbutton();
-extern void update_audio_system_on_game_loop();
 extern volatile char want_exit;
 extern char lastError[300];
 CVMR9Graph *graph = NULL;
@@ -89,8 +88,6 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
     graph = new CVMR9Graph(gameWindow, device);
   }
 
-  if (!useAVISound)
-    update_audio_system_on_game_loop();
 
   if (!graph->SetMediaFile(filename, useAVISound))
   {
@@ -99,8 +96,6 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
   }
   graph->SetLayerZOrder(0, 0);
 
-  if (!useAVISound)
-    update_audio_system_on_game_loop();
 
   if (!graph->PlayGraph())
   {
@@ -112,8 +107,6 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
   OAFilterState filterState = State_Running;
   while ((filterState != State_Stopped) && (!want_exit))
   {
-    if (!useAVISound)
-      update_audio_system_on_game_loop();
 
     filterState = graph->GetState();
 
@@ -132,7 +125,7 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
     //device->Present(NULL, NULL, 0, NULL);
 
 		while (waitingForNextTick()) {
-      update_polled_stuff_if_runtime();
+
 		}
 	}
 

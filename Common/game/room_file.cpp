@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "ac/common.h" // update_polled_stuff
+#include "ac/common.h"
 #include "ac/common_defines.h"
 #include "ac/gamestructdefines.h"
 #include "ac/wordsdictionary.h" // TODO: extract string decryption
@@ -207,7 +207,7 @@ HRoomFileError ReadMainBlock(RoomStruct *room, Stream *in, RoomFileVersion data_
             wallpoints[i].Read(in);
     */
 
-    update_polled_stuff_if_runtime();
+
 
     room->Edges.Top = in->ReadInt16();
     room->Edges.Bottom = in->ReadInt16();
@@ -374,7 +374,7 @@ HRoomFileError ReadMainBlock(RoomStruct *room, Stream *in, RoomFileVersion data_
             room->Regions[i].Tint = in->ReadInt32();
     }
 
-    update_polled_stuff_if_runtime();
+
     // Primary background
     Bitmap *mask = nullptr;
     if (data_ver >= kRoomVersion_pre114_5)
@@ -383,7 +383,7 @@ HRoomFileError ReadMainBlock(RoomStruct *room, Stream *in, RoomFileVersion data_
         loadcompressed_allegro(in, &mask, room->Palette);
     room->BgFrames[0].Graphic.reset(mask);
 
-    update_polled_stuff_if_runtime();
+
     // Mask bitmaps
     if (data_ver >= kRoomVersion_255b)
     {
@@ -397,13 +397,13 @@ HRoomFileError ReadMainBlock(RoomStruct *room, Stream *in, RoomFileVersion data_
         mask = nullptr;
     }
     room->RegionMask.reset(mask);
-    update_polled_stuff_if_runtime();
+
     loadcompressed_allegro(in, &mask, room->Palette);
     room->WalkAreaMask.reset(mask);
-    update_polled_stuff_if_runtime();
+
     loadcompressed_allegro(in, &mask, room->Palette);
     room->WalkBehindMask.reset(mask);
-    update_polled_stuff_if_runtime();
+
     loadcompressed_allegro(in, &mask, room->Palette);
     room->HotspotMask.reset(mask);
     return HRoomFileError::None();
@@ -482,7 +482,7 @@ HRoomFileError ReadAnimBgBlock(RoomStruct *room, Stream *in, RoomFileVersion dat
 
     for (size_t i = 1; i < room->BgFrameCount; ++i)
     {
-        update_polled_stuff_if_runtime();
+
         Bitmap *frame = nullptr;
         load_lzw(in, &frame, room->BackgroundBPP, room->BgFrames[i].Palette);
         room->BgFrames[i].Graphic.reset(frame);
@@ -579,7 +579,7 @@ HRoomFileError ReadRoomData(RoomStruct *room, Stream *in, RoomFileVersion data_v
     RoomFileBlock block;
     do
     {
-        update_polled_stuff_if_runtime();
+
         int b = in->ReadByte();
         if (b < 0)
             return new RoomFileError(kRoomFileErr_UnexpectedEOF);

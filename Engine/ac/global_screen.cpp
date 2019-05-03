@@ -69,7 +69,7 @@ void ShakeScreen(int severe) {
 
             render_graphics();
 
-            update_polled_stuff_if_runtime();
+
         }
 
         play.mouse_cursor_hidden--;
@@ -87,7 +87,7 @@ void ShakeScreen(int severe) {
             else
                 render_to_screen(0, severe);
 
-            update_polled_stuff_if_runtime();
+
         }
         render_to_screen();
         delete tty;

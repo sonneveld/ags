@@ -32,8 +32,6 @@
 #undef min
 #undef max
 
-extern void process_pending_events();
-
 namespace AGS
 {
 namespace Engine
@@ -773,9 +771,6 @@ void SDLRendererGraphicsDriver::FadeOut(int speed, int targetColourRed, int targ
       SDL_RenderPresent(renderer);
 
         do {
-            process_pending_events();
-            if (_pollingCallback)
-                _pollingCallback();
         } while (waitingForNextTick());
     }
 
@@ -835,9 +830,6 @@ void SDLRendererGraphicsDriver::FadeIn(int speed, PALETTE p, int targetColourRed
     SDL_RenderPresent(renderer);
 
     do {
-      process_pending_events();
-      if (_pollingCallback)
-        _pollingCallback();
     } while (waitingForNextTick());
   }
 
@@ -894,9 +886,6 @@ void SDLRendererGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int de
     SDL_RenderPresent(renderer);
 
     do {
-      process_pending_events();
-      if (_pollingCallback)
-        _pollingCallback();
     } while (waitingForNextTick());
   }
 

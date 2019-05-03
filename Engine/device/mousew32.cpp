@@ -53,8 +53,6 @@
 using namespace AGS::Common;
 using namespace AGS::Engine;
 
-extern void process_pending_events();
-
 extern volatile unsigned long globalTimerCounter;
 extern char lib_file_name[13];
 
@@ -171,8 +169,6 @@ void mgetgraphpos()
 #endif
 
 #pragma message ("SDL-TODO: find out where mgetgraphpos is needed, are events polled before that?")
-    process_pending_events();
-
     {
         // Save real cursor coordinates provided by system
         real_mouse_x = mouse_x;

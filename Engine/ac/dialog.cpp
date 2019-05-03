@@ -65,6 +65,7 @@ extern AGSPlatformDriver *platform;
 extern int cur_mode,cur_cursor;
 extern IGraphicsDriver *gfxDriver;
 
+
 DialogTopic *dialog;
 ScriptDialogOptionsRendering ccDialogOptionsRendering;
 ScriptDrawingSurface* dialogOptionsRenderingSurface;
@@ -499,7 +500,7 @@ void DialogOptions::Prepare(int _dlgnum, bool _runGameLoopsInBackground)
 
   play.in_conversation ++;
 
-  update_polled_stuff_if_runtime();
+
 
   if (game.dialog_bullet > 0)
     bullet_wid = game.SpriteInfos[game.dialog_bullet].Width+3;
@@ -510,7 +511,7 @@ void DialogOptions::Prepare(int _dlgnum, bool _runGameLoopsInBackground)
 
   said_text = 0;
 
-  update_polled_stuff_if_runtime();
+
 
   const Rect &ui_view = play.GetUIViewport();
   tempScrn = BitmapHelper::CreateBitmap(ui_view.GetWidth(), ui_view.GetHeight(), game.GetColorDepth());
@@ -625,10 +626,10 @@ void DialogOptions::Show()
     wantRefresh = false;
     mouseison=-10;
     
-    update_polled_stuff_if_runtime();
+
     if (!play.mouse_cursor_hidden)
       ags_domouse(DOMOUSE_ENABLE);
-    update_polled_stuff_if_runtime();
+
 
     Redraw();
     while(Run());
@@ -813,12 +814,12 @@ void DialogOptions::Redraw()
 
     wantRefresh = false;
 
-    update_polled_stuff_if_runtime();
+
 
     subBitmap = recycle_bitmap(subBitmap, tempScrn->GetColorDepth(), dirtywidth, dirtyheight);
     subBitmap = ReplaceBitmapWithSupportedFormat(subBitmap);
 
-    update_polled_stuff_if_runtime();
+
 
     if (usingCustomRendering)
     {
@@ -872,7 +873,6 @@ static int dialogOptionFromKey(SDL_Event event) {
 bool DialogOptions::Run()
 {
     // Run() can be called in a loop, so keep events going.
-    process_pending_events();
 
     const bool new_custom_render = usingCustomRendering && game.options[OPT_DIALOGOPTIONSAPI] >= 0;
 
@@ -884,7 +884,6 @@ bool DialogOptions::Run()
       }
       else
       {
-        update_audio_system_on_game_loop();
         render_graphics(ddb, dirtyx, dirtyy);
       }
 
@@ -1083,7 +1082,6 @@ bool DialogOptions::Run()
             return true; // continue running loop
         }
       }
-      PollUntilNextFrame();
       return true; // continue running loop
 }
 

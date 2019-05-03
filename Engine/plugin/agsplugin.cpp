@@ -396,9 +396,8 @@ extern int  mgetbutton();
 
 void IAGSEngine::PollSystem () {
 
-    process_pending_events();
     domouse(DOMOUSE_NOCURSOR);
-    update_polled_stuff_if_runtime();
+
     int mbut = mgetbutton();
     if (mbut > NONE)
         pl_run_plugin_hooks (AGSE_MOUSECLICK, mbut);

@@ -149,7 +149,7 @@ void engine_init_resolution_settings(const Size game_size)
 // Setup gfx driver callbacks and options
 static void engine_post_gfxmode_driver_setup()
 {
-    gfxDriver->SetCallbackForPolling(update_polled_stuff_if_runtime);
+    gfxDriver->SetCallbackForPolling(nullptr);
     gfxDriver->SetCallbackToDrawScreen(draw_screen_callback);
     gfxDriver->SetCallbackForNullSprite(GfxDriverNullSpriteCallback);
 }

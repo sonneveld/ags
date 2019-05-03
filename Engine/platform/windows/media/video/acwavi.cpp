@@ -43,8 +43,6 @@ using namespace AGS::Engine;
 //link with the following libraries under project/settings/link...
 //amstrmid.lib quartz.lib strmbase.lib ddraw.lib 
 
-extern void update_audio_system_on_game_loop();
-extern void update_polled_stuff_if_runtime();
 extern int ags_mgetbutton();
 extern volatile char want_exit;
 extern IGraphicsDriver *gfxDriver;
@@ -268,10 +266,6 @@ void RenderToSurface(Bitmap *vscreen) {
     }
     screen_bmp->Release();
 
-    // if we're not playing AVI sound, poll the audio system
-    if (!useSound)
-      update_audio_system_on_game_loop();
-
     render_to_screen();
   }	
 }
@@ -324,7 +318,7 @@ int dxmedia_play_video(const char* filename, bool pUseSound, int canskip, int st
   CoInitialize(NULL);
    
   if (!useSound)
-    update_polled_stuff_if_runtime();
+
 
   hr = RenderFileToMMStream(filename);
   if (FAILED(hr)) {
@@ -334,7 +328,7 @@ int dxmedia_play_video(const char* filename, bool pUseSound, int canskip, int st
   }
 
   if (!useSound)
-    update_polled_stuff_if_runtime();
+
   
   hr = InitRenderToSurface();
   if (FAILED(hr)) {

@@ -287,7 +287,6 @@ void process_event(EventHappened*evp) {
                 }
                 render_to_screen();
                 do {
-                    update_polled_stuff_if_runtime();
                 } while (waitingForNextTick());
                 transparency -= 16;
             }
@@ -324,7 +323,6 @@ void process_event(EventHappened*evp) {
                 gfxDriver->DrawSprite(0, 0, ddb);
                 render_to_screen();
                 do {
-                    update_polled_stuff_if_runtime();
                 } while (waitingForNextTick());
             }
             saved_viewport_bitmap->Release();

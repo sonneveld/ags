@@ -201,9 +201,10 @@ void position_mouse(int x, int y) {
 
 
 
+
+
 // this is eKeyCode defined in agsdefns.sh
 int ags_iskeypressed (int keycode) {
-    SDL_PumpEvents();
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
     // ascii lookup
@@ -566,7 +567,6 @@ int ags_check_mouse_wheel () {
 
 void ags_clear_input_buffer()
 {
-    process_pending_events();
     while(!textEventQueue.empty()) { textEventQueue.pop(); }
     for(;;) {
         if (mgetbutton() == NONE) { break; }

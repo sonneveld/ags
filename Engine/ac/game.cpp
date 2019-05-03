@@ -1020,7 +1020,7 @@ long write_screen_shot_for_vista(Stream *out, Bitmap *screenshot)
 
 	screenshot->SaveToFile(tempFileName, palette);
 
-    update_polled_stuff_if_runtime();
+
 
     if (exists(tempFileName))
     {
@@ -1093,7 +1093,7 @@ void save_game(int slotn, const char*descript) {
     if (out == nullptr)
         quit("save_game: unable to open savegame file for writing");
 
-    update_polled_stuff_if_runtime();
+
 
     // Actual dynamic game data is saved here
     SaveGameState(out);
@@ -1103,7 +1103,7 @@ void save_game(int slotn, const char*descript) {
         int screenShotOffset = out->GetPosition() - sizeof(RICH_GAME_MEDIA_HEADER);
         int screenShotSize = write_screen_shot_for_vista(out.get(), screenShot);
 
-        update_polled_stuff_if_runtime();
+
 
         out.reset(Common::File::OpenFile(nametouse, Common::kFile_Open, Common::kFile_ReadWrite));
         out->Seek(12, kSeekBegin);
@@ -1512,7 +1512,7 @@ HSaveError restore_game_data(Stream *in, SavegameVersion svg_version, const Pres
         return err;
     restore_game_spriteset(in);
 
-    update_polled_stuff_if_runtime();
+
 
     err = restore_game_scripts(in, pp, r_data);
     if (!err)
@@ -1577,11 +1577,11 @@ HSaveError restore_game_data(Stream *in, SavegameVersion svg_version, const Pres
     restore_game_ambientsounds(in, r_data);
     restore_game_overlays(in);
 
-    update_polled_stuff_if_runtime();
+
 
     restore_game_dynamic_surfaces(in, r_data);
 
-    update_polled_stuff_if_runtime();
+
 
     restore_game_displayed_room_status(in, r_data);
     err = restore_game_globalvars(in);

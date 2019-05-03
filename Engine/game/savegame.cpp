@@ -517,13 +517,13 @@ HSaveError DoAfterRestore(const PreservedParams &pp, const RestoredData &r_data)
     int queuedMusicSize = play.music_queue_size;
     play.music_queue_size = 0;
 
-    update_polled_stuff_if_runtime();
+
 
     // load the room the game was saved in
     if (displayed_room >= 0)
         load_new_room(displayed_room, nullptr);
 
-    update_polled_stuff_if_runtime();
+
 
     play.gscript_timer=gstimer;
     // restore the correct room volume (they might have modified
@@ -541,7 +541,7 @@ HSaveError DoAfterRestore(const PreservedParams &pp, const RestoredData &r_data)
 
     set_window_title(play.game_name);
 
-    update_polled_stuff_if_runtime();
+
 
     if (displayed_room >= 0)
     {
@@ -653,7 +653,7 @@ HSaveError DoAfterRestore(const PreservedParams &pp, const RestoredData &r_data)
     if ((play.ignore_user_input_until_time - AGS_Clock::now()) > std::chrono::milliseconds(play.ignore_user_input_after_text_timeout_ms)) {
         play.ignore_user_input_until_time = AGS_Clock::now() + std::chrono::milliseconds(play.ignore_user_input_after_text_timeout_ms);
     }
-    update_polled_stuff_if_runtime();
+
 
     pl_run_plugin_hooks(AGSE_POSTRESTOREGAME, 0);
 

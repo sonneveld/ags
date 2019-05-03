@@ -70,20 +70,18 @@ void MyPushButton::draw(Bitmap *ds)
 }
 
 //extern const int LEFT;  // in mousew32
-extern void process_pending_events();
 extern int misbuttondown (int but);
 
 int MyPushButton::pressedon(int mousex, int mousey)
 {
     int wasstat;
     for (;;) {
-        process_pending_events();
         if (!misbuttondown(LEFT)) { break; }
         
         wasstat = state;
         state = mouseisinarea(mousex, mousey);
         // stop mp3 skipping if button held down
-        update_polled_stuff_if_runtime();
+
         if (wasstat != state) {
             //        ags_domouse(DOMOUSE_DISABLE);
             draw(get_gui_screen());
@@ -95,7 +93,6 @@ int MyPushButton::pressedon(int mousex, int mousey)
         refresh_gui_screen();
 
         while (waitingForNextTick()) {
-            update_polled_stuff_if_runtime();
         }
     }
     wasstat = state;

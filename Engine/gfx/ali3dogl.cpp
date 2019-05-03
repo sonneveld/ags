@@ -26,8 +26,6 @@
 #include "util/math.h"
 #include "ac/timer.h"
 
-extern void process_pending_events();
-
 #if AGS_PLATFORM_OS_ANDROID
 
 #define glOrtho glOrthof
@@ -1002,9 +1000,6 @@ bool OGLGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
   blit(bufferBmp, destination->GetAllegroBitmap(), 0, 0, 0, 0, retr_rect.GetWidth(), retr_rect.GetHeight());
   free(bufferBmp);
 
-  if (_pollingCallback)
-      _pollingCallback();
-
   delete [] buffer;
 
   return true;
@@ -1737,9 +1732,6 @@ void OGLGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
     this->_render(flipTypeLastTime, false);
 
     do {
-      process_pending_events();
-      if (_pollingCallback)
-        _pollingCallback();
     } while (waitingForNextTick());
 
   }
@@ -1818,9 +1810,6 @@ void OGLGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
     
     this->_render(flipTypeLastTime, false);
 
-    process_pending_events();
-    if (_pollingCallback)
-      _pollingCallback();
     platform->Delay(delay);
   }
 

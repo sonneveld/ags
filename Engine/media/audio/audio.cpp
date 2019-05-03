@@ -391,8 +391,6 @@ static void queue_audio_clip_to_play(ScriptAudioClip *clip, int priority, int re
         play.new_music_queue[play.new_music_queue_size].cachedClip = cachedClip;
         play.new_music_queue_size++;
     }
-    
-    update_polled_mp3();
 }
 
 ScriptAudioChannel* play_audio_clip_on_channel(int channel, ScriptAudioClip *clip, int priority, int repeat, int fromOffset, SOUNDCLIP *soundfx)
@@ -907,7 +905,7 @@ extern volatile char want_exit;
 
 void update_mp3_thread()
 {
-	if (switching_away_from_game) { return; }
+	//if (switching_away_from_game) { return; }
 
     AudioChannelsLock lock;
 
@@ -919,20 +917,12 @@ void update_mp3_thread()
     }
 }
 
-//this is called at various points to give streaming logic a chance to update
-//it seems those calls have been littered around and points where it ameliorated skipping
-//a better solution would be to forcibly thread the streaming logic
-void update_polled_mp3()
-{
-	if (psp_audio_multithreaded) { return; }
-    update_mp3_thread();
-}
 
 // Update the music, and advance the crossfade on a step
 // (this should only be called once per game loop)
 void update_audio_system_on_game_loop ()
 {
-	update_polled_stuff_if_runtime ();
+
 
     AudioChannelsLock lock;
 

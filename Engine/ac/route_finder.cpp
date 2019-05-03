@@ -38,7 +38,7 @@ int num_navpoints;
 fixed move_speed_x, move_speed_y;
 
 extern void Display(const char *, ...);
-extern void update_polled_stuff_if_runtime();
+
 
 extern MoveList *mls;
 

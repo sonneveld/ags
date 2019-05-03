@@ -86,6 +86,8 @@ extern CharacterExtras *charextra;
 extern SpriteCache spriteset;
 extern int cur_mode,cur_cursor;
 
+
+
 // Checks if user interface should remain disabled for now
 static int ShouldStayInWaitMode();
 
@@ -497,8 +499,6 @@ static void check_keyboard_controls()
 static void check_controls() {
     our_eip = 1007;
 
-    process_pending_events();
-
     check_mouse_controls();
     check_keyboard_controls();
 }
@@ -701,17 +701,12 @@ void PollUntilNextFrame()
 {
     if (play.fast_forward) { return; }
     while (waitingForNextTick()) {
-        // make sure we poll, cos a low framerate (eg 5 fps) could stutter mp3 music
-        update_polled_stuff_if_runtime();
     }
 }
 
 void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int extraX, int extraY) {
 
     int res;
-
-    process_pending_events();
-    update_polled_mp3();
 
     numEventsAtStartOfFunction = numevents;
 
@@ -757,8 +752,6 @@ void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int
 
     game_loop_do_late_update();
 
-    update_audio_system_on_game_loop();
-
     game_loop_do_render_and_check_mouse(extraBitmap, extraX, extraY);
 
     our_eip=6;
@@ -768,7 +761,7 @@ void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int
     our_eip=7;
 
     //    if (ags_mgetbutton()>NONE) break;
-    update_polled_stuff_if_runtime();
+
 
     game_loop_update_background_animation();
 
@@ -781,8 +774,6 @@ void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int
     our_eip=72;
 
     game_loop_update_fps();
-
-    PollUntilNextFrame();
 }
 
 static void UpdateMouseOverLocation()

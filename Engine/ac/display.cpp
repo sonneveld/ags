@@ -272,7 +272,6 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             /*      if (!play.mouse_cursor_hidden)
             ags_domouse(DOMOUSE_UPDATE);
             write_screen();*/
-            process_pending_events();
 
             update_audio_system_on_game_loop();
             render_graphics();

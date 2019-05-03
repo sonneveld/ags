@@ -47,7 +47,6 @@ extern IGraphicsDriver *gfxDriver;
 
 extern void ags_domouse(int str);
 extern int misbuttondown(int buno);
-extern void process_pending_events();
 
 ScriptMouse scmouse;
 int cur_mode,cur_cursor;
@@ -298,7 +297,6 @@ int IsButtonDown(int which) {
     if ((which < 1) || (which > 3)) {
         quit("!IsButtonDown: only works with eMouseLeft, eMouseRight, eMouseMiddle");
     }
-    process_pending_events();
     return misbuttondown(which-1);
 }
 

@@ -462,7 +462,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
         }
     }
 
-    update_polled_stuff_if_runtime();
+
 
     // load the room from disk
     our_eip=200;
@@ -476,7 +476,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
 
     convert_room_coordinates_to_data_res(&thisroom);
 
-    update_polled_stuff_if_runtime();
+
     our_eip=201;
     /*  // apparently, doing this stops volume spiking between tracks
     if (thisroom.Options.StartupMusic>0) {
@@ -501,11 +501,11 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     }
 
     for (size_t i = 0; i < thisroom.BgFrameCount; ++i) {
-        update_polled_stuff_if_runtime();
+
         thisroom.BgFrames[i].Graphic = PrepareSpriteForUse(thisroom.BgFrames[i].Graphic, false);
     }
 
-    update_polled_stuff_if_runtime();
+
 
     our_eip=202;
     // Update game viewports
@@ -531,14 +531,14 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     walkareabackup=BitmapHelper::CreateBitmapCopy(thisroom.WalkAreaMask.get());
 
     our_eip=204;
-    update_polled_stuff_if_runtime();
+
     redo_walkable_areas();
-    update_polled_stuff_if_runtime();
+
 
     set_color_depth(game.GetColorDepth());
     convert_room_background_to_game_res();
     recache_walk_behinds();
-    update_polled_stuff_if_runtime();
+
 
     update_all_viewcams_with_newroom();
     init_room_drawdata();
@@ -625,7 +625,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
             thisroom.LocalVariables[i].Value = croom->interactionVariableValues[i];
     }
 
-    update_polled_stuff_if_runtime();
+
 
     if (thisroom.EventHandlers == nullptr)
     {// legacy interactions
@@ -675,7 +675,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     if (thisroom.BgFrames.IsPaletteShared[thisroom.BgFrameCount - 1] == 0)
     thisroom.BgFrames.IsPaletteShared[0] = 0;*/
 
-    update_polled_stuff_if_runtime();
+
 
     our_eip = 210;
     if (IS_ANTIALIAS_SPRITES) {
@@ -721,7 +721,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
 
     }
 
-    update_polled_stuff_if_runtime();
+
 
     roominst=nullptr;
     if (debug_flags & DBG_NOSCRIPT) ;
@@ -858,7 +858,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     color_map = nullptr;
 
     our_eip = 209;
-    update_polled_stuff_if_runtime();
+
     generate_light_table();
     update_music_volume();
     play.UpdateRoomCameras();
@@ -877,7 +877,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
         setpal();
 
     our_eip=220;
-    update_polled_stuff_if_runtime();
+
     debug_script_log("Now in room %d", displayed_room);
     guis_need_update = 1;
     pl_run_plugin_hooks(AGSE_ENTERROOM, displayed_room);
@@ -893,7 +893,7 @@ void new_room(int newnum,CharacterInfo*forchar) {
 
     debug_script_log("Room change requested to room %d", newnum);
 
-    update_polled_stuff_if_runtime();
+
 
     // we are currently running Leaves Screen scripts
     in_leaves_screen = newnum;
@@ -915,7 +915,7 @@ void new_room(int newnum,CharacterInfo*forchar) {
             // who is not in the new room. therefore, abort the follow
             playerchar->following = -1;
     }
-    update_polled_stuff_if_runtime();
+
 
     // change rooms
     unload_old_room();
@@ -938,7 +938,7 @@ void new_room(int newnum,CharacterInfo*forchar) {
         guis_need_update = 1;
     }
 
-    update_polled_stuff_if_runtime();
+
 
     load_new_room(newnum,forchar);
 }

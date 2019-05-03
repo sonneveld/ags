@@ -35,8 +35,6 @@
 #include "platform/base/agsplatformdriver.h"
 #include "util/library.h"
 
-extern void process_pending_events();
-
 #ifndef AGS_NO_VIDEO_PLAYER
 extern int dxmedia_play_video_3d(const char*filename, IDirect3DDevice9 *device, bool useAVISound, int canskip, int stretch);
 extern void dxmedia_shutdown_3d();
@@ -1077,9 +1075,6 @@ bool D3DGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
   
   IDirect3DSurface9* surface = NULL;
   {
-    if (_pollingCallback)
-      _pollingCallback();
-
     if (at_native_res)
     {
       surface = pNativeSurface;
@@ -1089,9 +1084,6 @@ bool D3DGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
     {
       throw Ali3DException("IDirect3DDevice9::GetBackBuffer failed");
     }
-
-    if (_pollingCallback)
-      _pollingCallback();
 
     D3DLOCKED_RECT lockedRect;
     if (surface->LockRect(&lockedRect, (at_native_res ? NULL : &viewport_rect), D3DLOCK_READONLY ) != D3D_OK)
@@ -1104,9 +1096,6 @@ bool D3DGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
     surface->UnlockRect();
     if (!at_native_res) // native surface is released elsewhere
         surface->Release();
-
-    if (_pollingCallback)
-      _pollingCallback();
   }
   return true;
 }
@@ -1817,9 +1806,6 @@ void D3DGraphicsDriver::do_fade(bool fadingOut, int speed, int targetColourRed, 
     this->_renderAndPresent(flipTypeLastTime, false);
 
     do {
-      process_events();      
-      if (_pollingCallback)
-        _pollingCallback();
     } while (waitingForNextTick());
   }
 
@@ -1898,9 +1884,6 @@ void D3DGraphicsDriver::BoxOutEffect(bool blackingOut, int speed, int delay)
     
     this->_renderAndPresent(flipTypeLastTime, false);
 
-    process_events();      
-    if (_pollingCallback)
-      _pollingCallback();
     platform->Delay(delay);
   }
 

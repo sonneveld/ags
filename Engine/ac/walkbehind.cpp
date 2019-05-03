@@ -44,7 +44,7 @@ void update_walk_behind_images()
   Bitmap *wbbmp;
   for (ee = 1; ee < MAX_WALK_BEHINDS; ee++)
   {
-    update_polled_stuff_if_runtime();
+
     
     if (walkBehindRight[ee] > 0)
     {
@@ -65,7 +65,7 @@ void update_walk_behind_images()
         }
       }
 
-      update_polled_stuff_if_runtime();
+
 
       if (walkBehindBitmap[ee] != nullptr)
       {
@@ -108,7 +108,7 @@ void recache_walk_behinds () {
     }
   }
 
-  update_polled_stuff_if_runtime();
+
 
   // since this is an 8-bit memory bitmap, we can just use direct 
   // memory access

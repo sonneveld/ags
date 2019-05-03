@@ -69,8 +69,6 @@ Bitmap *fli_target = nullptr;
 int fliTargetWidth, fliTargetHeight;
 int check_if_user_input_should_cancel_video()
 {
-    process_pending_events();
-
     SDL_Event kpEvent = getTextEventFromQueue();
     int kp = asciiFromEvent(kpEvent);
     auto keyAvailable = run_service_key_controls(kpEvent);
@@ -92,8 +90,6 @@ int __cdecl fli_callback() {
 extern "C" int fli_callback() {
 #endif
     Bitmap *usebuf = fli_buffer;
-
-    update_audio_system_on_game_loop ();
 
     if (game.color_depth > 1) {
         hicol_buf->Blit(fli_buffer,0,0,0,0,fliwidth,fliheight);
@@ -226,7 +222,6 @@ void play_flc_file(int numb,int playflags) {
     hicol_buf=nullptr;
     //  SetVirtualScreen(screen); wputblock(0,0,backbuffer,0);
     for(;;) {
-        process_pending_events();
         if (ags_mgetbutton() == NONE) { break; }
     }
 }
@@ -278,7 +273,6 @@ int theora_playing_callback(BITMAP *theoraBuffer)
     }
 
     gfxDriver->DrawSprite(drawAtX, drawAtY, fli_ddb);
-    update_audio_system_on_game_loop ();
     render_to_screen();
 
     return check_if_user_input_should_cancel_video();
@@ -398,7 +392,6 @@ void play_theora_video(const char *name, int skip, int flags)
     apeg_disable_length_detection(TRUE);
     // Disable framedrop because it can lead to the PSP not playing the video at all.
     apeg_enable_framedrop(psp_video_framedrop);
-    update_polled_stuff_if_runtime();
 
     stretch_flc = (flags % 10);
     canabort = skip;
@@ -438,7 +431,7 @@ void play_theora_video(const char *name, int skip, int flags)
         fli_ddb = nullptr;
     }
 
-    update_polled_stuff_if_runtime();
+
 
     if (gfxDriver->UsesMemoryBackBuffer())
         gfxDriver->GetMemoryBackBuffer()->Clear();

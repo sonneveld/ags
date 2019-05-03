@@ -319,7 +319,7 @@ ScriptDynamicSprite* DynamicSprite_CreateFromScreenShot(int width, int height) {
 
     Bitmap *newPic = CopyScreenIntoBitmap(width, height);
 
-    update_polled_stuff_if_runtime();
+
 
     // replace the bitmap in the sprite set
     add_dynamic_sprite(gotSlot, ReplaceBitmapWithSupportedFormat(newPic));

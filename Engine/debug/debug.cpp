@@ -422,7 +422,6 @@ bool send_exception_to_editor(const char *qmsg)
 
     while ((check_for_messages_from_editor() == 0) && (want_exit == 0))
     {
-        update_polled_mp3();
         platform->Delay(10);
     }
 #endif
@@ -442,7 +441,7 @@ void break_into_debugger()
 
     while (game_paused_in_debugger) 
     {
-        update_polled_stuff_if_runtime();
+
         platform->YieldCPU();
     }
 
@@ -496,7 +495,6 @@ void check_debug_keys() {
     if (play.debug_mode) {
         // do the run-time script debugging
         
-        SDL_PumpEvents();
         const Uint8 * keyboardState = SDL_GetKeyboardState(NULL);
 
         if ((!keyboardState[SDL_SCANCODE_SCROLLLOCK]) && (scrlockWasDown))

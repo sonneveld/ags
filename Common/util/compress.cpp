@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "ac/common.h"	// quit, update_polled_stuff
+#include "ac/common.h"	// quit
 #include "gfx/bitmap.h"
 #include "util/compress.h"
 #include "util/lzw.h"
@@ -330,9 +330,9 @@ void load_lzw(Stream *in, Bitmap **dst_bmp, int dst_bpp, color *pall) {
   uncompsiz += in->GetPosition();
   outbytes = 0; putbytes = 0;
 
-  update_polled_stuff_if_runtime();
+
   membuffer = lzwexpand_to_mem(in);
-  update_polled_stuff_if_runtime();
+
 
   loptr = (int *)&membuffer[0];
   membuffer += 8;
@@ -370,13 +370,13 @@ void load_lzw(Stream *in, Bitmap **dst_bmp, int dst_bpp, color *pall) {
   }
 #endif // AGS_PLATFORM_ENDIAN_BIG
 
-  update_polled_stuff_if_runtime();
+
 
   Bitmap *bmm = BitmapHelper::CreateBitmap((loptr[0] / dst_bpp), loptr[1], dst_bpp * 8);
   if (bmm == nullptr)
     quit("!load_room: not enough memory to load room background");
 
-  update_polled_stuff_if_runtime();
+
 
   bmm->Acquire ();
 
@@ -385,14 +385,14 @@ void load_lzw(Stream *in, Bitmap **dst_bmp, int dst_bpp, color *pall) {
 
   bmm->Release ();
 
-  update_polled_stuff_if_runtime();
+
 
   free(membuffer-8);
 
   if (in->GetPosition() != uncompsiz)
     in->Seek(uncompsiz, kSeekBegin);
 
-  update_polled_stuff_if_runtime();
+
 
   *dst_bmp = bmm;
 }
@@ -422,8 +422,6 @@ void loadcompressed_allegro(Stream *in, Bitmap **bimpp, color *pall) {
 
   for (ii = 0; ii < hitt; ii++) {
     cunpackbitl(&bim->GetScanLineForWriting(ii)[0], widd, in);
-    if (ii % 20 == 0)
-      update_polled_stuff_if_runtime();
   }
 
   in->Seek(768);  // skip palette

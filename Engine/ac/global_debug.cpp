@@ -48,6 +48,7 @@ extern GameState play;
 extern RoomStruct thisroom;
 extern CharacterInfo*playerchar;
 
+
 extern IGraphicsDriver *gfxDriver;
 extern SpriteCache spriteset;
 extern TreeMap *transtree;
@@ -114,7 +115,6 @@ void script_debug(int cmdd,int dataa) {
 
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
         for (;;) {
-            process_pending_events();
             render_graphics(ddb, viewport.Left, viewport.Top);
             
             SDL_Event kpEvent = getTextEventFromQueue();
@@ -180,7 +180,6 @@ void script_debug(int cmdd,int dataa) {
         IDriverDependantBitmap *ddb = gfxDriver->CreateDDBFromBitmap(view_bmp, false, true);
         
         for (;;) {
-            process_pending_events();
             render_graphics(ddb, viewport.Left, viewport.Top);
             
             SDL_Event kpEvent = getTextEventFromQueue();

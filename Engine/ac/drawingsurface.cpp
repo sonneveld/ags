@@ -209,7 +209,7 @@ void DrawingSurface_DrawImage(ScriptDrawingSurface* sds, int xx, int yy, int slo
 
         sourcePic = newPic;
         needToFreeBitmap = true;
-        update_polled_stuff_if_runtime();
+
     }
 
     Bitmap *ds = sds->StartDrawing();

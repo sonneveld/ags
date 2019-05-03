@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "ac/common.h" // update_polled_stuff_if_runtime
+#include "ac/common.h"
 #include "game/room_file.h"
 #include "game/roomstruct.h"
 #include "gfx/bitmap.h"
@@ -238,13 +238,13 @@ void load_room(const char *filename, RoomStruct *room, bool game_is_hires, const
     room->Free();
     room->InitDefaults();
 
-    update_polled_stuff_if_runtime();
+
 
     RoomDataSource src;
     HRoomFileError err = OpenRoomFile(filename, src);
     if (err)
     {
-        update_polled_stuff_if_runtime();  // it can take a while to load the file sometimes
+        void;  // it can take a while to load the file sometimes
         err = ReadRoomData(room, src.InputStream.get(), src.DataVersion);
         if (err)
             err = UpdateRoomData(room, src.DataVersion, game_is_hires, sprinfos);

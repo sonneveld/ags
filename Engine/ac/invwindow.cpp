@@ -347,7 +347,6 @@ void InventoryScreen::RedrawOverItem(Bitmap *ds, int isonitem)
 bool InventoryScreen::Run()
 {
     // Run() can be called in a loop, so keep events going.
-    process_pending_events();
 
     SDL_Event kgn = getTextEventFromQueue();
     auto keyAvailable = run_service_key_controls(kgn);
@@ -356,7 +355,6 @@ bool InventoryScreen::Run()
     }
 
         //ags_domouse(DOMOUSE_UPDATE);
-        update_audio_system_on_game_loop();
         refresh_gui_screen();
 
         // NOTE: this is because old code was working with full game screen
@@ -474,7 +472,6 @@ bool InventoryScreen::Run()
             //ags_domouse(DOMOUSE_ENABLE);
         }
         wasonitem=isonitem;
-        PollUntilNextFrame();
 
     return true; // continue inventory screen loop
 }

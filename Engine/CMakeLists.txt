@@ -487,12 +487,6 @@ target_sources(engine
     platform/linux/binreloc.h
 )
 
-if(MACOS)
-    target_sources(engine PRIVATE 
-        platform/osx/alplmac.mm
-    )
-endif()
-
 if (AGS_BUILTIN_PLUGINS)
     target_compile_definitions(engine PRIVATE BUILTIN_PLUGINS)
 

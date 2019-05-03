@@ -823,7 +823,9 @@ void DialogOptions::Redraw()
     if (usingCustomRendering)
     {
       subBitmap->Blit(tempScrn, 0, 0, 0, 0, tempScrn->GetWidth(), tempScrn->GetHeight());
+#ifdef AGS_DELETE_FOR_3_6
       invalidate_rect(dirtyx, dirtyy, dirtyx + subBitmap->GetWidth(), dirtyy + subBitmap->GetHeight(), false);
+#endif
     }
     else
     {

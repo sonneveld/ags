@@ -120,7 +120,6 @@ struct EnginePlugin {
     char       *savedata;
     int         savedatasize;
     int         wantHook;
-    int         invalidatedRegion;
     void      (*engineStartup) (IAGSEngine *) = nullptr;
     void      (*engineShutdown) () = nullptr;
     int       (*onEvent) (int, int) = nullptr;
@@ -132,7 +131,6 @@ struct EnginePlugin {
     EnginePlugin() {
         filename[0] = 0;
         wantHook = 0;
-        invalidatedRegion = 0;
         savedata = nullptr;
         savedatasize = 0;
         builtin = false;
@@ -251,26 +249,12 @@ unsigned char ** IAGSEngine::GetRawBitmapSurface (BITMAP *bmp)
     if (!is_linear_bitmap(bmp))
         quit("!IAGSEngine::GetRawBitmapSurface: invalid bitmap for access to surface");
     acquire_bitmap(bmp);
-
-    Bitmap *stage = gfxDriver->GetStageBackBuffer();
-    if (stage && bmp == stage->GetAllegroBitmap())
-        plugins[this->pluginId].invalidatedRegion = 0;
-
     return bmp->line;
 }
 
 void IAGSEngine::ReleaseBitmapSurface (BITMAP *bmp)
 {
     release_bitmap (bmp);
-
-    Bitmap *stage = gfxDriver->GetStageBackBuffer();
-    if (stage && bmp == stage->GetAllegroBitmap())
-    {
-        // plugin does not manaually invalidate stuff, so
-        // we must invalidate the whole screen to be safe
-        if (!plugins[this->pluginId].invalidatedRegion)
-            invalidate_screen();
-    }
 }
 
 void IAGSEngine::GetMousePosition (int32 *x, int32 *y) {
@@ -384,7 +368,6 @@ void IAGSEngine::BlitBitmap (int32 x, int32 y, BITMAP *bmp, int32 masked)
     if (!ds)
         return;
     wputblock_raw(ds, x, y, bmp, masked);
-    invalidate_rect(x, y, x + bmp->w, y + bmp->h, false);
 }
 
 void IAGSEngine::BlitSpriteTranslucent(int32 x, int32 y, BITMAP *bmp, int32 trans)
@@ -612,8 +595,6 @@ void IAGSEngine::PlaySoundChannel (int32 channel, int32 soundType, int32 volume,
 }
 // Engine interface 12 and above are below
 void IAGSEngine::MarkRegionDirty(int32 left, int32 top, int32 right, int32 bottom) {
-    invalidate_rect(left, top, right, bottom, false);
-    plugins[this->pluginId].invalidatedRegion++;
 }
 AGSMouseCursor * IAGSEngine::GetMouseCursor(int32 cursor) {
     if ((cursor < 0) || (cursor >= game.numcursors))

@@ -229,7 +229,6 @@ void play_flc_file(int numb,int playflags) {
         process_pending_events();
         if (ags_mgetbutton() == NONE) { break; }
     }
-    invalidate_screen();
 }
 
 // FLIC player end
@@ -457,7 +456,6 @@ void play_theora_video(const char *name, int skip, int flags)
     gfxDriver->DestroyDDB(fli_ddb);
     fli_target = nullptr;
     fli_ddb = nullptr;
-    invalidate_screen();
 }
 // Theora player end
 

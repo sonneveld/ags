@@ -1965,10 +1965,6 @@ void display_switch_in_resume()
     }
     } // -- AudioChannelsLock
 
-    // clear the screen if necessary
-    if (gfxDriver && gfxDriver->UsesMemoryBackBuffer())
-        gfxDriver->ClearRectangle(0, 0, game.GetGameRes().Width - 1, game.GetGameRes().Height - 1, nullptr);
-
     platform->ResumeApplication();
 }
 

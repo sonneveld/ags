@@ -495,9 +495,6 @@ int EndCutscene () {
     // Stop it fast-forwarding
     stop_fast_forwarding();
 
-    // make sure that the screen redraws
-    invalidate_screen();
-
     // Return whether the player skipped it
     return retval;
 }

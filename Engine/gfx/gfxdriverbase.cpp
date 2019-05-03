@@ -55,6 +55,7 @@ bool GraphicsDriverBase::IsRenderFrameValid() const
 
 DisplayMode GraphicsDriverBase::GetDisplayMode() const
 {
+#pragma message("SDL-TODO: need to change.  doesn't include current window mode but the one that was set.")
     return _mode;
 }
 

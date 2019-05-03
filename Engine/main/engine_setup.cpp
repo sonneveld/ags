@@ -116,7 +116,7 @@ void convert_objects_to_data_resolution(GameDataVersion filever)
     }
 }
 
-void engine_setup_system_gamesize()
+static void engine_setup_system_gamesize()
 {
     scsystem.width = game.GetGameRes().Width;
     scsystem.height = game.GetGameRes().Height;
@@ -147,7 +147,7 @@ void engine_init_resolution_settings(const Size game_size)
 }
 
 // Setup gfx driver callbacks and options
-void engine_post_gfxmode_driver_setup()
+static void engine_post_gfxmode_driver_setup()
 {
     gfxDriver->SetCallbackForPolling(update_polled_stuff_if_runtime);
     gfxDriver->SetCallbackToDrawScreen(draw_screen_callback);
@@ -155,7 +155,7 @@ void engine_post_gfxmode_driver_setup()
 }
 
 // Reset gfx driver callbacks
-void engine_pre_gfxmode_driver_cleanup()
+static void engine_pre_gfxmode_driver_cleanup()
 {
     gfxDriver->SetCallbackForPolling(nullptr);
     gfxDriver->SetCallbackToDrawScreen(nullptr);
@@ -164,7 +164,7 @@ void engine_pre_gfxmode_driver_cleanup()
 }
 
 // Setup virtual screen
-void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitmaps)
+static void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitmaps)
 {
     if (recreate_bitmaps)
     {
@@ -174,112 +174,39 @@ void engine_post_gfxmode_screen_setup(const DisplayMode &dm, bool recreate_bitma
     }
 }
 
-void engine_pre_gfxmode_screen_cleanup()
+static void engine_pre_gfxmode_screen_cleanup()
 {
 }
 
 // Release virtual screen
-void engine_pre_gfxsystem_screen_destroy()
+static void engine_pre_gfxsystem_screen_destroy()
 {
     delete sub_vscreen;
     sub_vscreen = nullptr;
 }
 
 // Setup color conversion parameters
-void engine_setup_color_conversions(int coldepth)
+static void engine_setup_color_conversions(int coldepth)
 {
-    // default shifts for how we store the sprite data1
-    _rgb_r_shift_32 = 16;
-    _rgb_g_shift_32 = 8;
-    _rgb_b_shift_32 = 0;
-    _rgb_r_shift_16 = 11;
-    _rgb_g_shift_16 = 5;
-    _rgb_b_shift_16 = 0;
-    _rgb_r_shift_15 = 10;
-    _rgb_g_shift_15 = 5;
-    _rgb_b_shift_15 = 0;
-
-    // Most cards do 5-6-5 RGB, which is the format the files are saved in
-    // Some do 5-6-5 BGR, or  6-5-5 RGB, in which case convert the gfx
-    if ((coldepth == 16) && ((_rgb_b_shift_16 != 0) || (_rgb_r_shift_16 != 11)))
-    {
-        convert_16bit_bgr = 1;
-        if (_rgb_r_shift_16 == 10) {
-            // some very old graphics cards lie about being 16-bit when they
-            // are in fact 15-bit ... get around this
-            _places_r = 3;
-            _places_g = 3;
-        }
-    }
-    if (coldepth > 16)
-    {
-        // when we're using 32-bit colour, it converts hi-color images
-        // the wrong way round - so fix that
-
-#if AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_MACOS
-        _rgb_b_shift_16 = 0;
-        _rgb_g_shift_16 = 5;
-        _rgb_r_shift_16 = 11;
-
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
-        _rgb_r_shift_15 = 10;
-
-        _rgb_r_shift_32 = 0;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 16;
-#else
-        _rgb_r_shift_16 = 11;
-        _rgb_g_shift_16 = 5;
-        _rgb_b_shift_16 = 0;
-#endif
-    }
-    else if (coldepth == 16)
-    {
-        // ensure that any 32-bit graphics displayed are converted
-        // properly to the current depth
-        _rgb_r_shift_32 = 16;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 0;
-    }
-    else if (coldepth < 16)
-    {
-        // ensure that any 32-bit graphics displayed are converted
-        // properly to the current depth
-#if AGS_PLATFORM_OS_WINDOWS
-        _rgb_r_shift_32 = 16;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 0;
-#else
-        _rgb_r_shift_32 = 0;
-        _rgb_g_shift_32 = 8;
-        _rgb_b_shift_32 = 16;
-
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
-        _rgb_r_shift_15 = 10;
-#endif
-    }
-
     set_color_conversion(COLORCONV_MOST | COLORCONV_EXPAND_256);
 }
 
 // Setup drawing modes and color conversions;
 // they depend primarily on gfx driver capabilities and new color depth
-void engine_post_gfxmode_draw_setup(const DisplayMode &dm)
+static void engine_post_gfxmode_draw_setup(const DisplayMode &dm)
 {
     engine_setup_color_conversions(dm.ColorDepth);
     init_draw_method();
 }
 
 // Cleanup auxiliary drawing objects
-void engine_pre_gfxmode_draw_cleanup()
+static void engine_pre_gfxmode_draw_cleanup()
 {
     dispose_draw_method();
 }
 
 // Setup mouse control mode and graphic area
-void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
+static void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_desktop)
 {
 #ifdef AGS_DELETE_FOR_3_6
 
@@ -324,7 +251,7 @@ void engine_post_gfxmode_mouse_setup(const DisplayMode &dm, const Size &init_des
 }
 
 // Reset mouse controls before changing gfx mode
-void engine_pre_gfxmode_mouse_cleanup()
+static void engine_pre_gfxmode_mouse_cleanup()
 {
     // Always disable mouse control and unlock mouse when releasing down gfx mode
     Mouse::DisableControl();
@@ -332,7 +259,7 @@ void engine_pre_gfxmode_mouse_cleanup()
 }
 
 // Fill in scsystem struct with display mode parameters
-void engine_setup_scsystem_screen(const DisplayMode &dm)
+static void engine_setup_scsystem_screen(const DisplayMode &dm)
 {
     scsystem.coldepth = dm.ColorDepth;
     scsystem.windowed = dm.Windowed;
@@ -360,7 +287,6 @@ void engine_post_gfxmode_setup(const Size &init_desktop)
     platform->PostAllegroInit(scsystem.windowed != 0);
 
     video_on_gfxmode_changed();
-    invalidate_screen();
 }
 
 void engine_pre_gfxmode_release()

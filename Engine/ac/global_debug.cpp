@@ -48,7 +48,6 @@ extern GameState play;
 extern RoomStruct thisroom;
 extern CharacterInfo*playerchar;
 
-extern int convert_16bit_bgr;
 extern IGraphicsDriver *gfxDriver;
 extern SpriteCache spriteset;
 extern TreeMap *transtree;
@@ -67,7 +66,7 @@ String GetRuntimeInfo()
         "[Running %d x %d at %d-bit%s%s[GFX: %s; %s[Draw frame %d x %d["
         "Sprite cache size: %d KB (limit %d KB; %d locked)",
         EngineVersion.LongString.GetCStr(), game.GetGameRes().Width, game.GetGameRes().Height, game.GetColorDepth(),
-        mode.Width, mode.Height, mode.ColorDepth, (convert_16bit_bgr) ? " BGR" : "",
+        mode.Width, mode.Height, mode.ColorDepth, (false) ? " BGR" : "",
         mode.Windowed ? " W" : "",
         gfxDriver->GetDriverName(), filter->GetInfo().Name.GetCStr(),
         render_frame.GetWidth(), render_frame.GetHeight(),
@@ -127,7 +126,6 @@ void script_debug(int cmdd,int dataa) {
         delete tempw;
         delete view_bmp;
         gfxDriver->DestroyDDB(ddb);
-        invalidate_screen();
     }
     else if (cmdd==3) 
     {

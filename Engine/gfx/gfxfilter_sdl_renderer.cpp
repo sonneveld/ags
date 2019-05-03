@@ -12,40 +12,24 @@
 //
 //=============================================================================
 
-#include "gfx/ogl_support.h"
-
-#if AGS_OPENGL_DRIVER
-
-#include "gfx/gfxfilter_ogl.h"
-#include "ogl_headers.h"
+#include "gfx/gfxfilter_sdl_renderer.h"
 
 namespace AGS
 {
 namespace Engine
 {
-namespace OGL
+namespace SDLRenderer
 {
 
-const GfxFilterInfo OGLGfxFilter::FilterInfo = GfxFilterInfo("StdScale", "Nearest-neighbour");
+using namespace Common;
 
-bool OGLGfxFilter::UseLinearFiltering() const
-{
-    return false;
-}
+const GfxFilterInfo SDLRendererGfxFilter::FilterInfo = GfxFilterInfo("StdScale", "Nearest-neighbour");
 
-void OGLGfxFilter::SetFilteringForStandardSprite()
-{
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-}
-
-const GfxFilterInfo &OGLGfxFilter::GetInfo() const
+const GfxFilterInfo &SDLRendererGfxFilter::GetInfo() const
 {
     return FilterInfo;
 }
 
-} // namespace OGL
+} // namespace ALSW
 } // namespace Engine
 } // namespace AGS
-
-#endif // AGS_OPENGL_DRIVER

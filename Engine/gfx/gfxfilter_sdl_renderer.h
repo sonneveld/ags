@@ -11,41 +11,37 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
+//
+// Standard software scaling filter
+//
+//=============================================================================
 
-#include "gfx/ogl_support.h"
+#ifndef __AGS_EE_GFX__ALLEGROGFXFILTER_H
+#define __AGS_EE_GFX__ALLEGROGFXFILTER_H
 
-#if AGS_OPENGL_DRIVER
-
-#include "gfx/gfxfilter_ogl.h"
-#include "ogl_headers.h"
+#include "gfx/bitmap.h"
+#include "gfx/gfxfilter_scaling.h"
+#include "gfx/gfxdefines.h"
 
 namespace AGS
 {
 namespace Engine
 {
-namespace OGL
+namespace SDLRenderer
 {
 
-const GfxFilterInfo OGLGfxFilter::FilterInfo = GfxFilterInfo("StdScale", "Nearest-neighbour");
+using Common::Bitmap;
 
-bool OGLGfxFilter::UseLinearFiltering() const
+class SDLRendererGfxFilter : public ScalingGfxFilter
 {
-    return false;
-}
+public:
+    virtual const GfxFilterInfo &GetInfo() const;
 
-void OGLGfxFilter::SetFilteringForStandardSprite()
-{
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-}
+    static const GfxFilterInfo FilterInfo;
+};
 
-const GfxFilterInfo &OGLGfxFilter::GetInfo() const
-{
-    return FilterInfo;
-}
-
-} // namespace OGL
+} // namespace ALSW
 } // namespace Engine
 } // namespace AGS
 
-#endif // AGS_OPENGL_DRIVER
+#endif // __AGS_EE_GFX__ALLEGROGFXFILTER_H

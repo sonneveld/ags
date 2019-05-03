@@ -12,9 +12,8 @@
 //
 //=============================================================================
 
-#include "core/platform.h"
-
-#if AGS_PLATFORM_OS_WINDOWS || AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_LINUX
+#include "gfx/ogl_support.h"
+#if AGS_OPENGL_DRIVER
 
 #include <algorithm>
 #include "gfx/ali3dexception.h"
@@ -26,6 +25,8 @@
 #include "platform/base/agsplatformdriver.h"
 #include "util/math.h"
 #include "ac/timer.h"
+
+extern void process_pending_events();
 
 #if AGS_PLATFORM_OS_ANDROID
 
@@ -105,6 +106,11 @@ const void (*glSwapIntervalEXT)(int) = NULL;
 #define GL_FRAMEBUFFER_EXT GL_FRAMEBUFFER_OES
 #define GL_COLOR_ATTACHMENT0_EXT GL_COLOR_ATTACHMENT0_OES
 
+#else
+
+int device_screen_initialized = 1;
+const char* fbo_extension_string = "GL_ARB_framebuffer_object";
+
 #endif
 
 // Necessary to update textures from 8-bit bitmaps
@@ -124,6 +130,15 @@ void ogl_dummy_vsync() { }
 
 #define GFX_OPENGL  AL_ID('O','G','L',' ')
 
+static int ogl_show_mouse(struct BITMAP *bmp, int x, int y) {
+    SDL_ShowCursor(SDL_ENABLE);
+    return -1; // show cursor, but "fail" because we're not supporting hardware cursors
+}
+
+static void ogl_hide_mouse() {
+    SDL_ShowCursor(SDL_DISABLE);
+}
+    
 GFX_DRIVER gfx_opengl =
 {
    GFX_OPENGL,
@@ -145,8 +160,8 @@ GFX_DRIVER gfx_opengl =
    nullptr,  //gfx_directx_create_system_bitmap,
    nullptr, //gfx_directx_destroy_system_bitmap,
    nullptr, //gfx_directx_set_mouse_sprite,
-   nullptr, //gfx_directx_show_mouse,
-   nullptr, //gfx_directx_hide_mouse,
+   ogl_show_mouse, //gfx_directx_show_mouse,
+   ogl_hide_mouse, //gfx_directx_hide_mouse,
    nullptr, //gfx_directx_move_mouse,
    nullptr,                        // AL_METHOD(void, drawing_mode, (void));
    nullptr,                        // AL_METHOD(void, save_video_state, (void*));
@@ -186,19 +201,9 @@ OGLGraphicsDriver::ShaderProgram::ShaderProgram() : Program(0), SamplerVar(0), C
 
 OGLGraphicsDriver::OGLGraphicsDriver() 
 {
-#if AGS_PLATFORM_OS_WINDOWS
-  _hDC = NULL;
-  _hRC = NULL;
-  _hWnd = NULL;
-  _hInstance = NULL;
   device_screen_physical_width  = 0;
   device_screen_physical_height = 0;
-#elif AGS_PLATFORM_OS_LINUX
-  device_screen_physical_width  = 0;
-  device_screen_physical_height = 0;
-  _glxContext = nullptr;
-  _have_window = false;
-#elif AGS_PLATFORM_OS_ANDROID
+#if AGS_PLATFORM_OS_ANDROID
   device_screen_physical_width  = android_screen_physical_width;
   device_screen_physical_height = android_screen_physical_height;
 #elif AGS_PLATFORM_OS_IOS
@@ -258,7 +263,6 @@ void OGLGraphicsDriver::SetupDefaultVertices()
   defaultVertices[3].tv=1.0;
 }
 
-#if AGS_PLATFORM_OS_WINDOWS || AGS_PLATFORM_OS_LINUX
 
 void OGLGraphicsDriver::CreateDesktopScreen(int width, int height, int depth)
 {
@@ -266,27 +270,20 @@ void OGLGraphicsDriver::CreateDesktopScreen(int width, int height, int depth)
   device_screen_physical_height = height;
 }
 
-#elif AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
 
-void OGLGraphicsDriver::UpdateDeviceScreen()
+void OGLGraphicsDriver::UpdateDeviceScreen(const Size &screenSize)
 {
-#if AGS_PLATFORM_OS_ANDROID
-    device_screen_physical_width  = android_screen_physical_width;
-    device_screen_physical_height = android_screen_physical_height;
-#elif AGS_PLATFORM_OS_IOS
-    device_screen_physical_width  = ios_screen_physical_width;
-    device_screen_physical_height = ios_screen_physical_height;
-#endif
-
+    SDL_GL_GetDrawableSize(this->sdlWindow, &device_screen_physical_width, &device_screen_physical_height);
+        
     Debug::Printf("OGL: notified of device screen updated to %d x %d, resizing viewport", device_screen_physical_width, device_screen_physical_height);
+    
     _mode.Width = device_screen_physical_width;
     _mode.Height = device_screen_physical_height;
     InitGlParams(_mode);
+    
     if (_initSurfaceUpdateCallback)
         _initSurfaceUpdateCallback();
 }
-
-#endif
 
 void OGLGraphicsDriver::Vsync() 
 {
@@ -357,18 +354,6 @@ void OGLGraphicsDriver::FirstTimeInit()
   _firstTimeInit = true;
 }
 
-#if AGS_PLATFORM_OS_LINUX
-Atom get_x_atom (const char *atom_name)
-{
-  Atom atom = XInternAtom(_xwin.display, atom_name, False);
-  if (atom == None)
-  {
-    Debug::Printf(kDbgMsg_Error, "ERROR: X11 atom \"%s\" not found.\n", atom_name);
-  }
-  return atom;
-}
-#endif
-
 bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 {
 #if AGS_PLATFORM_OS_ANDROID
@@ -376,46 +361,61 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 #elif AGS_PLATFORM_OS_IOS
   ios_create_screen();
   ios_select_buffer();
-#elif AGS_PLATFORM_OS_WINDOWS
-  if (!mode.Windowed)
-  {
-    if (platform->EnterFullscreenMode(mode))
-      platform->AdjustWindowStyleForFullscreen();
-  }
-  // NOTE: adjust_window may leave task bar visible, so we do not use it for fullscreen mode
-  if (mode.Windowed && adjust_window(mode.Width, mode.Height) != 0)
-  {
-    set_allegro_error("Window size not supported");
-    return false;
-  }
 
-  _hWnd = win_get_window();
-  if (!(_hDC = GetDC(_hWnd)))
-    return false;
 
-  // First check if we need to recreate GL context, this will only be
-  // required if different color depth is requested.
-  if (_hRC)
-  {
-    GLuint pixel_fmt = GetPixelFormat(_hDC);
-    PIXELFORMATDESCRIPTOR pfd;
-    DescribePixelFormat(_hDC, pixel_fmt, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-    if (pfd.cColorBits != mode.ColorDepth)
-    {
-      DeleteGlContext();
+#else 
+
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_PROFILE_MASK: %s", SDL_GetError());
     }
-  }
 
-  if (!_hRC)
-  {
-    if (!CreateGlContext(mode))
-      return false;
-  }
-
-  if (!gladLoadWGL(_hDC)) {
-	  Debug::Printf(kDbgMsg_Error, "Failed to load WGL.");
-	  return false;
-  }
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MAJOR_VERSION: %s", SDL_GetError());
+    }
+    
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_CONTEXT_MINOR_VERSION: %s", SDL_GetError());
+    }
+    
+    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) != 0) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Error occured setting attribute SDL_GL_DOUBLEBUFFER: %s", SDL_GetError());
+    }
+    
+    Uint32 createWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+    if (!mode.Windowed) {
+        createWindowFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
+    
+    this->sdlWindow = SDL_CreateWindow(
+                                  "AGS",
+                                  SDL_WINDOWPOS_CENTERED,
+                                  SDL_WINDOWPOS_CENTERED,
+                                  mode.Width, mode.Height,
+                                  createWindowFlags
+                                  );
+    
+    if (this->sdlWindow == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error opening window for OpenGL: %s", SDL_GetError());
+        return false;
+    }
+    
+    this->sdlGlContext = SDL_GL_CreateContext(this->sdlWindow);
+    
+    if (this->sdlGlContext == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error creating OpenGL context: %s", SDL_GetError());
+        SDL_DestroyWindow(this->sdlWindow);
+        this->sdlWindow = NULL;
+        return false;
+    }
+    
+    if (SDL_GL_MakeCurrent(this->sdlWindow, this->sdlGlContext) != 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error setting current OpenGL context: %s", SDL_GetError());
+        SDL_GL_DeleteContext(this->sdlGlContext);
+        this->sdlGlContext = NULL;
+        SDL_DestroyWindow(this->sdlWindow);
+        this->sdlWindow = NULL;
+        return false;
+    }
 
   if (!gladLoadGL()) {
 	  Debug::Printf(kDbgMsg_Error, "Failed to load GL.");
@@ -423,100 +423,30 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
   }
 
   CreateDesktopScreen(mode.Width, mode.Height, mode.ColorDepth);
-  win_grab_input();
-#elif AGS_PLATFORM_OS_LINUX
-  if (!_have_window)
-  {
-    // Use Allegro to create our window. We don't care what size Allegro uses
-    // here, we will set that ourselves below by manipulating members of
-    // Allegro's_xwin structure. We need to use the Allegro routine here (rather
-    // than create our own X window) to remain compatible with Allegro's mouse &
-    // keyboard handling.
-    //
-    // Note that although _xwin contains a special "fullscreen" Window member
-    // (_xwin.fs_window), we do not use it for going fullscreen. Instead we ask
-    // the window manager to take the "managed" Window (_xwin.wm_window)
-    // fullscreen for us. All drawing goes to the "real" Window (_xwin.window).
-    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, 0, 0, 0, 0) != 0) 
-      return false;
-    _have_window = true;
-  }
+    
+    SDL_GL_GetDrawableSize(this->sdlWindow, &device_screen_physical_width, &device_screen_physical_height);
+    
+   _rgb_r_shift_15 = 10;
+   _rgb_g_shift_15 = 5;
+   _rgb_b_shift_15 = 0;
 
-  if (!gladLoadGLX(_xwin.display, DefaultScreen(_xwin.display))) {
-    Debug::Printf(kDbgMsg_Error, "Failed to load GLX.");
-    return false;
-  }
+   _rgb_r_shift_16 = 11;
+   _rgb_g_shift_16 = 5;
+   _rgb_b_shift_16 = 0;
 
-  if (!_glxContext && !CreateGlContext(mode))
-    return false;
+   _rgb_r_shift_24 = 16;
+   _rgb_g_shift_24 = 8;
+   _rgb_b_shift_24 = 0;
 
-  if(!gladLoadGL()) {
-    Debug::Printf(kDbgMsg_Error, "Failed to load GL.");
-    return false;
-  }
-
-  {
-    // Set the size of our "managed" window.
-    XSizeHints *hints = XAllocSizeHints();
-
-    if (hints)
-    {
-      if (mode.Windowed)
-      {
-        // Set a fixed-size window. This is copied from Allegro 4's
-        // _xwin_private_create_screen().
-        hints->flags = PMinSize | PMaxSize | PBaseSize;
-        hints->min_width  = hints->max_width  = hints->base_width  = mode.Width;
-        hints->min_height = hints->max_height = hints->base_height = mode.Height;
-      }
-      else
-      {
-        // Clear any previously set demand for a fixed-size window, otherwise
-        // the window manager will ignore our request to go full-screen.
-        hints->flags = 0;
-      }
-
-      XSetWMNormalHints(_xwin.display, _xwin.wm_window, hints);
-    }
-
-    XFree(hints);
-  }
-
-  // Set the window we are actually drawing into to the desired size.
-  XResizeWindow(_xwin.display, _xwin.window, mode.Width, mode.Height);
-
-  // Make Allegro aware of the new window size, otherwise the mouse cursor
-  // movement may be erratic.
-  _xwin.window_width = mode.Width;
-  _xwin.window_height = mode.Height;
-
-  {
-    // Ask the window manager to add (or remove) the "fullscreen" property on
-    // our top-level window.
-    const Atom wm_state = get_x_atom("_NET_WM_STATE");
-    const Atom fullscreen = get_x_atom("_NET_WM_STATE_FULLSCREEN");
-    const long remove_property = 0;
-    const long add_property = 1;
-
-    XEvent xev;
-    memset(&xev, 0, sizeof(xev));
-    xev.type = ClientMessage;
-    xev.xclient.window = _xwin.wm_window;
-    xev.xclient.message_type = wm_state;
-    xev.xclient.format = 32;
-    xev.xclient.data.l[0] = mode.Windowed ? remove_property : add_property;
-    xev.xclient.data.l[1] = fullscreen;
-    xev.xclient.data.l[2] = 0;
-    xev.xclient.data.l[3] = 1; // Message source is a regular application.
-    Status status = XSendEvent(_xwin.display, DefaultRootWindow(_xwin.display), False, SubstructureRedirectMask | SubstructureNotifyMask, &xev);
-    if (status == 0)
-    {
-      Debug::Printf(kDbgMsg_Error, "ERROR: Failed to encode window state message.\n");
-    }
-  }
-
-  CreateDesktopScreen(mode.Width, mode.Height, mode.ColorDepth);
+   _rgb_a_shift_32 = 24;
+   _rgb_r_shift_32 = 16; 
+   _rgb_g_shift_32 = 8; 
+   _rgb_b_shift_32 = 0;
+    
 #endif
+
+  // Initialize default sprite batch, it will be used when no other batch was activated
+  InitSpriteBatch(0, _spriteBatchDesc[0]);
 
   gfx_driver = &gfx_opengl;
   return true;
@@ -550,32 +480,9 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-  auto interval = mode.Vsync ? 1 : 0;
-  bool vsyncEnabled = false;
 
-#if AGS_PLATFORM_OS_WINDOWS
-  if (GLAD_WGL_EXT_swap_control) {
-    vsyncEnabled = wglSwapIntervalEXT(interval) != FALSE;
-  }
-#endif
+  SDL_GL_SetSwapInterval(mode.Vsync ? 1 : 0);
 
-#if AGS_PLATFORM_OS_LINUX
-  if (GLAD_GLX_EXT_swap_control) {
-    glXSwapIntervalEXT(_xwin.display, _xwin.window, interval);
-    // glx requires hooking into XSetErrorHandler to test for BadWindow or BadValue
-    vsyncEnabled = true;
-  } else if (GLAD_GLX_MESA_swap_control) {
-    vsyncEnabled = glXSwapIntervalMESA(interval) == 0;
-  } else if (GLAD_GLX_SGI_swap_control) {
-    vsyncEnabled = glXSwapIntervalSGI(interval) == 0;
-  }
-#endif
-
-  // TODO: find out how to implement SwapInterval on other platforms, and how to check if it's supported
-
-  if (mode.Vsync && !vsyncEnabled) {
-    Debug::Printf(kDbgMsg_Warn, "WARNING: Vertical sync could not be enabled. Setting will be kept at driver default.");
-  }
 
 #if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
   // Setup library mouse to have 1:1 coordinate transformation.
@@ -585,90 +492,17 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   device_mouse_setup(0, device_screen_physical_width - 1, 0, device_screen_physical_height - 1, 1.0, 1.0);
 #endif
 }
-
-bool OGLGraphicsDriver::CreateGlContext(const DisplayMode &mode)
-{
-#if AGS_PLATFORM_OS_WINDOWS
-  PIXELFORMATDESCRIPTOR pfd =
-  {
-    sizeof(PIXELFORMATDESCRIPTOR),
-    1,
-    PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-    PFD_TYPE_RGBA,
-    (BYTE)mode.ColorDepth,
-    0, 0, 0, 0, 0, 0,
-    0,
-    0,
-    0,
-    0, 0, 0, 0,
-    0,
-    0,
-    0,
-    PFD_MAIN_PLANE,
-    0,
-    0, 0, 0
-  };
-
-  _oldPixelFormat = GetPixelFormat(_hDC);
-  DescribePixelFormat(_hDC, _oldPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &_oldPixelFormatDesc);
-
-  GLuint pixel_fmt;
-  if (!(pixel_fmt = ChoosePixelFormat(_hDC, &pfd)))
-    return false;
-
-  if (!SetPixelFormat(_hDC, pixel_fmt, &pfd))
-    return false;
-
-  if (!(_hRC = wglCreateContext(_hDC)))
-    return false;
-
-  if(!wglMakeCurrent(_hDC, _hRC))
-    return false;
-#endif // AGS_PLATFORM_OS_WINDOWS
-#if AGS_PLATFORM_OS_LINUX
-  int attrib[] = { GLX_RGBA, GLX_DOUBLEBUFFER, None };
-  XVisualInfo *vi = glXChooseVisual(_xwin.display, DefaultScreen(_xwin.display), attrib);
-  if (!vi)
-  {
-    Debug::Printf(kDbgMsg_Error, "ERROR: glXChooseVisual() failed.\n");
-    return false;
-  }
-
-  if (!(_glxContext = glXCreateContext(_xwin.display, vi, None, True)))
-  {
-    Debug::Printf(kDbgMsg_Error, "ERROR: glXCreateContext() failed.\n");
-    return false;
-  }
-
-  if (!glXMakeCurrent(_xwin.display, _xwin.window, _glxContext))
-  {
-    Debug::Printf(kDbgMsg_Error, "ERROR: glXMakeCurrent() failed.\n");
-    return false;
-  }
-#endif
-  return true;
-}
-
+    
+    
 void OGLGraphicsDriver::DeleteGlContext()
 {
-#if AGS_PLATFORM_OS_WINDOWS
-  if (_hRC)
-  {
-    wglMakeCurrent(NULL, NULL);
-    wglDeleteContext(_hRC);
-    _hRC = NULL;
-  }
 
-  if (_oldPixelFormat > 0)
-    SetPixelFormat(_hDC, _oldPixelFormat, &_oldPixelFormatDesc);
-#elif AGS_PLATFORM_OS_LINUX
-  if (_glxContext)
-  {
-    glXMakeCurrent(_xwin.display, None, nullptr);
-    glXDestroyContext(_xwin.display, _glxContext);
-    _glxContext = nullptr;
-  }
-#endif
+    SDL_GL_MakeCurrent(nullptr, nullptr);
+    if (this->sdlGlContext) {
+        SDL_GL_DeleteContext(this->sdlGlContext);
+    }
+    this->sdlGlContext = nullptr;
+
 }
 
 inline bool CanDoFrameBuffer()
@@ -1030,7 +864,7 @@ int OGLGraphicsDriver::GetDisplayDepthForNativeDepth(int native_color_depth) con
 
 IGfxModeList *OGLGraphicsDriver::GetSupportedModeList(int color_depth)
 {
-    std::vector<DisplayMode> modes;
+    std::vector<DisplayMode> modes {};
     platform->GetSystemDisplayModes(modes);
     return new OGLDisplayModeList(modes);
 }
@@ -1059,6 +893,9 @@ void OGLGraphicsDriver::ReleaseDisplayMode()
 
   DestroyAllStageScreens();
 
+  SDL_DestroyWindow(this->sdlWindow);
+  this->sdlWindow = nullptr;
+    
   gfx_driver = nullptr;
 
   if (platform->ExitFullscreenMode())
@@ -1071,10 +908,6 @@ void OGLGraphicsDriver::UnInit()
   ReleaseDisplayMode();
 
   DeleteGlContext();
-#if AGS_PLATFORM_OS_WINDOWS
-  _hWnd = NULL;
-  _hDC = NULL;
-#endif
 
   DeleteShaderProgram(_tintShader);
   DeleteShaderProgram(_lightShader);
@@ -1088,6 +921,39 @@ OGLGraphicsDriver::~OGLGraphicsDriver()
 void OGLGraphicsDriver::ClearRectangle(int x1, int y1, int x2, int y2, RGB *colorToUse)
 {
   // NOTE: this function is practically useless at the moment, because OGL redraws whole game frame each time
+}
+
+BITMAP *wrapGlReadPixelsBuffer(int width, int height, unsigned char *pixels) {
+  auto bmp = (BITMAP *)calloc(1, sizeof(BITMAP) + (sizeof(char *) * height));
+  bmp->w = width;
+  bmp->cr = width;
+  bmp->h = height;
+  bmp->cb = height;
+  bmp->clip = true;
+  bmp->cl = 0;
+  bmp->ct = 0;
+  bmp->id = 0;
+  bmp->extra = nullptr;
+  bmp->x_ofs = 0;
+  bmp->y_ofs = 0;
+  bmp->dat = nullptr;
+
+  // crete a fake bitmap to grab the vtable and whatno.
+  auto tmpbitmap = create_bitmap_ex(32, 1, 1);
+  bmp->vtable = tmpbitmap->vtable;
+  bmp->write_bank = tmpbitmap->write_bank;
+  bmp->read_bank = tmpbitmap->read_bank;
+  destroy_bitmap(tmpbitmap);
+
+  // glGetPixels returns image upside down, correct for this:
+  bmp->dat = pixels;
+  auto p = pixels;
+  for (int i=height-1; i>=0; i--) {
+    bmp->line[i] = p;
+    p += width * 4;
+  }
+
+  return bmp;
 }
 
 bool OGLGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_native_res, GraphicResolution *want_fmt)
@@ -1118,7 +984,7 @@ bool OGLGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
   {
 #if AGS_PLATFORM_OS_IOS
     ios_select_buffer();
-#elif AGS_PLATFORM_OS_WINDOWS || AGS_PLATFORM_OS_LINUX
+#else
     glReadBuffer(GL_FRONT);
 #endif
     retr_rect = _dstRect;
@@ -1128,34 +994,19 @@ bool OGLGraphicsDriver::GetCopyOfScreenIntoBitmap(Bitmap *destination, bool at_n
   int bufferSize = retr_rect.GetWidth() * retr_rect.GetHeight() * bpp;
 
   unsigned char* buffer = new unsigned char[bufferSize];
-  if (buffer)
-  {
-    glReadPixels(retr_rect.Left, retr_rect.Top, retr_rect.GetWidth(), retr_rect.GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+  
+  glReadPixels(retr_rect.Left, retr_rect.Top, retr_rect.GetWidth(), retr_rect.GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
-    unsigned char* surfaceData = buffer;
-    unsigned char* sourcePtr;
-    unsigned char* destPtr;
-    
-	for (int y = destination->GetHeight() - 1; y >= 0; y--)
-    {
-        sourcePtr = surfaceData;
-        destPtr = &destination->GetScanLineForWriting(y)[0];
-        for (int x = 0; x < destination->GetWidth() * bpp; x += bpp)
-        {
-            // TODO: find out if it's possible to retrieve pixels in the matching format
-            destPtr[x]     = sourcePtr[x + 2];
-            destPtr[x + 1] = sourcePtr[x + 1];
-            destPtr[x + 2] = sourcePtr[x];
-            destPtr[x + 3] = sourcePtr[x + 3];
-        }
-        surfaceData += retr_rect.GetWidth() * bpp;
-    }
+  // wrap in an allegro buffer to blit
+  auto *bufferBmp = wrapGlReadPixelsBuffer(retr_rect.GetWidth(), retr_rect.GetHeight(), buffer);
+  blit(bufferBmp, destination->GetAllegroBitmap(), 0, 0, 0, 0, retr_rect.GetWidth(), retr_rect.GetHeight());
+  free(bufferBmp);
 
-    if (_pollingCallback)
-        _pollingCallback();
+  if (_pollingCallback)
+      _pollingCallback();
 
-    delete [] buffer;
-  }
+  delete [] buffer;
+
   return true;
 }
 
@@ -1379,7 +1230,6 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   ios_select_buffer();
 #endif
 
-#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
   // TODO:
   // For some reason, mobile ports initialize actual display size after a short delay.
   // This is why we update display mode and related parameters (projection, viewport)
@@ -1389,10 +1239,17 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
   // of the platform-specific part of the code (Java app for Android / XCode for iOS).
   if (!device_screen_initialized)
   {
-    UpdateDeviceScreen();
+#if defined (ANDROID_VERSION)
+      UpdateDeviceScreen(Size(android_screen_physical_width, android_screen_physical_height));
+#elif defined (IOS_VERSION)
+      UpdateDeviceScreen(Size(ios_screen_physical_width, ios_screen_physical_height));
+#else
+      int w, h;
+      SDL_GetWindowSize(this->sdlWindow, &w, &h);
+      UpdateDeviceScreen(Size(w,h));
+#endif
     device_screen_initialized = 1;
   }
-#endif
 
   if (_do_render_to_texture)
   {
@@ -1457,12 +1314,10 @@ void OGLGraphicsDriver::_render(GlobalFlipType flip, bool clearDrawListAfterward
 
   glFinish();
 
-#if AGS_PLATFORM_OS_WINDOWS
-  SwapBuffers(_hDC);
-#elif AGS_PLATFORM_OS_LINUX
-  glXSwapBuffers(_xwin.display, _xwin.window);
-#elif AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
+#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
   device_swap_buffers();
+#else 
+  SDL_GL_SwapWindow(this->sdlWindow);
 #endif
 
   if (clearDrawListAfterwards)
@@ -1843,7 +1698,7 @@ IDriverDependantBitmap* OGLGraphicsDriver::CreateDDBFromBitmap(Bitmap *bitmap, b
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
       // NOTE: pay attention that the texture format depends on the **display mode**'s format,
       // rather than source bitmap's color depth!
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, thisAllocatedWidth, thisAllocatedHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, thisAllocatedWidth, thisAllocatedHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
     }
   }
 
@@ -2002,6 +1857,27 @@ void OGLGraphicsDriver::SetScreenTint(int red, int green, int blue)
   }
 }
 
+void OGLGraphicsDriver::ToggleFullscreen() {
+   int isFullscreen = SDL_GetWindowFlags(this->sdlWindow) & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP);
+
+   int result = 0;
+   if (isFullscreen) {
+      result = SDL_SetWindowFullscreen(this->sdlWindow, 0);
+   } else {
+      result = SDL_SetWindowFullscreen(this->sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+   }
+   if (result != 0) {
+      SDL_Log("Unable to toggle fullscreen: %s", SDL_GetError());
+   }
+}
+
+DisplayMode OGLGraphicsDriver::GetDisplayMode() const
+{
+  auto result = _mode;
+  result.Windowed = !(SDL_GetWindowFlags(this->sdlWindow) & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP));
+  return result;
+}
+
 
 OGLGraphicsFactory *OGLGraphicsFactory::_factory = nullptr;
 
@@ -2060,4 +1936,4 @@ OGLGfxFilter *OGLGraphicsFactory::CreateFilter(const String &id)
 } // namespace Engine
 } // namespace AGS
 
-#endif // only on Windows, Android and iOS
+#endif // AGS_OPENGL_DRIVER

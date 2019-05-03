@@ -156,7 +156,7 @@ void parse_scaling_option(const String &scaling_option, GameFrameSetup &frame_se
 }
 
 // Parses legacy filter ID and converts it into current scaling options
-bool parse_legacy_frame_config(const String &scaling_option, String &filter_id, GameFrameSetup &frame)
+static bool parse_legacy_frame_config(const String &scaling_option, String &filter_id, GameFrameSetup &frame)
 {
     struct
     {
@@ -199,6 +199,8 @@ String make_scaling_option(const GameFrameSetup &frame_setup)
     return make_scaling_option(frame_setup.ScaleDef, frame_setup.ScaleFactor);
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 uint32_t convert_scaling_to_fp(int scale_factor)
 {
     if (scale_factor >= 0)
@@ -206,6 +208,8 @@ uint32_t convert_scaling_to_fp(int scale_factor)
     else
         return kUnit / abs(scale_factor);
 }
+
+#endif
 
 int convert_fp_to_scaling(uint32_t scaling)
 {
@@ -549,14 +553,9 @@ void apply_config(const ConfigTree &cfg)
         usetup.Screen.DisplayMode.ScreenSize.Size = Size(INIreadint(cfg, "graphics", "screen_width"),
                                                         INIreadint(cfg, "graphics", "screen_height"));
         usetup.Screen.DisplayMode.ScreenSize.MatchDeviceRatio = INIreadint(cfg, "graphics", "match_device_ratio", 1) != 0;
-        // TODO: move to config overrides (replace values during config load)
-#if AGS_PLATFORM_OS_MACOS
-        usetup.Screen.Filter.ID = "none";
-#else
         usetup.Screen.Filter.ID = INIreadstring(cfg, "graphics", "filter", "StdScale");
         parse_scaling_option(INIreadstring(cfg, "graphics", "game_scale_fs", "proportional"), usetup.Screen.FsGameFrame);
         parse_scaling_option(INIreadstring(cfg, "graphics", "game_scale_win", "max_round"), usetup.Screen.WinGameFrame);
-#endif
 
         usetup.Screen.DisplayMode.RefreshRate = INIreadint(cfg, "graphics", "refresh");
         usetup.Screen.DisplayMode.VSync = INIreadint(cfg, "graphics", "vsync") > 0;
@@ -574,7 +573,6 @@ void apply_config(const ConfigTree &cfg)
         usetup.translation = INIreadstring(cfg, "language", "translation");
 
         // TODO: move to config overrides (replace values during config load)
-
         // the config file specifies cache size in KB, here we convert it to bytes
         spriteset.SetMaxCacheSize(INIreadint (cfg, "misc", "cachemax", DEFAULTCACHESIZE / 1024) * 1024);
 

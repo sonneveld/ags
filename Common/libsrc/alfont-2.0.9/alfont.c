@@ -717,7 +717,7 @@ void alfont_textout_aa_ex(BITMAP *bmp, ALFONT_FONT *f, const char *s, int x, int
   int first_x=0, final_x=0, final_y=0;
   int curr_uformat;
   int first_flag=TRUE; //First Char flag
-  BITMAP *masked_bmp; //the masked bmp used by Font hollow
+  BITMAP *masked_bmp = NULL; //the masked bmp used by Font hollow
 
   #ifdef ALFONT_DOS
   iconv_t c_pt;
@@ -1880,7 +1880,7 @@ void alfont_textout_ex(BITMAP *bmp, ALFONT_FONT *f, const char *s, int x, int y,
   int first_x=0, final_x=0, final_y=0;
   int curr_uformat;
   int first_flag=TRUE; //First Char flag
-  BITMAP *masked_bmp; //the masked bmp used by Font hollow
+  BITMAP *masked_bmp = NULL; //the masked bmp used by Font hollow
   #ifdef ALFONT_DOS
   iconv_t c_pt;
   size_t fromlen, tolen;

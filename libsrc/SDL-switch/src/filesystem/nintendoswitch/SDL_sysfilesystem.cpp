@@ -78,8 +78,8 @@ SDL_GetPrefPath(const char *org, const char *app)
         nn::account::UserHandle *handle = new nn::account::UserHandle;
         nn::Result rc;
 
-        rc = nn::account::OpenPreselectedUser(handle);
-        if (rc.IsFailure()) {
+        bool openUserSuccess = nn::account::TryOpenPreselectedUser(handle);
+        if (!openUserSuccess) {
             SDL_SetError("Couldn't open preselected user account, err=%d", rc.GetDescription());
             delete handle;
             return NULL;
@@ -120,7 +120,7 @@ SDL_GetPrefPath(const char *org, const char *app)
 int
 SDL_NintendoSwitch_CommitSaveData(const char *mountpoint)
 {
-    const nn::Result rc = nn::fs::CommitSaveData(mountpoint);
+    const nn::Result rc = nn::fs::Commit(mountpoint);
     if (rc.IsFailure()) {
         return SDL_SetError("Failed to commit save data, err=%d", rc.GetDescription());
     }

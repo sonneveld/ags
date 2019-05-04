@@ -91,9 +91,6 @@ int MyPushButton::pressedon(int mousex, int mousey)
         //      ags_domouse(DOMOUSE_UPDATE);
 
         refresh_gui_screen();
-
-        while (waitingForNextTick()) {
-        }
     }
     wasstat = state;
     state = 0;

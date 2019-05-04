@@ -29,9 +29,11 @@ const auto MAXIMUM_FALL_BEHIND = 3;
 
 auto last_tick_time = AGS_Clock::now();
 auto tick_duration = std::chrono::microseconds(1000000LL/40);
-auto framerate_maxed = false;
+
 
 }
+
+bool framerate_maxed = false;
 
 void setTimerFps(int new_fps) {
     tick_duration = std::chrono::microseconds(1000000LL/new_fps);
@@ -67,7 +69,7 @@ bool waitingForNextTick() {
         return false;
     }
 
-    platform->YieldCPU();
+    // platform->YieldCPU();
     return true;
 }
 

@@ -106,7 +106,6 @@ void draw_gui_sprite_v330(Common::Bitmap *ds, int pic, int x, int y, bool use_al
 // Render game on screen with the given custom offset
 void render_to_screen(int atx = 0, int aty = 0);
 void draw_screen_callback();
-void write_screen();
 void GfxDriverOnInitCallback(void *data);
 bool GfxDriverNullSpriteCallback(int x, int y);
 void putpixel_compensate (Common::Bitmap *g, int xx,int yy, int col);

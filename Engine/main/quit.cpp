@@ -223,6 +223,7 @@ void free_globals()
 #endif
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 // TODO: move to test unit
 extern Bitmap *test_allegro_bitmap;
 extern IDriverDependantBitmap *test_allegro_ddb;
@@ -232,6 +233,7 @@ void allegro_bitmap_test_release()
 	if (test_allegro_ddb)
 		gfxDriver->DestroyDDB(test_allegro_ddb);
 }
+#endif
 
 char return_to_roomedit[30] = "\0";
 char return_to_room[150] = "\0";
@@ -252,8 +254,10 @@ void quit(const char *quitmsg)
 
     if (qreason & kQuitKind_NormalExit)
         save_config_file();
-
+        
+#ifdef AGS_DELETE_FOR_3_6
 	allegro_bitmap_test_release();
+#endif
 
     handledErrorInEditor = false;
 

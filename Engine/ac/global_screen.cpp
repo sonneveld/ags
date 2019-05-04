@@ -56,7 +56,9 @@ void ShakeScreen(int severe) {
     severe = data_to_game_coord(severe);
 
     wasShakingScreen = 1;
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->RequiresFullRedrawEachFrame())
+#endif
     {
         play.shakesc_length = 10;
         play.shakesc_delay = 2;
@@ -75,6 +77,7 @@ void ShakeScreen(int severe) {
         play.mouse_cursor_hidden--;
         play.shakesc_length = 0;
     }
+#ifdef AGS_DELETE_FOR_3_6
     else
     {
         // TODO: support shaking room viewport separately
@@ -92,6 +95,8 @@ void ShakeScreen(int severe) {
         render_to_screen();
         delete tty;
     }
+#endif
+
     wasShakingScreen = 0;
 
     //abuf=oldsc;// CHECKME!!!

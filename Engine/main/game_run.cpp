@@ -697,12 +697,14 @@ void set_loop_counter(unsigned int new_counter) {
     fps = std::numeric_limits<float>::quiet_NaN();
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void PollUntilNextFrame()
 {
     if (play.fast_forward) { return; }
     while (waitingForNextTick()) {
     }
 }
+#endif
 
 void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int extraX, int extraY) {
 
@@ -982,6 +984,7 @@ void RunGameUntilAborted()
     }
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void update_polled_stuff_if_runtime()
 {
     SDL_PumpEvents();
@@ -996,3 +999,4 @@ void update_polled_stuff_if_runtime()
     if (editor_debugging_initialized)
         check_for_messages_from_editor();
 }
+#endif

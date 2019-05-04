@@ -20,6 +20,8 @@
 #define __AGS_EE_GFX__GRAPHICSDRIVER_H
 
 #include <memory>
+#include "allegro/palette.h"
+
 #include "gfx/gfxdefines.h"
 #include "gfx/gfxmodelist.h"
 #include "util/geometry.h"

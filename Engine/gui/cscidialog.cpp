@@ -178,9 +178,6 @@ int CSCIWaitMessage(CSCIMessage * cscim)
     prepare_gui_screen(win_x, win_y, win_width, win_height, true);
 
     while (1) {
-        update_audio_system_on_game_loop();
-        refresh_gui_screen();
-
         cscim->id = -1;
         cscim->code = 0;
         smcode = 0;
@@ -233,8 +230,7 @@ int CSCIWaitMessage(CSCIMessage * cscim)
         if (cscim->code > 0)
             break;
 
-        while (waitingForNextTick()) {
-        }
+        refresh_gui_screen();
     }
 
     return 0;

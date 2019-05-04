@@ -13,16 +13,7 @@
 //=============================================================================
 
 #include "gfx/gfxdriverfactory.h"
-#include "gfx/ali3d_sdl_renderer.h"
-#include "gfx/gfxfilter_allegro.h"
-#include "gfx/ogl_support.h"
-
-#if AGS_OPENGL_DRIVER
-#include "gfx/ali3dogl.h"
-#include "gfx/gfxfilter_ogl.h"
-#endif
-
-#include "main/main_allegro.h"
+#include "gfx/scene_graph_driver.h"
 
 namespace AGS
 {
@@ -31,24 +22,12 @@ namespace Engine
 
 void GetGfxDriverFactoryNames(StringV &ids)
 {
-#if AGS_OPENGL_DRIVER
-    ids.push_back("OGL");
-#endif
-    ids.push_back("Software");
+    ids.push_back("Scene Graph");
 }
 
 IGfxDriverFactory *GetGfxDriverFactory(const String id)
 {
-#if AGS_OPENGL_DRIVER
-    if (id.CompareNoCase("OGL") == 0 || (id.CompareNoCase("D3D9") == 0)) {
-        return OGL::OGLGraphicsFactory::GetFactory();
-    }
-#endif
-    if ((id.CompareNoCase("Software") == 0) || (id.CompareNoCase("DX5") == 0)) {
-        return SDLRenderer::SDLRendererGraphicsFactory::GetFactory();
-    }
-    set_allegro_error("No graphics factory with such id: %s", id.GetCStr());
-    return nullptr;
+    return getSceneGraphGraphicsFactory();
 }
 
 } // namespace Engine

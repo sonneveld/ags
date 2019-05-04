@@ -81,7 +81,6 @@ extern "C" void ios_render();
 extern GameSetup usetup;
 extern GameSetupStruct game;
 extern GameState play;
-extern int convert_16bit_bgr;
 extern ScriptSystem scsystem;
 extern AGSPlatformDriver *platform;
 extern RoomStruct thisroom;
@@ -116,6 +115,8 @@ extern int lastmx,lastmy;
 extern IDriverDependantBitmap *mouseCursor;
 extern int hotx,hoty;
 extern int bg_just_changed;
+
+extern void yield_game();
 
 color palette[256];
 
@@ -184,6 +185,7 @@ void setpal() {
 }
 
 #ifdef AGS_DELETE_FOR_3_6
+static void update_screen();
 
 int _places_r = 3, _places_g = 2, _places_b = 3;
 
@@ -572,6 +574,7 @@ int MakeColor(int color_index)
 
 void init_draw_method()
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->HasAcceleratedTransform())
     {
         walkBehindMethod = DrawAsSeparateSprite;
@@ -583,6 +586,8 @@ void init_draw_method()
     {
         walkBehindMethod = DrawOverCharSprite;
     }
+#endif
+    walkBehindMethod = DrawAsSeparateSprite;
 
     on_mainviewport_changed();
     on_roomviewport_changed(0);
@@ -609,6 +614,7 @@ void dispose_room_drawdata()
 
 void on_mainviewport_changed()
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->UsesMemoryBackBuffer())
     {
         const Rect &main_view = play.GetMainViewport();
@@ -624,13 +630,11 @@ void on_mainviewport_changed()
     if (!gfxDriver->RequiresFullRedrawEachFrame())
     {
         init_invalid_regions(-1, play.GetMainViewport().GetSize(), RectWH(play.GetMainViewport().GetSize()));
-#ifdef AGS_DELETE_FOR_3_6
-
         if (game.GetGameRes().ExceedsByAny(play.GetMainViewport().GetSize()))
             clear_letterbox_borders();
 
-#endif        
     }
+#endif        
 }
 
 // Initialize dirty rect and background buffers for software renderer
@@ -641,7 +645,9 @@ void init_invalid_room_regions(int view_index, const Size &surf_size, const Rect
         RoomCameraBuffer.resize(view_index + 1);
         RoomCameraFrame.resize(view_index + 1);
     }
+#ifdef AGS_DELETE_FOR_3_6
     init_invalid_regions(view_index, surf_size, viewport);
+#endif
 }
 
 // Syncs room viewport and camera in case anything has changed
@@ -689,22 +695,23 @@ void init_room_drawdata()
 
 void on_roomviewport_changed(int index)
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!gfxDriver->RequiresFullRedrawEachFrame())
     {
         sync_roomview(play.GetRoomViewportObj(index));
-#ifdef AGS_DELETE_FOR_3_6
 
         invalidate_screen();
 
-#endif      
         // TODO: don't have to do this all the time, perhaps do "dirty rect" method
         // and only clear previous viewport location?
         gfxDriver->GetMemoryBackBuffer()->Clear();
     }
+#endif      
 }
 
 void on_camera_size_changed(int index)
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!gfxDriver->RequiresFullRedrawEachFrame())
     {
         auto cam = play.GetRoomCamera(index);
@@ -715,13 +722,11 @@ void on_camera_size_changed(int index)
             if (vp)
                 sync_roomview(vp);
         }
-#ifdef AGS_DELETE_FOR_3_6
-
         invalidate_screen();
-
-#endif      
     }
+#endif      
 }
+
 
 void mark_screen_dirty()
 {
@@ -758,6 +763,7 @@ void invalidate_sprite(int x1, int y1, IDriverDependantBitmap *pic, bool in_room
 }
 
 #endif      
+
 void mark_current_background_dirty()
 {
     current_background_is_dirty = true;
@@ -769,8 +775,6 @@ void draw_and_invalidate_text(Bitmap *ds, int x1, int y1, int font, color_t text
     wouttext_outline(ds, x1, y1, font, text_color, (char*)text);
 #ifdef AGS_DELETE_FOR_3_6
     invalidate_rect(x1, y1, x1 + wgettextwidth_compensate(text, font), y1 + getfontheight_outlined(font) + get_fixed_pixel_size(1), false);
-
-
 #endif      
 }
 
@@ -801,14 +805,15 @@ void render_black_borders(int atx, int aty)
 void render_to_screen(int atx, int aty)
 {
     gfxDriver->SetNativeRenderOffset(atx, aty);
+
 #ifdef AGS_DELETE_FOR_3_6
     const Rect &viewport = play.GetMainViewport();
     // For software renderer, need to blacken upper part of the game frame when shaking screen moves image down
     if (aty > 0 && wasShakingScreen && gfxDriver->UsesMemoryBackBuffer())
         gfxDriver->ClearRectangle(viewport.Left, viewport.Top, viewport.GetWidth() - 1, aty, nullptr);
     render_black_borders(atx, aty);
-
 #endif
+
     if(pl_any_want_hook(AGSE_FINALSCREENDRAW))
         gfxDriver->DrawSprite(AGSE_FINALSCREENDRAW, 0, nullptr);
 
@@ -817,7 +822,7 @@ void render_to_screen(int atx, int aty)
     // only vsync in full screen mode, it makes things worse
     // in a window
     gfxDriver->EnableVsyncBeforeRender((scsystem.vsync > 0) && (!scsystem.windowed));
-#endif
+
     bool succeeded = false;
     while (!succeeded)
     {
@@ -840,6 +845,9 @@ void render_to_screen(int atx, int aty)
             platform->Delay(500);
         }
     }
+#endif
+
+    yield_game();
 }
 
 
@@ -851,7 +859,7 @@ void clear_letterbox_borders()
     gfxDriver->ClearRectangle(0, 0, game.GetGameRes().Width - 1, viewport.Top - 1, nullptr);
     gfxDriver->ClearRectangle(0, viewport.Bottom + 1, game.GetGameRes().Width - 1, game.GetGameRes().Height - 1, nullptr);
 }
-#endif
+
 // writes the virtual screen to the screen, converting colours if
 // necessary
 void write_screen() {
@@ -866,22 +874,15 @@ void write_screen() {
         if ( (loopcounter % play.shakesc_delay) < (play.shakesc_delay / 2) )
             at_yp = data_to_game_coord(play.shakesc_amount);
 
-#ifdef AGS_DELETE_FOR_3_6
         invalidate_screen();
-#endif
     }
     else if (wasShakingScreen) {
         wasShakingScreen = 0;
-
-#ifdef AGS_DELETE_FOR_3_6
 
         if (!gfxDriver->RequiresFullRedrawEachFrame())
         {
             clear_letterbox_borders();
         }
-
-
-#endif
     }
 
     if (play.screen_tint < 1)
@@ -892,7 +893,7 @@ void write_screen() {
     render_to_screen(0, at_yp);
 }
 
-
+#endif
 
 void draw_screen_callback()
 {
@@ -1089,6 +1090,7 @@ int sort_out_walk_behinds(Bitmap *sprit,int xx,int yy,int basel, Bitmap *copyPix
     return pixelsChanged;
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void sort_out_char_sprite_walk_behind(int actspsIndex, int xx, int yy, int basel, int zoom, int width, int height)
 {
     if (noWalkBehindsAtAll)
@@ -1119,6 +1121,7 @@ void sort_out_char_sprite_walk_behind(int actspsIndex, int xx, int yy, int basel
         add_to_sprite_list(actspswbbmp[actspsIndex], xx, yy, basel, 0, -1, true);
     }
 }
+#endif
 
 void clear_draw_list() {
     thingsToDrawList.clear();
@@ -1734,10 +1737,12 @@ void prepare_objects_for_drawing() {
                 usebasel += thisroom.Height;
             }
         }
+#ifdef AGS_DELETE_FOR_3_6
         else if (walkBehindMethod == DrawAsSeparateCharSprite) 
         {
             sort_out_char_sprite_walk_behind(useindx, atxp, atyp, usebasel, objs[aa].last_zoom, objs[aa].last_width, objs[aa].last_height);
         }
+#endif
         else if ((!actspsIntact) && (walkBehindMethod == DrawOverCharSprite))
         {
             sort_out_walk_behinds(actsps[useindx], atxp, atyp, usebasel);
@@ -1752,7 +1757,9 @@ void prepare_objects_for_drawing() {
             actspsbmp[useindx] = gfxDriver->CreateDDBFromBitmap(actsps[useindx], hasAlpha);
         }
 
+#ifdef AGS_DELETE_FOR_3_6
         if (gfxDriver->HasAcceleratedTransform())
+#endif
         {
             actspsbmp[useindx]->SetFlippedLeftRight(objcache[aa].mirroredWas != 0);
             actspsbmp[useindx]->SetStretch(objs[aa].last_width, objs[aa].last_height);
@@ -1986,6 +1993,7 @@ void prepare_characters_for_drawing() {
             // create the base sprite in actsps[useindx], which will
             // be scaled and/or flipped, as appropriate
             int actspsUsed = 0;
+#ifdef AGS_DELETE_FOR_3_6
             if (!gfxDriver->HasAcceleratedTransform())
             {
                 actspsUsed = scale_and_flip_sprite(
@@ -1993,6 +2001,7 @@ void prepare_characters_for_drawing() {
                     newwidth, newheight, isMirrored);
             }
             else 
+#endif
             {
                 // ensure actsps exists
                 actsps[useindx] = recycle_bitmap(actsps[useindx], coldept, game.SpriteInfos[sppic].Width, game.SpriteInfos[sppic].Height);
@@ -2000,6 +2009,7 @@ void prepare_characters_for_drawing() {
 
             our_eip = 335;
 
+#ifdef AGS_DELETE_FOR_3_6
             if (((light_level != 0) || (tint_amount != 0)) &&
                 (!gfxDriver->HasAcceleratedTransform())) {
                     // apply the lightening or tinting
@@ -2013,6 +2023,8 @@ void prepare_characters_for_drawing() {
                         comeFrom);
             }
             else if (!actspsUsed) {
+#endif
+            if (!actspsUsed) {
                 // no scaling, flipping or tinting was done, so just blit it normally
                 actsps[useindx]->Blit (spriteset[sppic], 0, 0, 0, 0, actsps[useindx]->GetWidth(), actsps[useindx]->GetHeight());
             }
@@ -2039,10 +2051,12 @@ void prepare_characters_for_drawing() {
                 usebasel += thisroom.Height;
             }
         }
+#ifdef AGS_DELETE_FOR_3_6
         else if (walkBehindMethod == DrawAsSeparateCharSprite) 
         {
             sort_out_char_sprite_walk_behind(useindx, bgX, bgY, usebasel, charextra[aa].zoom, newwidth, newheight);
         }
+#endif
         else if (walkBehindMethod == DrawOverCharSprite)
         {
             sort_out_walk_behinds(actsps[useindx], bgX, bgY, usebasel);
@@ -2055,7 +2069,9 @@ void prepare_characters_for_drawing() {
             actspsbmp[useindx] = recycle_ddb_bitmap(actspsbmp[useindx], actsps[useindx], hasAlpha);
         }
 
+#ifdef AGS_DELETE_FOR_3_6
         if (gfxDriver->HasAcceleratedTransform()) 
+#endif
         {
             actspsbmp[useindx]->SetStretch(newwidth, newheight);
             actspsbmp[useindx]->SetFlippedLeftRight(isMirrored != 0);
@@ -2091,7 +2107,9 @@ void prepare_characters_for_drawing() {
 void prepare_room_sprites()
 {
     // Background sprite for the non-software renderer
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->RequiresFullRedrawEachFrame())
+#endif
     {
         if (roomBackgroundBmp == nullptr)
         {
@@ -2114,6 +2132,14 @@ void prepare_room_sprites()
         }
         add_thing_to_draw(roomBackgroundBmp, 0, 0, 0, false);
     }
+#ifdef AGS_DELETE_FOR_3_6
+    else
+    {
+        set_invalidrects_cameraoffs(0, offsetx, offsety);
+        update_room_invreg_and_reset(0, roomcam_surface, thisroom.BgFrames[play.bg_frame].Graphic.get(), no_transform);
+        // TODO: remember that we also would need to rotate here if we support camera rotation!
+    }
+#endif
 
     clear_sprite_list();
 
@@ -2150,6 +2176,7 @@ void draw_preroom_background()
 // whatsoever.
 PBitmap draw_room_background(PViewport view, const SpriteTransform &room_trans)
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->RequiresFullRedrawEachFrame())
         return nullptr;
 
@@ -2182,6 +2209,8 @@ PBitmap draw_room_background(PViewport view, const SpriteTransform &room_trans)
     }
 
     return RoomCameraFrame[view_index];
+#endif
+    return nullptr;
 }
 
 
@@ -2230,7 +2259,6 @@ void draw_fps()
 
 #ifdef AGS_DELETE_FOR_3_6
     invalidate_sprite(1, yp, ddb, false);
-
 #endif
 }
 
@@ -2391,6 +2419,7 @@ void put_sprite_list_on_screen(bool in_room)
     our_eip = 1100;
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void draw_misc_info()
 {
     if (display_fps)
@@ -2398,6 +2427,7 @@ void draw_misc_info()
 
     our_eip = 1101;
 }
+#endif
 
 bool GfxDriverNullSpriteCallback(int x, int y)
 {
@@ -2414,12 +2444,21 @@ void GfxDriverOnInitCallback(void *data)
     pl_run_plugin_init_gfx_hooks(gfxDriver->GetDriverID(), data);
 }
 
+// Draw everything 
+void render_graphics(IDriverDependantBitmap *extraBitmap, int extraX, int extraY) {
 
+    construct_virtual_screen(false);
 
+    if (extraBitmap != nullptr) {
+#ifdef AGS_DELETE_FOR_3_6
+        invalidate_sprite(extraX, extraY, extraBitmap, false);
+#endif
+        gfxDriver->DrawSprite(extraX, extraY, extraBitmap);
+    }
 
 // update_screen: copies the contents of the virtual screen to the actual
 // screen, and draws the mouse cursor on.
-void update_screen() {
+
     // cos hi-color doesn't fade in, don't draw it the first time
     if ((in_new_room > 0) & (game.color_depth > 1))
         return;
@@ -2507,7 +2546,29 @@ void update_screen() {
     if (play.mouse_cursor_hidden)
     ags_domouse(DOMOUSE_DISABLE);*/
 
-    write_screen();
+
+    // writes the virtual screen to the screen, converting colours if
+    // necessary
+    if (!play.fast_forward) {
+        int at_yp = 0;
+
+        if (play.shakesc_length > 0) {
+            wasShakingScreen = 1;
+            if ( (loopcounter % play.shakesc_delay) < (play.shakesc_delay / 2) )
+                at_yp = data_to_game_coord(play.shakesc_amount);
+        }
+        else if (wasShakingScreen) {
+            wasShakingScreen = 0;
+        }
+
+        if (play.screen_tint < 1)
+            gfxDriver->SetScreenTint(0, 0, 0);
+        else
+            gfxDriver->SetScreenTint(play.screen_tint & 0xff, (play.screen_tint >> 8) & 0xff, (play.screen_tint >> 16) & 0xff);
+
+        render_to_screen(0, at_yp);
+    }
+
 
     if (!play.screen_is_faded_out) {
         // always update the palette, regardless of whether the plugin
@@ -2546,8 +2607,11 @@ static void construct_room_view()
             (float)view_rc.GetWidth() / (float)cam_rc.GetWidth(),
             (float)view_rc.GetHeight() / (float)cam_rc.GetHeight(),
             0.f);
+#ifdef AGS_DELETE_FOR_3_6
         PBitmap bg_surface = draw_room_background(viewport, room_trans);
         gfxDriver->BeginSpriteBatch(view_rc, room_trans, bg_surface);
+#endif
+        gfxDriver->BeginSpriteBatch(view_rc, room_trans);
         put_sprite_list_on_screen(true);
     }
 
@@ -2569,15 +2633,18 @@ static void construct_misc_view()
 {
     const Rect &main_viewport = play.GetMainViewport();
     gfxDriver->BeginSpriteBatch(main_viewport, SpriteTransform());
+#ifdef AGS_DELETE_FOR_3_6
     draw_misc_info();
+#endif
 }
 
 void construct_virtual_screen(bool fullRedraw) 
 {
-    gfxDriver->ClearDrawLists();
-
+    // TODO: we shouldn't do the fast forward check here.
     if (play.fast_forward)
         return;
+
+    gfxDriver->ClearDrawLists();
 
     our_eip=3;
 
@@ -2604,7 +2671,8 @@ void construct_virtual_screen(bool fullRedraw)
     {
         construct_room_view();
     }
-    else if (!gfxDriver->RequiresFullRedrawEachFrame())
+#ifdef AGS_DELETE_FOR_3_6
+    else if (!gfxDriver->RequiresFullRedrawEachFrame()) 
     {
         // if the driver is not going to redraw the screen,
         // black it out so we don't get cursor trails
@@ -2612,6 +2680,7 @@ void construct_virtual_screen(bool fullRedraw)
         Bitmap *ds = gfxDriver->GetMemoryBackBuffer();
         ds->Fill(0);
     }
+#endif
 
     our_eip=4;
 
@@ -2624,6 +2693,7 @@ void construct_virtual_screen(bool fullRedraw)
     // Stage 3: auxiliary info
     construct_misc_view();
 
+#ifdef AGS_DELETE_FOR_3_6
     if (fullRedraw)
     {
         // ensure the virtual screen is reconstructed
@@ -2632,20 +2702,14 @@ void construct_virtual_screen(bool fullRedraw)
         if (gfxDriver->UsesMemoryBackBuffer())
             gfxDriver->RenderToBackBuffer();
     }
-}
-
-// Draw everything 
-void render_graphics(IDriverDependantBitmap *extraBitmap, int extraX, int extraY) {
-
-    construct_virtual_screen(false);
-    our_eip=5;
-
-    if (extraBitmap != nullptr) {
-#ifdef AGS_DELETE_FOR_3_6
-        invalidate_sprite(extraX, extraY, extraBitmap, false);
 #endif
-        gfxDriver->DrawSprite(extraX, extraY, extraBitmap);
-    }
 
-    update_screen();
+    //
+    // Batch 3: auxiliary info
+    //
+
+    // draw_misc_info
+    if (display_fps)
+        draw_fps();
+
 }

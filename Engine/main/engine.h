@@ -57,4 +57,7 @@ extern void engine_on_window_size_changed();
 typedef void (*t_engine_pre_init_callback)(void);
 extern void engine_set_pre_init_callback(t_engine_pre_init_callback callback);
 
+// Applies necessary changes after screen<->virtual coordinate transformation has changed
+void on_coordinates_scaling_changed();
+
 #endif // __AGS_EE_MAIN__ENGINE_H

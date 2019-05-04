@@ -51,7 +51,6 @@ using namespace AGS::Engine;
 extern GameSetupStruct game;
 extern GameSetup usetup;
 extern SpriteCache spriteset;
-extern int force_window;
 extern GameState play;
 
 // Filename of the default config file, the one found in the game installation
@@ -658,6 +657,7 @@ void save_config_file()
     char buffer[STD_BUFFER_SIZE];
     ConfigTree cfg;
 
+#ifdef AGS_DELETE_FOR_3_6
     // Last display mode
     // TODO: force_window check is a temporary workaround (see comment below)
     if (force_window == 0)
@@ -681,6 +681,7 @@ void save_config_file()
                 cfg["graphics"]["screen_def"] = "max";
         }
     }
+#endif
 
     // Other game options that could be changed at runtime
     if (game.options[OPT_RENDERATSCREENRES] == kRenderAtScreenRes_UserDefined)

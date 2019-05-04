@@ -2167,6 +2167,7 @@ void CheckViewFrameForCharacter(CharacterInfo *chi) {
 
 Bitmap *GetCharacterImage(int charid, int *isFlipped) 
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!gfxDriver->HasAcceleratedTransform())
     {
         if (actsps[charid + MAX_ROOM_OBJECTS] != nullptr) 
@@ -2177,6 +2178,7 @@ Bitmap *GetCharacterImage(int charid, int *isFlipped)
             return actsps[charid + MAX_ROOM_OBJECTS];
         }
     }
+#endif
     CharacterInfo*chin=&game.chars[charid];
     int sppic = views[chin->view].loops[chin->loop].frames[chin->frame].pic;
     return spriteset[sppic];

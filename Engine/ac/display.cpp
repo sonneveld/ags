@@ -269,11 +269,6 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
         int countdown = GetTextDisplayTime (todis);
         int skip_setting = user_to_internal_skip_speech((SkipSpeechStyle)play.skip_display);
         while (1) {
-            /*      if (!play.mouse_cursor_hidden)
-            ags_domouse(DOMOUSE_UPDATE);
-            write_screen();*/
-
-            update_audio_system_on_game_loop();
             render_graphics();
 
             if (ags_mgetbutton()>NONE) {
@@ -297,7 +292,6 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
                     break;
                 }
             }
-            PollUntilNextFrame();
             countdown--;
 
             if (play.speech_has_voice) {

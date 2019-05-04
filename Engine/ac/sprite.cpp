@@ -61,6 +61,7 @@ void set_rgb_mask_using_alpha_channel(Bitmap *image)
     }
 }
 
+// Some alpha images have their alpha set to zero, so fix that.
 void force_opaque_alpha_channel(Bitmap *image)
 {
     auto h = image->GetHeight();

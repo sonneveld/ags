@@ -48,6 +48,7 @@ extern std::vector<ccInstance *> moduleInst;
 extern int numScriptModules;
 extern CharacterInfo*playerchar;
 
+#ifdef AGS_DELETE_FOR_3_6
 void start_game_init_editor_debugging()
 {
     if (editor_debugging_enabled)
@@ -81,13 +82,12 @@ void start_game_load_savegame_on_startup()
         try_restore_save(loadSaveGameOnStartup, saveGameNumber);
     }
 }
+#endif
 
 void start_game() {
     set_cursor_mode(MODE_WALK);
     Mouse::SetPosition(Point(play.GetMainViewport().GetWidth()/2, play.GetMainViewport().GetHeight()/2));
     newmusic(0);
-
-    our_eip = -42;
 
     // skip ticks to account for initialisation or a restored game.
     skipMissedTicks();
@@ -97,11 +97,7 @@ void start_game() {
 
     RunTextScript(gameinst, "game_start");
 
-    our_eip = -43;
-
     SetRestartPoint();
-
-    our_eip=-3;
 
     if (displayed_room < 0) {
         current_fade_out_effect();
@@ -113,6 +109,7 @@ void start_game() {
     first_room_initialization();
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void do_start_game()
 {
     // only start if replay playback hasn't loaded a game
@@ -146,3 +143,4 @@ void initialize_start_and_play_game(int override_start_room, const char *loadSav
         quit((char*)gfxException._message);
     }
 }
+#endif

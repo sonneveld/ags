@@ -497,6 +497,7 @@ void GetObjectPropertyText (int item, const char *property, char *bufer)
 
 Bitmap *GetObjectImage(int obj, int *isFlipped) 
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!gfxDriver->HasAcceleratedTransform())
     {
         if (actsps[obj] != nullptr) {
@@ -507,5 +508,6 @@ Bitmap *GetObjectImage(int obj, int *isFlipped)
             return actsps[obj];
         }
     }
+#endif
     return spriteset[objs[obj].num];
 }

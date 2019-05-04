@@ -255,9 +255,6 @@ void process_event(EventHappened*evp) {
             set_palette_range(palette, 0, 255, 0);
         else if (theTransition == FADE_NORMAL)
         {
-            if (gfxDriver->UsesMemoryBackBuffer())
-                gfxDriver->RenderToBackBuffer();
-
             my_fade_in(palette,5);
         }
         else if (theTransition == FADE_BOXOUT) 
@@ -286,8 +283,6 @@ void process_event(EventHappened*evp) {
                     gfxDriver->DrawSprite(0, 0, ddb);
                 }
                 render_to_screen();
-                do {
-                } while (waitingForNextTick());
                 transparency -= 16;
             }
             saved_viewport_bitmap->Release();
@@ -322,8 +317,6 @@ void process_event(EventHappened*evp) {
                 draw_screen_callback();
                 gfxDriver->DrawSprite(0, 0, ddb);
                 render_to_screen();
-                do {
-                } while (waitingForNextTick());
             }
             saved_viewport_bitmap->Release();
 

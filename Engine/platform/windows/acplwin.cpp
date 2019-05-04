@@ -151,6 +151,7 @@ AGSWin32::AGSWin32() {
   _isDebuggerPresent = ::IsDebuggerPresent() != FALSE;
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void check_parental_controls() {
   /* this doesn't work, it always just returns access depedning
      on whether unrated games are allowed because of digital signature
@@ -187,6 +188,7 @@ void check_parental_controls() {
   CoUninitialize();
   */
 }
+#endif
 
 void AGSWin32::create_shortcut(const char *pathToEXE, const char *workingFolder, const char *arguments, const char *shortcutPath)
 {
@@ -523,7 +525,9 @@ void AGSWin32::UnRegisterGameWithGameExplorer()
 
 void AGSWin32::PostAllegroInit(bool windowed) 
 {
+#ifdef AGS_DELETE_FOR_3_6
   check_parental_controls();
+#endif
 
   // Set the Windows timer resolution to 1 ms so that calls to
   // Sleep() don't take more time than specified

@@ -765,7 +765,8 @@ AL_CONST char *get_config_string(AL_CONST char *section, AL_CONST char *name, AL
    CONFIG_HOOK *hook;
    CONFIG_ENTRY *p;
 
-   init_config(TRUE);
+   // SWITCH hack to prevent Allegro looking up /etc/
+   init_config(FALSE);
 
    prettify_section_name(section, section_name, sizeof(section_name));
 
@@ -1323,7 +1324,7 @@ AL_CONST char *get_config_text(AL_CONST char *msg)
       return msg;
    }
 
-   init_config(TRUE);
+   init_config(FALSE);
 
    section = uconvert_ascii("[language]", tmp1);
 

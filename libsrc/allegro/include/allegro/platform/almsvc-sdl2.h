@@ -98,5 +98,14 @@
 #endif
 
 
+#define lseek _lseek
+#define close _close
+#define read _read
+#define write _write
+#define stricmp _stricmp
+#define open _open
+#define unlink _unlink
+
+
 /* arrange for other headers to be included later on */
 #define ALLEGRO_EXTRA_HEADER     "allegro/platform/alsdl2.h"

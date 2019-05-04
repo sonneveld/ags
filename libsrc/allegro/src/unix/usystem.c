@@ -15,6 +15,7 @@
  *      See readme.txt for copyright information.
  */
 
+#ifndef _WIN32
 
 #include <stdio.h>
 #include <unistd.h>
@@ -458,3 +459,5 @@ size_t _unix_get_page_size(void)
 
    return (page_size == -1) ? 4096 : page_size;
 }
+
+#endif

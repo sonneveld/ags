@@ -378,13 +378,15 @@ static int _install_allegro(int system_id, int *errno_ptr, int (*atexit_ptr)(voi
    /* detect CPU type */
    check_cpu();
 
-#if defined(ALLEGRO_UNIX) || defined(ALLEGRO_WINDOWS)
+#if 0
+#if defined(ALLEGRO_UNIX) || defined(ALLEGRO_WINDOWS) 
    /* detect filename encoding used by libc */
    /* XXX This should be done for all platforms but I'm not set up to check
     * that all platforms have been covered before making the 4.2.3 release.
     * --pw
     */
    _al_detect_filename_encoding();
+#endif
 #endif
 
    /* set up screensaver policy */

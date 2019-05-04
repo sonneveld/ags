@@ -74,6 +74,7 @@ int _unix_find_resource(char *dest, AL_CONST char *resource, int size);
 
 static int sdl2_sys_find_resource(char *dest, AL_CONST char *resource, int size)
 {
+#if 0
    char buf[4096], tmp[4096];
    
    char *base_path = SDL_GetBasePath();
@@ -95,6 +96,7 @@ static int sdl2_sys_find_resource(char *dest, AL_CONST char *resource, int size)
 	      return 0;
       }
    } */
+#endif
 
 #ifdef ALLEGRO_MSVC_SDL2
    return -1; 

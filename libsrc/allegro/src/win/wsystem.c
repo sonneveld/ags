@@ -17,6 +17,7 @@
  *      See readme.txt for copyright information.
  */
 
+#ifdef _WIN32
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,9 +27,6 @@
 #include "allegro/internal/aintern.h"
 #include "allegro/platform/aintwin.h"
 
-#ifndef ALLEGRO_WINDOWS
-#error something is wrong with the makefile
-#endif
 
 /* DMC requires a DllMain() function, or else the DLL hangs. */
 #if !defined(ALLEGRO_STATICLINK) && defined(ALLEGRO_DMC)
@@ -96,3 +94,5 @@ void thread_safe_trace(char *msg,...)
 
    OutputDebugString(buf);  /* thread safe */
 }
+
+#endif

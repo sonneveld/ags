@@ -15,6 +15,7 @@
  *      See readme.txt for copyright information.
  */
 
+#ifdef _WIN32 
 
 #ifndef SCAN_DEPEND
    #include <time.h>
@@ -25,10 +26,7 @@
 #include "winalleg.h"
 #include "allegro/internal/aintern.h"
 
-#ifndef ALLEGRO_WINDOWS
-#error something is wrong with the makefile
-#endif
-
+#include <VersionHelpers.h>
 
 
 /* _al_file_isok:
@@ -55,7 +53,7 @@ void _al_detect_filename_encoding(void)
    set_filename_encoding(U_ASCII);
 #else
    /* Windows NT 4.0, 2000, XP, etc support unicode filenames */
-   set_filename_encoding(GetVersion() & 0x80000000 ? U_ASCII : U_UNICODE);
+   set_filename_encoding(IsWindowsXPOrGreater() ? U_ASCII : U_UNICODE);
 #endif
 #endif
 }
@@ -379,3 +377,4 @@ int _al_win_unlink(const char *pathname)
    }
 }
 
+#endif

@@ -15,6 +15,8 @@
  *      See readme.txt for copyright information.
  */
 
+#ifndef _WIN32
+
 /* libc should use 64-bit for file sizes when possible */
 #define _FILE_OFFSET_BITS 64
 
@@ -241,24 +243,6 @@ static int ff_get_attrib(AL_CONST char *name, struct stat *s)
 {
    int attrib = 0;
 
-#if ALLEGRO_CHECK_FILE_PERMISSIONS
-   uid_t euid = geteuid();
-
-   if (euid != 0) {
-      if (s->st_uid == euid) {
-	 if ((s->st_mode & S_IWUSR) == 0)
-	    attrib |= FA_RDONLY;
-      }
-      else if (s->st_gid == getegid()) {
-	 if ((s->st_mode & S_IWGRP) == 0)
-	    attrib |= FA_RDONLY;
-      }
-      else if ((s->st_mode & S_IWOTH) == 0) {
-	 attrib |= FA_RDONLY;
-      }
-   }
-#endif
-
    if (S_ISDIR(s->st_mode))
       attrib |= FA_DIREC;
 
@@ -465,3 +449,5 @@ void _al_getdcwd(int drive, char *buf, int size)
    else
       usetc(buf, 0);
 }
+
+#endif

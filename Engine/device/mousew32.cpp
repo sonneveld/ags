@@ -394,10 +394,12 @@ float Mouse::GetSpeedUnit()
 
 void Mouse::SetSpeed(float speed)
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!ControlEnabled)
         return;
     SpeedVal = Math::Max(0.f, speed);
     Speed = SpeedUnit * SpeedVal;
+#endif
 }
 
 float Mouse::GetSpeed()

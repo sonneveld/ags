@@ -22,6 +22,9 @@
 #include "AL/alc.h"
 #include "SDL.h"
 
+// SWITCH HACKS : currently this crashes in non-debug modes.. alignment issue?
+#undef __ARM_ARCH
+
 #ifdef __SSE__  /* if you are on x86 or x86-64, we assume you have SSE1 by now. */
 #define NEED_SCALAR_FALLBACK 0
 #elif (defined(__ARM_ARCH) && (__ARM_ARCH >= 8))  /* ARMv8 always has NEON. */

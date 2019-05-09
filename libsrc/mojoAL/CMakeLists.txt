@@ -16,4 +16,6 @@ target_sources(mojoal
 
 target_link_libraries(mojoal PUBLIC SDL2::SDL2)
 
-add_library(OpenAL::OpenAL ALIAS mojoal)
+target_compile_definitions(mojoal PUBLIC AL_LIBTYPE_STATIC)
+
+add_library(MojoAL::MojoAL ALIAS mojoal)

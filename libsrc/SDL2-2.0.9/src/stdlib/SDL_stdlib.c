@@ -549,11 +549,14 @@ localexit:
     /* *INDENT-ON* */
 }
 
+// disable, conflicts with windows lib when static linking.
+#if 0
 void
 _ftol2_sse()
 {
     _ftol();
 }
+#endif
 
 /* 64-bit math operators for 32-bit systems */
 void

@@ -218,8 +218,6 @@ set(ALLEGRO_NO_ASM 1)
 # Platform drivers
 #
 
-find_package(SDL2 REQUIRED)
-
 set(PLATFORM_SOURCES)
 
 if(ALLEGRO_MSVC_SDL2)
@@ -276,12 +274,13 @@ set_target_properties(allegro
     VERSION ${ALLEGRO_VERSION}
     )
 
-target_link_libraries(allegro ${SDL2_LIBRARY})
+target_link_libraries(allegro SDL2::SDL2)
+
 # Search for C header files in these directories.
 
 message("${ALLEGRO_PUBLIC_HEADERS}")
 target_include_directories(allegro 
-   PRIVATE ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include ${SDL2_INCLUDE_DIR}
+   PRIVATE ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include
    PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include ${PROJECT_SOURCE_DIR}/include
 )
 

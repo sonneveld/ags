@@ -50,7 +50,7 @@ static int sdl2_sys_init(void)
 {
    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
-   if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER|SDL_INIT_EVENTS) != 0) {
+   if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER|SDL_INIT_EVENTS|SDL_INIT_GAMECONTROLLER) != 0) {
       SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
       return -1;
    }
@@ -374,7 +374,7 @@ static BITMAP *gfx_sdl2_init_driver(GFX_DRIVER *drv, int w, int h, int v_w, int 
       gfx_backing_bitmap = create_bitmap_ex(color_depth, w, h);
    }
 
-   Uint32 flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+   Uint32 flags = SDL_WINDOW_RESIZABLE;
    if (!drv->windowed) {
       flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
    }

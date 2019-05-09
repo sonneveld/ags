@@ -49,12 +49,14 @@ int _al_file_isok(AL_CONST char *filename)
  */
 void _al_detect_filename_encoding(void)
 {
+#if 0
 #ifdef ALLEGRO_DMC
    /* DMC's C library does not support _wfinddata_t */
    set_filename_encoding(U_ASCII);
 #else
    /* Windows NT 4.0, 2000, XP, etc support unicode filenames */
    set_filename_encoding(GetVersion() & 0x80000000 ? U_ASCII : U_UNICODE);
+#endif
 #endif
 }
 

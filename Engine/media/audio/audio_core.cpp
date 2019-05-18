@@ -1,3 +1,22 @@
+/*
+!!TODO
+- replace std::runtime_error with something audio related
+- manifest file for audio, to get audio size and type
+- or decode on startup? ew, save file and keep for later?
+- wake up on modification
+- do we need this seperate thread in the end? maybe just for the decoding.
+- allow waking up thread when modified.
+- get audio position working for systems that don't have audio position
+
+// OLDTODO:
+// slot id generation id
+// pre-determine music sizes
+// safer slot look ups (with gen id)
+// generate/load mod/midi offsets
+
+*/
+
+
 #include "media/audio/audio_core.h"
 
 #include <unordered_map>

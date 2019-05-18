@@ -12,6 +12,23 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- replace std::runtime_error with something stream related
+- introduce an append only memory based stream, so we can write/compress save games without touching disk
+- check EOS implementation.. it should only be true after we read last byte.
+- can we remove "from end" seek? force app to get size before hand?
+- do some benchmarks! 500meg file, compressed and not compressed, zip and plain file.
+- what's the fastest we can get?
+- use & (or &&???) when accepting a unique_ptr so we can std::move it for ownership.
+
+ OLD TODO:
+ stream cannot raise exceptions
+ and implement Has_Errors
+ use the stdio_compat functions.
+*/
+
+
 #include "util/stream.h"
 
 #include <cstdio>

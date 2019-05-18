@@ -12,6 +12,14 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- replace std::runtime_error with something file related
+- do we need "testreadfile/testwritefile/etc" ?
+
+*/
+
+
 #include "util/file.h"
 
 #include <stdexcept>

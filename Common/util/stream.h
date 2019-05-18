@@ -11,6 +11,11 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
+/*
+!!TODO
+- use a memory poll of those buffered pools
+*/
+
 #ifndef __AGS_CN_API__IAGSSTREAM2_H
 #define __AGS_CN_API__IAGSSTREAM2_H
 

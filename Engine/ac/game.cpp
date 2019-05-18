@@ -12,6 +12,12 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- add compression to save games
+- check there's enough space for a save game before trying to save.. scripting function? or just force 50 saves?
+*/
+
 #include "ac/game.h"
 
 #include "ac/common.h"

@@ -1,3 +1,8 @@
+/*
+!!TODO
+- replace std::runtime_error with something asset related
+
+*/
 
 #include "core/assets.h"
 

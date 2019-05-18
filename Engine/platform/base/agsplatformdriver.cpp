@@ -16,6 +16,12 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- try to not override anything here. only in the switch platform.
+
+*/
+
 #include <thread>
 #include "util/wgt2allg.h"
 #include "platform/base/agsplatformdriver.h"

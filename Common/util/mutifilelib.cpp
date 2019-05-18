@@ -11,7 +11,13 @@
 // http://www.opensource.org/licenses/artistic-license-2.0.php
 //
 //=============================================================================
+/*
+!!TODO
+- support these libs in physfs
+- have implementations completely separate
+- introduce a "detect version" function instead.
 
+*/
 #include "util/bbop.h"
 #include "util/multifilelib.h"
 #include "util/stream.h"

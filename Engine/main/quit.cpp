@@ -12,6 +12,14 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- introduce a quit() method that just raises the quit exception.
+- then catch in the main game loop (pass exception?)
+
+*/
+
+
 //
 // Quit game procedure
 //

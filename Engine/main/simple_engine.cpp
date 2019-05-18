@@ -12,6 +12,32 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- replace std::runtime_error with something else
+- then ensure we quit with an error
+- support opengl 3.0
+- sprite sheets
+- support the config objects (but ensure all config work and file searching is done outside)
+- start extracting some global variables.. maybe pass by reference?
+- renderer class (init, render scene graph)
+- take screen shots! (set a variable, no delay, and save in buffer)
+- copy the scene graph so we can re-use it.
+- which might mean we need to use shared_ptrs for bitmaps so we have them around.
+- actually.. once we have generated texture.. delete the reference to the bitmap
+- support touch events
+- support high-dpi
+- toggle switch for touch and mouse (or both!)
+- support joy sticks (joy sticks for moving cursor?)
+- scripting commands: 
+        - show keyboard,
+        - write file atomically
+        - preload_loop/sprite/sound?/ room?
+- smooth scrolling
+- go through mouse button events.. when should we clear the "button down" thingo? we don't always return after a single game loop.
+*/
+
+
 //
 // Engine initialization
 //

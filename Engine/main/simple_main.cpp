@@ -1,3 +1,9 @@
+/*
+!!TODO
+- port back those path length fixes
+
+*/
+
 /* simple main
 
 xperment to see wats necssary 

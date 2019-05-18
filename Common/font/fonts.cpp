@@ -12,6 +12,12 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- replace std::runtime_error with something font related
+
+*/
+
 #include <vector>
 #include <alfont.h>
 #include "ac/common.h" // set_our_eip

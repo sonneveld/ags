@@ -12,6 +12,12 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- draw_gui_sprite - a bit slow
+- draw_gui_and_overlays - can we use scene graph?
+*/
+
 #include <algorithm>
 #include <cmath>
 #include "aastr.h"

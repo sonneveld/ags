@@ -12,6 +12,12 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- maybe we could get debugger working on the hardware switch??
+- does anyone use it?
+
+*/
 #include "core/platform.h"
 
 #if AGS_PLATFORM_OS_WINDOWS

@@ -16,6 +16,16 @@
 //
 //=============================================================================
 
+/*
+!!TODO
+- read in loop files which populate all sprites.. don't free loop until all sprites unused (or copied as a sprite cause modified)
+- support sprite sheets
+- support pre-prepared sprites straight from file
+- support texture only sprites (read only)
+- max size in bytes instead of entries.
+- reduce to simple interface class so we can easily replace 
+*/
+
 #ifdef _MANAGED
 // ensure this doesn't get compiled to .NET IL
 #pragma unmanaged

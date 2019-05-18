@@ -1,6 +1,12 @@
 #ifndef __AC_PLATFORM_H
 #define __AC_PLATFORM_H
 
+/*
+!!TODO
+- use function like macros https://www.fluentcpp.com/2019/05/28/better-macros-better-flags/
+
+*/
+
 // platform definitions. Not intended for replacing types or checking for libraries.
 
 // check Android first because sometimes it can get confused with host OS

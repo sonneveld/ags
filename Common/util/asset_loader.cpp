@@ -1,3 +1,14 @@
+/*
+!!TODO
+- replace std::runtime_error with something asset related
+- support loading bundles of files?
+- or just load loop files, which sprite cache can handle 
+- load raw stream for video maybe?
+- allow adjusting priority.. either we just have a hacky re-sortable list/heap or we allow placing assets in list multiple times.
+- find other places we're not background loading, and do them on startup. (game.dat, sprite amnifest etc)
+- possibly still investigate bundles.. load everything for each room.. too big?
+*/
+
 #include "asset_loader.h"
 
 #include "util/stream.h"

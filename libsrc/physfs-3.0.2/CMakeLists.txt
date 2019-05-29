@@ -276,7 +276,7 @@ if(NOT MSVC)
 endif()
 
 macro(message_bool_option _NAME _VALUE)
-    if(${_VALUE})
+    if(${${_VALUE}})
         message(STATUS "  ${_NAME}: enabled")
     else()
         message(STATUS "  ${_NAME}: disabled")

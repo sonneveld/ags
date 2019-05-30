@@ -620,6 +620,9 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     if (!spriteset.InitFile("acsprset.spr")) { throw std::runtime_error("Error loading sprite set."); }
 
+    load_view("cursor");
+    load_view("inventory");
+    load_view("gui");
 
 
     auto sceneGraphDriver = dynamic_cast<SceneGraphDriver*>(gfxDriver);

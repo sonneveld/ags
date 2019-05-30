@@ -334,6 +334,77 @@ void SpriteCache::LoadSprite(sprkey_t index)
     }
 }
 
+
+void SpriteCache::LoadSprite(AGS::Common::Stream *s)
+{
+    if (s == nullptr) { return; }
+
+    if (lru_list.size() > _maxCacheSize) {
+        RemoveLeastRecentlyUsed();
+    }
+
+    std::array<int32_t, 5> header;
+    s->ReadArrayOfInt32(header.data(), header.size());
+    auto &index = header[0];
+    auto &coldep = header[1];
+    auto &wdd = header[2];
+    auto &htt = header[3];
+    auto &pixel_sz = header[4];
+
+    // if coldep == 0, it's a null sprite
+    // if Image is set, then it's loaded (and could be modified so don't touch)
+
+    if (coldep != 0 && _spriteData[index].Image == nullptr) {
+        auto *image = BitmapHelper::CreateBitmap(wdd, htt, coldep * 8);
+        if (image == nullptr) { return; }
+
+        _sprInfos[index].Width = wdd;
+        _sprInfos[index].Height = htt;
+        _spriteData[index].Image = image;
+        _spriteData[index].in_lru = false;
+
+        if (coldep == 1)
+        {
+            for (int hh = 0; hh < htt; hh++)
+                s->ReadArray(&image->GetScanLineForWriting(hh)[0], coldep, wdd);
+        }
+        else if (coldep == 2)
+        {
+            for (int hh = 0; hh < htt; hh++)
+                s->ReadArrayOfInt16((int16_t*)&image->GetScanLineForWriting(hh)[0], wdd);
+        }
+        else
+        {
+            for (int hh = 0; hh < htt; hh++)
+                s->ReadArrayOfInt32((int32_t*)&image->GetScanLineForWriting(hh)[0], wdd);
+        }
+
+        // TODO: this is ugly: asks the engine to convert the sprite using its own knowledge.
+        // And engine assigns new bitmap using SpriteCache::Set().
+        // Perhaps change to the callback function pointer?
+        initialize_sprite(index);
+
+        if (!_spriteData[index].in_lru) {
+            _spriteData[index].lru_it = lru_list.insert(lru_list.begin(), index);
+            _spriteData[index].in_lru = true;
+        }
+    }
+    else {
+        s->Seek(pixel_sz);
+    }
+
+    // leave sprite 0 locked
+    if (index == 0) {
+        _spriteData[index].Locked = true;
+    }
+}
+
+
+bool SpriteCache::IsLoaded(sprkey_t index) {
+    return _spriteData[index].Image != nullptr;
+}
+
+
 HError SpriteCache::InitFile(const char *filnam)
 {
     auto s = gameAssetLibrary->OpenAsset("sprite/index.dat");

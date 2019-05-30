@@ -291,6 +291,8 @@ void Character_ChangeView(CharacterInfo *chap, int vii) {
       chap->idleleft = chap->idletime;
     }
 
+    load_view(vii);
+
     debug_script_log("%s: Change view to %d", chap->scrname, vii+1);
     chap->defview = vii;
     chap->view = vii;
@@ -609,6 +611,9 @@ void Character_LockViewEx(CharacterInfo *chap, int vii, int stopMoving) {
     {
         Character_StopMoving(chap);
     }
+
+    load_view(vii);
+
     chap->view=vii;
     chap->animating=0;
     FindReasonableLoopForCharacter(chap);
@@ -1006,6 +1011,9 @@ void Character_UnlockViewEx(CharacterInfo *chaa, int stopMoving) {
         debug_script_log("%s: Released view back to default", chaa->scrname);
     }
     chaa->flags &= ~CHF_FIXVIEW;
+
+    load_view(chaa->defview);
+
     chaa->view = chaa->defview;
     chaa->frame = 0;
     if (stopMoving != KEEP_MOVING)
@@ -2743,6 +2751,8 @@ void _displayspeech(const char*texx, int aschar, int xx, int yy, int widd, int i
             if (!isThought)
                 speakingChar->animating |= CHANIM_REPEAT;
 
+            load_view(useview);
+
             speakingChar->view = useview;
             speakingChar->frame=0;
             speakingChar->flags|=CHF_FIXVIEW;
@@ -2809,6 +2819,9 @@ void _displayspeech(const char*texx, int aschar, int xx, int yy, int widd, int i
         speakingChar->flags &= ~CHF_FIXVIEW;
         if (viewWasLocked)
             speakingChar->flags |= CHF_FIXVIEW;
+
+        load_view(oldview);
+
         speakingChar->view=oldview;
 
         // Don't reset the loop in 2.x games

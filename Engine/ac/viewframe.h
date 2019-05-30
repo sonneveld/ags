@@ -39,6 +39,9 @@ int  ViewFrame_GetLoop(ScriptViewFrame *svf);
 int  ViewFrame_GetFrame(ScriptViewFrame *svf);
 
 void precache_view(int view);
+void load_view(int view_index);
+void load_view(AGS::Common::String view_name);
+
 void CheckViewFrame (int view, int loop, int frame, int sound_volume=SCR_NO_VALUE);
 // draws a view frame, flipped if appropriate
 void DrawViewFrame(Common::Bitmap *ds, const ViewFrame *vframe, int x, int y, bool alpha_blend = false);

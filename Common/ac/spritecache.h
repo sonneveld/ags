@@ -48,7 +48,7 @@ typedef AGS::Common::HError HAGSError;
 struct SpriteInfo;
 
 // Max size of the sprite cache, in number of entries
-#define DEFAULTCACHESIZE 768
+#define DEFAULTCACHESIZE 8192
 
 
 typedef int32_t sprkey_t;
@@ -102,9 +102,14 @@ public:
     // Loads (if it's not in cache yet) and returns bitmap by the sprite index
     Common::Bitmap *operator[] (sprkey_t index);
 
+    void LoadSprite(sprkey_t index);
+    void LoadSprite(AGS::Common::Stream *stream);
+
+    bool IsLoaded(sprkey_t index);
+
+
 private:
     void        Init();
-    void        LoadSprite(sprkey_t index);
     void        RemoveOldest();
 
 

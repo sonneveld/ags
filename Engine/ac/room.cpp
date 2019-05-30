@@ -68,6 +68,7 @@
 #include "gfx/gfxfilter.h"
 #include "util/math.h"
 #include "media/audio/audio_system.h"
+#include "ac/viewframe.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -881,6 +882,20 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     // no fade in, so set the palette immediately in case of 256-col sprites
     if (game.color_depth > 1)
         setpal();
+
+    for (int i = 0; i < game.numcharacters; i++) {
+        if (game.chars[i].room == newnum)
+        load_view(game.chars[i].view);
+        load_view(game.chars[i].defview);
+        load_view(game.chars[i].talkview);
+        load_view(game.chars[i].idleview);
+        load_view(game.chars[i].thinkview);
+        load_view(game.chars[i].blinkview);
+    }
+    for (auto i = 0; i < croom->numobj; i++) {
+        load_view(croom->obj[i].view);
+        spriteset.LoadSprite(croom->obj[i].num);
+    }
 
     our_eip=220;
     update_polled_stuff_if_runtime();

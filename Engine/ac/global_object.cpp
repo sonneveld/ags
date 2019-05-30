@@ -140,6 +140,8 @@ void SetObjectView(int obn,int vii) {
     }
     vii--;
 
+    load_view(vii);
+
     objs[obn].view=vii;
     objs[obn].frame=0;
     if (objs[obn].loop >= views[vii].numLoops)
@@ -153,6 +155,9 @@ void SetObjectFrame(int obn,int viw,int lop,int fra) {
     viw--;
     if (viw>=game.numviews) quit("!SetObjectFrame: invalid view number used");
     if (lop>=views[viw].numLoops) quit("!SetObjectFrame: invalid loop number used");
+
+    load_view(viw);
+
     objs[obn].view=viw;
     if (fra >= 0)
         objs[obn].frame=fra;

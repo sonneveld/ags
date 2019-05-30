@@ -19,6 +19,7 @@
 #include "font/wfnfontrenderer.h"
 #include "gfx/bitmap.h"
 #include "util/stream.h"
+#include "util/asset_loader.h"
 
 using namespace AGS::Common;
 
@@ -128,7 +129,8 @@ int RenderChar(Bitmap *ds, const int at_x, const int at_y, const WFNChar &wfn_ch
 
 bool WFNFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
 {
-  return LoadFromDiskEx(fontNumber, fontSize, nullptr);
+  // return LoadFromDiskEx(fontNumber, fontSize, nullptr);
+    return false;
 }
 
 bool WFNFontRenderer::IsBitmapFont()
@@ -136,19 +138,16 @@ bool WFNFontRenderer::IsBitmapFont()
     return true;
 }
 
-bool WFNFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params)
+bool WFNFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params, AGS::Common::String fname, AGS::Common::AssetLoader::future_result_t &ffuture)
 {
-  String file_name;
-  Stream *ffi = nullptr;
+  if (!fname.EndsWithNoCase(".wfn")) 
+  {
+      return false;
+  }
 
-  file_name.Format("agsfnt%d.wfn", fontNumber);
-  ffi = gameAssetLibrary->OpenAsset(file_name);
+  Stream *ffi = gameAssetLoader.ResolveAsStream(ffuture);
   if (ffi == nullptr)
   {
-    // actual font not found, try font 0 instead
-    file_name = "agsfnt0.wfn";
-    ffi = gameAssetLibrary->OpenAsset(file_name);
-    if (ffi == nullptr)
       return false;
   }
 
@@ -156,7 +155,7 @@ bool WFNFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRen
   WFNError err = font->ReadFromFile(ffi, ffi->GetLength());
   delete ffi;
   if (err == kWFNErr_HasBadCharacters)
-    Debug::Printf(kDbgMsg_Warn, "WARNING: font '%s' has mistakes in data format, some characters may be displayed incorrectly", file_name.GetCStr());
+    Debug::Printf(kDbgMsg_Warn, "WARNING: font '%d' has mistakes in data format, some characters may be displayed incorrectly", fontNumber);
   else if (err != kWFNErr_NoError)
   {
     delete font;

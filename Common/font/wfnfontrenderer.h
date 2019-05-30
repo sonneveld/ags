@@ -32,7 +32,7 @@ public:
   void EnsureTextValidForFont(char *text, int fontNumber) override;
 
   bool IsBitmapFont() override;
-  bool LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params) override;
+  bool LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params, AGS::Common::String fname, AGS::Common::AssetLoader::future_result_t &ffuture) override;
 
 private:
   struct FontData

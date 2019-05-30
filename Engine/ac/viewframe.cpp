@@ -121,48 +121,61 @@ void precache_view(int view)
 
 void load_view(AGS::Common::String view_name)
 {
-    auto viewpath = AGS::Common::String::FromFormat("view/%s", view_name.GetCStr());
-    auto in = gameAssetLibrary->OpenAsset(viewpath);
-    if (in != nullptr) {
-        auto numviews = in->ReadInt32();
-        for (int i = 0; i < numviews; i++) {
-            spriteset.LoadSprite(in);
-        }
-        delete in;
-    }
+    //auto viewpath = AGS::Common::String::FromFormat("view/%s", view_name.GetCStr());
+    //auto in = gameAssetLibrary->OpenAsset(viewpath);
+    //if (in != nullptr) {
+    //    auto numviews = in->ReadInt32();
+    //    for (int i = 0; i < numviews; i++) {
+    //        spriteset.LoadSprite(in);
+    //    }
+    //    delete in;
+    //}
 }
 
-void load_view(int view_index)
+void load_loop_in_background(int view_index, int loop_index)
+{
+
+  auto &view = views[view_index];
+  auto &loop = view.loops[loop_index];
+
+  for (int j = 0; j < loop.numFrames; j++) {
+    spriteset.PreloadSprite(loop.frames[j].pic, 1000+j);
+  }
+
+}
+
+
+void load_view_in_background(int view_index)
 {
     if (view_index < 0) { return; }
 
-    std::set<int> sprites_seen;
-    int total_sprites = 0;
-    int unloaded_sprites = 0;
-    for (int i = 0; i < views[view_index].numLoops && i < 8; i++) {
-        for (int j = 0; j < views[view_index].loops[i].numFrames; j++) {
-            auto pic = views[view_index].loops[i].frames[j].pic;
-            if (sprites_seen.find(pic) == sprites_seen.end()) {
-                if (!spriteset.IsLoaded(pic)) {
-                    unloaded_sprites += 1;
-                }
-                total_sprites += 1;
-                sprites_seen.insert(pic);
-            }
-        }
-    }
+    //std::set<int> sprites_seen;
+    //int total_sprites = 0;
+    //int unloaded_sprites = 0;
+    //for (int i = 0; i < views[view_index].numLoops && i < 8; i++) {
+    //    for (int j = 0; j < views[view_index].loops[i].numFrames; j++) {
+    //        auto pic = views[view_index].loops[i].frames[j].pic;
+    //        if (sprites_seen.find(pic) == sprites_seen.end()) {
+    //            if (!spriteset.IsLoaded(pic)) {
+    //                unloaded_sprites += 1;
+    //            }
+    //            total_sprites += 1;
+    //            sprites_seen.insert(pic);
+    //        }
+    //    }
+    //}
 
-    // if there's less than N, it might be worth just loading the sprite file directly
-    if (unloaded_sprites >= 3) {
-        int view_id = view_index + 1;
-        auto viewpath = AGS::Common::String::FromFormat("%d", view_id);
-        load_view(viewpath);
-    }
+    //// if there's less than N, it might be worth just loading the sprite file directly
+    //if (unloaded_sprites >= 3) {
+    //    int view_id = view_index + 1;
+    //    auto viewpath = AGS::Common::String::FromFormat("%d", view_id);
+    //    load_view_in_background(viewpath);
+    //}
 
     // view may have been modified, so mop up any others.
     for (int i = 0; i < views[view_index].numLoops && i < 8; i++) {
         for (int j = 0; j < views[view_index].loops[i].numFrames; j++) {
-            spriteset.LoadSprite(views[view_index].loops[i].frames[j].pic);
+            spriteset.PreloadSprite(views[view_index].loops[i].frames[j].pic, 2000+j);
         }
     }
 }

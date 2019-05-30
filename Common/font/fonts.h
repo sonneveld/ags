@@ -15,7 +15,11 @@
 #ifndef __AC_FONT_H
 #define __AC_FONT_H
 
+#include <vector>
+
 #include "core/types.h"
+#include "util/string.h"
+#include "util/asset_loader.h"
 
 // TODO: we need to make some kind of TextManager class of this module
 
@@ -59,8 +63,12 @@ int getfontlinespacing(size_t fontNumber);
 void wouttextxy(Common::Bitmap *ds, int xxx, int yyy, size_t fontNumber, color_t text_color, const char *texx);
 // Assigns FontInfo to the font
 void set_fontinfo(size_t fontNumber, const FontInfo &finfo);
+
+// get filenames for fonts
+std::vector<AGS::Common::String> wloadfont_fnames(int numfonts);
+
 // Loads a font from disk
-bool wloadfont_size(size_t fontNumber, const FontInfo &font_info);
+bool wloadfont_size(size_t fontNumber, const FontInfo &font_info, AGS::Common::String fname, AGS::Common::AssetLoader::future_result_t &ffuture);
 void wgtprintf(Common::Bitmap *ds, int xxx, int yyy, size_t fontNumber, color_t text_color, char *fmt, ...);
 void wfreefont(size_t fontNumber);
 

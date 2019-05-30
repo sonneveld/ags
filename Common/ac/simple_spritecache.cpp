@@ -267,65 +267,32 @@ void SpriteCache::LoadSprite(sprkey_t index)
     // TODO use the stream version
 
     if (_spriteData[index].Image == nullptr) {
+
         auto path = AGS::Common::String::FromFormat("sprite/%d", (int)index);
 
         if (_spriteData[index].Remapped) {
             path = AGS::Common::String::FromFormat("sprite/%d", (int)_spriteData[index].RemappedTo);
         }
 
-        auto s = gameAssetLibrary->OpenAsset(path);
-        if (s == nullptr) {
-            quit("sprite file not found.");
+        Stream *s = nullptr;
+
+        auto fit = futureByKey.find(index);
+        if (fit != futureByKey.end()) 
+        {
+            auto f = std::move(fit->second.f);
+            futureByKey.erase(fit);
+            s = gameAssetLoader.ResolveAsStream(f);
+
+            // TODO if not ready, then maybe load with priority 0?
+        }
+        else 
+        {
+            auto f = gameAssetLoader.LoadFileAsync(path);
+            s = gameAssetLoader.ResolveAsStream(f);
         }
 
-        std::array<int32_t, 5> header;
-        s->ReadArrayOfInt32(header.data(), header.size());
-        auto &index_in_file = header[0];
-        auto &coldep = header[1];
-        auto &wdd = header[2];
-        auto &htt = header[3];
-        auto &pixel_sz = header[4];
-
-        assert(index_in_file == index);
-
-        // if coldep == 0, it's a null sprite
-        if (coldep != 0) {
-            auto *image = BitmapHelper::CreateBitmap(wdd, htt, coldep * 8);
-            if (image == nullptr) { quit("error creating sprite bitmap"); }
-
-            _sprInfos[index].Width = wdd;
-            _sprInfos[index].Height = htt;
-            _spriteData[index].Image = image;
-            _spriteData[index].in_lru = false;
-
-            if (coldep == 1)
-            {
-                for (int hh = 0; hh < htt; hh++)
-                    s->ReadArray(&image->GetScanLineForWriting(hh)[0], coldep, wdd);
-            }
-            else if (coldep == 2)
-            {
-                for (int hh = 0; hh < htt; hh++)
-                    s->ReadArrayOfInt16((int16_t*)&image->GetScanLineForWriting(hh)[0], wdd);
-            }
-            else
-            {
-                for (int hh = 0; hh < htt; hh++)
-                    s->ReadArrayOfInt32((int32_t*)&image->GetScanLineForWriting(hh)[0], wdd);
-            }
-
-            // TODO: this is ugly: asks the engine to convert the sprite using its own knowledge.
-            // And engine assigns new bitmap using SpriteCache::Set().
-            // Perhaps change to the callback function pointer?
-            initialize_sprite(index);
-        }
-
+        LoadSprite(s);
         delete s;
-
-        if (!_spriteData[index].in_lru) {
-            _spriteData[index].lru_it = lru_list.insert(lru_list.begin(), index);
-            _spriteData[index].in_lru = true;
-        }
     }
 
     // leave sprite 0 locked
@@ -397,6 +364,32 @@ void SpriteCache::LoadSprite(AGS::Common::Stream *s)
     if (index == 0) {
         _spriteData[index].Locked = true;
     }
+}
+
+
+void SpriteCache::PreloadSprite(sprkey_t index, int priority)
+{
+    if (IsLoaded(index))
+    {
+        return;
+    }
+
+    auto it = futureByKey.find(index);
+    if (it != futureByKey.end())
+    {
+        if (priority >= it->second.priority) 
+        {
+            return;
+        }
+    }
+
+    auto path = AGS::Common::String::FromFormat("sprite/%d", (int)index);
+    if (_spriteData[index].Remapped) {
+        path = AGS::Common::String::FromFormat("sprite/%d", (int)_spriteData[index].RemappedTo);
+    }
+
+    auto f = gameAssetLoader.LoadFileAsync(path, priority);
+    futureByKey[index] = { priority, std::move(f) };
 }
 
 

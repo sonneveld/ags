@@ -20,6 +20,7 @@
 #include "font/ttffontrenderer.h"
 #include "font/wfnfontrenderer.h"
 #include "gfx/bitmap.h"
+#include "core/assets.h"
 
 using namespace AGS::Common;
 
@@ -207,19 +208,59 @@ void set_fontinfo(size_t fontNumber, const FontInfo &finfo)
         fonts[fontNumber].Info = finfo;
 }
 
+
+std::vector<AGS::Common::String> wloadfont_fnames(int numfonts)
+{
+
+    auto result = std::vector<AGS::Common::String>(numfonts);
+
+    auto file_name = AGS::Common::String();
+
+    for (int fontNumber = 0; fontNumber < numfonts; fontNumber++)
+    {
+        auto ttf_n = String::FromFormat("agsfnt%d.ttf", fontNumber);
+        if (gameAssetLibrary->DoesAssetExist(ttf_n)) {
+            result[fontNumber] = ttf_n;
+            continue;
+        }
+
+        auto wfn_n = String::FromFormat("agsfnt%d.wfn", fontNumber);
+        if (gameAssetLibrary->DoesAssetExist(wfn_n)) {
+            result[fontNumber] = wfn_n;
+            continue;
+        }
+
+        auto ttf_0 = String::FromFormat("agsfnt%d.ttf", 0);
+        if (gameAssetLibrary->DoesAssetExist(ttf_0)) {
+            result[fontNumber] = ttf_0;
+            continue;
+        }
+
+        auto wfn_0 = String::FromFormat("agsfnt%d.wfn", 0);
+        if (gameAssetLibrary->DoesAssetExist(wfn_0)) {
+            result[fontNumber] = wfn_0;
+            continue;
+        }
+
+        throw std::runtime_error("could not find font");
+    }
+
+    return result;
+}
+
 // Loads a font from disk
-bool wloadfont_size(size_t fontNumber, const FontInfo &font_info)
+bool wloadfont_size(size_t fontNumber, const FontInfo &font_info, AGS::Common::String fname, AGS::Common::AssetLoader::future_result_t &ffuture)
 {
   fonts.resize(fontNumber + 1);
   FontRenderParams params;
   params.SizeMultiplier = font_info.SizeMultiplier;
 
-  if (ttfRenderer.LoadFromDiskEx(fontNumber, font_info.SizePt, &params))
+  if (ttfRenderer.LoadFromDiskEx(fontNumber, font_info.SizePt, &params, fname, ffuture))
   {
     fonts[fontNumber].Renderer  = &ttfRenderer;
     fonts[fontNumber].Renderer2 = &ttfRenderer;
   }
-  else if (wfnRenderer.LoadFromDiskEx(fontNumber, font_info.SizePt, &params))
+  else if (wfnRenderer.LoadFromDiskEx(fontNumber, font_info.SizePt, &params, fname, ffuture))
   {
     fonts[fontNumber].Renderer  = &wfnRenderer;
     fonts[fontNumber].Renderer2 = &wfnRenderer;

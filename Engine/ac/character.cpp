@@ -291,7 +291,7 @@ void Character_ChangeView(CharacterInfo *chap, int vii) {
       chap->idleleft = chap->idletime;
     }
 
-    load_view(vii);
+    load_view_in_background(vii);
 
     debug_script_log("%s: Change view to %d", chap->scrname, vii+1);
     chap->defview = vii;
@@ -612,7 +612,7 @@ void Character_LockViewEx(CharacterInfo *chap, int vii, int stopMoving) {
         Character_StopMoving(chap);
     }
 
-    load_view(vii);
+    load_view_in_background(vii);
 
     chap->view=vii;
     chap->animating=0;
@@ -1012,7 +1012,7 @@ void Character_UnlockViewEx(CharacterInfo *chaa, int stopMoving) {
     }
     chaa->flags &= ~CHF_FIXVIEW;
 
-    load_view(chaa->defview);
+    load_view_in_background(chaa->defview);
 
     chaa->view = chaa->defview;
     chaa->frame = 0;
@@ -2142,6 +2142,8 @@ void animate_character(CharacterInfo *chap, int loopn,int sppd,int rept, int noi
     chap->animating|=((sppd << 8) & 0xff00);
     chap->loop=loopn;
 
+    load_loop_in_background(chap->view, chap->loop);
+
     if (direction) {
         chap->frame = views[chap->view].loops[loopn].numFrames - 1;
     }
@@ -2751,7 +2753,7 @@ void _displayspeech(const char*texx, int aschar, int xx, int yy, int widd, int i
             if (!isThought)
                 speakingChar->animating |= CHANIM_REPEAT;
 
-            load_view(useview);
+            load_view_in_background(useview);
 
             speakingChar->view = useview;
             speakingChar->frame=0;
@@ -2820,7 +2822,7 @@ void _displayspeech(const char*texx, int aschar, int xx, int yy, int widd, int i
         if (viewWasLocked)
             speakingChar->flags |= CHF_FIXVIEW;
 
-        load_view(oldview);
+        load_view_in_background(oldview);
 
         speakingChar->view=oldview;
 

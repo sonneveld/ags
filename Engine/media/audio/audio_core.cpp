@@ -26,6 +26,7 @@
 #include "main/engine.h"
 #include "util/stream.h"
 #include "util/thread.h"
+#include "util/asset_loader.h"
 
 // #define AUDIO_CORE_DEBUG
 
@@ -340,7 +341,9 @@ struct AudioCoreSlot {
     AssetPath assetPath_ {};
     ags::String assetExtension_ {};
 
-    AGS::Common::AssetManager::AssetPtr sampleBuffer_ = nullptr;
+    AGS::Common::AssetLoader::future_result_t assetFuture_ {};
+
+    AGS::Common::AssetLoader::result_t sampleBuffer_{};
     SoundSampleUniquePtr sample_ = nullptr;
     ALenum sampleOpenAlFormat_ = 0;
 
@@ -349,6 +352,8 @@ struct AudioCoreSlot {
     float unqueuedBufferPosMs_ = 0.0f;
 
     float positionMs_ = 0.0f;
+
+    float seekPositionMs_ = -1.0f;
 
     bool repeat_ = false;
     float volume_ = 1.0f;
@@ -397,37 +402,47 @@ struct AudioCoreSlot {
 
     void LoadSample(const AssetPath &assetPath, const AGS::Common::String &assetExtension) 
     {
-        auto &assetname = assetPath.second;
-        sampleBuffer_ = audioAssetLibrary_->LoadAsset(assetname);
+        assetPath_ = assetPath;
+        assetExtension_ = assetExtension;
 
-        auto sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_->data(), sampleBuffer_->size(), assetExtension.GetCStr(), nullptr, SampleDefaultBufferSize));
-        if(!sample) { return; }
+        auto &assetname = assetPath.second;
+        assetFuture_ = AGS::Common::gameAssetLoader.LoadFileAsync(assetname);
+        
+    }
+
+    void TryDecodingSample()
+    {
+        if (!assetFuture_.valid()) { return; }
+
+        auto waitres = assetFuture_.wait_for(std::chrono::milliseconds::zero());
+        if (waitres != std::future_status::ready) { return; }
+
+        sampleBuffer_ = assetFuture_.get();
+
+        auto sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_.data(), sampleBuffer_.size(), assetExtension_.GetCStr(), nullptr, SampleDefaultBufferSize));
+        if (!sample) { return; }
 
         auto bufferFormat = openalFormatFromSample(sample);
 
         if (bufferFormat <= 0) {
-        #ifdef AUDIO_CORE_DEBUG
+#ifdef AUDIO_CORE_DEBUG
             agsdbg::Printf(ags::kDbgMsg_Init, "audio_core_sample_load: RESAMPLING");
-        #endif
-            auto desired = Sound_AudioInfo { AUDIO_S16SYS, sample->actual.channels, sample->actual.rate };
+#endif
+            auto desired = Sound_AudioInfo{ AUDIO_S16SYS, sample->actual.channels, sample->actual.rate };
 
             Sound_FreeSample(sample.get());
-            sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_->data(), sampleBuffer_->size(), assetExtension.GetCStr(), &desired, SampleDefaultBufferSize));
+            sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_.data(), sampleBuffer_.size(), assetExtension_.GetCStr(), &desired, SampleDefaultBufferSize));
 
-            if(!sample) { return; }
+            if (!sample) { return; }
 
             bufferFormat = openalFormatFromSample(sample);
         }
 
         if (bufferFormat <= 0) { return; }
 
-        assetPath_ = assetPath;
-        assetExtension_ = assetExtension;
         sample_ = std::move(sample);
         sampleOpenAlFormat_ = bufferFormat;
     }
-
-
 
     void Initialise(int handle, const AssetPath &assetPath, const AGS::Common::String &extension)
     {
@@ -442,13 +457,15 @@ struct AudioCoreSlot {
         assetPath_ = {};
         assetExtension_.Empty();
         
-        sampleBuffer_ = nullptr;
+        sampleBuffer_.clear();
         sample_ = nullptr;
         sampleOpenAlFormat_ = 0;
 
         source_ = 0;
         unqueuedBufferPosMs_ = 0.0f;
         positionMs_ = 0.0f;
+
+        seekPositionMs_ = -1.0f;
 
         repeat_ = false;
         volume_ = 1.0f;
@@ -473,27 +490,23 @@ struct AudioCoreSlot {
 
     void Seek(float pos_ms) {
 
-        if (!source_ || !sample_) { Stop(); return; }
+        if (pos_ms >= 0.0f) {
+            seekPositionMs_ = pos_ms;
+        }
+        else {
+            seekPositionMs_ = -1.0f;
+        }
 
-        alSourceStop(source_);  // stop so all buffers can be unqueued
-        dump_al_errors();
-
-        UnqueueProcessedBuffers();
-
-        Sound_Seek(sample_.get(), pos_ms);
-        unqueuedBufferPosMs_ = pos_ms;
-
-        // wait until Update() to get played again.
     }
 
     void Play() {
-        if (!source_ || !sample_) { Stop(); return; }
+        if (!source_) { Stop(); return; }
 
         playState_ = Playing;
     }
 
     void Pause() {
-        if (!source_ || !sample_) { Stop(); return; }
+        if (!source_) { Stop(); return; }
 
         playState_ = Paused;
     }
@@ -512,9 +525,27 @@ struct AudioCoreSlot {
 
     void Update() {
         if (playState_ == Stopped) { /* stopped already */ Stop(); return; }
-        if (!source_ || !sample_) { /* bad state */ Stop(); return; }
+        if (!source_) { /* bad state */ Stop(); return; }
 
         if (playState_ == Initial) { /* waiting to be played */ return; }
+
+        if (sample_ == nullptr) { 
+            TryDecodingSample();
+        }
+        if (sample_ == nullptr) { return; }
+
+
+        if (seekPositionMs_ >= 0.0f) {
+            alSourceStop(source_);  // stop so all buffers can be unqueued
+            dump_al_errors();
+
+            UnqueueProcessedBuffers();
+
+            Sound_Seek(sample_.get(), seekPositionMs_);
+            unqueuedBufferPosMs_ = seekPositionMs_;
+
+            seekPositionMs_ = -1.0f;
+        }
 
         if (needs_resending_) {
             alSourcef(source_, AL_GAIN, volume_*0.7f);

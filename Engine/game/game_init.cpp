@@ -42,6 +42,7 @@
 #include "script/script_runtime.h"
 #include "util/string_utils.h"
 #include "media/audio/audio_system.h"
+#include "util/asset_loader.h"
 
 using namespace Common;
 using namespace Engine;
@@ -329,9 +330,19 @@ HError InitAndRegisterGameEntities()
 
 void LoadFonts(GameDataVersion data_ver)
 {
+    int priority = 0;
+
+    // load fonts in the background
+    auto fnames = wloadfont_fnames(game.numfonts);
+    std::vector<AssetLoader::future_result_t> ffutures(game.numfonts);
+    for (int i = 0; i < game.numfonts; i++)
+    {
+        ffutures[i] = gameAssetLoader.LoadFileAsync(fnames[i], priority++);
+    }
+
     for (int i = 0; i < game.numfonts; ++i) 
     {
-        if (!wloadfont_size(i, game.fonts[i]))
+        if (!wloadfont_size(i, game.fonts[i], fnames[i], ffutures[i]))
             quitprintf("Unable to load font %d, no renderer could load a matching file", i);
     }
 }

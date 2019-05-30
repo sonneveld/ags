@@ -38,8 +38,10 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include <map>
 #include "core/platform.h"
 #include "util/error.h"
+#include "util/asset_loader.h"
 
 namespace AGS { namespace Common { class Stream; class Bitmap; } }
 using namespace AGS; // FIXME later
@@ -102,15 +104,25 @@ public:
     // Loads (if it's not in cache yet) and returns bitmap by the sprite index
     Common::Bitmap *operator[] (sprkey_t index);
 
-    void LoadSprite(sprkey_t index);
-    void LoadSprite(AGS::Common::Stream *stream);
+
+    void PreloadSprite(sprkey_t index, int priority);
 
     bool IsLoaded(sprkey_t index);
 
 
 private:
+    void LoadSprite(sprkey_t index);
+    void LoadSprite(AGS::Common::Stream *stream);
     void        Init();
     void        RemoveOldest();
+
+
+    struct loading_entry {
+        int priority;
+        AGS::Common::AssetLoader::future_result_t f;
+    };
+
+    std::map<sprkey_t, loading_entry> futureByKey;
 
 
     // Information required for the sprite streaming

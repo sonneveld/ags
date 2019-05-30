@@ -79,7 +79,8 @@ void TTFFontRenderer::RenderText(const char *text, int fontNumber, BITMAP *desti
 
 bool TTFFontRenderer::LoadFromDisk(int fontNumber, int fontSize)
 {
-  return LoadFromDiskEx(fontNumber, fontSize, nullptr);
+  // return LoadFromDiskEx(fontNumber, fontSize, nullptr);
+    return false;
 }
 
 bool TTFFontRenderer::IsBitmapFont()
@@ -87,15 +88,19 @@ bool TTFFontRenderer::IsBitmapFont()
     return false;
 }
 
-bool TTFFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params)
+bool TTFFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params, AGS::Common::String fname, AGS::Common::AssetLoader::future_result_t &ffuture)
 {
-  String file_name = String::FromFormat("agsfnt%d.ttf", fontNumber);
+    if (!fname.EndsWithNoCase(".ttf")) {
+        return false;
+    }
 
-  auto membuffer = gameAssetLibrary->LoadAsset(file_name);
-  if (membuffer == nullptr) { return false; }
+  auto buffer = gameAssetLoader.ResolveAsBuffer(ffuture);
+  if (buffer.empty()) 
+  {
+      return false;
+  }
 
-  ALFONT_FONT *alfptr = alfont_load_font_from_mem((const char*)membuffer->data(), membuffer->size());
-  membuffer = nullptr;
+  ALFONT_FONT *alfptr = alfont_load_font_from_mem((const char*)buffer.data(), buffer.size());
 
   if (alfptr == nullptr)
     return false;

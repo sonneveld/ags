@@ -145,6 +145,9 @@ target_sources(common
     util/version.h
     util/wgt2allg.cpp
     util/wgt2allg.h
+
+	util/asset_loader.h
+	util/asset_loader.cpp
 )
 
 target_link_libraries(common 

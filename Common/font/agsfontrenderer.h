@@ -15,6 +15,8 @@
 #ifndef __AC_AGSFONTRENDERER_H
 #define __AC_AGSFONTRENDERER_H
 
+#include "util/asset_loader.h"
+
 struct BITMAP;
 
 // WARNING: this interface is exposed for plugins and declared for the second time in agsplugin.h
@@ -51,7 +53,7 @@ class IAGSFontRenderer2
 public:
   virtual bool IsBitmapFont() = 0;
   // Load font, applying extended font rendering parameters
-  virtual bool LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params) = 0;
+  virtual bool LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params, AGS::Common::String fname, AGS::Common::AssetLoader::future_result_t &ffuture) = 0;
 };
 
 #endif // __AC_AGSFONTRENDERER_H

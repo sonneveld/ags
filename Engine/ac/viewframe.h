@@ -39,7 +39,8 @@ int  ViewFrame_GetLoop(ScriptViewFrame *svf);
 int  ViewFrame_GetFrame(ScriptViewFrame *svf);
 
 void precache_view(int view);
-void load_view(int view_index);
+void load_loop_in_background(int view_index, int loop_index);
+void load_view_in_background(int view_index);
 void load_view(AGS::Common::String view_name);
 
 void CheckViewFrame (int view, int loop, int frame, int sound_volume=SCR_NO_VALUE);

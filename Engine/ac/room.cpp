@@ -12,6 +12,9 @@
 //
 //=============================================================================
 
+#include <thread>
+#include <chrono>
+
 #include <ctype.h> // for toupper
 
 #include "core/platform.h"
@@ -885,17 +888,19 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
 
     for (int i = 0; i < game.numcharacters; i++) {
         if (game.chars[i].room == newnum)
-        load_view(game.chars[i].view);
-        load_view(game.chars[i].defview);
-        load_view(game.chars[i].talkview);
-        load_view(game.chars[i].idleview);
-        load_view(game.chars[i].thinkview);
-        load_view(game.chars[i].blinkview);
+        load_view_in_background(game.chars[i].view);
+        load_view_in_background(game.chars[i].defview);
+        load_view_in_background(game.chars[i].talkview);
+        load_view_in_background(game.chars[i].idleview);
+        load_view_in_background(game.chars[i].thinkview);
+        load_view_in_background(game.chars[i].blinkview);
     }
     for (auto i = 0; i < croom->numobj; i++) {
-        load_view(croom->obj[i].view);
-        spriteset.LoadSprite(croom->obj[i].num);
+        load_view_in_background(croom->obj[i].view);
+        spriteset.PreloadSprite(croom->obj[i].num, 100);
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     our_eip=220;
     update_polled_stuff_if_runtime();

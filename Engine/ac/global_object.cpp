@@ -140,7 +140,7 @@ void SetObjectView(int obn,int vii) {
     }
     vii--;
 
-    load_view(vii);
+    load_view_in_background(vii);
 
     objs[obn].view=vii;
     objs[obn].frame=0;
@@ -156,7 +156,7 @@ void SetObjectFrame(int obn,int viw,int lop,int fra) {
     if (viw>=game.numviews) quit("!SetObjectFrame: invalid view number used");
     if (lop>=views[viw].numLoops) quit("!SetObjectFrame: invalid loop number used");
 
-    load_view(viw);
+    load_view_in_background(viw);
 
     objs[obn].view=viw;
     if (fra >= 0)
@@ -235,6 +235,14 @@ void AnimateObjectEx(int obn,int loopn,int spdd,int rept, int direction, int blo
         objs[obn].frame = 0;
     else {
         objs[obn].frame = views[objs[obn].view].loops[loopn].numFrames - 1;
+    }
+
+    load_loop_in_background(objs[obn].view, objs[obn].loop);
+
+    // wait till 2/3 loop is loaded
+    {
+        auto fi = views[objs[obn].view].loops[loopn].numFrames * 2 / 3;
+        spriteset[views[objs[obn].view].loops[loopn].frames[fi].pic];
     }
 
     objs[obn].overall_speed=spdd;

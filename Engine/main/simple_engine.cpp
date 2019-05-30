@@ -65,6 +65,7 @@
 #include "gui/guitextbox.h"
 #include "debug/debugmanager.h"
 #include "util/path.h"
+#include "util/asset_loader.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -206,7 +207,8 @@ void GameContextGiveControlToMain()
 
 
 static void load_speech_sync_data() {
-    Stream *speechsync = gameAssetLibrary->OpenAsset("speech/syncdata.dat");
+    auto f = gameAssetLoader.LoadFileAsync("speech/syncdata.dat", true);
+    Stream *speechsync = gameAssetLoader.ResolveAsStream(f);
     if (speechsync == nullptr) { return; }
 
     // this game has voice lip sync
@@ -531,6 +533,9 @@ int initialize_engine(const ConfigTree &startup_opts)
     PHYSFS_mount("audio-speech.zip", "/speech", 1);
 
     gameAssetLibrary = std::make_unique<AGS::Common::AssetManager>();
+
+    gameAssetLoader.StartBackgroundThread();
+
 
 #if 0
     if (AGS::Common::Path::IsDirectory(ResPaths.SpeechPak.Path.GetCStr())) {
@@ -1016,9 +1021,6 @@ void engine_init_game_settings()
         if (game.mcurs[ee].view >= 0)
             precache_view (game.mcurs[ee].view);
     }
-    // may as well preload the character gfx
-    if (playerchar->view >= 0)
-        precache_view (playerchar->view);
 
     for (ee = 0; ee < MAX_ROOM_OBJECTS; ee++)
         objcache[ee].image = nullptr;

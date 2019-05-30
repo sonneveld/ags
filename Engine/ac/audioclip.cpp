@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 #include "ac/audioclip.h"
 #include "ac/audiochannel.h"
 #include "ac/gamesetupstruct.h"
@@ -35,7 +35,8 @@ int AudioClip_GetType(ScriptAudioClip *clip)
 }
 int AudioClip_GetIsAvailable(ScriptAudioClip *clip)
 {
-    return DoesAssetExistInLib(get_audio_clip_assetpath(clip->bundlingType, clip->fileName)) ? 1 : 0;
+    //return DoesAssetExistInLib(get_audio_clip_assetpath(clip->bundlingType, clip->fileName)) ? 1 : 0;return
+    return gameAssetLibrary->DoesAssetExist(clip->fileName);
 }
 
 void AudioClip_Stop(ScriptAudioClip *clip)

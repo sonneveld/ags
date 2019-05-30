@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "gfx/bitmap.h"
 #include "util/stream.h"
 #include "util/wgt2allg.h"
@@ -53,6 +53,8 @@ extern "C"
       pall[start] = tempp;
     }
   }
+
+#ifdef AGS_DELETE_FOR_3_6
 
   Bitmap *wnewblock(Common::Bitmap *src, int x1, int y1, int x2, int y2)
   {
@@ -140,6 +142,8 @@ extern "C"
     return 0;
   }
 
+#endif
+
   void wputblock(Common::Bitmap *ds, int xx, int yy, Bitmap *bll, int xray)
   {
     if (xray)
@@ -165,6 +169,8 @@ extern "C"
     0x303030, 0x404040, 0x505050, 0x606060, 0x707070, 0x808080, 0x909090,       // 25
     0xA0A0A0, 0xB0B0B0, 0xC0C0C0, 0xD0D0D0, 0xE0E0E0, 0xF0F0F0
   };
+
+#ifdef AGS_DELETE_FOR_3_6
 
   int __wremap_keep_transparent = 1;
 
@@ -210,6 +216,7 @@ extern "C"
     __wremap_keep_transparent++;
   }
 
+#endif
 
 #ifdef __cplusplus
 }

@@ -16,7 +16,7 @@
 #define AC_MEDIA_AUDIO_CLIP_OPENAL_H__
 
 #include "media/audio/soundclip.h"
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 
 struct OPENAL_SOUNDCLIP final : public SOUNDCLIP
 {

@@ -12,7 +12,7 @@
 //
 //=============================================================================
 
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 #include "ac/common.h"
 #include "ac/gamesetup.h"
 #include "ac/gamesetupstruct.h"
@@ -25,7 +25,6 @@
 #include "debug/out.h"
 #include "util/misc.h"
 #include "util/stream.h"
-#include "core/assetmanager.h"
 
 using namespace AGS::Common;
 
@@ -36,7 +35,7 @@ extern char transFileName[MAX_PATH];
 
 
 TreeMap *transtree = nullptr;
-long lang_offs_start = 0;
+//long lang_offs_start = 0;
 char transFileName[MAX_PATH] = "\0";
 
 void close_translation () {
@@ -54,14 +53,14 @@ bool init_translation (const String &lang, const String &fallback_lang, bool qui
         return false;
     sprintf(transFileName, "%s.tra", lang.GetCStr());
 
-    Stream *language_file = find_open_asset(transFileName);
+    Stream *language_file = gameAssetLibrary->OpenAsset(transFileName);
     if (language_file == nullptr)
     {
         Debug::Printf(kDbgMsg_Error, "Cannot open translation: %s", transFileName);
         return false;
     }
     // in case it's inside a library file, record the offset
-    lang_offs_start = language_file->GetPosition();
+    // lang_offs_start = language_file->GetPosition();
 
     char transsig[16] = {0};
     language_file->Read(transsig, 15);

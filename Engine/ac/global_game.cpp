@@ -55,7 +55,7 @@
 #include "ac/spritecache.h"
 #include "gfx/bitmap.h"
 #include "gfx/graphicsdriver.h"
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "main/game_file.h"
 #include "util/string_utils.h"
 #include "media/audio/audio_system.h"
@@ -226,7 +226,11 @@ void GetGlobalString (int index, char *strval) {
     strcpy (strval, play.globalstrings[index]);
 }
 
-int RunAGSGame (const char *newgame, unsigned int mode, int data) {
+int RunAGSGame (const char *newgame, unsigned int mode, int data) 
+{
+    throw std::runtime_error("not implemented.");
+
+#if 0
 
     can_run_delayed_command();
 
@@ -298,6 +302,7 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
         start_game();
 
     return 0;
+#endif
 }
 
 int GetGameParameter (int parm, int data1, int data2, int data3) {

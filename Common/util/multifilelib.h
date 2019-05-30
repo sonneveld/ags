@@ -24,7 +24,7 @@
 #ifndef __AGS_CN_UTIL__MULTIFILELIB_H
 #define __AGS_CN_UTIL__MULTIFILELIB_H
 
-#include "core/asset.h"
+#include "core/assets.h"
 #include "util/stream.h"
 
 namespace AGS

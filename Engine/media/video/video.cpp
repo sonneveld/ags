@@ -22,7 +22,7 @@
 
 #include "debug/debug_log.h"
 #include "debug/out.h"
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 #include "ac/common.h"
 #include "ac/draw.h"
 #include "ac/game_version.h"
@@ -33,7 +33,6 @@
 #include "ac/sys_events.h"
 #include "ac/runtime_defines.h"
 #include "ac/system.h"
-#include "core/assetmanager.h"
 #include "gfx/bitmap.h"
 #include "gfx/ddb.h"
 #include "gfx/graphicsdriver.h"
@@ -140,11 +139,11 @@ void play_flc_file(int numb,int playflags) {
         clearScreenAtStart = 0;
 
     String flicname = String::FromFormat("flic%d.flc", numb);
-    Stream *in = AssetManager::OpenAsset(flicname);
+    Stream *in = gameAssetLibrary->OpenAsset(flicname);
     if (!in)
     {
         flicname.Format("flic%d.fli", numb);
-        in = AssetManager::OpenAsset(flicname);
+        in = gameAssetLibrary->OpenAsset(flicname);
     }
     if (!in)
     {

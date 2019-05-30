@@ -22,27 +22,8 @@
 
 #include "media/audio/audio_core.h"
 
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "main/engine.h"
-
-
-class WithAssetLibrary {
-public:
-    WithAssetLibrary(const String &assetlib) {
-        if (assetlib.IsEmpty()) { return; }
-        if (assetlib.CompareNoCase(ResPaths.GamePak.Name.GetCStr()) == 0) { return; }
-        AGS::Common::AssetManager::SetDataFile(get_known_assetlib(assetlib));
-        needsetback = true;
-    }
-
-    ~WithAssetLibrary() {
-        if (!needsetback) { return; }
-        AGS::Common::AssetManager::SetDataFile(ResPaths.GamePak.Path);
-    }
-
-private:
-    bool needsetback = false;
-};
 
 
 void OPENAL_SOUNDCLIP::poll() { }
@@ -164,19 +145,10 @@ OPENAL_SOUNDCLIP::OPENAL_SOUNDCLIP() : SOUNDCLIP(), slot_(-1) {}
 
 SOUNDCLIP *my_load_openal(const AssetPath &asset_name, const char *extension_hint, int voll, bool loop)
 {
-    if (!DoesAssetExistInLib(asset_name)) { return nullptr;  }
+    // still need to return null if doesn't exist, because we use this behaviour to load different audio formats.
+    if (!gameAssetLibrary->DoesAssetExist(asset_name.second)) { return nullptr; }
 
-    // Ideally we load the asset in the audio thread, but asset lib not thread safe yet.
-    auto &assetlib = asset_name.first;
-    auto &assetname = asset_name.second;
-    WithAssetLibrary w(assetlib);
-    AGS::Common::AssetLocation loc;
-    if (!AGS::Common::AssetManager::GetAssetLocation(assetname, loc)) { return nullptr; }
-    const auto sz = AGS::Common::AssetManager::GetAssetSize(assetname);
-    auto s = AGS::Common::AssetManager::OpenAsset(assetname, AGS::Common::kFile_Open, AGS::Common::kFile_Read);
-    if (!s) { return nullptr; }
-
-    auto slot = audio_core_slot_initialise(asset_name, String(extension_hint), s, sz);
+    auto slot = audio_core_slot_initialise(asset_name, String(extension_hint));
     if (slot < 0) { return nullptr; }
 
     auto clip = new OPENAL_SOUNDCLIP();

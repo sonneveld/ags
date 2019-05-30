@@ -27,6 +27,8 @@
 
 #include <iostream>
 
+#include "physfs.h"
+
 #include "core/platform.h"
 #include "main/mainheader.h"
 #include "ac/common.h"
@@ -62,6 +64,7 @@
 #include "gfx/scene_graph_driver.h"
 #include "gui/guitextbox.h"
 #include "debug/debugmanager.h"
+#include "util/path.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -203,7 +206,7 @@ void GameContextGiveControlToMain()
 
 
 static void load_speech_sync_data() {
-    Stream *speechsync = AssetManager::OpenAsset("syncdata.dat");
+    Stream *speechsync = gameAssetLibrary->OpenAsset("speech/syncdata.dat");
     if (speechsync == nullptr) { return; }
 
     // this game has voice lip sync
@@ -483,7 +486,6 @@ int initialize_engine(const ConfigTree &startup_opts)
     platform->PostAllegroInit(false);
 
 
-    audio_core_init();
     usetup.mod_player = 1;
 
 
@@ -502,42 +504,71 @@ int initialize_engine(const ConfigTree &startup_opts)
     post_config();
 
     psp_audio_multithreaded = 1; //consoles can always do this, i guess 
-    
+
 
     ResPaths.DataDir = ".";
-    ResPaths.GamePak.Path = "ac2game.dat";
-    ResPaths.GamePak.Name = "ac2game.dat"; // used to uniquely identify when switching paks
-    set_install_dir(ResPaths.DataDir, ResPaths.DataDir, ResPaths.DataDir);
+    ResPaths.GamePak.Name = "unavowed.ags"; // used to uniquely identify when switching paks
+    ResPaths.GamePak.Path = "./unavowed.ags";
+    ResPaths.SpeechPak.Name = "speech.vox";
+    ResPaths.SpeechPak.Path = "./speech.vox";
+    ResPaths.AudioPak.Name = "audio.vox";
+    ResPaths.AudioPak.Path = "./audio.vox";
 
-    if (AssetManager::SetDataFile(ResPaths.GamePak.Path) != kAssetNoError) { throw std::runtime_error("Error finding game data."); }
+    extern String installDirectory;
+    extern String installAudioDirectory;
+    extern String installVoiceDirectory;
+
+    installDirectory = ResPaths.DataDir;
+    installAudioDirectory = ResPaths.DataDir;
+    installVoiceDirectory = ResPaths.DataDir;
 
 
-    play.want_speech=-2;
-    String speech_file = "speech.vox";
-    String speech_filepath = find_assetlib(speech_file);
+    PHYSFS_mount("game.zip", "/", 1);
+    PHYSFS_mount("audio.zip", "/audio", 1);
+    PHYSFS_mount("sprite.zip", "/sprite", 1);
+    PHYSFS_mount("view.zip", "/view", 1);
+    PHYSFS_mount("audio-extra.zip", "/audio", 1);
+    PHYSFS_mount("audio-speech.zip", "/speech", 1);
 
-    if (!speech_filepath.IsEmpty()) {
-        if (AssetManager::SetDataFile(speech_filepath)==Common::kAssetNoError) {
-            load_speech_sync_data();  // uses open audio asset file
-            ResPaths.SpeechPak.Name = speech_file;
-            ResPaths.SpeechPak.Path = speech_filepath;
-            play.want_speech=1;
-        }
+    gameAssetLibrary = std::make_unique<AGS::Common::AssetManager>();
+
+#if 0
+    if (AGS::Common::Path::IsDirectory(ResPaths.SpeechPak.Path.GetCStr())) {
+        PHYSFS_mount(ResPaths.SpeechPak.Path.GetCStr(), "/speech", 1);
+        play.want_speech = 1;
+    }
+    else {
+        ResPaths.SpeechPak.Name = "";
+        ResPaths.SpeechPak.Path = "";
+        play.want_speech = -2;
+    }
+#endif
+    play.want_speech = 1;
+
+#if 0
+    if (AGS::Common::Path::IsDirectory(ResPaths.AudioPak.Path.GetCStr())) {
+        PHYSFS_mount(ResPaths.AudioPak.Path.GetCStr(), "/audio", 1);
+        play.separate_music_lib = 1;
+    }
+    else {
+        ResPaths.AudioPak.Name = "";
+        ResPaths.AudioPak.Path = "";
+        play.separate_music_lib = 0;
+    }
+#endif
+    play.separate_music_lib = 1;
+
+
+    if (play.want_speech >= 1) {
+        load_speech_sync_data();  // uses open audio asset file
     }
 
-    play.separate_music_lib = 0;
-    String music_file = "audio.vox";
-    String music_filepath = find_assetlib(music_file);
-    if (!music_filepath.IsEmpty()) {
-        if (AssetManager::SetDataFile(music_filepath) == kAssetNoError) {
-            ResPaths.AudioPak.Name = music_file;
-            ResPaths.AudioPak.Path = music_filepath;
-            play.separate_music_lib = 1;
-        }
-    }
+
+    auto audioAssetLibrary = std::make_unique<AGS::Common::AssetManager>();
 
 
-    AssetManager::SetDataFile(ResPaths.GamePak.Path); // switch back to the main data pack
+    audio_core_init(audioAssetLibrary);
+
 
     set_game_speed(40);
 

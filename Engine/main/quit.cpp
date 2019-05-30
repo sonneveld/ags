@@ -35,7 +35,7 @@
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/bitmap.h"
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "plugin/plugin_engine.h"
 #include "media/audio/audio_system.h"
 
@@ -198,7 +198,7 @@ void quit_release_data()
     _CrtMemCheckpoint(&memstart);
     _CrtMemDumpStatistics( &memstart );*/
 
-    Common::AssetManager::DestroyInstance();
+    gameAssetLibrary = nullptr;
 }
 
 void quit_delete_temp_files()

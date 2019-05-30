@@ -34,7 +34,7 @@
 #include "ac/global_audio.h"
 #include <math.h>
 #include "util/stream.h"
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "ac/timer.h"
 #include "main/game_run.h"
 #include "media/audio/audio_core.h"
@@ -253,7 +253,8 @@ SOUNDCLIP *load_sound_clip(ScriptAudioClip *audioClip, bool repeat)
     update_clip_default_volume(audioClip);
 
     SOUNDCLIP *soundClip = nullptr;
-    AssetPath asset_name = get_audio_clip_assetpath(audioClip->bundlingType, audioClip->fileName);
+    // AssetPath asset_name = get_audio_clip_assetpath(audioClip->bundlingType, audioClip->fileName);
+    auto asset_name = AssetPath(AGS::Common::String(), AGS::Common::String::FromFormat("audio/%s", audioClip->fileName.GetCStr()));
     switch (audioClip->fileType)
     {
     case eAudioFileOGG:

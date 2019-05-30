@@ -17,7 +17,7 @@
 
 #define AGS_OUTLINE_FONT_FIX (!AGS_PLATFORM_OS_WINDOWS)
 
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "font/ttffontrenderer.h"
 #include "util/stream.h"
 
@@ -90,20 +90,12 @@ bool TTFFontRenderer::IsBitmapFont()
 bool TTFFontRenderer::LoadFromDiskEx(int fontNumber, int fontSize, const FontRenderParams *params)
 {
   String file_name = String::FromFormat("agsfnt%d.ttf", fontNumber);
-  Stream *reader = AssetManager::OpenAsset(file_name);
-  char *membuffer;
 
-  if (reader == nullptr)
-    return false;
+  auto membuffer = gameAssetLibrary->LoadAsset(file_name);
+  if (membuffer == nullptr) { return false; }
 
-  long lenof = AssetManager::GetLastAssetSize();
-
-  membuffer = (char *)malloc(lenof);
-  reader->ReadArray(membuffer, lenof, 1);
-  delete reader;
-
-  ALFONT_FONT *alfptr = alfont_load_font_from_mem(membuffer, lenof);
-  free(membuffer);
+  ALFONT_FONT *alfptr = alfont_load_font_from_mem((const char*)membuffer->data(), membuffer->size());
+  membuffer = nullptr;
 
   if (alfptr == nullptr)
     return false;

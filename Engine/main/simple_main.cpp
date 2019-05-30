@@ -4,6 +4,8 @@ xperment to see wats necssary
 
 */
 
+#include "physfs.h"
+
 #include "core/platform.h"
 #define AGS_PLATFORM_DEFINES_PSP_VARS (AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_ANDROID)
 
@@ -13,7 +15,7 @@ xperment to see wats necssary
 #include "main/config.h"
 #include "main/engine.h"
 #include "main/mainheader.h"
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "util/path.h"
 #include "util/directory.h"
 
@@ -70,6 +72,11 @@ int ags_entry_point(int argc, char *argv[])
 { 
     display_fps = 2;
     
+
+    PHYSFS_init(argv[0]);
+    PHYSFS_permitSymbolicLinks(false);
+
+
     global_argv = argv;
     global_argc = argc;
 
@@ -84,9 +91,6 @@ int ags_entry_point(int argc, char *argv[])
     platform = AGSPlatformDriver::GetDriver();
 
     init_debug();
-
-    Common::AssetManager::CreateInstance();
-    Common::AssetManager::SetSearchPriority(Common::kAssetPriorityDir);
 
     ConfigTree startup_opts;
 

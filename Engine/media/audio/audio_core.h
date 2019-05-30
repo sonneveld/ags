@@ -1,7 +1,7 @@
 
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 #include "util/string.h"
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "util/stream.h"
 
 float audio_core_asset_length_ms(const AssetPath &assetPath, const AGS::Common::String &extension);
@@ -11,12 +11,12 @@ int audio_core_asset_sound_type(const AssetPath &assetPath, const AGS::Common::S
 //int position_to_position_ms();
 
 // will start in background thread.
-void audio_core_init(/*config, soundlib*/);
+void audio_core_init(std::unique_ptr<AGS::Common::AssetManager> &assetLibrary);
 void audio_core_shutdown();
 
 // controls
 // if none free, add a new one.
-int audio_core_slot_initialise(const AssetPath &assetPath, const AGS::Common::String &extension, AGS::Common::Stream *hackStream, size_t hacksize);
+int audio_core_slot_initialise(const AssetPath &assetPath, const AGS::Common::String &extension);
 void audio_core_slot_play(int slot_handle);
 void audio_core_slot_pause(int slot_handle);
 void audio_core_slot_stop(int slot_handle);

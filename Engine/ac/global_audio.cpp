@@ -383,7 +383,7 @@ void PlayMP3File (const char *filename) {
 
     debug_script_log("PlayMP3File %s", filename);
 
-    AssetPath asset_name("", filename);
+    AssetPath asset_name("", AGS::Common::String::FromFormat("audio/%s", filename));
 
     int useChan = prepare_for_new_music ();
     bool doLoop = (play.music_repeat > 0);
@@ -539,18 +539,27 @@ static bool play_voice_clip_on_channel(const String &voice_name)
 {
     stop_and_destroy_channel(SCHAN_SPEECH);
 
-    String asset_name = voice_name;
-    asset_name.Append(".wav");
-    SOUNDCLIP *speechmp3 = my_load_wave(get_voice_over_assetpath(asset_name), play.speech_volume, 0);
+    SOUNDCLIP *speechmp3 = nullptr;
 
     if (speechmp3 == nullptr) {
-        asset_name.ReplaceMid(asset_name.GetLength() - 3, 3, "ogg");
-        speechmp3 = my_load_ogg(get_voice_over_assetpath(asset_name), play.speech_volume);
+        String asset_name = voice_name;
+        asset_name.Append(".wav");
+        auto full_asset_name = AssetPath(AGS::Common::String(), AGS::Common::String::FromFormat("speech/%s", asset_name.GetCStr()));
+        speechmp3 = my_load_wave(full_asset_name, play.speech_volume, 0);
     }
 
     if (speechmp3 == nullptr) {
-        asset_name.ReplaceMid(asset_name.GetLength() - 3, 3, "mp3");
-        speechmp3 = my_load_mp3(get_voice_over_assetpath(asset_name), play.speech_volume);
+        String asset_name = voice_name;
+        asset_name.Append(".ogg");
+        auto full_asset_name = AssetPath(AGS::Common::String(), AGS::Common::String::FromFormat("speech/%s", asset_name.GetCStr()));
+        speechmp3 = my_load_ogg(full_asset_name, play.speech_volume);
+    }
+
+    if (speechmp3 == nullptr) {
+        String asset_name = voice_name;
+        asset_name.Append(".mp3");
+        auto full_asset_name = AssetPath(AGS::Common::String(), AGS::Common::String::FromFormat("speech/%s", asset_name.GetCStr()));
+        speechmp3 = my_load_mp3(full_asset_name, play.speech_volume);
     }
 
     if (speechmp3 != nullptr) {

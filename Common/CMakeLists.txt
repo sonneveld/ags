@@ -42,10 +42,8 @@ target_sources(common
     ac/view.h
     ac/wordsdictionary.cpp
     ac/wordsdictionary.h
-    core/asset.cpp
-    core/asset.h
-    core/assetmanager.cpp
-    core/assetmanager.h
+    core/assets.cpp
+    core/assets.h
     core/def_version.h
     core/types.h
     debug/assert.h

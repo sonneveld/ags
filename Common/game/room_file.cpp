@@ -16,7 +16,7 @@
 #include "ac/common_defines.h"
 #include "ac/gamestructdefines.h"
 #include "ac/wordsdictionary.h" // TODO: extract string decryption
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "debug/out.h"
 #include "game/customproperties.h"
 #include "game/room_file.h"
@@ -83,7 +83,7 @@ HRoomFileError OpenRoomFile(const String &filename, RoomDataSource &src)
     // Cleanup source struct
     src = RoomDataSource();
     // Try to open room file
-    Stream *in = AssetManager::OpenAsset(filename);
+    Stream *in = gameAssetLibrary->OpenAsset(filename);
     if (in == nullptr)
         return new RoomFileError(kRoomFileErr_FileOpenFailed, String::FromFormat("Filename: %s.", filename.GetCStr()));
     // Read room header

@@ -15,7 +15,7 @@
 #ifndef __AC_SOUNDCACHE_H
 #define __AC_SOUNDCACHE_H
 
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 
 // PSP: A simple sound cache. The size can be configured in the config file.
 // The data rate while reading from disk on the PSP is usually between 500 to 900 kiB/s,

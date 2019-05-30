@@ -19,8 +19,7 @@
 #include "ac/view.h"
 #include "ac/wordsdictionary.h"
 #include "ac/dynobj/scriptaudioclip.h"
-#include "core/asset.h"
-#include "core/assetmanager.h"
+#include "core/assets.h"
 #include "game/main_game_file.h"
 #include "gui/guimain.h"
 #include "script/cc_error.h"
@@ -96,6 +95,7 @@ LoadedGameEntities::LoadedGameEntities(GameSetupStruct &game, DialogTopic *&dial
 
 LoadedGameEntities::~LoadedGameEntities() = default;
 
+#if 0
 bool IsMainGameLibrary(const String &filename)
 {
     // We must not only detect if the given file is a correct AGS data library,
@@ -115,6 +115,8 @@ bool IsMainGameLibrary(const String &filename)
     }
     return false;
 }
+
+#endif
 
 // Begins reading main game file from a generic stream
 HGameFileError OpenMainGameFileBase(PStream &in, MainGameSource &src)
@@ -167,11 +169,11 @@ HGameFileError OpenMainGameFileFromDefaultAsset(MainGameSource &src)
     src = MainGameSource();
     // Try to find and open main game file
     String filename = MainGameSource::DefaultFilename_v3;
-    PStream in(AssetManager::OpenAsset(filename));
+    PStream in(gameAssetLibrary->OpenAsset(filename));
     if (!in)
     {
         filename = MainGameSource::DefaultFilename_v2;
-        in = PStream(AssetManager::OpenAsset(filename));
+        in = PStream(gameAssetLibrary->OpenAsset(filename));
     }
     if (!in)
         return new MainGameFileError(kMGFErr_FileOpenFailed, String::FromFormat("Filename: %s.", filename.GetCStr()));
@@ -491,7 +493,9 @@ void UpgradeAudio(GameSetupStruct &game, GameDataVersion data_ver)
 {
     if (data_ver >= kGameVersion_320)
         return;
-
+    
+    throw std::runtime_error("not implemented");
+#if 0
     // An explanation of building audio clips array for pre-3.2 games.
     //
     // When AGS version 3.2 was released, it contained new audio system.
@@ -535,6 +539,7 @@ void UpgradeAudio(GameSetupStruct &game, GameDataVersion data_ver)
     
     // Setup sound clip played on score event
     game.scoreClipID = -1;
+#endif
 }
 
 // Convert character data to the current version

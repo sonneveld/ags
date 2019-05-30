@@ -12,8 +12,7 @@
 //
 //=============================================================================
 
-#include "aldumb.h"
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 #include "ac/audiocliptype.h"
 #include "ac/file.h"
 #include "ac/common.h"
@@ -29,8 +28,6 @@
 #include "util/misc.h"
 #include "platform/base/agsplatformdriver.h"
 #include "util/stream.h"
-#include "core/assetmanager.h"
-#include "core/asset.h"
 #include "main/engine.h"
 #include "main/game_file.h"
 #include "util/directory.h"
@@ -364,6 +361,7 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, String &path,
     return true;
 }
 
+#if 0
 bool LocateAsset(const AssetPath &path, AssetLocation &loc)
 {
     String assetlib = path.first;
@@ -431,6 +429,7 @@ void set_install_dir(const String &path, const String &audio_path, const String 
     else
         installVoiceDirectory = Path::MakePathNoSlash(voice_path);
 }
+#endif 
 
 String get_install_dir()
 {
@@ -452,6 +451,7 @@ void get_install_dir_path(char* buffer, const char *fileName)
     sprintf(buffer, "%s/%s", installDirectory.GetCStr(), fileName);
 }
 
+#if 0
 String find_assetlib(const String &filename)
 {
     String libname = cbuf_to_string_and_free( ci_find_file(ResPaths.DataDir.GetCStr(), filename.GetCStr()) );
@@ -481,9 +481,10 @@ String get_known_assetlib(const String &filename)
     return String();
 }
 
+
 Stream *find_open_asset(const String &filename)
 {
-    Stream *asset_s = Common::AssetManager::OpenAsset(filename);
+    Stream *asset_s = gameAssetLibrary->OpenAsset(filename);
     if (!asset_s && Path::ComparePaths(ResPaths.DataDir, installDirectory) != 0)
     {
         // Just in case they're running in Debug, try standalone file in compiled folder
@@ -509,6 +510,7 @@ AssetPath get_audio_clip_assetpath(int bundling_type, const String &filename)
         return AssetPath(game.GetAudioVOXName(), filename);
     return AssetPath();
 }
+#endif
 
 AssetPath get_voice_over_assetpath(const String &filename)
 {

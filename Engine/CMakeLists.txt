@@ -12,7 +12,6 @@ target_include_directories(engine PUBLIC .)
 
 target_sources(engine
     PRIVATE
-    ac/asset_helper.h
     ac/audiochannel.cpp
     ac/audiochannel.h
     ac/audioclip.cpp

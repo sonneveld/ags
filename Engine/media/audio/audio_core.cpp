@@ -19,7 +19,7 @@
 
 #include "allegro.h"
 
-#include "ac/asset_helper.h"
+#include "core/assets.h"
 #include "media/audio/audiodefines.h"
 #include "debug/out.h"
 #include "ac/common.h"
@@ -62,6 +62,8 @@ bool audio_core_thread_running = false;
 
 enum AudioCoreSlotCommandType { Nothing, Initialise, Configure, Play, Pause, StopAndRelease, Seek};
 
+static std::unique_ptr<AGS::Common::AssetManager> audioAssetLibrary_ = nullptr;
+
 
 struct AudioCoreSlotCommand {
     int handle = -1;
@@ -70,8 +72,6 @@ struct AudioCoreSlotCommand {
 
     AssetPath assetPath {};
     ags::String assetExtension {};
-    AGS::Common::Stream *hackstream = nullptr;
-    size_t hacksize = 0;
 
     float seekPosMs = -1.0f;
 
@@ -127,8 +127,9 @@ int audio_core_asset_sound_type(const AssetPath &assetPath, const AGS::Common::S
 // INIT/SHUTDOWN
 // -------------------------------------------------------------------------------------------------
 
-void audio_core_init() 
+void audio_core_init(std::unique_ptr<AGS::Common::AssetManager> &assetLibrary)
 {
+    audioAssetLibrary_ = std::move(assetLibrary);
     audio_core_thread_ptr = new agseng::Thread();
     audio_core_thread_running = true;
     audio_core_thread_ptr->CreateAndStart(audio_core_entry, false);
@@ -139,6 +140,7 @@ void audio_core_shutdown()
     audio_core_thread_running = false;
     if (!audio_core_thread_ptr) { return; }
     audio_core_thread_ptr->Stop();
+    audioAssetLibrary_ = nullptr;
 }
 
 
@@ -155,15 +157,15 @@ static int avail_slot_id()
 }
 
 // if none free, add a new one.
-int audio_core_slot_initialise(const AssetPath &assetPath, const ags::String &extension, AGS::Common::Stream *hackStream, size_t hacksize)  
+int audio_core_slot_initialise(const AssetPath &assetPath, const ags::String &extension)  
 {
     auto handle = avail_slot_id();
 
     auto cmd = AudioCoreSlotCommand {handle, AudioCoreSlotCommandType::Initialise};
     cmd.assetPath = assetPath;
     cmd.assetExtension = extension;
-    cmd.hackstream = hackStream;
-    cmd.hacksize = hacksize;
+    //cmd.hackstream = hackStream;
+    //cmd.hacksize = hacksize;
 
     std::lock_guard<std::mutex> lk(config_mutex_);
     commandList_.push_back(cmd);
@@ -338,7 +340,7 @@ struct AudioCoreSlot {
     AssetPath assetPath_ {};
     ags::String assetExtension_ {};
 
-    std::vector<uint8_t> sampleBuffer_ {};
+    AGS::Common::AssetManager::AssetPtr sampleBuffer_ = nullptr;
     SoundSampleUniquePtr sample_ = nullptr;
     ALenum sampleOpenAlFormat_ = 0;
 
@@ -393,24 +395,12 @@ struct AudioCoreSlot {
 
 
 
-    void LoadSample(const AssetPath &assetPath, const AGS::Common::String &assetExtension, AGS::Common::Stream *hackStream, size_t hacksize) 
+    void LoadSample(const AssetPath &assetPath, const AGS::Common::String &assetExtension) 
     {
-        // auto &assetlib = config.assetPath.first;
-        // auto &assetname = config.assetPath.second;
+        auto &assetname = assetPath.second;
+        sampleBuffer_ = audioAssetLibrary_->LoadAsset(assetname);
 
-        // WithAssetLibrary w(assetlib);
-        // ags::AssetLocation loc;
-        // if (!ags::AssetManager::GetAssetLocation(assetname, loc)) { return; }
-        // const auto sz = ags::AssetManager::GetAssetSize(assetname);
-
-        {
-            // auto s = std::unique_ptr<Stream>(ags::AssetManager::OpenAsset(assetname, ags::kFile_Open, ags::kFile_Read));
-            sampleBuffer_.resize(hacksize);
-            hackStream->Read(sampleBuffer_.data(), sampleBuffer_.size());
-            delete hackStream;
-        }
-
-        auto sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_.data(), sampleBuffer_.size(), assetExtension.GetCStr(), nullptr, SampleDefaultBufferSize));
+        auto sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_->data(), sampleBuffer_->size(), assetExtension.GetCStr(), nullptr, SampleDefaultBufferSize));
         if(!sample) { return; }
 
         auto bufferFormat = openalFormatFromSample(sample);
@@ -422,7 +412,7 @@ struct AudioCoreSlot {
             auto desired = Sound_AudioInfo { AUDIO_S16SYS, sample->actual.channels, sample->actual.rate };
 
             Sound_FreeSample(sample.get());
-            sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_.data(), sampleBuffer_.size(), assetExtension.GetCStr(), &desired, SampleDefaultBufferSize));
+            sample = SoundSampleUniquePtr(Sound_NewSampleFromMem(sampleBuffer_->data(), sampleBuffer_->size(), assetExtension.GetCStr(), &desired, SampleDefaultBufferSize));
 
             if(!sample) { return; }
 
@@ -439,7 +429,7 @@ struct AudioCoreSlot {
 
 
 
-    void Initialise(int handle, const AssetPath &assetPath, const AGS::Common::String &extension, AGS::Common::Stream *hackStream, size_t hackSize)
+    void Initialise(int handle, const AssetPath &assetPath, const AGS::Common::String &extension)
     {
         // We get a fresh source in-case it's in an error state.
         ClearSource();
@@ -452,7 +442,7 @@ struct AudioCoreSlot {
         assetPath_ = {};
         assetExtension_.Empty();
         
-        sampleBuffer_.resize(0);
+        sampleBuffer_ = nullptr;
         sample_ = nullptr;
         sampleOpenAlFormat_ = 0;
 
@@ -470,7 +460,7 @@ struct AudioCoreSlot {
         alGenSources(1, &source_);
         dump_al_errors();
 
-        LoadSample(assetPath, extension, hackStream, hackSize);
+        LoadSample(assetPath, extension);
     }
 
     void Configure(bool repeat, float volume, float speed, float panning) {
@@ -717,7 +707,7 @@ static void audio_core_entry()
             for (auto &cmd : frameCommands) {
                 auto &slot = slots_[cmd.handle];
                 switch(cmd.command) {
-                    case AudioCoreSlotCommandType::Initialise:  slot.Initialise(cmd.handle, cmd.assetPath, cmd.assetExtension, cmd.hackstream, cmd.hacksize); break;
+                    case AudioCoreSlotCommandType::Initialise:  slot.Initialise(cmd.handle, cmd.assetPath, cmd.assetExtension); break;
                     case AudioCoreSlotCommandType::Configure: slot.Configure(cmd.repeat, cmd.volume, cmd.speed, cmd.panning); break;
                     case AudioCoreSlotCommandType::Play: slot.Play(); break;
                     case AudioCoreSlotCommandType::Pause: slot.Pause(); break;

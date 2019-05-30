@@ -1,0 +1,14 @@
+syntax:glob
+cmake-build
+physfs-nx/.vs
+physfs-nx/NX64
+physfs-nx/NX32
+physfs-nx/Debug
+physfs-nx/Release
+physfs-nx/x64
+physfs-nx/test_physfs/NX64
+physfs-nx/test_physfs/NX32
+physfs-nx/test_physfs/Debug
+physfs-nx/test_physfs/Release
+physfs-nx/test_physfs/x64
+

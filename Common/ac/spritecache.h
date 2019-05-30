@@ -37,6 +37,7 @@
 
 #include <memory>
 #include <vector>
+#include <list>
 #include "core/platform.h"
 #include "util/error.h"
 
@@ -46,39 +47,8 @@ typedef AGS::Common::HError HAGSError;
 
 struct SpriteInfo;
 
-// Tells that the sprite does not exist in the game resources.
-#define SPRCACHEFLAG_DOESNOTEXIST   0x01
-// Locked sprites are ones that should not be freed when clearing cache space.
-#define SPRCACHEFLAG_LOCKED         0x02
-// Tells that the sprite index was remapped to another existing sprite.
-#define SPRCACHEFLAG_REMAPPED       0x04
-
-// Max size of the sprite cache, in bytes
-#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
-#define DEFAULTCACHESIZE 32 * 1024 * 1024
-#else
-#define DEFAULTCACHESIZE 128 * 1024 * 1024
-#endif
-
-// TODO: research old version differences
-enum SpriteFileVersion
-{
-    kSprfVersion_Uncompressed = 4,
-    kSprfVersion_Compressed = 5,
-    kSprfVersion_Last32bit = 6,
-    kSprfVersion_64bit = 10,
-    kSprfVersion_HighSpriteLimit = 11,
-    kSprfVersion_Current = kSprfVersion_HighSpriteLimit
-};
-
-enum SpriteIndexFileVersion
-{
-    kSpridxfVersion_Initial = 1,
-    kSpridxfVersion_Last32bit = 2,
-    kSpridxfVersion_64bit = 10,
-    kSpridxfVersion_HighSpriteLimit = 11,
-    kSpridxfVersion_Current = kSpridxfVersion_HighSpriteLimit
-};
+// Max size of the sprite cache, in number of entries
+#define DEFAULTCACHESIZE 768
 
 
 typedef int32_t sprkey_t;
@@ -101,8 +71,6 @@ public:
     sprkey_t    EnlargeTo(sprkey_t newsize);
     // Finds a free slot index, if all slots are occupied enlarges sprite bank; returns index
     sprkey_t    AddNewSprite();
-    // Assigns bitmap to the given slot and locks it to prevent release from cache
-    void        SetSpriteAndLock(sprkey_t index, Common::Bitmap *);
     // Returns current size of the cache, in bytes
     size_t      GetCacheSize() const;
     // Gets the total size of the locked sprites, in bytes
@@ -126,74 +94,52 @@ public:
     // Sets max cache size in bytes
     void        SetMaxCacheSize(size_t size);
 
+    void RemoveLeastRecentlyUsed();
+
     // Loads sprite reference information and inits sprite stream
     HAGSError   InitFile(const char *filename);
-    // Tells if bitmaps in the file are compressed
-    bool        IsFileCompressed() const;
-    // Opens file stream
-    int         AttachFile(const char *filename);
-    // Closes file stream
-    void        DetachFile();
-    // Saves all sprites until lastElement (exclusive) to file 
-    int         SaveToFile(const char *filename, bool compressOutput);
-    // Saves sprite index table in a separate file
-    int         SaveSpriteIndex(const char *filename, int spriteFileIDCheck, sprkey_t lastslot, sprkey_t numsprits,
-        const std::vector<int16_t> &spritewidths, const std::vector<int16_t> &spriteheights, const std::vector<soff_t> &spriteoffs);
 
     // Loads (if it's not in cache yet) and returns bitmap by the sprite index
     Common::Bitmap *operator[] (sprkey_t index);
 
 private:
     void        Init();
-    size_t      LoadSprite(sprkey_t index);
-    void        SeekToSprite(sprkey_t index);
+    void        LoadSprite(sprkey_t index);
     void        RemoveOldest();
+
 
     // Information required for the sprite streaming
     // TODO: split into sprite cache and sprite stream data
     struct SpriteData
     {
-        soff_t          Offset; // data offset
-        soff_t          Size;   // cache size of element, in bytes
-        uint32_t        Flags;
+
+        // Tells that the sprite does not exist in the game resources.
+        bool DoesNotExist = false;
+        // Locked sprites are ones that should not be freed when clearing cache space.
+        bool Locked = false;
+        // Tells that the sprite index was remapped to another existing sprite.
+        bool Remapped = false;
+        sprkey_t RemappedTo = 0;
+
         // TODO: investigate if we may safely use unique_ptr here
         // (some of these bitmaps may be assigned from outside of the cache)
-        Common::Bitmap *Image; // actual bitmap
+        Common::Bitmap *Image = nullptr; // actual bitmap
 
-        SpriteData();
-        ~SpriteData();
+        // used to add/remove
+        bool in_lru = false;
+        std::list<sprkey_t>::iterator lru_it;
     };
 
     // Provided map of sprite infos, to fill in loaded sprite properties
     std::vector<SpriteInfo> &_sprInfos;
     // Array of sprite references
     std::vector<SpriteData> _spriteData;
-    bool _compressed;        // are sprites compressed
 
-    std::unique_ptr<Common::Stream> _stream; // the sprite stream
-    sprkey_t _lastLoad; // last loaded sprite index
+    std::list<sprkey_t> lru_list;
 
     size_t _maxCacheSize;  // cache size limit
-    size_t _lockedSize;    // size in bytes of currently locked images
-    size_t _cacheSize;     // size in bytes of currently cached images
 
-    // MRU list: the way to track which sprites were used recently.
-    // When clearing up space for new sprites, cache first deletes the sprites
-    // that were last time used long ago.
-    std::vector<sprkey_t> _mrulist;
-    std::vector<sprkey_t> _mrubacklink;
-    int _liststart;
-    int _listend;
-
-    // Loads sprite index file
-    bool        LoadSpriteIndexFile(int expectedFileID, soff_t spr_initial_offs, sprkey_t topmost);
-    // Rebuilds sprite index from the main sprite file
-    HAGSError   RebuildSpriteIndex(AGS::Common::Stream *in, sprkey_t topmost, SpriteFileVersion vers);
-    // Writes compressed sprite to the stream
-    void        CompressSprite(Common::Bitmap *sprite, Common::Stream *out);
-    // Uncompresses sprite from stream into the given bitmap
-    void        UnCompressSprite(Common::Bitmap *sprite, Common::Stream *in);
-
+    // implemented in engine...
     void initFile_initNullSpriteParams(sprkey_t index);
 };
 

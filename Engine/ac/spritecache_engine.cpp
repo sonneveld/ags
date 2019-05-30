@@ -36,6 +36,8 @@ void SpriteCache::initFile_initNullSpriteParams(sprkey_t index)
     // make it a blue cup, to avoid crashes
     _sprInfos[index].Width = _sprInfos[0].Width;
     _sprInfos[index].Height = _sprInfos[0].Height;
-    _spriteData[index].Offset = _spriteData[0].Offset;
-    _spriteData[index].Flags = SPRCACHEFLAG_DOESNOTEXIST | SPRCACHEFLAG_REMAPPED;
+    // offset = 0?
+    _spriteData[index].DoesNotExist = true;
+    _spriteData[index].Remapped = true;
+    _spriteData[index].RemappedTo = 0;
 }

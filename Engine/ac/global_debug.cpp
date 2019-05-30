@@ -70,7 +70,7 @@ String GetRuntimeInfo()
         mode.Windowed ? " W" : "",
         gfxDriver->GetDriverName(), filter->GetInfo().Name.GetCStr(),
         render_frame.GetWidth(), render_frame.GetHeight(),
-        spriteset.GetCacheSize() / 1024, spriteset.GetMaxCacheSize() / 1024, spriteset.GetLockedSize() / 1024);
+        0, 0, 0);
     if (play.separate_music_lib)
         runtimeInfo.Append("[AUDIO.VOX enabled");
     if (play.want_speech >= 1)

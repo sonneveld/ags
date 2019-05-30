@@ -568,7 +568,7 @@ void apply_config(const ConfigTree &cfg)
 
         // TODO: move to config overrides (replace values during config load)
         // the config file specifies cache size in KB, here we convert it to bytes
-        spriteset.SetMaxCacheSize(INIreadint (cfg, "misc", "cachemax", DEFAULTCACHESIZE / 1024) * 1024);
+        // spriteset.SetMaxCacheSize(INIreadint (cfg, "misc", "cachemax", DEFAULTCACHESIZE / 1024) * 1024);
 
         usetup.mouse_auto_lock = INIreadint(cfg, "mouse", "auto_lock") > 0;
 

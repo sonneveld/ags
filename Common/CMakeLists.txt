@@ -36,7 +36,7 @@ target_sources(common
     ac/mousecursor.cpp
     ac/mousecursor.h
     ac/oldgamesetupstruct.h
-    ac/spritecache.cpp
+    ac/simple_spritecache.cpp
     ac/spritecache.h
     ac/view.cpp
     ac/view.h

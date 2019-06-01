@@ -92,7 +92,10 @@ int MyPushButton::pressedon(int mousex, int mousey)
 
         refresh_gui_screen();
 
-        while (timerloop == 0) ;
+        while (timerloop == 0)
+        {
+            platform->YieldCPU();
+        }
     }
     wasstat = state;
     state = 0;

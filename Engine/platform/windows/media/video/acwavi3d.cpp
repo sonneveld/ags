@@ -113,7 +113,9 @@ int dxmedia_play_video_3d(const char* filename, IDirect3DDevice9 *device, bool u
   while ((filterState != State_Stopped) && (!want_exit))
   {
     while (timerloop == 0)
-      platform->Delay(1);
+    {
+        platform->YieldCPU();
+    } 
     timerloop = 0;
 
     if (!useAVISound)

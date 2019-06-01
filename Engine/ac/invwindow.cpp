@@ -475,7 +475,13 @@ bool InventoryScreen::Run()
             //ags_domouse(DOMOUSE_ENABLE);
         }
         wasonitem=isonitem;
-        PollUntilNextFrame();
+
+        update_polled_stuff_if_runtime();
+
+        while (timerloop == 0)
+        {
+            platform->YieldCPU();
+        }
 
     return true; // continue inventory screen loop
 }

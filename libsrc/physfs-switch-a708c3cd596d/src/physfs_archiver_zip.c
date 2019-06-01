@@ -29,7 +29,7 @@
  * Depending on your speed and memory requirements, you should tweak this
  *  value.
  */
-#define ZIP_READBUFSIZE   (16 * 1024)
+#define ZIP_READBUFSIZE   (2 * 512 * 1024)
 
 
 /*

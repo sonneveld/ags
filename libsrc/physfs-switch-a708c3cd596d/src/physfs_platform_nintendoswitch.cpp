@@ -22,7 +22,7 @@ static nn::account::UserHandle *NintendoSwitch_UserHandle = NULL;
 
 int PHYSFS_NintendoSwitch_CommitSaveData(const char *mountpoint)
 {
-    const nn::Result rc = nn::fs::CommitSaveData(mountpoint);
+    const nn::Result rc = nn::fs::Commit(mountpoint);
     BAIL_IF(rc.IsFailure(), PHYSFS_ERR_OS_ERROR, 0);
     return 1;
 }
@@ -86,8 +86,8 @@ char *__PHYSFS_platformCalcUserDir(void)
         nn::account::UserHandle *handle = new nn::account::UserHandle;
         nn::Result rc;
 
-        rc = nn::account::OpenPreselectedUser(handle);
-        BAIL_IF(rc.IsFailure(), PHYSFS_ERR_OS_ERROR, NULL);
+        bool openUserSuccess = nn::account::TryOpenPreselectedUser(handle);
+        BAIL_IF(!openUserSuccess, PHYSFS_ERR_OS_ERROR, NULL);
 
         nn::account::Uid uid;
         rc = nn::account::GetUserId(&uid, *handle);
@@ -172,7 +172,7 @@ typedef struct
 {
     nn::fs::FileHandle handle;
     int64_t offset;
-    PHYSFS_uint8 readahead[4 * 1024];
+    PHYSFS_uint8 readahead[8 * 1024];
     size_t readahead_pos;
     size_t readahead_len;
 } File;
@@ -267,26 +267,39 @@ PHYSFS_sint64 __PHYSFS_platformRead(void *opaque, void *buffer,
     while (len > 0)
     {
         size_t cpy = f->readahead_len;
-        if (cpy == 0)
+
+        if (f->readahead_len > 0)
         {
-            const nn::Result rc = nn::fs::ReadFile(&f->readahead_len, f->handle, f->offset, f->readahead, sizeof (f->readahead));
-            BAIL_IF(rc.IsFailure(), PHYSFS_ERR_OS_ERROR, (br > 0) ? (PHYSFS_sint64) br : -1);
+            if (((size_t)len) < cpy)
+                cpy = (size_t)len;
+
+            memcpy(buffer, f->readahead + f->readahead_pos, cpy);
+            f->offset += cpy;
+            f->readahead_len -= cpy;
+            f->readahead_pos += cpy;
+            len -= cpy;
+            br += cpy;
+            buffer = ((PHYSFS_uint8 *)buffer) + cpy;
+        }
+        else if (len > sizeof(f->readahead))
+        {
+            const nn::Result rc = nn::fs::ReadFile(&cpy, f->handle, f->offset, buffer, len);
+            BAIL_IF(rc.IsFailure(), PHYSFS_ERR_OS_ERROR, (br > 0) ? (PHYSFS_sint64)br : -1);
+            f->offset += cpy;
+            f->readahead_pos = 0;
+            f->readahead_len = 0;
+            len -= cpy;
+            br += cpy;
+        }
+        else 
+        {
+            const nn::Result rc = nn::fs::ReadFile(&f->readahead_len, f->handle, f->offset, f->readahead, sizeof(f->readahead));
+            BAIL_IF(rc.IsFailure(), PHYSFS_ERR_OS_ERROR, (br > 0) ? (PHYSFS_sint64)br : -1);
             f->readahead_pos = 0;
             cpy = f->readahead_len;
             if (!cpy)  /* out of data. */
-                return (PHYSFS_sint64) br;
-        } /* if */
-
-        if (((size_t) len) < cpy)
-            cpy = (size_t) len;
-
-        memcpy(buffer, f->readahead + f->readahead_pos, cpy);
-        f->offset += cpy;
-        f->readahead_len -= cpy;
-        f->readahead_pos += cpy;
-        len -= cpy;
-        br += cpy;
-        buffer = ((PHYSFS_uint8 *) buffer) + cpy;
+                return (PHYSFS_sint64)br;
+        }
     } /* if */
 
     return (PHYSFS_sint64) br;

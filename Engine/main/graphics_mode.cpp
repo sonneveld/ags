@@ -29,7 +29,7 @@
 #include "gfx/gfxfilter.h"
 #include "gfx/graphicsdriver.h"
 #include "main/config.h"
-#include "main/engine_setup.h"
+#include "main/engine.h"
 #include "main/graphics_mode.h"
 #include "main/main_allegro.h"
 #include "platform/base/agsplatformdriver.h"
@@ -264,6 +264,8 @@ Size set_game_frame_after_screen_size(const Size &game_size, const Size screen_s
     return frame_size;
 }
 
+
+// TODO, instead of setrenderframe, maybe just ask for aspect ratio.
 bool graphics_mode_update_render_frame()
 {
     if (!gfxDriver) { return false; }
@@ -301,12 +303,16 @@ void graphics_mode_toggle_full_screen()
     graphics_mode_update_render_frame();
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void graphics_mode_on_window_size_changed()
 {
     Size ignored;
     gfxDriver->UpdateDeviceScreen(ignored);
     graphics_mode_update_render_frame();
 }
+
+#endif
 
 void graphics_mode_shutdown()
 {

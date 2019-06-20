@@ -189,8 +189,11 @@ void wouttextxy(Common::Bitmap *ds, int xxx, int yyy, size_t fontNumber, color_t
   if (fontNumber >= fonts.size())
     return;
   yyy += fonts[fontNumber].Info.YOffset;
+
+#ifdef AGS_DELETE_FOR_3_6
   if (yyy > ds->GetClip().Bottom)
     return;                   // each char is clipped but this speeds it up
+#endif
 
   if (fonts[fontNumber].Renderer != nullptr)
   {

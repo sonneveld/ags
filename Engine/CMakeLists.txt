@@ -303,10 +303,6 @@ target_sources(engine
     game/viewport.cpp
     game/viewport.h
     gfx/ali3dexception.h
-    gfx/ali3dogl.cpp
-    gfx/ali3dogl.h
-    gfx/ali3dsw.cpp
-    gfx/ali3dsw.h
     gfx/blender.cpp
     gfx/blender.h
     gfx/color_engine.cpp
@@ -359,10 +355,8 @@ target_sources(engine
     gui/newcontrol.h
     main/config.cpp
     main/config.h
-    main/engine.cpp
+    main/simple_engine.cpp
     main/engine.h
-    main/engine_setup.cpp
-    main/engine_setup.h
     main/game_file.cpp
     main/game_file.h
     main/game_run.cpp
@@ -371,7 +365,7 @@ target_sources(engine
     main/game_start.h
     main/graphics_mode.cpp
     main/graphics_mode.h
-    main/main.cpp
+    main/simple_main.cpp
     main/main.h
     main/main_allegro.h
     main/maindefines_ex.h
@@ -457,7 +451,6 @@ target_sources(engine
 
     platform/windows/acplwin.cpp
     platform/windows/debug/namedpipesagsdebugger.cpp
-    platform/windows/gfx/ali3dd3d.cpp
     platform/windows/media/video/acwavi.cpp
     platform/windows/media/video/acwavi3d.cpp
     platform/windows/setup/winsetup.cpp
@@ -489,6 +482,9 @@ target_sources(engine
     platform/windows/win_ex_handling.h
     platform/windows/minidump.cpp
     platform/windows/winapi_exclusive.h
+
+    gfx/scene_graph_driver.cpp
+    gfx/scene_graph_driver.h
 )
 
 if (AGS_BUILTIN_PLUGINS)

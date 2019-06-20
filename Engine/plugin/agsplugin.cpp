@@ -377,9 +377,11 @@ void IAGSEngine::BlitSpriteTranslucent(int32 x, int32 y, BITMAP *bmp, int32 tran
     if (!ds)
         return;
     Bitmap wrap(bmp, true);
+#ifdef AGS_DELETE_FOR_3_6
     if (gfxDriver->UsesMemoryBackBuffer())
         GfxUtil::DrawSpriteWithTransparency(ds, &wrap, x, y, trans);
     else
+#endif
         GfxUtil::DrawSpriteBlend(ds, Point(x,y), &wrap, kBlendMode_Alpha, true, false, trans);
 }
 
@@ -405,9 +407,8 @@ void IAGSEngine::PollSystem () {
         pl_run_plugin_hooks (AGSE_MOUSECLICK, mbut);
 
     SDL_Event kgn = getTextEventFromQueue();
-    auto keyAvailable = run_service_key_controls(kgn);
     int kc = asciiOrAgsKeyCodeFromEvent(kgn);
-    if (keyAvailable && kc > 0) {
+    if (kc > 0) {
         pl_run_plugin_hooks (AGSE_KEYPRESS, kc);
     }
 }

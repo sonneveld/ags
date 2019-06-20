@@ -61,6 +61,7 @@ void set_rgb_mask_using_alpha_channel(Bitmap *image)
     }
 }
 
+// Some alpha images have their alpha set to zero, so fix that.
 void force_opaque_alpha_channel(Bitmap *image)
 {
     auto h = image->GetHeight();
@@ -171,11 +172,7 @@ void initialize_sprite (int ee) {
             tmpdbl = BitmapHelper::CreateTransparentBitmap(newwid,newhit,curspr->GetColorDepth());
             if (tmpdbl == nullptr)
                 quit("Not enough memory to load sprite graphics");
-            tmpdbl->Acquire ();
-            curspr->Acquire ();
             tmpdbl->StretchBlt(curspr,RectWH(0,0,tmpdbl->GetWidth(),tmpdbl->GetHeight()), Common::kBitmap_Transparency);
-            curspr->Release ();
-            tmpdbl->Release ();
             delete curspr;
             spriteset.Set(ee, tmpdbl);
         }

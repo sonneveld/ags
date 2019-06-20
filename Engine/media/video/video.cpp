@@ -73,8 +73,7 @@ int check_if_user_input_should_cancel_video()
 
     SDL_Event kpEvent = getTextEventFromQueue();
     int kp = asciiFromEvent(kpEvent);
-    auto keyAvailable = run_service_key_controls(kpEvent);
-    if (keyAvailable && kp > 0) {
+    if (kp > 0) {
         if ((kp==ASCII_ESCAPE) && (canabort==1))
             return 1;
         if (canabort >= 2)
@@ -107,7 +106,7 @@ extern "C" int fli_callback() {
         fli_target->StretchBlt(usebuf, RectWH(0,0,fliwidth,fliheight), RectWH(0,0, view.GetWidth(), view.GetHeight()));
 
     gfxDriver->UpdateDDBFromBitmap(fli_ddb, fli_target, false);
-    gfxDriver->DrawSprite(0, 0, fli_ddb);
+    gfxDriver->DrawSprite(0, 0, fli_ddb, "fli video frame");
     render_to_screen();
 
     return check_if_user_input_should_cancel_video();
@@ -277,8 +276,7 @@ int theora_playing_callback(BITMAP *theoraBuffer)
         drawAtY = viewport.GetHeight() / 2 - gl_TheoraBuffer.GetHeight() / 2;
     }
 
-    gfxDriver->DrawSprite(drawAtX, drawAtY, fli_ddb);
-    update_audio_system_on_game_loop ();
+    gfxDriver->DrawSprite(drawAtX, drawAtY, fli_ddb, "theora video frame");
     render_to_screen();
 
     return check_if_user_input_should_cancel_video();

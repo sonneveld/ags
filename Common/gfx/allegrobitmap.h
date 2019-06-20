@@ -21,6 +21,7 @@
 #ifndef __AGS_CN_GFX__ALLEGROBITMAP_H
 #define __AGS_CN_GFX__ALLEGROBITMAP_H
 
+#include <utility>
 #include <allegro.h>
 #include "core/types.h"
 #include "gfx/bitmap.h"
@@ -32,155 +33,99 @@ namespace Common
 
 class Bitmap
 {
+
 public:
     Bitmap();
     Bitmap(int width, int height, int color_depth = 0);
-    Bitmap(Bitmap *src, const Rect &rc);
     Bitmap(BITMAP *al_bmp, bool shared_data);
+
     ~Bitmap();
+    Bitmap(const Bitmap& other) = delete;
+    Bitmap& operator=(const Bitmap& other) = delete;
 
     // Allocate new bitmap
     // CHECKME: color_depth = 0 is used to call Allegro's create_bitmap, which uses
     // some global color depth setting; not sure if this is OK to use for generic class,
     // revise this in future
     bool    Create(int width, int height, int color_depth = 0);
-    bool    CreateTransparent(int width, int height, int color_depth = 0);
     // Allow this object to share existing bitmap data
     bool    CreateSubBitmap(Bitmap *src, const Rect &rc);
     // Create a copy of given bitmap
-    bool	CreateCopy(Bitmap *src, int color_depth = 0);
+    bool	CreateCopy(const Bitmap *src, int color_depth = 0);
     // TODO: a temporary solution for plugin support
     bool    WrapAllegroBitmap(BITMAP *al_bmp, bool shared_data);
     // Deallocate bitmap
     void	Destroy();
 
     bool    LoadFromFile(const char *filename);
-    bool    SaveToFile(const char *filename, const void *palette);
+    bool    SaveToFile(const char *filename, const void *palette) const;
 
     // TODO: This is temporary solution for cases when we cannot replace
 	// use of raw BITMAP struct with Bitmap
-    inline BITMAP *GetAllegroBitmap()
-    {
-        return _alBitmap;
-    }
-
-    // Is this a "normal" bitmap created by application which data can be directly accessed for reading and writing
-    inline bool IsMemoryBitmap() const
-    {
-        return is_memory_bitmap(_alBitmap) != 0;
-    }
-    // Is this a video bitmap
-    inline bool IsVideoBitmap() const
-    {
-        return is_video_bitmap(_alBitmap) != 0;
-    }
-    // Is this a linear bitmap, the one that can be accessed linearly within each scanline 
-	inline bool IsLinearBitmap() const
-    {
-        return is_linear_bitmap(_alBitmap) != 0;
-    }
+    BITMAP *GetAllegroBitmap();
 
     // Checks if bitmap cannot be used
-    inline bool IsNull() const
-    {
-        return !_alBitmap;
-    }
+    //bool IsNull() const;
     // Checks if bitmap has zero size: either width or height (or both) is zero
-    inline bool IsEmpty() const
-    {
-        return GetWidth() == 0 || GetHeight() == 0;
-    }
-    inline int  GetWidth() const
-    {
-        return _alBitmap->w;
-    }
-    inline int  GetHeight() const
-    {
-        return _alBitmap->h;
-    }
-    inline Size GetSize() const
-    {
-        return Size(_alBitmap->w, _alBitmap->h);
-    }
-    inline int  GetColorDepth() const
-    {
-        return bitmap_color_depth(_alBitmap);
-    }
+    //bool IsEmpty() const;
+    int  GetWidth() const;
+    int  GetHeight() const;
+    Size GetSize() const;
+    int  GetColorDepth() const;
     // BPP: bytes per pixel
-    inline int  GetBPP() const
-    {
-        return (GetColorDepth() + 7) / 8;
-    }
+    int  GetBPP() const;
 
     // CHECKME: probably should not be exposed, see comment to GetData()
-	inline int  GetDataSize() const
-    {
-        return GetWidth() * GetHeight() * GetBPP();
-    }
+    // int  GetDataSize() const;
     // Gets scanline length in bytes (is the same for any scanline)
-	inline int  GetLineLength() const
-    {
-        return GetWidth() * GetBPP();
-    }
+    // might take into account padding.
+    int  GetLineLength() const;
 
 	// TODO: replace with byte *
 	// Gets a pointer to underlying graphic data
-	// FIXME: actually not a very good idea, since there's no 100% guarantee the scanline positions in memory are sequential
-    inline const unsigned char *GetData() const
-    {
-        return _alBitmap->line[0];
-    }
+    const unsigned char *GetData() const;
 
     // Get scanline for direct reading
-	inline unsigned char *GetScanLine(int index) const
-    {
-        return (index >= 0 && index < GetHeight()) ? _alBitmap->line[index] : nullptr;
-    }
+    unsigned char *GetScanLine(int index) const;
 
-    void    SetMaskColor(color_t color);
-	inline color_t GetMaskColor() const
-    {
-        return bitmap_mask_color(_alBitmap);
-    }
-
-    // FIXME: allegro manual states these should not be used externally;
-	// should hide or totally remove those later
-    void    Acquire();
-	void	Release();
+    color_t GetMaskColor() const;
 
     // Converts AGS color-index into RGB color according to the bitmap format.
-    // TODO: this method was added to the Bitmap class during large refactoring,
-    // but that's a mistake, because in retrospect is has nothing to do with
-    // bitmap itself and should rather be a part of the game data logic.
-    color_t GetCompatibleColor(color_t color);
+    color_t GetCompatibleColor(color_t color) const;
 
     //=========================================================================
     // Clipping
     //=========================================================================
     void    SetClip(const Rect &rc);
+#ifdef AGS_DELETE_FOR_3_6
     Rect    GetClip() const;
+#endif
 
     //=========================================================================
     // Blitting operations (drawing one bitmap over another)
     //=========================================================================
     // Draw other bitmap over current one
-    void    Blit(Bitmap *src, int dst_x = 0, int dst_y = 0, BitmapMaskOption mask = kBitmap_Copy);
-    void    Blit(Bitmap *src, int src_x, int src_y, int dst_x, int dst_y, int width, int height, BitmapMaskOption mask = kBitmap_Copy);
+    void    Blit(const Bitmap *src, int dst_x = 0, int dst_y = 0, BitmapMaskOption mask = kBitmap_Copy);
+    void    Blit(const Bitmap *src, int src_x, int src_y, int dst_x, int dst_y, int width, int height, BitmapMaskOption mask = kBitmap_Copy);
     // Copy other bitmap, stretching or shrinking its size to given values
-    void    StretchBlt(Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
-    void    StretchBlt(Bitmap *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
+    void    StretchBlt(const Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
+    void    StretchBlt(const Bitmap *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
     // Antia-aliased stretch-blit
-    void    AAStretchBlt(Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
-    void    AAStretchBlt(Bitmap *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
+    void    AAStretchBlt(const Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
+#ifdef AGS_DELETE_FOR_3_6
+    void    AAStretchBlt(const Bitmap *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask = kBitmap_Copy);
+#endif
     // TODO: find more general way to call these operations, probably require pointer to Blending data struct?
     // Draw bitmap using translucency preset
-    void    TransBlendBlt(Bitmap *src, int dst_x, int dst_y);
+    void    TransBlendBlt(const Bitmap *src, int dst_x, int dst_y);
     // Draw bitmap using lighting preset
-    void    LitBlendBlt(Bitmap *src, int dst_x, int dst_y, int light_amount);
+    void    LitBlendBlt(const Bitmap *src, int dst_x, int dst_y, int light_amount);
     // TODO: generic "draw transformed" function? What about mask option?
-    void    FlipBlt(Bitmap *src, int dst_x, int dst_y, BitmapFlip flip);
-    void    RotateBlt(Bitmap *src, int dst_x, int dst_y, fixed_t angle);
-    void    RotateBlt(Bitmap *src, int dst_x, int dst_y, int pivot_x, int pivot_y, fixed_t angle);
+    void    FlipBlt(const Bitmap *src, int dst_x, int dst_y, BitmapFlip flip);
+#ifdef AGS_DELETE_FOR_3_6
+    void    RotateBlt(const Bitmap *src, int dst_x, int dst_y, fixed_t angle);
+#endif
+    void    RotateBlt(const Bitmap *src, int dst_x, int dst_y, int pivot_x, int pivot_y, fixed_t angle);
 
     //=========================================================================
     // Pixel operations
@@ -214,23 +159,30 @@ public:
 	//=========================================================================
     // TODO: think how to increase safety over this (some fixed memory buffer class with iterator?)
 	// Gets scanline for directly writing into it
-    inline unsigned char *GetScanLineForWriting(int index)
-    {
-        return (index >= 0 && index < GetHeight()) ? _alBitmap->line[index] : nullptr;
-    }
-    inline unsigned char *GetDataForWriting()
-    {
-        return _alBitmap->line[0];
-    }
-    // Copies buffer contents into scanline
-    void    SetScanLine(int index, unsigned char *data, int data_size = -1);
+    unsigned char *GetScanLineForWriting(int index);
+    unsigned char *GetDataForWriting();
+
+
 
 private:
+
+    static int64_t next_bitmap_id;
+
 	BITMAP			*_alBitmap;
 	bool			_isDataOwner;
+
+    // sanity check since we have issues with use after free.
+    bool deleted_ = false;
+
+
+public:
+
+    int64_t         id_;
+    int64_t         version_;
 };
 
 
+#ifdef AGS_DELETE_FOR_3_6
 
 namespace BitmapHelper
 {
@@ -240,6 +192,8 @@ namespace BitmapHelper
 	// NOTE: the resulting object __does not own__ bitmap data
 	Bitmap *CreateRawBitmapWrapper(BITMAP *al_bmp);
 } // namespace BitmapHelper
+
+#endif
 
 } // namespace Common
 } // namespace AGS

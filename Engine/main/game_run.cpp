@@ -204,7 +204,7 @@ static void lock_mouse_on_click()
         Mouse::TryLockToWindow();
 }
 
-static void toggle_mouse_lock()
+void toggle_mouse_lock()
 {
     if (scsystem.windowed)
     {
@@ -289,6 +289,8 @@ static int isCtrlSymCombo(SDL_Event event, int sym) {
     return ((event.type == SDL_KEYDOWN) && (event.key.keysym.mod & KMOD_CTRL) && (event.key.keysym.sym == sym));
 }
 
+#if AGS_DELETE_FOR_3_6
+
 // Runs service key controls, returns false if service key combinations were handled
 // and no more processing required, otherwise returns true and provides current keycode and key shifts.
 bool run_service_key_controls(SDL_Event kgn)
@@ -311,14 +313,12 @@ bool run_service_key_controls(SDL_Event kgn)
     return true;
 }
 
+#endif
+
 // Runs default keyboard handling
 static void check_keyboard_controls()
 {
     SDL_Event kgn = getTextEventFromQueue();
-
-    // First check for service engine's combinations (mouse lock, display mode switch, and so forth)
-    auto keyAvailable = run_service_key_controls(kgn);
-    if (!keyAvailable) { return; }
 
     // Now check for in-game controls
     if (kgn.type == 0) { return; }
@@ -694,6 +694,7 @@ void set_loop_counter(unsigned int new_counter) {
     fps = std::numeric_limits<float>::quiet_NaN();
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void PollUntilNextFrame()
 {
     if (play.fast_forward) { return; }
@@ -702,6 +703,7 @@ void PollUntilNextFrame()
         update_polled_stuff_if_runtime();
     }
 }
+#endif
 
 void UpdateGameOnce(bool checkControls, IDriverDependantBitmap *extraBitmap, int extraX, int extraY) {
 
@@ -988,6 +990,7 @@ void RunGameUntilAborted()
     }
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 void update_polled_stuff_if_runtime()
 {
     SDL_PumpEvents();
@@ -1005,3 +1008,4 @@ void update_polled_stuff_if_runtime()
         check_for_messages_from_editor();
 #endif
 }
+#endif

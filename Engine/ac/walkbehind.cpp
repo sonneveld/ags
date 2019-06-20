@@ -32,6 +32,7 @@ int *walkBehindStartY = nullptr, *walkBehindEndY = nullptr;
 char noWalkBehindsAtAll = 0;
 int walkBehindLeft[MAX_WALK_BEHINDS], walkBehindTop[MAX_WALK_BEHINDS];
 int walkBehindRight[MAX_WALK_BEHINDS], walkBehindBottom[MAX_WALK_BEHINDS];
+AGS::Common::Bitmap *walkBehindGameBitmap[MAX_WALK_BEHINDS];
 IDriverDependantBitmap *walkBehindBitmap[MAX_WALK_BEHINDS];
 int walkBehindsCachedForBgNum = 0;
 WalkBehindMethodEnum walkBehindMethod = DrawOverCharSprite;
@@ -39,44 +40,36 @@ int walk_behind_baselines_changed = 0;
 
 void update_walk_behind_images()
 {
-  int ee, rr;
-  int bpp = (thisroom.BgFrames[play.bg_frame].Graphic->GetColorDepth() + 7) / 8;
-  Bitmap *wbbmp;
-  for (ee = 1; ee < MAX_WALK_BEHINDS; ee++)
-  {
-    update_polled_stuff_if_runtime();
-    
-    if (walkBehindRight[ee] > 0)
-    {
-      wbbmp = BitmapHelper::CreateTransparentBitmap( 
-                               (walkBehindRight[ee] - walkBehindLeft[ee]) + 1,
-                               (walkBehindBottom[ee] - walkBehindTop[ee]) + 1,
-							   thisroom.BgFrames[play.bg_frame].Graphic->GetColorDepth());
-      int yy, startX = walkBehindLeft[ee], startY = walkBehindTop[ee];
-      for (rr = startX; rr <= walkBehindRight[ee]; rr++)
-      {
-        for (yy = startY; yy <= walkBehindBottom[ee]; yy++)
-        {
-          if (thisroom.WalkBehindMask->GetScanLine(yy)[rr] == ee)
-          {
-            for (int ii = 0; ii < bpp; ii++)
-              wbbmp->GetScanLineForWriting(yy - startY)[(rr - startX) * bpp + ii] = thisroom.BgFrames[play.bg_frame].Graphic->GetScanLine(yy)[rr * bpp + ii];
-          }
+    int bpp = (thisroom.BgFrames[play.bg_frame].Graphic->GetColorDepth() + 7) / 8;
+    for (int ee = 1; ee < MAX_WALK_BEHINDS; ee++) {
+        if (walkBehindRight[ee] <= 0) { continue; }
+         
+        auto &wbbmp = walkBehindGameBitmap[ee];
+        delete wbbmp;
+
+        wbbmp = BitmapHelper::CreateTransparentBitmap(
+            (walkBehindRight[ee] - walkBehindLeft[ee]) + 1,
+            (walkBehindBottom[ee] - walkBehindTop[ee]) + 1,
+            thisroom.BgFrames[play.bg_frame].Graphic->GetColorDepth());
+        int startX = walkBehindLeft[ee];
+        int startY = walkBehindTop[ee];
+        for (int rr = startX; rr <= walkBehindRight[ee]; rr++) {
+            for (int yy = startY; yy <= walkBehindBottom[ee]; yy++) {
+                if (thisroom.WalkBehindMask->GetScanLine(yy)[rr] != ee) { continue; }
+                for (int ii = 0; ii < bpp; ii++) {
+                    wbbmp->GetScanLineForWriting(yy - startY)[(rr - startX) * bpp + ii] = thisroom.BgFrames[play.bg_frame].Graphic->GetScanLine(yy)[rr * bpp + ii];
+                }
+            }
         }
-      }
 
-      update_polled_stuff_if_runtime();
-
-      if (walkBehindBitmap[ee] != nullptr)
-      {
-        gfxDriver->DestroyDDB(walkBehindBitmap[ee]);
-      }
-      walkBehindBitmap[ee] = gfxDriver->CreateDDBFromBitmap(wbbmp, false);
-      delete wbbmp;
+        if (walkBehindBitmap[ee] != nullptr) {
+            gfxDriver->UpdateDDBFromBitmap(walkBehindBitmap[ee], wbbmp, false);
+        } else {
+            walkBehindBitmap[ee] = gfxDriver->CreateDDBFromBitmap(wbbmp, false);
+        }
     }
-  }
 
-  walkBehindsCachedForBgNum = play.bg_frame;
+    walkBehindsCachedForBgNum = play.bg_frame;
 }
 
 
@@ -112,7 +105,7 @@ void recache_walk_behinds () {
 
   // since this is an 8-bit memory bitmap, we can just use direct 
   // memory access
-  if ((!thisroom.WalkBehindMask->IsLinearBitmap()) || (thisroom.WalkBehindMask->GetColorDepth() != 8))
+  if (thisroom.WalkBehindMask->GetColorDepth() != 8)
     quit("Walk behinds bitmap not linear");
 
   for (ee=0;ee<thisroom.WalkBehindMask->GetWidth();ee++) {

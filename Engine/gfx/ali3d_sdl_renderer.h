@@ -154,7 +154,7 @@ public:
     virtual void UpdateDDBFromBitmap(IDriverDependantBitmap* bitmapToUpdate, Bitmap *bitmap, bool hasAlpha) override;
     virtual void DestroyDDB(IDriverDependantBitmap* bitmap) override;
 
-    virtual void DrawSprite(int x, int y, IDriverDependantBitmap* bitmap) override;
+    virtual void DrawSprite(int x, int y, IDriverDependantBitmap* bitmap, const char *purpose="") override;
 
     virtual void RenderToBackBuffer() override;
     virtual void Render() override;

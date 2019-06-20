@@ -144,8 +144,11 @@ int System_GetWindowed() {
 
 void System_SetWindowed(int windowed)
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (windowed != scsystem.windowed)
         engine_try_switch_windowed_gfxmode();
+#endif
+    // TODO: set the scene graph properties, for the main loop to pick up
 }
 
 int System_GetSupportsGammaControl() {

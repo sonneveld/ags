@@ -59,18 +59,9 @@ SDL_Event getTextEventFromQueue() {
     return result;
 }
 
-static void onkeydown(SDL_Event *event) {
+void onkeydown(SDL_Event *event) {
 #pragma message ("SDL-TODO: if text_input, we should emit multiple unicode codepoints. check out ugetx")
-    textEventQueue.push(*event);
-    
-#pragma message ("SDL-TODO: this might break since running in a different thread.  maybe set a quit flag.")
-    // Alt+X, abort (but only once game is loaded)
-    int gott = agsKeyCodeFromEvent(*event);
-    if ((gott == play.abort_key) && (displayed_room >= 0)) {
-        check_dynamic_sprites_at_exit = 0;
-        want_exit = 1;
-//        quit("!|");
-    }
+     textEventQueue.push(*event);
 }
 
 
@@ -78,12 +69,12 @@ volatile int mouse_x = 0;
 volatile int mouse_y = 0;
 volatile int mouse_z = 0;
 
-static void on_sdl_mouse_motion(SDL_MouseMotionEvent *event) {
+void on_sdl_mouse_motion(SDL_MouseMotionEvent *event) {
    mouse_x = event->x;
    mouse_y = event->y;
 }
 
-static int sdl_button_to_allegro_bit(int button)
+int sdl_button_to_allegro_bit(int button)
 {
    switch (button) {
       case SDL_BUTTON_LEFT: return 0x1;
@@ -95,33 +86,21 @@ static int sdl_button_to_allegro_bit(int button)
    return 0x0;
 }
 
-/*
- Button tracking:
- On OSX, some tap to click up/down events happen too quickly to be detected on the polled mouse_b global variable.
- Instead we accumulate button presses over a couple of timer loops.
- */
 
 static int _button_state = 0;
-static int _accumulated_button_state = 0;
-static auto _clear_at_global_timer_counter = AGS_Clock::now();
 
-static void on_sdl_mouse_button(SDL_MouseButtonEvent *event) 
+void on_sdl_mouse_button(SDL_MouseButtonEvent *event) 
 {
    mouse_x = event->x;
    mouse_y = event->y;
-
-   if (event->type == SDL_MOUSEBUTTONDOWN) {
-        _button_state |= sdl_button_to_allegro_bit(event->button);
-        _accumulated_button_state |= sdl_button_to_allegro_bit(event->button);
-   } else {
-        _button_state &= ~sdl_button_to_allegro_bit(event->button);
-   }
 }
 
-static void on_sdl_mouse_wheel(SDL_MouseWheelEvent *event) 
+void on_sdl_mouse_wheel(SDL_MouseWheelEvent *event) 
 {
    mouse_z += event->y;
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 extern void engine_on_window_size_changed();
 
@@ -167,7 +146,6 @@ void process_pending_events() {
 }
 
 #pragma message ("SDL-TODO: still used in invwindow.  need to check where kbhit was used.. why was ignored?")
-#if 0
 int ags_kbhit () {
     int result = keypressed();
     if ((result) && (AGS_Clock::now() < play.ignore_user_input_until_time))
@@ -180,15 +158,14 @@ int ags_kbhit () {
 }
 #endif
 
+void set_mouse_b(int s)
+{
+    _button_state = s;
+}
+
 int get_mouse_b()
 {
-    auto now = AGS_Clock::now();
-    int result = _button_state | _accumulated_button_state;
-    if (now >= _clear_at_global_timer_counter) {
-        _accumulated_button_state = 0;
-        _clear_at_global_timer_counter = now + std::chrono::milliseconds(50);
-    }
-    return result;
+    return _button_state;
 }
 
 void set_mouse_range(int x1, int y_1, int x2, int y2) {

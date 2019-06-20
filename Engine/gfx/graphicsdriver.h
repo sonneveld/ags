@@ -20,6 +20,8 @@
 #define __AGS_EE_GFX__GRAPHICSDRIVER_H
 
 #include <memory>
+#include "allegro/palette.h"
+
 #include "gfx/gfxdefines.h"
 #include "gfx/gfxmodelist.h"
 #include "util/geometry.h"
@@ -126,7 +128,7 @@ public:
   // sprites to this batch's list.
   virtual void BeginSpriteBatch(const Rect &viewport, const SpriteTransform &transform, PBitmap surface = nullptr) = 0;
   // Adds sprite to the active batch
-  virtual void DrawSprite(int x, int y, IDriverDependantBitmap* bitmap) = 0;
+  virtual void DrawSprite(int x, int y, IDriverDependantBitmap* bitmap, const char *purpose="unknown") = 0;
   // Clears all sprite batches, resets batch counter
   virtual void ClearDrawLists() = 0;
 

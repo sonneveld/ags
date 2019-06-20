@@ -350,8 +350,7 @@ bool InventoryScreen::Run()
     process_pending_events();
 
     SDL_Event kgn = getTextEventFromQueue();
-    auto keyAvailable = run_service_key_controls(kgn);
-    if (keyAvailable && kgn.type == SDL_KEYDOWN) {
+    if (kgn.type == SDL_KEYDOWN) {
             return false; // end inventory screen loop
     }
 

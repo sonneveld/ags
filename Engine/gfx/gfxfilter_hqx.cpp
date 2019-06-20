@@ -80,10 +80,8 @@ Bitmap *HqxGfxFilter::ShutdownAndReturnRealScreen()
 
 Bitmap *HqxGfxFilter::PreRenderPass(Bitmap *toRender)
 {
-    _hqxScalingBuffer->Acquire();
     _pfnHqx(toRender->GetDataForWriting(), _hqxScalingBuffer->GetDataForWriting(),
         toRender->GetWidth(), toRender->GetHeight(), _hqxScalingBuffer->GetLineLength());
-    _hqxScalingBuffer->Release();
     return _hqxScalingBuffer;
 }
 

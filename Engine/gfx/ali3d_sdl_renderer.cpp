@@ -16,6 +16,7 @@
 //
 //=============================================================================
 
+#if 0
 
 #include "gfx/ali3dexception.h"
 #include "gfx/ali3d_sdl_renderer.h"
@@ -483,7 +484,7 @@ void SDLRendererGraphicsDriver::ResetAllBatches()
         it->List.clear();
 }
 
-void SDLRendererGraphicsDriver::DrawSprite(int x, int y, IDriverDependantBitmap* bitmap)
+void SDLRendererGraphicsDriver::DrawSprite(int x, int y, IDriverDependantBitmap* bitmap, const char *purpose)
 {
     _spriteBatches[_actSpriteBatch].List.push_back(ALDrawListEntry((SDLRendererBitmap*)bitmap, x, y));
 }
@@ -967,3 +968,5 @@ SDLRendererGfxFilter *SDLRendererGraphicsFactory::CreateFilter(const String &id)
 } // namespace SDLRenderer
 } // namespace Engine
 } // namespace AGS
+
+#endif

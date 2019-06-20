@@ -268,7 +268,9 @@ int RunAGSGame (const char *newgame, unsigned int mode, int data) {
     if (Common::AssetManager::SetDataFile(ResPaths.GamePak.Path) != Common::kAssetNoError)
         quitprintf("!RunAGSGame: unable to load new game file '%s'", ResPaths.GamePak.Path.GetCStr());
 
+#ifdef AGS_DELETE_FOR_3_6
     show_preload();
+#endif
 
     HError err = load_game_file();
     if (!err)

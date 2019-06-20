@@ -15,6 +15,7 @@
 //
 // Engine initialization
 //
+#if 0
 
 #include "core/platform.h"
 
@@ -843,6 +844,8 @@ void engine_init_modxm_player()
 // Do the preload graphic if available
 void show_preload()
 {
+#ifdef AGS_DELETE_FOR_3_6
+
     color temppal[256];
 	Bitmap *splashsc = BitmapHelper::CreateRawBitmapOwner( load_pcx("preload.pcx",temppal) );
     if (splashsc != nullptr)
@@ -872,6 +875,8 @@ void show_preload()
         delete tsc;
         platform->Delay(500);
     }
+
+#endif
 }
 
 int engine_init_sprites()
@@ -1506,7 +1511,9 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     SDL_ShowCursor(SDL_DISABLE);
 
+#ifdef AGS_DELETE_FOR_3_6
     show_preload();
+#endif
 
     res = engine_init_sprites();
     if (res != RETURN_CONTINUE) {
@@ -1583,3 +1590,5 @@ const char *get_engine_version() {
 void engine_set_pre_init_callback(t_engine_pre_init_callback callback) {
     engine_pre_init_callback = callback;
 }
+
+#endif

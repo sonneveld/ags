@@ -438,7 +438,7 @@ struct DialogOptions
     int curswas;
     int bullet_wid;
     int needheight;
-    IDriverDependantBitmap *ddb;
+    IDriverDependantBitmap *ddb = nullptr;
     Bitmap *subBitmap;
     GUITextBox *parserInput;
     DialogTopic*dtop;
@@ -833,7 +833,7 @@ void DialogOptions::Redraw()
     }
 
     if ((ddb != nullptr) && 
-      ((ddb->GetWidth() != dirtywidth) ||
+      ((ddb->GetWidth() != dirtywidth) || // yeah if we recyle above, teh ddb is invalid.
        (ddb->GetHeight() != dirtyheight)))
     {
       gfxDriver->DestroyDDB(ddb);
@@ -896,8 +896,7 @@ bool DialogOptions::Run()
 
     
       SDL_Event gkey = getTextEventFromQueue();
-      auto keyAvailable = run_service_key_controls(gkey);
-      if (keyAvailable && gkey.type != 0) {
+      if (gkey.type != 0) {
           
         if (parserInput) {
           wantRefresh = true;

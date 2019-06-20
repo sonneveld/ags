@@ -156,7 +156,7 @@ bool graphics_mode_set_filter(const String &filter_id);
 #endif 
 
 extern void graphics_mode_toggle_full_screen();
-extern void graphics_mode_on_window_size_changed();
+// extern void graphics_mode_on_window_size_changed();
 
 // Releases current graphic mode and shuts down renderer
 void graphics_mode_shutdown();

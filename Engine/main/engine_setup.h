@@ -1,3 +1,5 @@
+#ifdef AGS_DELETE_FOR_3_6
+
 //=============================================================================
 //
 // Adventure Game Studio (AGS)
@@ -30,3 +32,5 @@ void engine_pre_gfxsystem_shutdown();
 void on_coordinates_scaling_changed();
 
 #endif // __AGS_EE_MAIN__ENGINESETUP_H
+
+#endif

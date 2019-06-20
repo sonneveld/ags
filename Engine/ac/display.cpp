@@ -269,12 +269,6 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
         int countdown = GetTextDisplayTime (todis);
         int skip_setting = user_to_internal_skip_speech((SkipSpeechStyle)play.skip_display);
         while (1) {
-            /*      if (!play.mouse_cursor_hidden)
-            ags_domouse(DOMOUSE_UPDATE);
-            write_screen();*/
-            process_pending_events();
-
-            update_audio_system_on_game_loop();
             render_graphics();
 
             if (ags_mgetbutton()>NONE) {
@@ -286,8 +280,7 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
             // let them press ESC to skip the cutscene
             SDL_Event kpEvent = getTextEventFromQueue();
             int kp = asciiFromEvent(kpEvent);
-            auto keyAvailable = run_service_key_controls(kpEvent);
-            if (keyAvailable && kp > 0) {
+            if (kp > 0) {
                 check_skip_cutscene_keypress (kp);
                 
                 if (play.fast_forward) {
@@ -298,7 +291,6 @@ int _display_main(int xx,int yy,int wii,const char*text,int blocking,int usingfo
                     break;
                 }
             }
-            PollUntilNextFrame();
             countdown--;
 
             if (play.speech_has_voice) {

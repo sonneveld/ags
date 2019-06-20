@@ -63,7 +63,7 @@ namespace BitmapHelper
     Bitmap *CreateBitmap(int width, int height, int color_depth = 0);
     Bitmap *CreateTransparentBitmap(int width, int height, int color_depth = 0);
 	Bitmap *CreateSubBitmap(Bitmap *src, const Rect &rc);
-    Bitmap *CreateBitmapCopy(Bitmap *src, int color_depth = 0);
+    Bitmap *CreateBitmapCopy(const Bitmap *src, int color_depth = 0);
 	Bitmap *LoadFromFile(const char *filename);
 
     // Stretches bitmap to the requested size. The new bitmap will have same

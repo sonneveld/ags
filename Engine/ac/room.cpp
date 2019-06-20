@@ -102,9 +102,11 @@ extern Bitmap *raw_saved_screen;
 extern int actSpsCount;
 extern Bitmap **actsps;
 extern IDriverDependantBitmap* *actspsbmp;
+#ifdef AGS_DELETE_FOR_3_6
 extern Bitmap **actspswb;
 extern IDriverDependantBitmap* *actspswbbmp;
 extern CachedActSpsData* actspswbcache;
+#endif
 extern color palette[256];
 extern int mouse_z_was;
 
@@ -338,6 +340,7 @@ void unload_old_room() {
             gfxDriver->DestroyDDB(actspsbmp[ff]);
         actspsbmp[ff] = nullptr;
 
+#ifdef AGS_DELETE_FOR_3_6
         delete actspswb[ff];
         actspswb[ff] = nullptr;
 
@@ -346,6 +349,7 @@ void unload_old_room() {
         actspswbbmp[ff] = nullptr;
 
         actspswbcache[ff].valid = 0;
+#endif
     }
 
     // if Hide Player Character was ticked, restore it to visible
@@ -541,7 +545,9 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     update_polled_stuff_if_runtime();
 
     update_all_viewcams_with_newroom();
+#ifdef AGS_DELETE_FOR_3_6
     init_room_drawdata();
+#endif
 
     our_eip=205;
     // setup objects
@@ -1003,7 +1009,9 @@ int bg_just_changed = 0;
 void on_background_frame_change () {
 
     mark_current_background_dirty();
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_cached_walkbehinds();
+#endif
 
     // get the new frame's palette
     memcpy (palette, thisroom.BgFrames[play.bg_frame].Palette, sizeof(color) * 256);

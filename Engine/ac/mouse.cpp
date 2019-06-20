@@ -346,9 +346,11 @@ void update_inv_cursor(int invnum) {
 
 void update_cached_mouse_cursor() 
 {
-    if (mouseCursor != nullptr)
-        gfxDriver->DestroyDDB(mouseCursor);
-    mouseCursor = gfxDriver->CreateDDBFromBitmap(mousecurs[0], alpha_blend_cursor != 0);
+    if (mouseCursor == nullptr) {
+        mouseCursor = gfxDriver->CreateDDBFromBitmap(mousecurs[0], alpha_blend_cursor != 0);
+    } else {
+        gfxDriver->UpdateDDBFromBitmap(mouseCursor, mousecurs[0], alpha_blend_cursor != 0);
+    }
 }
 
 void set_new_cursor_graphic (int spriteslot) {

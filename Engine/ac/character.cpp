@@ -2167,6 +2167,7 @@ void CheckViewFrameForCharacter(CharacterInfo *chi) {
 
 Bitmap *GetCharacterImage(int charid, int *isFlipped) 
 {
+#ifdef AGS_DELETE_FOR_3_6
     if (!gfxDriver->HasAcceleratedTransform())
     {
         if (actsps[charid + MAX_ROOM_OBJECTS] != nullptr) 
@@ -2177,6 +2178,7 @@ Bitmap *GetCharacterImage(int charid, int *isFlipped)
             return actsps[charid + MAX_ROOM_OBJECTS];
         }
     }
+#endif
     CharacterInfo*chin=&game.chars[charid];
     int sppic = views[chin->view].loops[chin->loop].frames[chin->frame].pic;
     return spriteset[sppic];
@@ -2298,9 +2300,7 @@ int my_getpixel(Bitmap *blk, int x, int y) {
         return -1;
 
     // strip the alpha channel
-	// TODO: is there a way to do this vtable thing with Bitmap?
-	BITMAP *al_bmp = (BITMAP*)blk->GetAllegroBitmap();
-    return al_bmp->vtable->getpixel(al_bmp, x, y) & 0x00ffffff;
+    return blk->GetPixel(x, y) &0x00ffffff;
 }
 
 int check_click_on_character(int xx,int yy,int mood) {

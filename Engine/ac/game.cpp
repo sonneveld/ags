@@ -118,10 +118,12 @@ extern int obj_lowest_yp, char_lowest_yp;
 extern int actSpsCount;
 extern Bitmap **actsps;
 extern IDriverDependantBitmap* *actspsbmp;
+#ifdef AGS_DELETE_FOR_3_6
 // temporary cache of walk-behind for this actsps image
 extern Bitmap **actspswb;
 extern IDriverDependantBitmap* *actspswbbmp;
 extern CachedActSpsData* actspswbcache;
+#endif
 extern Bitmap **guibg;
 extern IDriverDependantBitmap **guibgbmp;
 extern char transFileName[MAX_PATH];
@@ -532,9 +534,11 @@ void unload_game_file()
     free(mls);
     free(actsps);
     free(actspsbmp);
+#ifdef AGS_DELETE_FOR_3_6
     free(actspswb);
     free(actspswbbmp);
     free(actspswbcache);
+#endif
 
     if ((gameinst != nullptr) && (gameinst->pc != 0))
     {

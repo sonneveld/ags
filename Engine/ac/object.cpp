@@ -491,7 +491,9 @@ int is_pos_in_sprite(int xx,int yy,int arx,int ary, Bitmap *sprit, int spww,int 
         int xpos = data_to_game_coord(xx - arx);
         int ypos = data_to_game_coord(yy - ary);
 
+#ifdef AGS_DELETE_FOR_3_6
         if (gfxDriver->HasAcceleratedTransform())
+#endif
         {
             // hardware acceleration, so the sprite in memory will not have
             // been stretched, it will be original size. Thus, adjust our

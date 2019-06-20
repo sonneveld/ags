@@ -50,9 +50,11 @@ extern GameSetupStruct game;
 extern int actSpsCount;
 extern Bitmap **actsps;
 extern IDriverDependantBitmap* *actspsbmp;
+#ifdef AGS_DELETE_FOR_3_6
 extern Bitmap **actspswb;
 extern IDriverDependantBitmap* *actspswbbmp;
 extern CachedActSpsData* actspswbcache;
+#endif
 extern CharacterCache *charcache;
 
 extern CCGUIObject ccDynamicGUIObject;
@@ -408,9 +410,11 @@ HGameInitError InitGameState(const LoadedGameEntities &ents, GameDataVersion dat
     actSpsCount = game.numcharacters + MAX_ROOM_OBJECTS + 2;
     actsps = (Bitmap **)calloc(actSpsCount, sizeof(Bitmap *));
     actspsbmp = (IDriverDependantBitmap**)calloc(actSpsCount, sizeof(IDriverDependantBitmap*));
+#ifdef AGS_DELETE_FOR_3_6
     actspswb = (Bitmap **)calloc(actSpsCount, sizeof(Bitmap *));
     actspswbbmp = (IDriverDependantBitmap**)calloc(actSpsCount, sizeof(IDriverDependantBitmap*));
     actspswbcache = (CachedActSpsData*)calloc(actSpsCount, sizeof(CachedActSpsData));
+#endif
     play.charProps.resize(game.numcharacters);
     old_dialog_scripts = ents.OldDialogScripts;
     old_speech_lines = ents.OldSpeechLines;

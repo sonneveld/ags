@@ -33,16 +33,11 @@ void GameLoopUntilValueIsNegative(const int *value);
 void GameLoopUntilNotMoving(const short *move);
 void GameLoopUntilNoOverlay();
 
-// Polls audio until the end of current game frame
-void PollUntilNextFrame();
 // Run the actual game until it ends, or aborted by player/error; loops GameTick() internally
 void RunGameUntilAborted();
 // Update everything game related
 void UpdateGameOnce(bool checkControls = false, IDriverDependantBitmap *extraBitmap = nullptr, int extraX = 0, int extraY = 0);
 
 float get_current_fps();
-// Runs service key controls, returns false if service key combinations were handled
-// and no more processing required, otherwise returns true and provides current keycode and key shifts.
-bool run_service_key_controls(SDL_Event kgn);
 
 #endif // __AGS_EE_MAIN__GAMERUN_H

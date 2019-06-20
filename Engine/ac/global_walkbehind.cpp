@@ -29,7 +29,9 @@ void SetWalkBehindBase(int wa,int bl) {
 
   if (bl != croom->walkbehind_base[wa]) {
     walk_behind_baselines_changed = 1;
+#ifdef AGS_DELETE_FOR_3_6
     invalidate_cached_walkbehinds();
+#endif
     croom->walkbehind_base[wa] = bl;
     debug_script_log("Walk-behind %d baseline changed to %d", wa, bl);
   }

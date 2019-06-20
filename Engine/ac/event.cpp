@@ -252,9 +252,6 @@ void process_event(EventHappened*evp) {
             set_palette_range(palette, 0, 255, 0);
         else if (theTransition == FADE_NORMAL)
         {
-            if (gfxDriver->UsesMemoryBackBuffer())
-                gfxDriver->RenderToBackBuffer();
-
             my_fade_in(palette,5);
         }
         else if (theTransition == FADE_BOXOUT) 
@@ -280,15 +277,11 @@ void process_event(EventHappened*evp) {
                 {
                     // on last frame of fade (where transparency < 16), don't
                     // draw the old screen on top
-                    gfxDriver->DrawSprite(0, 0, ddb);
+                    gfxDriver->DrawSprite(0, 0, ddb, "transition crossfade");
                 }
                 render_to_screen();
-                do {
-                    update_polled_stuff_if_runtime();
-                } while (waitingForNextTick());
                 transparency -= 16;
             }
-            saved_viewport_bitmap->Release();
 
             delete saved_viewport_bitmap;
             saved_viewport_bitmap = nullptr;
@@ -318,13 +311,9 @@ void process_event(EventHappened*evp) {
                 }
                 gfxDriver->UpdateDDBFromBitmap(ddb, saved_viewport_bitmap, false);
                 draw_screen_callback();
-                gfxDriver->DrawSprite(0, 0, ddb);
+                gfxDriver->DrawSprite(0, 0, ddb, "transition dissolve");
                 render_to_screen();
-                do {
-                    update_polled_stuff_if_runtime();
-                } while (waitingForNextTick());
             }
-            saved_viewport_bitmap->Release();
 
             delete saved_viewport_bitmap;
             saved_viewport_bitmap = nullptr;

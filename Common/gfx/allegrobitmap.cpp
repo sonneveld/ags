@@ -12,8 +12,9 @@
 //
 //=============================================================================
 
-#include <aastr.h>
 #include "gfx/allegrobitmap.h"
+
+#include <aastr.h>
 #include "debug/assert.h"
 
 extern void __my_setcolor(int *ctset, int newcol, int wantColDep);
@@ -23,29 +24,31 @@ namespace AGS
 namespace Common
 {
 
+
+int64_t Bitmap::next_bitmap_id = 1;
+
 Bitmap::Bitmap()
     : _alBitmap(nullptr)
     , _isDataOwner(false)
+    , id_(next_bitmap_id++)
+    , version_(1)
 {
 }
 
 Bitmap::Bitmap(int width, int height, int color_depth)
     : _alBitmap(nullptr)
     , _isDataOwner(false)
+    , id_(next_bitmap_id++)
+    , version_(1)
 {
     Create(width, height, color_depth);
-}
-
-Bitmap::Bitmap(Bitmap *src, const Rect &rc)
-    : _alBitmap(nullptr)
-    , _isDataOwner(false)
-{
-    CreateSubBitmap(src, rc);
 }
 
 Bitmap::Bitmap(BITMAP *al_bmp, bool shared_data)
     : _alBitmap(nullptr)
     , _isDataOwner(false)
+    , id_(next_bitmap_id++)
+    , version_(1)
 {
     WrapAllegroBitmap(al_bmp, shared_data);
 }
@@ -53,6 +56,7 @@ Bitmap::Bitmap(BITMAP *al_bmp, bool shared_data)
 Bitmap::~Bitmap()
 {
     Destroy();
+    deleted_ = true;
 }
 
 //=============================================================================
@@ -61,18 +65,15 @@ Bitmap::~Bitmap()
 
 bool Bitmap::Create(int width, int height, int color_depth)
 {
+    assert(!deleted_);
     Destroy();
-    if (color_depth)
-    {
-        _alBitmap = create_bitmap_ex(color_depth, width, height);
-    }
-    else
-    {
-        _alBitmap = create_bitmap(width, height);
-    }
+    if (!color_depth) { color_depth = get_color_depth(); }  // system depth
+    _alBitmap = create_bitmap_ex(color_depth, width, height);
     _isDataOwner = true;
     return _alBitmap != nullptr;
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 bool Bitmap::CreateTransparent(int width, int height, int color_depth)
 {
@@ -84,26 +85,28 @@ bool Bitmap::CreateTransparent(int width, int height, int color_depth)
     return false;
 }
 
+#endif
+
 bool Bitmap::CreateSubBitmap(Bitmap *src, const Rect &rc)
 {
+    assert(!deleted_);
     Destroy();
     _alBitmap = create_sub_bitmap(src->_alBitmap, rc.Left, rc.Top, rc.GetWidth(), rc.GetHeight());
     _isDataOwner = true;
     return _alBitmap != nullptr;
 }
 
-bool Bitmap::CreateCopy(Bitmap *src, int color_depth)
+bool Bitmap::CreateCopy(const Bitmap *src, int color_depth)
 {
-    if (Create(src->_alBitmap->w, src->_alBitmap->h, color_depth ? color_depth : bitmap_color_depth(src->_alBitmap)))
-    {
-        blit(src->_alBitmap, _alBitmap, 0, 0, 0, 0, _alBitmap->w, _alBitmap->h);
-        return true;
-    }
-    return false;
+    assert(!deleted_);
+    if (!Create(src->_alBitmap->w, src->_alBitmap->h, color_depth ? color_depth : bitmap_color_depth(src->_alBitmap))) { return false;  }
+    blit(src->_alBitmap, _alBitmap, 0, 0, 0, 0, _alBitmap->w, _alBitmap->h);
+    return true;
 }
 
 bool Bitmap::WrapAllegroBitmap(BITMAP *al_bmp, bool shared_data)
 {
+    assert(!deleted_);
     Destroy();
     _alBitmap = al_bmp;
     _isDataOwner = !shared_data;
@@ -112,8 +115,9 @@ bool Bitmap::WrapAllegroBitmap(BITMAP *al_bmp, bool shared_data)
 
 void Bitmap::Destroy()
 {
-    if (_isDataOwner && _alBitmap)
-    {
+    assert(!deleted_);
+    version_++;
+    if (_isDataOwner) {
         destroy_bitmap(_alBitmap);
     }
     _alBitmap = nullptr;
@@ -122,6 +126,7 @@ void Bitmap::Destroy()
 
 bool Bitmap::LoadFromFile(const char *filename)
 {
+    assert(!deleted_);
     Destroy();
 
 	BITMAP *al_bmp = load_bitmap(filename, nullptr);
@@ -133,28 +138,106 @@ bool Bitmap::LoadFromFile(const char *filename)
 	return _alBitmap != nullptr;
 }
 
-bool Bitmap::SaveToFile(const char *filename, const void *palette)
+bool Bitmap::SaveToFile(const char *filename, const void *palette) const
 {
-	return save_bitmap(filename, _alBitmap, (const RGB*)palette) == 0;
+    assert(!deleted_);
+    return save_bitmap(filename, _alBitmap, (const RGB*)palette) == 0;
 }
 
-void Bitmap::SetMaskColor(color_t color)
+// TODO: This is temporary solution for cases when we cannot replace
+// use of raw BITMAP struct with Bitmap
+BITMAP *Bitmap::GetAllegroBitmap()
 {
-	// not supported? CHECKME
+    assert(!deleted_);
+    version_++;
+    return _alBitmap;
 }
 
-void Bitmap::Acquire()
+#if AGS_DELETE_FOR_3_6
+
+// Checks if bitmap has zero size: either width or height (or both) is zero
+bool Bitmap::IsEmpty() const
 {
-	acquire_bitmap(_alBitmap);
+    return GetWidth() == 0 || GetHeight() == 0;
+}
+#endif
+
+int  Bitmap::GetWidth() const
+{
+    assert(!deleted_);
+    return _alBitmap->w;
 }
 
-void Bitmap::Release()
+int  Bitmap::GetHeight() const
 {
-	release_bitmap(_alBitmap);
+    assert(!deleted_);
+    return _alBitmap->h;
 }
 
-color_t Bitmap::GetCompatibleColor(color_t color)
+Size Bitmap::GetSize() const
 {
+    assert(!deleted_);
+    return Size(_alBitmap->w, _alBitmap->h);
+}
+
+int  Bitmap::GetColorDepth() const
+{
+    assert(!deleted_);
+    return bitmap_color_depth(_alBitmap);
+}
+
+// BPP: bytes per pixel
+int  Bitmap::GetBPP() const
+{
+    assert(!deleted_);
+    return (GetColorDepth() + 7) / 8;
+}
+
+#if AGS_DELETE_FOR_3_6
+
+// CHECKME: probably should not be exposed, see comment to GetData()
+int  Bitmap::GetDataSize() const
+{
+    return GetWidth() * GetHeight() * GetBPP();
+}
+
+#endif
+
+// Gets scanline length in bytes (is the same for any scanline)
+int  Bitmap::GetLineLength() const
+{
+    // line may include padding:
+    assert(!deleted_);
+    if (GetHeight() >= 2) {
+        return (char*)_alBitmap->line[1] - (char*)_alBitmap->line[0];
+    }
+    return GetWidth() * GetBPP();
+}
+
+// TODO: replace with byte *
+// Gets a pointer to underlying graphic data
+const unsigned char *Bitmap::GetData() const
+{
+    assert(!deleted_);
+    return _alBitmap->line[0];
+}
+
+// Get scanline for direct reading
+unsigned char *Bitmap::GetScanLine(int index) const
+{
+    assert(!deleted_);
+    return (index >= 0 && index < GetHeight()) ? _alBitmap->line[index] : nullptr;
+}
+
+color_t Bitmap::GetMaskColor() const
+{
+    assert(!deleted_);
+    return bitmap_mask_color(_alBitmap);
+}
+
+color_t Bitmap::GetCompatibleColor(color_t color) const
+{
+    assert(!deleted_);
     color_t compat_color = 0;
     __my_setcolor(&compat_color, color, bitmap_color_depth(_alBitmap));
     return compat_color;
@@ -166,8 +249,12 @@ color_t Bitmap::GetCompatibleColor(color_t color)
 
 void Bitmap::SetClip(const Rect &rc)
 {
-	set_clip_rect(_alBitmap, rc.Left, rc.Top, rc.Right, rc.Bottom);
+    assert(!deleted_);
+    version_++;
+    set_clip_rect(_alBitmap, rc.Left, rc.Top, rc.Right, rc.Bottom);
 }
+
+#ifdef AGS_DELETE_FOR_3_6
 
 Rect Bitmap::GetClip() const
 {
@@ -176,13 +263,17 @@ Rect Bitmap::GetClip() const
 	return temp;
 }
 
+#endif
+
 //=============================================================================
 // Blitting operations (drawing one bitmap over another)
 //=============================================================================
 
-void Bitmap::Blit(Bitmap *src, int dst_x, int dst_y, BitmapMaskOption mask)
+void Bitmap::Blit(const Bitmap *src, int dst_x, int dst_y, BitmapMaskOption mask)
 {	
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	// WARNING: For some evil reason Allegro expects dest and src bitmaps in different order for blit and draw_sprite
 	if (mask == kBitmap_Transparency)
 	{
@@ -194,9 +285,11 @@ void Bitmap::Blit(Bitmap *src, int dst_x, int dst_y, BitmapMaskOption mask)
 	}
 }
 
-void Bitmap::Blit(Bitmap *src, int src_x, int src_y, int dst_x, int dst_y, int width, int height, BitmapMaskOption mask)
+void Bitmap::Blit(const Bitmap *src, int src_x, int src_y, int dst_x, int dst_y, int width, int height, BitmapMaskOption mask)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	if (mask == kBitmap_Transparency)
 	{
 		masked_blit(al_src_bmp, _alBitmap, src_x, src_y, dst_x, dst_y, width, height);
@@ -207,9 +300,11 @@ void Bitmap::Blit(Bitmap *src, int src_x, int src_y, int dst_x, int dst_y, int w
 	}
 }
 
-void Bitmap::StretchBlt(Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask)
+void Bitmap::StretchBlt(const Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	// WARNING: For some evil reason Allegro expects dest and src bitmaps in different order for blit and draw_sprite
 	if (mask == kBitmap_Transparency)
 	{
@@ -224,9 +319,11 @@ void Bitmap::StretchBlt(Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask)
 	}
 }
 
-void Bitmap::StretchBlt(Bitmap *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask)
+void Bitmap::StretchBlt(Bitmap const *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	if (mask == kBitmap_Transparency)
 	{
 		masked_stretch_blit(al_src_bmp, _alBitmap,
@@ -241,9 +338,11 @@ void Bitmap::StretchBlt(Bitmap *src, const Rect &src_rc, const Rect &dst_rc, Bit
 	}
 }
 
-void Bitmap::AAStretchBlt(Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask)
+void Bitmap::AAStretchBlt(const Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	// WARNING: For some evil reason Allegro expects dest and src bitmaps in different order for blit and draw_sprite
 	if (mask == kBitmap_Transparency)
 	{
@@ -258,9 +357,12 @@ void Bitmap::AAStretchBlt(Bitmap *src, const Rect &dst_rc, BitmapMaskOption mask
 	}
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void Bitmap::AAStretchBlt(Bitmap *src, const Rect &src_rc, const Rect &dst_rc, BitmapMaskOption mask)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	if (mask == kBitmap_Transparency)
 	{
 		// TODO: aastr lib does not expose method for masked stretch blit; should do that at some point since 
@@ -276,21 +378,29 @@ void Bitmap::AAStretchBlt(Bitmap *src, const Rect &src_rc, const Rect &dst_rc, B
 	}
 }
 
-void Bitmap::TransBlendBlt(Bitmap *src, int dst_x, int dst_y)
+#endif
+
+void Bitmap::TransBlendBlt(const Bitmap *src, int dst_x, int dst_y)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	draw_trans_sprite(_alBitmap, al_src_bmp, dst_x, dst_y);
 }
 
-void Bitmap::LitBlendBlt(Bitmap *src, int dst_x, int dst_y, int light_amount)
+void Bitmap::LitBlendBlt(const Bitmap *src, int dst_x, int dst_y, int light_amount)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	draw_lit_sprite(_alBitmap, al_src_bmp, dst_x, dst_y, light_amount);
 }
 
-void Bitmap::FlipBlt(Bitmap *src, int dst_x, int dst_y, BitmapFlip flip)
+void Bitmap::FlipBlt(const Bitmap *src, int dst_x, int dst_y, BitmapFlip flip)
 {	
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	if (flip == kBitmap_HFlip)
 	{
 		draw_sprite_h_flip(_alBitmap, al_src_bmp, dst_x, dst_y);
@@ -305,15 +415,22 @@ void Bitmap::FlipBlt(Bitmap *src, int dst_x, int dst_y, BitmapFlip flip)
 	}
 }
 
+#ifdef AGS_DELETE_FOR_3_6
+
 void Bitmap::RotateBlt(Bitmap *src, int dst_x, int dst_y, fixed_t angle)
 {
-	BITMAP *al_src_bmp = src->_alBitmap;
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	rotate_sprite(_alBitmap, al_src_bmp, dst_x, dst_y, angle);
 }
 
-void Bitmap::RotateBlt(Bitmap *src, int dst_x, int dst_y, int pivot_x, int pivot_y, fixed_t angle)
+#endif
+
+void Bitmap::RotateBlt(const Bitmap *src, int dst_x, int dst_y, int pivot_x, int pivot_y, fixed_t angle)
 {	
-	BITMAP *al_src_bmp = src->_alBitmap;
+    assert(!deleted_);
+    version_++;
+    BITMAP *al_src_bmp = src->_alBitmap;
 	pivot_sprite(_alBitmap, al_src_bmp, dst_x, dst_y, pivot_x, pivot_y, angle);
 }
 
@@ -323,7 +440,9 @@ void Bitmap::RotateBlt(Bitmap *src, int dst_x, int dst_y, int pivot_x, int pivot
 
 void Bitmap::Clear(color_t color)
 {
-	if (color)
+    assert(!deleted_);
+    version_++;
+    if (color)
 	{
 		clear_to_color(_alBitmap, color);
 	}
@@ -335,15 +454,19 @@ void Bitmap::Clear(color_t color)
 
 void Bitmap::ClearTransparent()
 {
+    assert(!deleted_);
+    version_++;
     clear_to_color(_alBitmap, bitmap_mask_color(_alBitmap));
 }
 
 void Bitmap::PutPixel(int x, int y, color_t color)
 {
+    assert(!deleted_);
     if (x < 0 || x >= _alBitmap->w || y < 0 || y >= _alBitmap->h)
     {
         return;
     }
+    version_++;
 
 	switch (bitmap_color_depth(_alBitmap))
 	{
@@ -364,6 +487,7 @@ void Bitmap::PutPixel(int x, int y, color_t color)
 
 int Bitmap::GetPixel(int x, int y) const
 {
+    assert(!deleted_);
     if (x < 0 || x >= _alBitmap->w || y < 0 || y >= _alBitmap->h)
     {
         return -1; // Allegros getpixel() implementation returns -1 in this case
@@ -392,33 +516,44 @@ int Bitmap::GetPixel(int x, int y) const
 
 void Bitmap::DrawLine(const Line &ln, color_t color)
 {
-	line(_alBitmap, ln.X1, ln.Y1, ln.X2, ln.Y2, color);
+    assert(!deleted_);
+    version_++;
+    line(_alBitmap, ln.X1, ln.Y1, ln.X2, ln.Y2, color);
 }
 
 void Bitmap::DrawTriangle(const Triangle &tr, color_t color)
 {
-	triangle(_alBitmap,
-		tr.X1, tr.Y1, tr.X2, tr.Y2, tr.X3, tr.Y3, color);
+    assert(!deleted_);
+    version_++;
+    triangle(_alBitmap, tr.X1, tr.Y1, tr.X2, tr.Y2, tr.X3, tr.Y3, color);
 }
 
 void Bitmap::DrawRect(const Rect &rc, color_t color)
 {
-	rect(_alBitmap, rc.Left, rc.Top, rc.Right, rc.Bottom, color);
+    assert(!deleted_);
+    version_++;
+    rect(_alBitmap, rc.Left, rc.Top, rc.Right, rc.Bottom, color);
 }
 
 void Bitmap::FillRect(const Rect &rc, color_t color)
 {
-	rectfill(_alBitmap, rc.Left, rc.Top, rc.Right, rc.Bottom, color);
+    assert(!deleted_);
+    version_++;
+    rectfill(_alBitmap, rc.Left, rc.Top, rc.Right, rc.Bottom, color);
 }
 
 void Bitmap::FillCircle(const Circle &circle, color_t color)
 {
-	circlefill(_alBitmap, circle.X, circle.Y, circle.Radius, color);
+    assert(!deleted_);
+    version_++;
+    circlefill(_alBitmap, circle.X, circle.Y, circle.Radius, color);
 }
 
 void Bitmap::Fill(color_t color)
 {
-	if (color)
+    assert(!deleted_);
+    version_++;
+    if (color)
 	{
 		clear_to_color(_alBitmap, color);
 	}
@@ -430,40 +565,38 @@ void Bitmap::Fill(color_t color)
 
 void Bitmap::FillTransparent()
 {
+    assert(!deleted_);
+    version_++;
     clear_to_color(_alBitmap, bitmap_mask_color(_alBitmap));
 }
 
 void Bitmap::FloodFill(int x, int y, color_t color)
 {
-	floodfill(_alBitmap, x, y, color);
+    assert(!deleted_);
+    version_++;
+    floodfill(_alBitmap, x, y, color);
 }
 
 //=============================================================================
 // Direct access operations
 //=============================================================================
 
-void Bitmap::SetScanLine(int index, unsigned char *data, int data_size)
+unsigned char *Bitmap::GetScanLineForWriting(int index)
 {
-	if (index < 0 || index >= GetHeight())
-	{
-		return;
-	}
-
-	int copy_length = data_size;
-	if (copy_length < 0)
-	{
-		copy_length = GetLineLength();
-	}
-	else // TODO: use Math namespace here
-		if (copy_length > GetLineLength())
-	{
-		copy_length = GetLineLength();
-	}
-
-	memcpy(_alBitmap->line[index], data, copy_length);
+    assert(!deleted_);
+    if (index < 0) { return nullptr; }
+    if (index >= GetHeight()) { return nullptr; }
+    version_++;
+    return _alBitmap->line[index];
+}
+unsigned char *Bitmap::GetDataForWriting()
+{
+    assert(!deleted_);
+    version_++;
+    return _alBitmap->line[0];
 }
 
-
+#ifdef AGS_DELETE_FOR_3_6
 
 namespace BitmapHelper
 {
@@ -491,6 +624,8 @@ Bitmap *CreateRawBitmapWrapper(BITMAP *al_bmp)
 }
 
 } // namespace BitmapHelper
+
+#endif
 
 
 } // namespace Common

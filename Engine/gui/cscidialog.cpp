@@ -175,10 +175,6 @@ int CSCIWaitMessage(CSCIMessage * cscim)
     prepare_gui_screen(win_x, win_y, win_width, win_height, true);
 
     while (1) {
-        process_pending_events();
-        update_audio_system_on_game_loop();
-        refresh_gui_screen();
-
         cscim->id = -1;
         cscim->code = 0;
         smcode = 0;
@@ -186,8 +182,7 @@ int CSCIWaitMessage(CSCIMessage * cscim)
         // test with ctrl-u and other debug features!!
 
         SDL_Event keywas = getTextEventFromQueue();
-        auto keyAvailable = run_service_key_controls(keywas);
-        if (keyAvailable && keywas.type != 0) {
+        if (keywas.type != 0) {
 
             if (keywas.type == SDL_KEYDOWN && keywas.key.keysym.scancode == SDL_SCANCODE_RETURN) {   // return
                 cscim->id = finddefaultcontrol(CNF_DEFAULT);
@@ -231,9 +226,7 @@ int CSCIWaitMessage(CSCIMessage * cscim)
         if (cscim->code > 0)
             break;
 
-        while (waitingForNextTick()) {
-            update_polled_stuff_if_runtime();
-        }
+        refresh_gui_screen();
     }
 
     return 0;

@@ -38,12 +38,13 @@ Bitmap *CreateBitmap(int width, int height, int color_depth)
 Bitmap *CreateTransparentBitmap(int width, int height, int color_depth)
 {
     Bitmap *bitmap = new Bitmap();
-	if (!bitmap->CreateTransparent(width, height, color_depth))
-	{
-		delete bitmap;
-		bitmap = nullptr;
-	}
+    if (!bitmap->Create(width, height, color_depth)) { goto error; }
+    bitmap->ClearTransparent();
 	return bitmap;
+
+error:
+    delete bitmap;
+    return nullptr;
 }
 
 Bitmap *CreateSubBitmap(Bitmap *src, const Rect &rc)
@@ -57,7 +58,7 @@ Bitmap *CreateSubBitmap(Bitmap *src, const Rect &rc)
 	return bitmap;
 }
 
-Bitmap *CreateBitmapCopy(Bitmap *src, int color_depth)
+Bitmap *CreateBitmapCopy(const Bitmap *src, int color_depth)
 {
     Bitmap *bitmap = new Bitmap();
 	if (!bitmap->CreateCopy(src, color_depth))

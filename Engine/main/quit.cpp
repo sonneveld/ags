@@ -212,6 +212,7 @@ void quit_delete_temp_files()
     al_findclose (&dfb);
 }
 
+#ifdef AGS_DELETE_FOR_3_6
 // TODO: move to test unit
 extern Bitmap *test_allegro_bitmap;
 extern IDriverDependantBitmap *test_allegro_ddb;
@@ -221,6 +222,7 @@ void allegro_bitmap_test_release()
 	if (test_allegro_ddb)
 		gfxDriver->DestroyDDB(test_allegro_ddb);
 }
+#endif
 
 char return_to_roomedit[30] = "\0";
 char return_to_room[150] = "\0";
@@ -233,6 +235,11 @@ char return_to_room[150] = "\0";
 // "!|" is a special code used to mean that the player has aborted (Alt+X)
 void quit(const char *quitmsg)
 {
+    // something to consider, we have a bunch of global objects that will fail if they
+    // try to cleanup on exit (because sdl/allegro is gone)
+
+    throw std::runtime_error("replace with proper quit.");
+
     String alertis;
     QuitReason qreason = quit_check_for_error_state(quitmsg, alertis);
     // Need to copy it in case it's from a plugin (since we're
@@ -241,8 +248,10 @@ void quit(const char *quitmsg)
 
     if (qreason & kQuitKind_NormalExit)
         save_config_file();
-
+        
+#ifdef AGS_DELETE_FOR_3_6
 	allegro_bitmap_test_release();
+#endif
 
     handledErrorInEditor = false;
 

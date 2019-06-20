@@ -26,7 +26,7 @@
 #include "game/roomstruct.h"
 #include "main/engine.h"
 #include "media/audio/audio_system.h"
-#include "util/alignedstream.h"
+#include "util/stream.h"
 #include "util/string_utils.h"
 
 using namespace AGS::Common;

@@ -53,6 +53,10 @@
 
 #include <iostream>
 
+#include <nn/profiler.h>
+#include <nn/os.h>
+#include <nn/init.h>
+
 #include "physfs.h"
 
 #include "core/platform.h"
@@ -92,6 +96,14 @@
 #include "debug/debugmanager.h"
 #include "util/path.h"
 #include "util/asset_loader.h"
+#include "ac/timer.h"
+#include "ac/event.h"
+
+#define AGS_DEBUG_FRAME_TIMER 0
+
+namespace ags = AGS::Common;
+namespace agsdbg = AGS::Common::Debug;
+namespace agseng = AGS::Engine;
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -382,6 +394,9 @@ bool text_box_is_active()
     return false;
 }
 
+
+
+
 extern void onkeydown(SDL_Event *event);
 extern void on_sdl_mouse_motion(SDL_MouseMotionEvent *event);
 extern void on_sdl_mouse_button(SDL_MouseButtonEvent *event);
@@ -391,7 +406,21 @@ extern void toggle_mouse_lock();
 extern int sdl_button_to_allegro_bit(int button);
 extern void set_mouse_b(int);
 
+void send_keyboard_event_scancode(SDL_Scancode scancode)
+{
+    SDL_Event event = { SDL_KEYDOWN };
+    event.key.keysym.scancode = scancode;
+    event.key.keysym.mod = 0;
+    onkeydown(&event);
+}
 
+void send_keyboard_event_ascii(char c)
+{
+    SDL_Event event = { SDL_TEXTINPUT };
+    event.text.text[0] = c;
+    event.text.text[1] = '\0';
+    onkeydown(&event);
+}
 
 // allocate textures for bitmaps. allows you to clean up after a frame.
 // pointers should be valid until CleanupForFrame.
@@ -495,10 +524,9 @@ private:
 };
 
 
-
 int initialize_engine(const ConfigTree &startup_opts)
 {
-    const String exe_path = global_argv[0];
+    const String exe_path = ".";
 
 
     // ScriptSystem::aci_version is only 10 chars long
@@ -510,15 +538,36 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     set_uformat(U_ASCII);
     if (install_allegro(SYSTEM_AUTODETECT, &errno, atexit) != 0) { throw std::runtime_error("Unable to initialise Allegro."); }
-
+    // NOTE: allegro should have called SDL_Init internally.
     platform->PostAllegroInit(false);
 
 
-    usetup.mod_player = 1;
+
+    agsdbg::Printf(ags::kDbgMsg_Init, "Controllers available:");
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) {
+            agsdbg::Printf(ags::kDbgMsg_Init, "  %d : C : %s", i, SDL_GameControllerNameForIndex(i));
+        } else {
+            agsdbg::Printf(ags::kDbgMsg_Init, "  %d : J : %s", i, SDL_JoystickNameForIndex(i));
+        }
+    }
+
+
+    SDL_GameController *controller = nullptr;
+    for (int i = 0; i < SDL_NumJoysticks(); i++) {
+        if (!SDL_IsGameController(i)) { continue; }
+        controller = SDL_GameControllerOpen(i);
+        if (controller) { break; }
+    }
+
+    if (controller) {
+        agsdbg::Printf(ags::kDbgMsg_Init, "Got controller: %s", SDL_GameControllerName(controller));
+    }
 
 
     init_font_renderer();
 
+    usetup.mod_player = 1;
 
     config_defaults();
     usetup.data_files_dir = Directory::GetCurrentDirectory();
@@ -526,9 +575,11 @@ int initialize_engine(const ConfigTree &startup_opts)
     usetup.main_data_filename = "agsgame.dat";
 
     ConfigTree cfg;
+#if 0
     String def_cfg_file = find_default_cfg_file(exe_path.GetCStr());
     IniUtil::Read(def_cfg_file, cfg);
     apply_config(cfg);
+#endif
     post_config();
 
     psp_audio_multithreaded = 1; //consoles can always do this, i guess 
@@ -551,12 +602,12 @@ int initialize_engine(const ConfigTree &startup_opts)
     installVoiceDirectory = ResPaths.DataDir;
 
 
-    PHYSFS_mount("game.zip", "/", 1);
-    PHYSFS_mount("audio.zip", "/audio", 1);
-    PHYSFS_mount("sprite.zip", "/sprite", 1);
-    PHYSFS_mount("view.zip", "/view", 1);
-    PHYSFS_mount("audio-extra.zip", "/audio", 1);
-    PHYSFS_mount("audio-speech.zip", "/speech", 1);
+    PHYSFS_mount("rom:/game.zip", "/", 1);
+    PHYSFS_mount("rom:/audio.zip", "/audio", 1);
+    PHYSFS_mount("rom:/sprite.zip", "/sprite", 1);
+    PHYSFS_mount("rom:/view.zip", "/view", 1);
+    PHYSFS_mount("rom:/audio-extra.zip", "/audio", 1);
+    PHYSFS_mount("rom:/audio-speech.zip", "/speech", 1);
 
     gameAssetLibrary = std::make_unique<AGS::Common::AssetManager>();
 
@@ -734,8 +785,28 @@ int initialize_engine(const ConfigTree &startup_opts)
 
     auto textureManager = TextureManager(renderer);
 
+    int memcount = 0;
+
     for(;;) {
 
+        nn::profiler::RecordHeartbeat(nn::profiler::Heartbeats_Main);
+        
+#ifdef AGS_REGULAR_MEMORY_INFO_DUMPS
+        memcount++;
+        if (memcount > 120) {
+            auto allocator = nn::init::GetAllocator();
+            auto free_sz = allocator->GetTotalFreeSize();
+            AGS::Common::Debug::Printf(AGS::Common::kDbgMsg_Init, "mem heap free: %ld", (long)free_sz );
+            memcount = 0;
+        }
+#endif
+
+        bool want_nx_keyboard = false;
+
+        #if AGS_DEBUG_FRAME_TIMER
+		auto t_game_1 = AGS_Clock::now();
+        #endif
+        
         // keep track of button presses within a frame, to account for mouse up/down in a single frame
 
         SDL_Event event;
@@ -777,28 +848,34 @@ int initialize_engine(const ConfigTree &startup_opts)
                     }
                 }
 
-                switch (event.key.keysym.scancode) {
-                // alt + ctrl
-                case SDL_SCANCODE_LCTRL:
-                case SDL_SCANCODE_RCTRL:
-                case SDL_SCANCODE_LALT:
-                case SDL_SCANCODE_RALT:
-                    {
-                        SDL_Keymod mod_state = SDL_GetModState();
-                        if ((mod_state & KMOD_CTRL) && (mod_state & KMOD_ALT)) {
-                            toggle_mouse_lock();
+                if (event.type == SDL_KEYDOWN) {
+                    switch (event.key.keysym.scancode) {
+                    // alt + ctrl
+                    case SDL_SCANCODE_LCTRL:
+                    case SDL_SCANCODE_RCTRL:
+                    case SDL_SCANCODE_LALT:
+                    case SDL_SCANCODE_RALT:
+                        {
+                            SDL_Keymod mod_state = SDL_GetModState();
+                            if ((mod_state & KMOD_CTRL) && (mod_state & KMOD_ALT)) {
+                                toggle_mouse_lock();
+                                processed = true;
+                            }
+                        }
+                        break;
+
+                    // alt + enter
+                    case SDL_SCANCODE_RETURN:
+                        if (event.key.keysym.mod & KMOD_ALT) {
+                            engine_try_switch_windowed_gfxmode();
                             processed = true;
                         }
-                    }
-                    break;
+                        break;
 
-                // alt + enter
-                case SDL_SCANCODE_RETURN:
-                    if (event.key.keysym.mod & KMOD_ALT) {
-                        engine_try_switch_windowed_gfxmode();
-                        processed = true;
+                    default: 
+                        // do nothing with the 239 other enum  values
+                        break;
                     }
-                    break;
                 }
 
                 if (!processed) {
@@ -813,19 +890,45 @@ int initialize_engine(const ConfigTree &startup_opts)
                 on_sdl_mouse_motion(&event.motion);
                 break;
             case SDL_MOUSEBUTTONDOWN: {
+                //auto mbits = sdl_button_to_allegro_bit(event.button.button);
+                //mouse_button_state |= mbits;
+                //mouse_button_state_for_game_loop |= mbits;
+                on_sdl_mouse_button(&event.button); // just updates position
+                break;
+            }
+            case SDL_MOUSEBUTTONUP: {
+                //mouse_button_state &= ~(sdl_button_to_allegro_bit(event.button.button));
                 auto mbits = sdl_button_to_allegro_bit(event.button.button);
                 mouse_button_state |= mbits;
                 mouse_button_state_for_game_loop |= mbits;
-                on_sdl_mouse_button(&event.button);
+                on_sdl_mouse_button(&event.button); // just updates position
                 break;
             }
-            case SDL_MOUSEBUTTONUP:
-                mouse_button_state &= ~(sdl_button_to_allegro_bit(event.button.button));
-                on_sdl_mouse_button(&event.button);
-                break;
             case SDL_MOUSEWHEEL:
                 on_sdl_mouse_wheel(&event.wheel);
                 break;
+
+
+            case SDL_CONTROLLERBUTTONDOWN: {
+                switch(event.cbutton.button) {
+                    case SDL_CONTROLLER_BUTTON_A:
+                    case SDL_CONTROLLER_BUTTON_B:
+                    case SDL_CONTROLLER_BUTTON_X:
+                    case SDL_CONTROLLER_BUTTON_Y:
+                    send_keyboard_event_scancode(SDL_SCANCODE_RETURN);
+                    break;
+
+                    case SDL_CONTROLLER_BUTTON_START:
+                    send_keyboard_event_scancode(SDL_SCANCODE_ESCAPE);
+                    break;
+
+                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                    want_nx_keyboard = true;
+                    break;
+                }
+                break;
+            }
             }
 
         }
@@ -840,11 +943,12 @@ int initialize_engine(const ConfigTree &startup_opts)
         // audio_core_update();
 
 
-        // YIELD TO GAME THREAD
-        // TODO look into this loop. It might be that we can't call yield_main multiple times without rendering. (yet!)
-        // auto max_skips = 3;
-        // while ( (play.fast_forward || framerate_maxed || !waitingForNextTick()) && max_skips--) {
-        if (play.fast_forward || !waitingForNextTick()) {
+
+		// YIELD TO GAME THREAD
+		// TODO look into this loop. It might be that we can't call yield_main multiple times without rendering. (yet!)
+		// auto max_skips = 3;
+		// while ( (play.fast_forward || framerate_maxed || !waitingForNextTick()) && max_skips--) {
+		if (play.fast_forward || !waitingForNextTick()) {
             update_audio_system_on_game_loop();
             gfxDriver->ClearDrawLists();
 
@@ -854,24 +958,46 @@ int initialize_engine(const ConfigTree &startup_opts)
             if (controlling != GameContext::MainControlling) { break; }
 
             // clear mouse button state
-            mouse_button_state_for_game_loop = mouse_button_state;
+            // mouse_button_state_for_game_loop = mouse_button_state;
+            mouse_button_state_for_game_loop = 0;
         }
-        // YIELD TO GAME THREAD
+		// YIELD TO GAME THREAD
+
+#if AGS_DEBUG_FRAME_TIMER
+		auto t_game_2 = AGS_Clock::now();
+		printf("game=%-2lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(t_game_2 - t_game_1).count());
+#endif
+
+
+#if AGS_DEBUG_FRAME_TIMER
+		auto t_render_1 = AGS_Clock::now();
+#endif
 
 
         // On Screen Keyboard
         // - TODO: script api to show/hide
-        // - TODO: on screen button, or joypad button to display
+        // - TODO: on screen button to display
         // Manage On Screen Keyboard if textbox has just appeared/disappeared
         auto is_text_box_displayed = text_box_is_active();
+
         if (have_text_box_displayed != is_text_box_displayed) {
             if (is_text_box_displayed) {
-                SDL_StartTextInput();
+                // SDL_StartTextInput();
+                want_nx_keyboard = true;
             } else {
-                SDL_StopTextInput();
+                // SDL_StopTextInput();
             }
         }
         have_text_box_displayed = is_text_box_displayed;
+
+        if (want_nx_keyboard) {
+            auto *keyboardbuf = SDL_NintendoSwitch_RunSoftwareKeyboard(SDL_NINTENDOSWITCH_KEYBOARD_SINGLELINE, nullptr, 120);
+            for (auto c = keyboardbuf; *c; c++) {
+                send_keyboard_event_ascii(*c);
+            }
+            SDL_free(keyboardbuf);
+            send_keyboard_event_scancode(SDL_SCANCODE_RETURN);
+        }
 
 
         if (!play.fast_forward) {
@@ -936,6 +1062,14 @@ int initialize_engine(const ConfigTree &startup_opts)
             textureManager.Flush();
         }
 
+#if AGS_DEBUG_FRAME_TIMER
+		auto t_render_2 = AGS_Clock::now();
+		printf(" | render=%-2lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(t_render_2 - t_render_1).count());
+
+		printf(" | total=%-4lld ms", std::chrono::duration_cast<std::chrono::milliseconds>(t_render_2 - t_game_1).count());
+		printf(" | budget=16.7 ms");
+		printf("\n");
+#endif
 
         // TODO: interpolate camera view!
     }

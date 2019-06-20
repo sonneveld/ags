@@ -1,0 +1,834 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="for Build">
+      <UniqueIdentifier>{F1DF9757-14C3-43FA-8525-6665FEDE7BA5}</UniqueIdentifier>
+      <Extensions>props</Extensions>
+    </Filter>
+    <Filter Include="Source Files\aastr-0.1.1">
+      <UniqueIdentifier>{265a28dd-8fee-492a-8a4c-ff77a2f7a016}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\alfont-2.0.9">
+      <UniqueIdentifier>{2e85ae82-6357-4e22-b225-6d4327ec7ac1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro">
+      <UniqueIdentifier>{aff09cd9-cd32-4718-aeb9-fbebbbaf75dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro\src">
+      <UniqueIdentifier>{9c4ff972-f5bf-439d-bf4a-e2838c8bb3e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro\src\c">
+      <UniqueIdentifier>{fb73b8b0-2b46-4dcc-8747-d0347fccd295}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro\src\sdl2">
+      <UniqueIdentifier>{ec027eaf-6e84-44b0-9da6-dd5521d28e28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro\src\unix">
+      <UniqueIdentifier>{c6dd1a56-a14d-454e-bcb7-1caedb944174}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3">
+      <UniqueIdentifier>{1f334707-4cef-43be-9344-56d605e4928a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\builds">
+      <UniqueIdentifier>{d5edc186-6d73-4003-b03c-711ac6e32ea1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\builds\win32">
+      <UniqueIdentifier>{ecf04845-d2a7-4fb7-90c7-503548e68c0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src">
+      <UniqueIdentifier>{955d2cb5-3e6d-47ab-bfa4-b251ae129a38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\autohint">
+      <UniqueIdentifier>{4b41c6d9-23e6-4456-af14-c536b72fe7eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\base">
+      <UniqueIdentifier>{4cf0c609-3d45-4a1e-8121-5e6d8062953e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\bdf">
+      <UniqueIdentifier>{2b36a284-aaf6-47c2-84e8-b4fccc2d63b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\cache">
+      <UniqueIdentifier>{57d3fd24-8b59-4fda-b464-844eacd73eaf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\cff">
+      <UniqueIdentifier>{07822cc0-2aa4-4b76-a2dc-b560ffed2db0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\cid">
+      <UniqueIdentifier>{f2c0e1e8-c58c-4a9c-89ce-904b86c84239}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\gzip">
+      <UniqueIdentifier>{0a4fefa8-9a2d-4007-b46f-2015b73d0048}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\pcf">
+      <UniqueIdentifier>{372fa5d1-ce18-4fd0-be9f-5bc47e3c2451}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\pfr">
+      <UniqueIdentifier>{2468d666-0340-4839-a616-ab5d4f07882d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\psaux">
+      <UniqueIdentifier>{7674f433-0edc-4016-8262-5d9c826ee8fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\pshinter">
+      <UniqueIdentifier>{678b30ce-1b62-4500-830b-c755b31c81f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\psnames">
+      <UniqueIdentifier>{423dc0ad-5522-401f-b119-fd53eaeafa8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\raster">
+      <UniqueIdentifier>{fb9ebcbc-44ee-4154-97a0-faac92bbab40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\sfnt">
+      <UniqueIdentifier>{19fddc24-d8d2-4e7a-873e-f20b168b749e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\smooth">
+      <UniqueIdentifier>{7fec60e0-aee5-45d2-aabc-c659e658c5e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\truetype">
+      <UniqueIdentifier>{11b9dd0d-4cde-40b6-b3e7-b0656bc8ce9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\type1">
+      <UniqueIdentifier>{815f2b01-6c58-4065-9064-c56ddd5a9e43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\type42">
+      <UniqueIdentifier>{594f4d01-7fd4-460f-aa7d-7ed6cb0ef6c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\freetype-2.1.3\src\winfonts">
+      <UniqueIdentifier>{8abf25dd-e2ce-443b-acf6-b91c0a89c59b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\glad">
+      <UniqueIdentifier>{8961eb89-0b4c-44e9-9422-0a6e26c43449}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\glad\src">
+      <UniqueIdentifier>{64181bea-dc7d-4f58-bfc5-d899c21584c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\mojoal">
+      <UniqueIdentifier>{bb4d9905-7f6b-49d8-acb5-4017939374c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SDL_sound-9262f9205898-20180720">
+      <UniqueIdentifier>{a033e9e1-aff3-41a5-b92b-ab8130b07615}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SDL_sound-9262f9205898-20180720\src">
+      <UniqueIdentifier>{23a624b1-623b-44b5-a553-46a1c979069d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug">
+      <UniqueIdentifier>{34c6056b-cebc-45e4-95de-0096d40906be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro\include">
+      <UniqueIdentifier>{4c59049a-a420-40da-97e3-b4bbf7d5080b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\allegro\src\win">
+      <UniqueIdentifier>{0a70b27c-a954-4303-ac13-936e27fcd442}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\physfs-switch">
+      <UniqueIdentifier>{7d8c095d-4069-4ee3-8bd2-361c639e537d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\mojoAL-d642e6c1d79a\AL\al.h">
+      <Filter>Source Files\mojoal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\mojoAL-d642e6c1d79a\AL\alc.h">
+      <Filter>Source Files\mojoal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\3d.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\3dmaths.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\alinline.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\base.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\color.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\compiled.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\config.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\datafile.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\debug.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\digi.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\draw.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\file.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\fixed.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\fli.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\fmaths.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\font.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\gfx.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\graphics.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\gui.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\internal\aintern.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\internal\alconfig.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\joystick.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\keyboard.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\lzss.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\matrix.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\midi.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\mouse.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\palette.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\aintunix.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\aintwin.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\almsvc-sdl2.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\alplatf.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\alsdl2.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\alucfg-sdl2.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\alunixac.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\platform\astdint.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\quat.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\rle.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\sound.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\stream.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\system.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\text.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\timer.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro\unicode.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\allegro.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\sdl2alleg.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\allegro\include\winalleg.h">
+      <Filter>Source Files\allegro\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs.h">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_casefolding.h">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_internal.h">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_lzmasdk.h">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_miniz.h">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platforms.h">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\libsrc\aastr-0.1.1\aarot.c">
+      <Filter>Source Files\aastr-0.1.1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\aastr-0.1.1\aastr.c">
+      <Filter>Source Files\aastr-0.1.1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\aastr-0.1.1\aautil.c">
+      <Filter>Source Files\aastr-0.1.1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\alfont-2.0.9\alfont.c">
+      <Filter>Source Files\alfont-2.0.9</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\allegro.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\config.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\inline.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\libc.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\math.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\timer.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\unicode.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\file.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\readbmp.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\quantize.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\bmp.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\fli.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\pcx.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\blit.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\colblend.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\color.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\dispsw.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\dither.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\flood.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\gfx.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\graphics.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\polygon.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\rotate.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\vtable.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\vtable15.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\vtable16.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\vtable24.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\vtable32.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\vtable8.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\dataregi.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\midi.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\stream.c">
+      <Filter>Source Files\allegro\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cblit16.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cblit24.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cblit32.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cblit8.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\ccpu.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cgfx15.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cgfx16.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cgfx24.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cgfx32.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cgfx8.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cmisc.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cscan15.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cscan16.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cscan24.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cscan32.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cscan8.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cspr15.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cspr16.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cspr24.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cspr32.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cspr8.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\cstretch.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\czscan15.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\czscan16.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\czscan24.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\czscan32.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\c\czscan8.c">
+      <Filter>Source Files\allegro\src\c</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\sdl2\system.c">
+      <Filter>Source Files\allegro\src\sdl2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\sdl2\drivers.c">
+      <Filter>Source Files\allegro\src\sdl2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\unix\ufile.c">
+      <Filter>Source Files\allegro\src\unix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\unix\usystem.c">
+      <Filter>Source Files\allegro\src\unix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\builds\win32\ftdebug.c">
+      <Filter>Source Files\freetype-2.1.3\builds\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\autohint\autohint.c">
+      <Filter>Source Files\freetype-2.1.3\src\autohint</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftbase.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftglyph.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftinit.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftmm.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftbbox.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftbdf.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftpfr.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\fttype1.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftxf86.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\base\ftsystem.c">
+      <Filter>Source Files\freetype-2.1.3\src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\bdf\bdf.c">
+      <Filter>Source Files\freetype-2.1.3\src\bdf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\cache\ftcache.c">
+      <Filter>Source Files\freetype-2.1.3\src\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\cff\cff.c">
+      <Filter>Source Files\freetype-2.1.3\src\cff</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\cid\type1cid.c">
+      <Filter>Source Files\freetype-2.1.3\src\cid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\gzip\ftgzip.c">
+      <Filter>Source Files\freetype-2.1.3\src\gzip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\pcf\pcf.c">
+      <Filter>Source Files\freetype-2.1.3\src\pcf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\pfr\pfr.c">
+      <Filter>Source Files\freetype-2.1.3\src\pfr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\psaux\psaux.c">
+      <Filter>Source Files\freetype-2.1.3\src\psaux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\pshinter\pshinter.c">
+      <Filter>Source Files\freetype-2.1.3\src\pshinter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\psnames\psmodule.c">
+      <Filter>Source Files\freetype-2.1.3\src\psnames</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\raster\raster.c">
+      <Filter>Source Files\freetype-2.1.3\src\raster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\sfnt\sfnt.c">
+      <Filter>Source Files\freetype-2.1.3\src\sfnt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\smooth\smooth.c">
+      <Filter>Source Files\freetype-2.1.3\src\smooth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\truetype\truetype.c">
+      <Filter>Source Files\freetype-2.1.3\src\truetype</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\type1\type1.c">
+      <Filter>Source Files\freetype-2.1.3\src\type1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\type42\type42.c">
+      <Filter>Source Files\freetype-2.1.3\src\type42</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\freetype-2.1.3\src\winfonts\winfnt.c">
+      <Filter>Source Files\freetype-2.1.3\src\winfonts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\glad\src\glad.c">
+      <Filter>Source Files\glad\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\mojoAL-d642e6c1d79a\mojoal.c">
+      <Filter>Source Files\mojoal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_aiff.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_au.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_coreaudio.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_flac.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_modplug.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_mp3.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_raw.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_shn.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_voc.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_vorbis.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\SDL_sound_wav.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\fastmix.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_669.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_abc.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_amf.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_ams.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_dbm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_dmf.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_dsm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_far.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_it.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_mdl.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_med.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_mid.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_mod.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_mt2.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_mtm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_okt.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_pat.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_psm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_ptm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_s3m.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_stm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_ult.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_umx.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\load_xm.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\mmcmp.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\modplug.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\snd_dsp.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\snd_flt.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\snd_fx.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\sndfile.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\SDL_sound-9262f9205898-20180720\src\libmodplug\sndmix.c">
+      <Filter>Source Files\SDL_sound-9262f9205898-20180720\src\libmodplug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\win\wfile.c">
+      <Filter>Source Files\allegro\src\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\allegro\src\win\wsystem.c">
+      <Filter>Source Files\allegro\src\win</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_wad.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_zip.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_byteorder.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platform_os2.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platform_posix.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platform_qnx.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platform_unix.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platform_windows.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_unicode.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_platform_nintendoswitch.cpp">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_7z.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_dir.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_grp.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_hog.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_iso9660.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_mvl.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_qpak.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_slb.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_unpacked.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libsrc\physfs-switch-a708c3cd596d\src\physfs_archiver_vdf.c">
+      <Filter>Source Files\physfs-switch</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\asm.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\color.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\draw.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\fix.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\fmaths.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\gfx.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\matrix.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\rle.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+    <None Include="..\..\libsrc\allegro\include\allegro\inline\system.inl">
+      <Filter>Source Files\allegro\include</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -16,6 +16,8 @@
 // Game initialization
 //
 
+#include "main/game_start.h"
+
 #include "ac/common.h"
 #include "ac/characterinfo.h"
 #include "ac/game.h"
@@ -31,7 +33,6 @@
 #include "gfx/ali3dexception.h"
 #include "main/mainheader.h"
 #include "main/game_run.h"
-#include "main/game_start.h"
 #include "script/script.h"
 #include "media/audio/audio_system.h"
 #include "ac/timer.h"

@@ -1,0 +1,717 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Develop|Win32">
+      <Configuration>Develop</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Develop|x64">
+      <Configuration>Develop</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|NX32">
+      <Configuration>Debug</Configuration>
+      <Platform>NX32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Develop|NX32">
+      <Configuration>Develop</Configuration>
+      <Platform>NX32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|NX32">
+      <Configuration>Release</Configuration>
+      <Platform>NX32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|NX64">
+      <Configuration>Debug</Configuration>
+      <Platform>NX64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Develop|NX64">
+      <Configuration>Develop</Configuration>
+      <Platform>NX64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|NX64">
+      <Configuration>Release</Configuration>
+      <Platform>NX64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Application.arm.ilp32.nmeta" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Application.aarch64.lp64.nmeta" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="NintendoSDK_Application.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Common\ac\simple_spritecache.cpp" />
+    <ClCompile Include="..\..\Common\core\assets.cpp" />
+    <ClCompile Include="..\..\Common\util\asset_loader.cpp" />
+    <ClCompile Include="..\..\Common\util\stdio_compat.c" />
+    <ClCompile Include="..\..\Engine\ac\viewport_script.cpp" />
+    <ClCompile Include="..\..\Engine\game\viewport.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\scene_graph_driver.cpp" />
+    <ClCompile Include="..\..\Engine\main\main_sdl2.cpp" />
+    <ClCompile Include="..\..\Engine\main\simple_engine.cpp" />
+    <ClCompile Include="..\..\Engine\main\simple_main.cpp" />
+    <ClCompile Include="..\..\Engine\platform\nx\ags_platform_nx.cpp" />
+    <ClCompile Include="..\..\Engine\platform\windows\debug\namedpipesagsdebugger.cpp" />
+    <ClCompile Include="..\..\Engine\platform\windows\media\video\acwavi.cpp" />
+    <ClCompile Include="..\..\Engine\platform\windows\media\video\acwavi3d.cpp" />
+    <ClCompile Include="AdventureGameStudio.cpp" />
+    <ClCompile Include="..\..\Common\ac\audiocliptype.cpp" />
+    <ClCompile Include="..\..\Common\ac\characterinfo.cpp" />
+    <ClCompile Include="..\..\Common\ac\common.cpp" />
+    <ClCompile Include="..\..\Common\ac\dialogtopic.cpp" />
+    <ClCompile Include="..\..\Common\ac\dynobj\scriptaudioclip.cpp" />
+    <ClCompile Include="..\..\Common\ac\gamesetupstruct.cpp" />
+    <ClCompile Include="..\..\Common\ac\gamesetupstructbase.cpp" />
+    <ClCompile Include="..\..\Common\ac\inventoryiteminfo.cpp" />
+    <ClCompile Include="..\..\Common\ac\mousecursor.cpp" />
+    <ClCompile Include="..\..\Common\ac\view.cpp" />
+    <ClCompile Include="..\..\Common\ac\wordsdictionary.cpp" />
+    <ClCompile Include="..\..\Common\debug\debugmanager.cpp" />
+    <ClCompile Include="..\..\Common\font\fonts.cpp" />
+    <ClCompile Include="..\..\Common\font\ttffontrenderer.cpp" />
+    <ClCompile Include="..\..\Common\font\wfnfont.cpp" />
+    <ClCompile Include="..\..\Common\font\wfnfontrenderer.cpp" />
+    <ClCompile Include="..\..\Common\game\customproperties.cpp" />
+    <ClCompile Include="..\..\Common\game\interactions.cpp" />
+    <ClCompile Include="..\..\Common\game\main_game_file.cpp" />
+    <ClCompile Include="..\..\Common\game\room_file.cpp" />
+    <ClCompile Include="..\..\Common\game\room_file_deprecated.cpp" />
+    <ClCompile Include="..\..\Common\game\roomstruct.cpp" />
+    <ClCompile Include="..\..\Common\gfx\allegrobitmap.cpp" />
+    <ClCompile Include="..\..\Common\gfx\bitmap.cpp" />
+    <ClCompile Include="..\..\Common\gui\guibutton.cpp" />
+    <ClCompile Include="..\..\Common\gui\guiinv.cpp" />
+    <ClCompile Include="..\..\Common\gui\guilabel.cpp" />
+    <ClCompile Include="..\..\Common\gui\guilistbox.cpp" />
+    <ClCompile Include="..\..\Common\gui\guimain.cpp" />
+    <ClCompile Include="..\..\Common\gui\guiobject.cpp" />
+    <ClCompile Include="..\..\Common\gui\guislider.cpp" />
+    <ClCompile Include="..\..\Common\gui\guitextbox.cpp" />
+    <ClCompile Include="..\..\Common\script\cc_error.cpp" />
+    <ClCompile Include="..\..\Common\script\cc_options.cpp" />
+    <ClCompile Include="..\..\Common\script\cc_script.cpp" />
+    <ClCompile Include="..\..\Common\util\compress.cpp" />
+    <ClCompile Include="..\..\Common\util\directory.cpp" />
+    <ClCompile Include="..\..\Common\util\file.cpp" />
+    <ClCompile Include="..\..\Common\util\geometry.cpp" />
+    <ClCompile Include="..\..\Common\util\ini_util.cpp" />
+    <ClCompile Include="..\..\Common\util\inifile.cpp" />
+    <ClCompile Include="..\..\Common\util\lzw.cpp" />
+    <ClCompile Include="..\..\Common\util\misc.cpp" />
+    <ClCompile Include="..\..\Common\util\mutifilelib.cpp" />
+    <ClCompile Include="..\..\Common\util\path.cpp" />
+    <ClCompile Include="..\..\Common\util\stream.cpp" />
+    <ClCompile Include="..\..\Common\util\string.cpp" />
+    <ClCompile Include="..\..\Common\util\string_utils.cpp" />
+    <ClCompile Include="..\..\Common\util\textstreamreader.cpp" />
+    <ClCompile Include="..\..\Common\util\textstreamwriter.cpp" />
+    <ClCompile Include="..\..\Common\util\version.cpp" />
+    <ClCompile Include="..\..\Common\util\wgt2allg.cpp" />
+    <ClCompile Include="..\..\Engine\ac\audiochannel.cpp" />
+    <ClCompile Include="..\..\Engine\ac\audioclip.cpp" />
+    <ClCompile Include="..\..\Engine\ac\button.cpp" />
+    <ClCompile Include="..\..\Engine\ac\cdaudio.cpp" />
+    <ClCompile Include="..\..\Engine\ac\character.cpp" />
+    <ClCompile Include="..\..\Engine\ac\characterextras.cpp" />
+    <ClCompile Include="..\..\Engine\ac\characterinfo_engine.cpp" />
+    <ClCompile Include="..\..\Engine\ac\datetime.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dialog.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dialogoptionsrendering.cpp" />
+    <ClCompile Include="..\..\Engine\ac\display.cpp" />
+    <ClCompile Include="..\..\Engine\ac\draw.cpp" />
+    <ClCompile Include="..\..\Engine\ac\draw_software.cpp" />
+    <ClCompile Include="..\..\Engine\ac\drawingsurface.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynamicsprite.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_agsdynamicobject.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_audiochannel.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_audioclip.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_character.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_dialog.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_dynamicarray.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_dynamicobject.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_gui.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_guiobject.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_hotspot.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_inventory.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_object.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_region.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\cc_serializer.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\managedobjectpool.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptcamera.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptdatetime.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptdialogoptionsrendering.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptdrawingsurface.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptdynamicsprite.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptfile.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptoverlay.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptstring.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptuserobject.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptviewframe.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptviewport.cpp" />
+    <ClCompile Include="..\..\Engine\ac\event.cpp" />
+    <ClCompile Include="..\..\Engine\ac\file.cpp" />
+    <ClCompile Include="..\..\Engine\ac\game.cpp" />
+    <ClCompile Include="..\..\Engine\ac\gamesetup.cpp" />
+    <ClCompile Include="..\..\Engine\ac\gamestate.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_api.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_audio.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_button.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_character.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_datetime.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_debug.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_dialog.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_display.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_drawingsurface.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_dynamicsprite.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_file.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_game.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_gui.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_hotspot.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_inventoryitem.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_invwindow.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_label.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_listbox.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_mouse.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_object.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_overlay.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_palette.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_parser.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_record.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_region.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_room.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_screen.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_slider.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_string.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_textbox.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_timer.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_translation.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_video.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_viewframe.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_viewport.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_walkablearea.cpp" />
+    <ClCompile Include="..\..\Engine\ac\global_walkbehind.cpp" />
+    <ClCompile Include="..\..\Engine\ac\gui.cpp" />
+    <ClCompile Include="..\..\Engine\ac\guicontrol.cpp" />
+    <ClCompile Include="..\..\Engine\ac\guiinv.cpp" />
+    <ClCompile Include="..\..\Engine\ac\hotspot.cpp" />
+    <ClCompile Include="..\..\Engine\ac\interfacebutton.cpp" />
+    <ClCompile Include="..\..\Engine\ac\interfaceelement.cpp" />
+    <ClCompile Include="..\..\Engine\ac\inventoryitem.cpp" />
+    <ClCompile Include="..\..\Engine\ac\invwindow.cpp" />
+    <ClCompile Include="..\..\Engine\ac\label.cpp" />
+    <ClCompile Include="..\..\Engine\ac\listbox.cpp" />
+    <ClCompile Include="..\..\Engine\ac\math.cpp" />
+    <ClCompile Include="..\..\Engine\ac\mouse.cpp" />
+    <ClCompile Include="..\..\Engine\ac\movelist.cpp" />
+    <ClCompile Include="..\..\Engine\ac\object.cpp" />
+    <ClCompile Include="..\..\Engine\ac\overlay.cpp" />
+    <ClCompile Include="..\..\Engine\ac\parser.cpp" />
+    <ClCompile Include="..\..\Engine\ac\properties.cpp" />
+    <ClCompile Include="..\..\Engine\ac\region.cpp" />
+    <ClCompile Include="..\..\Engine\ac\richgamemedia.cpp" />
+    <ClCompile Include="..\..\Engine\ac\room.cpp" />
+    <ClCompile Include="..\..\Engine\ac\roomobject.cpp" />
+    <ClCompile Include="..\..\Engine\ac\roomstatus.cpp" />
+    <ClCompile Include="..\..\Engine\ac\route_finder.cpp" />
+    <ClCompile Include="..\..\Engine\ac\screen.cpp" />
+    <ClCompile Include="..\..\Engine\ac\screenoverlay.cpp" />
+    <ClCompile Include="..\..\Engine\ac\slider.cpp" />
+    <ClCompile Include="..\..\Engine\ac\speech.cpp" />
+    <ClCompile Include="..\..\Engine\ac\sprite.cpp" />
+    <ClCompile Include="..\..\Engine\ac\spritecache_engine.cpp" />
+    <ClCompile Include="..\..\Engine\ac\statobj\agsstaticobject.cpp" />
+    <ClCompile Include="..\..\Engine\ac\statobj\staticarray.cpp" />
+    <ClCompile Include="..\..\Engine\ac\string.cpp" />
+    <ClCompile Include="..\..\Engine\ac\sys_events.cpp" />
+    <ClCompile Include="..\..\Engine\ac\system.cpp" />
+    <ClCompile Include="..\..\Engine\ac\textbox.cpp" />
+    <ClCompile Include="..\..\Engine\ac\timer.cpp" />
+    <ClCompile Include="..\..\Engine\ac\translation.cpp" />
+    <ClCompile Include="..\..\Engine\ac\tree_map.cpp" />
+    <ClCompile Include="..\..\Engine\ac\viewframe.cpp" />
+    <ClCompile Include="..\..\Engine\ac\walkablearea.cpp" />
+    <ClCompile Include="..\..\Engine\ac\walkbehind.cpp" />
+    <ClCompile Include="..\..\Engine\debug\consoleoutputtarget.cpp" />
+    <ClCompile Include="..\..\Engine\debug\debug.cpp" />
+    <ClCompile Include="..\..\Engine\debug\filebasedagsdebugger.cpp" />
+    <ClCompile Include="..\..\Engine\debug\logfile.cpp" />
+    <ClCompile Include="..\..\Engine\debug\messagebuffer.cpp" />
+    <ClCompile Include="..\..\Engine\device\mousew32.cpp" />
+    <ClCompile Include="..\..\Engine\font\fonts_engine.cpp" />
+    <ClCompile Include="..\..\Engine\game\game_init.cpp" />
+    <ClCompile Include="..\..\Engine\game\savegame.cpp" />
+    <ClCompile Include="..\..\Engine\game\savegame_components.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\blender.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\color_engine.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfx_util.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxdriverbase.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxdriverfactory.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_aad3d.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_aaogl.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_allegro.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_d3d.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_ogl.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_scaling.cpp" />
+    <ClCompile Include="..\..\Engine\gui\animatingguibutton.cpp" />
+    <ClCompile Include="..\..\Engine\gui\cscidialog.cpp" />
+    <ClCompile Include="..\..\Engine\gui\gui_engine.cpp" />
+    <ClCompile Include="..\..\Engine\gui\guidialog.cpp" />
+    <ClCompile Include="..\..\Engine\gui\mylabel.cpp" />
+    <ClCompile Include="..\..\Engine\gui\mylistbox.cpp" />
+    <ClCompile Include="..\..\Engine\gui\mypushbutton.cpp" />
+    <ClCompile Include="..\..\Engine\gui\mytextbox.cpp" />
+    <ClCompile Include="..\..\Engine\gui\newcontrol.cpp" />
+    <ClCompile Include="..\..\Engine\main\config.cpp" />
+    <ClCompile Include="..\..\Engine\main\game_file.cpp" />
+    <ClCompile Include="..\..\Engine\main\game_run.cpp" />
+    <ClCompile Include="..\..\Engine\main\game_start.cpp" />
+    <ClCompile Include="..\..\Engine\main\graphics_mode.cpp" />
+    <ClCompile Include="..\..\Engine\main\quit.cpp" />
+    <ClCompile Include="..\..\Engine\main\update.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\ambientsound.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\audio.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\queuedaudioitem.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\soundclip.cpp" />
+    <ClCompile Include="..\..\Engine\media\video\video.cpp" />
+    <ClCompile Include="..\..\Engine\platform\base\agsplatformdriver.cpp" />
+    <ClCompile Include="..\..\Engine\platform\util\libc.c" />
+    <ClCompile Include="..\..\Engine\platform\util\pe.c" />
+    <ClCompile Include="..\..\Engine\plugin\agsplugin.cpp" />
+    <ClCompile Include="..\..\Engine\plugin\global_plugin.cpp" />
+    <ClCompile Include="..\..\Engine\plugin\pluginobjectreader.cpp" />
+    <ClCompile Include="..\..\Engine\script\cc_error_engine.cpp" />
+    <ClCompile Include="..\..\Engine\script\cc_instance.cpp" />
+    <ClCompile Include="..\..\Engine\script\executingscript.cpp" />
+    <ClCompile Include="..\..\Engine\script\exports.cpp" />
+    <ClCompile Include="..\..\Engine\script\runtimescriptvalue.cpp" />
+    <ClCompile Include="..\..\Engine\script\script.cpp" />
+    <ClCompile Include="..\..\Engine\script\script_api.cpp" />
+    <ClCompile Include="..\..\Engine\script\script_engine.cpp" />
+    <ClCompile Include="..\..\Engine\script\script_runtime.cpp" />
+    <ClCompile Include="..\..\Engine\script\systemimports.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_all.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_file.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_gfx.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_inifile.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_math.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_memory.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_sprintf.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_string.cpp" />
+    <ClCompile Include="..\..\Engine\test\test_version.cpp" />
+    <ClCompile Include="..\..\Engine\ac\scriptcontainers.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptdict.cpp" />
+    <ClCompile Include="..\..\Engine\ac\dynobj\scriptset.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\ali3d_sdl_renderer.cpp" />
+    <ClCompile Include="..\..\Engine\gfx\gfxfilter_sdl_renderer.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\audio_core.cpp" />
+    <ClCompile Include="..\..\Engine\media\audio\clip_openal.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Common\core\assets.h" />
+    <ClInclude Include="..\..\Common\core\def_version.h" />
+    <ClInclude Include="..\..\Common\core\platform.h" />
+    <ClInclude Include="..\..\Common\core\types.h" />
+    <ClInclude Include="..\..\Common\util\asset_loader.h" />
+    <ClInclude Include="..\..\Engine\platform\windows\debug\namedpipesagsdebugger.h" />
+    <ClInclude Include="..\..\Engine\util\library.h" />
+    <ClInclude Include="..\..\Engine\util\library_dummy.h" />
+    <ClInclude Include="..\..\Engine\util\library_posix.h" />
+    <ClInclude Include="..\..\Engine\util\library_psp.h" />
+    <ClInclude Include="..\..\Engine\util\library_sdl2.h" />
+    <ClInclude Include="..\..\Engine\util\library_windows.h" />
+    <ClInclude Include="..\..\Engine\util\mutex.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_base.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_lock.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_psp.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_pthread.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_std.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_wii.h" />
+    <ClInclude Include="..\..\Engine\util\mutex_windows.h" />
+    <ClInclude Include="..\..\Engine\util\scaling.h" />
+    <ClInclude Include="..\..\Engine\util\thread.h" />
+    <ClInclude Include="..\..\Engine\util\thread_psp.h" />
+    <ClInclude Include="..\..\Engine\util\thread_pthread.h" />
+    <ClInclude Include="..\..\Engine\util\thread_sdl2.h" />
+    <ClInclude Include="..\..\Engine\util\thread_std.h" />
+    <ClInclude Include="..\..\Engine\util\thread_wii.h" />
+    <ClInclude Include="..\..\Engine\util\thread_windows.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B469FB81-0A8C-4757-A6B3-501B40CD1857}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Debug</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Develop</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Release</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Debug</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Develop</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Release</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|NX32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Debug</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|NX32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Develop</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|NX32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Release</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|NX64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Debug</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|NX64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Develop</NintendoSdkBuildType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|NX64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <NintendoSdkRoot>$(NINTENDO_SDK_ROOT)</NintendoSdkRoot>
+    <NintendoSdkSpec>NX</NintendoSdkSpec>
+    <NintendoSdkBuildType>Release</NintendoSdkBuildType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|NX32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|NX32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|NX32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|NX64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|NX64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|NX64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="ImportNintendoSdk.props" Condition="exists('ImportNintendoSdk.props')" />
+    <Import Project="..\AdventureGameStudioCommon-NX.props" />
+    <Import Project="..\AdventureGameStudio-NX.props" />
+  </ImportGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|NX32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|NX32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|NX32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|NX64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|NX64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|NX64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|NX32'">
+    <ApplicationDataDir>C:\Users\DrAllisonSonneveld\source\repos\agstool\out</ApplicationDataDir>
+  </PropertyGroup>
+  <PropertyGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|NX64'">
+    <ApplicationDataDir>C:\Users\DrAllisonSonneveld\source\repos\agstool\out</ApplicationDataDir>
+  </PropertyGroup>
+  <PropertyGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|NX32'">
+    <ApplicationDataDir>C:\Users\DrAllisonSonneveld\source\repos\agstool\out</ApplicationDataDir>
+  </PropertyGroup>
+  <PropertyGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|NX32'">
+    <ApplicationDataDir>C:\Users\DrAllisonSonneveld\source\repos\agstool\out</ApplicationDataDir>
+  </PropertyGroup>
+  <PropertyGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Develop|NX64'">
+    <ApplicationDataDir>C:\Users\DrAllisonSonneveld\source\repos\agstool\out</ApplicationDataDir>
+  </PropertyGroup>
+  <PropertyGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|NX64'">
+    <ApplicationDataDir>C:\Users\DrAllisonSonneveld\source\repos\agstool\out</ApplicationDataDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|NX32'">
+    <Link>
+      <FinalizeMetaSource>$(ProjectDir)Application.arm.ilp32.nmeta</FinalizeMetaSource>
+      <AdditionalDependencies>$(_NintendoSdkSdkLibraryName).nss;libnn_profiler.a;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>NN_SDK_BUILD_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|NX32'">
+    <Link>
+      <FinalizeMetaSource>$(ProjectDir)Application.arm.ilp32.nmeta</FinalizeMetaSource>
+      <AdditionalDependencies>$(_NintendoSdkSdkLibraryName).nss;libnn_profiler.a;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile />
+    <ClCompile />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|NX32'">
+    <Link>
+      <FinalizeMetaSource>$(ProjectDir)Application.arm.ilp32.nmeta</FinalizeMetaSource>
+      <AdditionalDependencies>$(_NintendoSdkSdkLibraryName).nss;libnn_profiler.a;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|NX64'">
+    <Link>
+      <FinalizeMetaSource>$(ProjectDir)Application.aarch64.lp64.nmeta</FinalizeMetaSource>
+      <AdditionalDependencies>$(_NintendoSdkSdkLibraryName).nss;libnn_profiler.a;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>NN_SDK_BUILD_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|NX64'">
+    <Link>
+      <FinalizeMetaSource>$(ProjectDir)Application.aarch64.lp64.nmeta</FinalizeMetaSource>
+      <AdditionalDependencies>$(_NintendoSdkSdkLibraryName).nss;libnn_profiler.a;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+    </ClCompile>
+    <ClCompile />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|NX64'">
+    <Link>
+      <FinalizeMetaSource>$(ProjectDir)Application.aarch64.lp64.nmeta</FinalizeMetaSource>
+      <AdditionalDependencies>$(_NintendoSdkSdkLibraryName).nss;libnn_profiler.a;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

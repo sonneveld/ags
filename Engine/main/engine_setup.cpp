@@ -1,3 +1,5 @@
+#ifdef AGS_DELETE_FOR_3_6
+
 //=============================================================================
 //
 // Adventure Game Studio (AGS)
@@ -308,3 +310,5 @@ void on_coordinates_scaling_changed()
     else
         Mouse::SetMoveLimit(Rect(play.mboundx1, play.mboundy1, play.mboundx2, play.mboundy2));
 }
+
+#endif

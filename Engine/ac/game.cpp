@@ -20,6 +20,9 @@
 
 #include "ac/game.h"
 
+#include "SDL.h"
+#include "physfs.h"
+
 #include "ac/common.h"
 #include "ac/view.h"
 #include "ac/audiocliptype.h"
@@ -379,6 +382,8 @@ String get_save_game_path(int slotNum) {
     return path;
 }
 
+#if 0
+
 // Convert a path possibly containing path tags into acceptable save path
 String MakeSaveGameDir(const char *newFolder)
 {
@@ -437,9 +442,16 @@ bool SetCustomSaveParent(const String &path)
     return false;
 }
 
+#endif
+
 // set global variable 'saveGameDirectory'
 bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
 {
+    saveGameDirectory = "save:/";
+    return true;
+
+#if 0
+
     if (!newFolder || newFolder[0] == 0)
         newFolder = ".";
     String newSaveGameDir = explicit_path ? String(newFolder) : MakeSaveGameDir(newFolder);
@@ -473,6 +485,7 @@ bool SetSaveGameDirectoryPath(const char *newFolder, bool explicit_path)
 
     saveGameDirectory = newSaveGameDir;
     return true;
+#endif
 }
 
 int Game_SetSaveGameDirectory(const char *newFolder)
@@ -1089,11 +1102,6 @@ void save_game(int slotn, const char*descript) {
         return;
     }
 
-    if (platform->GetDiskFreeSpaceMB() < 2) {
-        Display("ERROR: There is not enough disk space free to save the game. Clear some disk space and try again.");
-        return;
-    }
-
     VALIDATE_STRING(descript);
     String nametouse;
     nametouse = get_save_game_path(slotn);
@@ -1117,17 +1125,30 @@ void save_game(int slotn, const char*descript) {
         int screenShotOffset = out->GetPosition() - sizeof(RICH_GAME_MEDIA_HEADER);
         int screenShotSize = write_screen_shot_for_vista(out.get(), screenShot);
 
-        update_polled_stuff_if_runtime();
-
-        out.reset(Common::File::OpenFile(nametouse, Common::kFile_Open, Common::kFile_ReadWrite));
+        // not need to update the "rich game media" header since we don't read it and we're not on windows.
+#if 0
         out->Seek(12, kSeekBegin);
         out->WriteInt32(screenShotOffset);
         out->Seek(4);
         out->WriteInt32(screenShotSize);
+#endif
     }
 
     if (screenShot != nullptr)
         delete screenShot;
+
+    // we probably still want to check since we have to fit within 64meg
+#if 0
+    if (platform->GetDiskFreeSpaceMB() < 2) {
+        Display("ERROR: There is not enough disk space free to save the game. Clear some disk space and try again.");
+        return;
+    }
+#endif
+
+    // close
+    out = nullptr;
+
+    PHYSFS_NintendoSwitch_CommitSaveData("save");
 }
 
 char rbuffer[200];

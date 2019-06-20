@@ -17,6 +17,15 @@
     #define AGS_PLATFORM_OS_ANDROID (1)
     #define AGS_PLATFORM_OS_IOS     (0)
     #define AGS_PLATFORM_OS_PSP     (0)
+	#define AGS_PLATFORM_OS_NX      (0)
+#elif defined(__NINTENDO__) && (defined(__NX) || defined(__NX__))
+	#define AGS_PLATFORM_OS_WINDOWS (0)
+	#define AGS_PLATFORM_OS_LINUX   (0)
+	#define AGS_PLATFORM_OS_MACOS   (0)
+	#define AGS_PLATFORM_OS_ANDROID (0)
+	#define AGS_PLATFORM_OS_IOS     (0)
+	#define AGS_PLATFORM_OS_PSP     (0)
+	#define AGS_PLATFORM_OS_NX      (1)
 #elif defined(_WIN32)
     //define something for Windows (32-bit and 64-bit)
     #define AGS_PLATFORM_OS_WINDOWS (1)
@@ -25,6 +34,7 @@
     #define AGS_PLATFORM_OS_ANDROID (0)
     #define AGS_PLATFORM_OS_IOS     (0)
     #define AGS_PLATFORM_OS_PSP     (0)
+	#define AGS_PLATFORM_OS_NX      (0)
 #elif defined(__APPLE__)
     #include "TargetConditionals.h"
     #if TARGET_OS_SIMULATOR
@@ -34,13 +44,15 @@
         #define AGS_PLATFORM_OS_ANDROID (0)
         #define AGS_PLATFORM_OS_IOS     (1)
         #define AGS_PLATFORM_OS_PSP     (0)
-    #elif TARGET_OS_IOS
+		#define AGS_PLATFORM_OS_NX      (0)
+	#elif TARGET_OS_IOS
         #define AGS_PLATFORM_OS_WINDOWS (0)
         #define AGS_PLATFORM_OS_LINUX   (0)
         #define AGS_PLATFORM_OS_MACOS   (0)
         #define AGS_PLATFORM_OS_ANDROID (0)
         #define AGS_PLATFORM_OS_IOS     (1)
         #define AGS_PLATFORM_OS_PSP     (0)
+		#define AGS_PLATFORM_OS_NX      (0)
     #elif TARGET_OS_OSX
         #define AGS_PLATFORM_OS_WINDOWS (0)
         #define AGS_PLATFORM_OS_LINUX   (0)
@@ -48,6 +60,7 @@
         #define AGS_PLATFORM_OS_ANDROID (0)
         #define AGS_PLATFORM_OS_IOS     (0)
         #define AGS_PLATFORM_OS_PSP     (0)
+		#define AGS_PLATFORM_OS_NX      (0)
     #else
         #error "Unknown Apple platform"
     #endif
@@ -58,6 +71,7 @@
     #define AGS_PLATFORM_OS_ANDROID (0)
     #define AGS_PLATFORM_OS_IOS     (0)
     #define AGS_PLATFORM_OS_PSP     (0)
+	#define AGS_PLATFORM_OS_NX      (0)
 #else
     #error "Unknown platform"
 #endif

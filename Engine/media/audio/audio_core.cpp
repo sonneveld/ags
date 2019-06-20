@@ -28,8 +28,9 @@
 #include <iostream>
 #include <deque>
 #include <chrono>
+#include <thread>
 
-#include "core/platform.h"
+#include <nn/os.h>
 
 #include "SDL.h"
 #include "SDL_sound.h"
@@ -77,7 +78,8 @@ using SoundSampleUniquePtr = std::unique_ptr<Sound_Sample, SoundSampleDeleterFun
 
 
 static void audio_core_entry();
-agseng::Thread *audio_core_thread_ptr = nullptr;
+std::thread audio_core_thread;
+//agseng::Thread *audio_core_thread_ptr = nullptr;
 bool audio_core_thread_running = false;
 
 enum AudioCoreSlotCommandType { Nothing, Initialise, Configure, Play, Pause, StopAndRelease, Seek};
@@ -150,16 +152,18 @@ int audio_core_asset_sound_type(const AssetPath &assetPath, const AGS::Common::S
 void audio_core_init(std::unique_ptr<AGS::Common::AssetManager> &assetLibrary)
 {
     audioAssetLibrary_ = std::move(assetLibrary);
-    audio_core_thread_ptr = new agseng::Thread();
     audio_core_thread_running = true;
-    audio_core_thread_ptr->CreateAndStart(audio_core_entry, false);
+    audio_core_thread = std::thread(audio_core_entry);
+
+    nn::os::ThreadType * nativeThread = *(nn::os::ThreadType * *)audio_core_thread.native_handle()->get_thread_type();
+    nn::os::SetThreadName(nativeThread, "AGS Sound Decoder");
+    nn::os::SetThreadCoreMask(nativeThread, nn::os::IdealCoreDontCare, 1 << 1);
 }
 
 void audio_core_shutdown()
 {
     audio_core_thread_running = false;
-    if (!audio_core_thread_ptr) { return; }
-    audio_core_thread_ptr->Stop();
+    audio_core_thread.join();
     audioAssetLibrary_ = nullptr;
 }
 

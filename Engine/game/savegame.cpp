@@ -12,6 +12,8 @@
 //
 //=============================================================================
 
+#include "game/savegame.h"
+
 #include "ac/character.h"
 #include "ac/common.h"
 #include "ac/draw.h"
@@ -38,7 +40,6 @@
 #include "gfx/bitmap.h"
 #include "gfx/ddb.h"
 #include "gfx/graphicsdriver.h"
-#include "game/savegame.h"
 #include "game/savegame_components.h"
 #include "game/savegame_internal.h"
 #include "main/engine.h"

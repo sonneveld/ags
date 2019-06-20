@@ -109,13 +109,16 @@ int ViewFrame_GetFrame(ScriptViewFrame *svf) {
 
 void precache_view(int view) 
 {
+    // SWITCH HACKS this takes forever on switch
+#ifdef SWITCH_HACKS
     if (view < 0) 
         return;
 
     for (int i = 0; i < views[view].numLoops; i++) {
         for (int j = 0; j < views[view].loops[i].numFrames; j++)
-            spriteset.Precache(views[view].loops[i].frames[j].pic);
+			spriteset.Precache(views[view].loops[i].frames[j].pic);
     }
+#endif
 }
 
 

@@ -10,6 +10,9 @@ xperment to see wats necssary
 
 */
 
+
+#include <nn/profiler.h>
+
 #include "physfs.h"
 
 #include "core/platform.h"
@@ -30,7 +33,8 @@ xperment to see wats necssary
 char **global_argv = nullptr;
 int    global_argc = 0;
 
-String appDirectory; // Needed for library/plugin loading
+String appDirectory; // Needed for library loading
+String cmdGameDataPath;
 
 #if ! AGS_PLATFORM_DEFINES_PSP_VARS
 int psp_video_framedrop = 1;
@@ -41,8 +45,8 @@ int psp_clear_cache_on_room_change = 0;
 
 int psp_midi_preload_patches = 0;
 int psp_audio_cachesize = 10;
-char psp_game_file_name[] = "";
-char psp_translation[] = "default";
+char psp_game_file_name[256] = "";
+char psp_translation[100] = "default";
 
 int psp_gfx_renderer = 0;
 int psp_gfx_scaling = 1;
@@ -76,7 +80,13 @@ extern int display_fps;
 
 int ags_entry_point(int argc, char *argv[])
 { 
-    display_fps = 2;
+
+    nn::profiler::InstallGraphicsHooks();
+
+    void* profBuffer = (void*) new char[nn::profiler::MinimumBufferSize];
+    nn::profiler::Initialize(profBuffer, nn::profiler::MinimumBufferSize);
+
+    //display_fps = 2;
     
 
     PHYSFS_init(argv[0]);
@@ -101,9 +111,22 @@ int ags_entry_point(int argc, char *argv[])
     ConfigTree startup_opts;
 
     // We need to know where to load plugins, should be bundled with game but maybe engine is separate
-    appDirectory = AGS::Common::Path::GetDirectoryPath(AGS::Common::Path::MakeAbsolutePath("."));
+    // appDirectory = AGS::Common::Path::GetDirectoryPath(AGS::Common::Path::MakeAbsolutePath("."));
+    appDirectory = "rom:/";
+	cmdGameDataPath = "ac2game.dat";
+	AGS::Common::Directory::SetCurrentDirectory(appDirectory);
 
-    int exitcode = initialize_engine(startup_opts);
+	int exitcode = -1;
+	try
+	{
+		exitcode = initialize_engine(startup_opts);
+	}
+	catch (const std::exception& e) {
+		exitcode = -2;
+	}
+	catch (...) {
+		exitcode = -3;
+	}
 
     allegro_exit();
     platform->PostAllegroExit();

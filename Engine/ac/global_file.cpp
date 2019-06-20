@@ -12,8 +12,13 @@
 //
 //=============================================================================
 
-#include <string.h>
 #include "ac/global_file.h"
+
+#include <string.h>
+
+#include "SDL.h"
+#include "physfs.h"
+
 #include "ac/common.h"
 #include "ac/file.h"
 #include "ac/path_helper.h"
@@ -78,6 +83,7 @@ void FileClose(int32_t handle) {
   delete sc_handle->stream;
   sc_handle->stream = nullptr;
   sc_handle->handle = 0;
+  PHYSFS_NintendoSwitch_CommitSaveData("save");
   }
 void FileWrite(int32_t handle, const char *towrite) {
   Stream *out = get_valid_file_stream_from_handle(handle,"FileWrite");

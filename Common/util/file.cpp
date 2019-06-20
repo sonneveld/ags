@@ -40,54 +40,22 @@ soff_t File::GetFileSize(const String &filename)
 
 bool File::TestReadFile(const String &filename)
 {
-    FILE *test_file = fopen(filename.GetCStr(), "rb");
-    if (test_file)
-    {
-        fclose(test_file);
-        return true;
-    }
-    return false;
+    return ags_file_exists(filename.GetCStr());
 }
 
 bool File::TestWriteFile(const String &filename)
 {
-    FILE *test_file = fopen(filename.GetCStr(), "r+");
-    if (test_file)
-    {
-        fclose(test_file);
-        return true;
-    }
-    return TestCreateFile(filename);
+    return ags_file_exists(filename.GetCStr());
 }
 
 bool File::TestCreateFile(const String &filename)
 {
-    FILE *test_file = fopen(filename.GetCStr(), "wb");
-    if (test_file)
-    {
-        fclose(test_file);
-        ::remove(filename.GetCStr());
-        return true;
-    }
-    return false;
+    return true;
 }
 
 bool File::DeleteFile(const String &filename)
 {
-    if (::remove(filename.GetCStr()) != 0)
-    {
-        int err;
-#if AGS_PLATFORM_OS_WINDOWS
-        _get_errno(&err);
-#else
-        err = errno;
-#endif
-        if (err == EACCES)
-        {
-            return false;
-        }
-    }
-    return true;
+    return false;
 }
 
 bool File::GetFileModesFromCMode(const String &cmode, FileOpenMode &open_mode, FileWorkMode &work_mode)

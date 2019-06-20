@@ -272,6 +272,7 @@ PhysfsStream::PhysfsStream(const String &filename)
     if (handle_ == nullptr) {
         throw std::runtime_error("Error opening file");
     }
+    //AGS::Common::Debug::Printf(kDbgMsg_Init, "asset %s %d bytes", filename.GetCStr(), (int)PHYSFS_fileLength(handle_));
 }
 
 PhysfsStream::~PhysfsStream()

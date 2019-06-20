@@ -209,8 +209,11 @@ void VideoMemoryGraphicsDriver::DestroyAllStageScreens()
 
 bool VideoMemoryGraphicsDriver::DoNullSpriteCallback(int x, int y)
 {
+#ifdef SWITCH_HACKS
     if (!_nullSpriteCallback)
         throw Ali3DException("Unhandled attempt to draw null sprite");
+#endif
+	  if (!_nullSpriteCallback) { return false; }
     _stageScreenDirty = false;
     _stageVirtualScreen->ClearTransparent();
     // NOTE: this is not clear whether return value of callback may be

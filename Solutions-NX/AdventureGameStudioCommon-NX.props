@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <AGSProjectRoot>$(SolutionDir)\..\</AGSProjectRoot>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LibraryPath>$(SolutionDir)\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+    <_PropertySheetDisplayName>AdventureGameStudioCommon-NX</_PropertySheetDisplayName>
+    <OutDir>$(SolutionDir)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(AGSProjectRoot)\libsrc\SDL-switch\include;$(AGSProjectRoot)\libsrc\allegro\include;$(AGSProjectRoot)\libsrc\mojoAL-d642e6c1d79a;$(AGSProjectRoot)\libsrc\SDL_sound-9262f9205898-20180720\src;$(AGSProjectRoot)\libsrc\glad\include;$(AGSProjectRoot)\libsrc\freetype-2.1.3\include;$(AGSProjectRoot)\libsrc\alfont-2.0.9;$(AGSProjectRoot)\libsrc\aastr-0.1.1;$(AGSProjectRoot)\libsrc\physfs-switch-a708c3cd596d\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>ALLEGRO_STATICLINK;AL_LIBTYPE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)\s\p\%(RelativeDir)\%(FileName).o</ObjectFileName>
+      <CharUnsigned>false</CharUnsigned>
+      <CPPExceptions>true</CPPExceptions>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="AGSProjectRoot">
+      <Value>$(AGSProjectRoot)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

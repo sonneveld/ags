@@ -42,6 +42,7 @@ NamedPipesAGSDebugger::NamedPipesAGSDebugger(const char *instanceToken)
 
 bool NamedPipesAGSDebugger::Initialize()
 {
+#ifdef SWITCH_HACKS
     // can't use a single duplex pipe as it was deadlocking
     char pipeNameBuffer[MAX_PATH];
     sprintf(pipeNameBuffer, "\\\\.\\pipe\\AGSEditorDebuggerGameToEd%s", _instanceToken);
@@ -55,6 +56,8 @@ bool NamedPipesAGSDebugger::Initialize()
         return false;
 
     return true;
+#endif
+	return false;
 }
 
 void NamedPipesAGSDebugger::Shutdown()

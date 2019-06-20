@@ -109,7 +109,7 @@ public:
     void        SetCallbackOnSurfaceUpdate(GFXDRV_CLIENTCALLBACKSURFACEUPDATE callback) override { _initSurfaceUpdateCallback = callback; }
     void        SetCallbackForNullSprite(GFXDRV_CLIENTCALLBACKXY callback) override { _nullSpriteCallback = callback; }
 
-    virtual void        UpdateDeviceScreen(const Size &screenSize) { throw NotImplemented(); }
+    virtual void        UpdateDeviceScreen(const Size &screenSize) { }
 
 protected:
     // Called after graphics driver was initialized for use for the first time

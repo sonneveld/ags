@@ -40,7 +40,8 @@ enum eScriptSystemOSID
     eOS_Mac,
     eOS_Android,
     eOS_iOS,
-    eOS_PSP
+    eOS_PSP,
+	eOS_NX
 };
 
 enum SetupReturnValue
@@ -59,15 +60,15 @@ struct AGSPlatformDriver
     virtual void DisplayAlert(const char*, ...) = 0;
     virtual int  GetLastSystemError() { return errno; }
     // Get root directory for storing per-game shared data
-    virtual const char *GetAllUsersDataDirectory() { return "."; }
+    virtual const char *GetAllUsersDataDirectory() { return "save:/"; }
     // Get root directory for storing per-game saved games
-    virtual const char *GetUserSavedgamesDirectory() { return "."; }
+    virtual const char *GetUserSavedgamesDirectory() { return "save:/"; }
     // Get root directory for storing per-game user configuration files
-    virtual const char *GetUserConfigDirectory() { return "."; }
+    virtual const char *GetUserConfigDirectory() { return "save:/"; }
     // Get directory for storing all-games user configuration files
-    virtual const char *GetUserGlobalConfigDirectory()  { return "."; }
+    virtual const char *GetUserGlobalConfigDirectory()  { return "save:/"; }
     // Get default directory for program output (logs)
-    virtual const char *GetAppOutputDirectory() { return "."; }
+    virtual const char *GetAppOutputDirectory() { return "save:/"; }
     // Returns array of characters illegal to use in file names
     virtual const char *GetIllegalFileChars() { return "\\/"; }
     virtual const char *GetDiskWriteAccessTroubleshootingText();

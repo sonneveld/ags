@@ -11,6 +11,8 @@
 
 #include "asset_loader.h"
 
+#include <nn/os.h>
+
 #include "util/stream.h"
 #include "debug/debugmanager.h"
 
@@ -42,8 +44,8 @@ AssetLoader::result_t LoadFileFromPhysfs(AGS::Common::String filename)
 
     auto buf = AssetLoader::result_t(sz);
     ps->Read(buf.data(), buf.size());
-
-    AGS::Common::Debug::Printf(AGS::Common::kDbgMsg_Init,  "AssetLoader thread: loaded %s : %d bytes", filename.GetCStr(), (int)sz);
+    
+    //AGS::Common::Debug::Printf(AGS::Common::kDbgMsg_Init,  "AssetLoader thread: loaded %s : %d bytes", filename.GetCStr(), (int)sz);
 
     return std::move(buf);
 }
@@ -62,7 +64,10 @@ void AssetLoader::StartBackgroundThread()
 {
     thread_running_ = true;
     bgThread_ = std::thread(&AssetLoader::BackgroundThreadMain, this);
-    // bgThread_.native_handle. set cpu
+
+    nn::os::ThreadType * nativeThread = *(nn::os::ThreadType * *)bgThread_.native_handle()->get_thread_type();
+    nn::os::SetThreadName(nativeThread, "AGS Asset Loader");
+    nn::os::SetThreadCoreMask(nativeThread, nn::os::IdealCoreDontCare, 1<<2);
 }
 
 void AssetLoader::StopBackgroundThread()

@@ -137,7 +137,8 @@ static int MODPLUG_open(Sound_Sample *sample, const char *ext)
     settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
     settings.mFlags |= MODPLUG_ENABLE_NOISE_REDUCTION |
                        MODPLUG_ENABLE_MEGABASS |
-                       MODPLUG_ENABLE_SURROUND;
+                       MODPLUG_ENABLE_SURROUND |
+                       MODPLUG_ENABLE_REVERB;
 
     settings.mReverbDepth = 30;
     settings.mReverbDelay = 100;

@@ -5,6 +5,9 @@
 cmake_minimum_required(VERSION 2.8.4)
 
 project(SDL_sound)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+
 set(SDLSOUND_VERSION 1.9.0)
 
 # Increment this if/when we break backwards compatibility.
@@ -27,9 +30,9 @@ if(CMAKE_C_COMPILER_ID STREQUAL "SunPro")
     add_definitions(-xldscope=hidden)
 endif()
 
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
-
+# find_package(SDL2 REQUIRED)
+# include_directories(${SDL2_INCLUDE_DIR})
+set(SDL2_LIBRARIES SDL2::SDL2)
 
 # Decoders ...
 # These are (mostly) on by default now, so these options are only useful for
@@ -127,6 +130,8 @@ if(SDLSOUND_BUILD_STATIC)
     if(NOT MSVC)
         set_target_properties(SDL2_sound-static PROPERTIES OUTPUT_NAME "SDL2_sound")
     endif()
+    target_link_libraries(SDL2_sound-static ${SDL2_LIBRARIES} ${OPTIONAL_LIBRARY_LIBS} ${OTHER_LDFLAGS})
+    target_include_directories(SDL2_sound-static INTERFACE src)
     set(SDLSOUND_LIB_TARGET SDL2_sound-static)
     set(SDLSOUND_INSTALL_TARGETS ${SDLSOUND_INSTALL_TARGETS} ";SDL2_sound-static")
 endif()
@@ -138,6 +143,7 @@ if(SDLSOUND_BUILD_SHARED)
     set_target_properties(SDL2_sound PROPERTIES VERSION ${SDLSOUND_VERSION})
     set_target_properties(SDL2_sound PROPERTIES SOVERSION ${SDLSOUND_SOVERSION})
     target_link_libraries(SDL2_sound ${SDL2_LIBRARIES} ${OPTIONAL_LIBRARY_LIBS} ${OTHER_LDFLAGS})
+    target_include_directories(SDL2_sound INTERFACE src)
     set(SDLSOUND_LIB_TARGET SDL2_sound)
     set(SDLSOUND_INSTALL_TARGETS ${SDLSOUND_INSTALL_TARGETS} ";SDL2_sound")
 endif()
@@ -171,7 +177,7 @@ install(TARGETS ${SDLSOUND_INSTALL_TARGETS}
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
-install(FILES SDL_sound.h DESTINATION include)
+install(FILES src/SDL_sound.h DESTINATION include)
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
@@ -199,13 +205,13 @@ endif()
 if(UNIX)
     set(SDLSOUND_TARBALL "${CMAKE_CURRENT_SOURCE_DIR}/../SDL_sound-${SDLSOUND_VERSION}.tar.bz2")
     add_custom_target(
-        dist
+        SDL2_sound-dist
         hg archive -t tbz2 "${SDLSOUND_TARBALL}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMENT "Building source tarball '${SDLSOUND_TARBALL}'..."
     )
     add_custom_target(
-        uninstall
+        SDL2_sound-uninstall
         "${CMAKE_CURRENT_SOURCE_DIR}/docs/uninstall.sh"
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         COMMENT "Uninstall the project..."

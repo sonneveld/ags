@@ -56,19 +56,17 @@ static size_t mp3_read(void* pUserData, void* pBufferOut, size_t bytesToRead)
     /* !!! FIXME: dr_mp3 treats returning less than bytesToRead as EOF. So we can't EAGAIN. */
     while (retval < bytesToRead)
     {
+        SDL_ClearError();
         const size_t rc = SDL_RWread(rwops, ptr, 1, bytesToRead);
         if (rc == 0)
         {
-            sample->flags |= SOUND_SAMPLEFLAG_EOF;
+            if (strlen(SDL_GetError()) != 0)
+                sample->flags |= SOUND_SAMPLEFLAG_ERROR;
             break;
         } /* if */
-        else if (retval == -1)
-        {
-            sample->flags |= SOUND_SAMPLEFLAG_ERROR;
-            break;
-        } /* else if */
         else
         {
+            bytesToRead -= rc;
             retval += rc;
             ptr += rc;
         } /* else */
@@ -117,7 +115,16 @@ static int MP3_open(Sound_Sample *sample, const char *ext)
     sample->actual.rate = dr->sampleRate;
     sample->actual.format = AUDIO_F32SYS;  /* dr_mp3 only does float. */
 
-    internal->total_time = -1;  /* !!! FIXME? */
+    const drmp3_uint64 num_frames = drmp3_get_pcm_frame_count(dr);
+    if (!num_frames)
+        internal->total_time = -1;
+    else
+    {
+        const drmp3_uint32 rate = dr->sampleRate;
+        internal->total_time = (num_frames / rate) * 1000;
+        internal->total_time += (num_frames % rate) * 1000 / rate;
+    }
+
     internal->decoder_private = dr;
 
     return 1;
@@ -137,7 +144,10 @@ static Uint32 MP3_read(Sound_Sample *sample)
     const int channels = (int) sample->actual.channels;
     drmp3 *dr = (drmp3 *) internal->decoder_private;
     const drmp3_uint64 frames_to_read = (internal->buffer_size / channels) / sizeof (float);
-    const drmp3_uint64 rc = drmp3_read_f32(dr, frames_to_read, (float *) internal->buffer);
+    const drmp3_uint64 rc = drmp3_read_pcm_frames_f32(dr, frames_to_read, (float *) internal->buffer);
+    if (rc == 0) {
+        sample->flags |= SOUND_SAMPLEFLAG_EOF;
+    }
     /* !!! FIXME: the mp3_read callback sets ERROR and EOF flags, but this only tells you about i/o errors, not corruption. */
     return rc * channels * sizeof (float);
 } /* MP3_read */
@@ -146,7 +156,7 @@ static int MP3_rewind(Sound_Sample *sample)
 {
     Sound_SampleInternal *internal = (Sound_SampleInternal *) sample->opaque;
     drmp3 *dr = (drmp3 *) internal->decoder_private;
-    return (drmp3_seek_to_frame(dr, 0) == DRMP3_TRUE);
+    return (drmp3_seek_to_pcm_frame(dr, 0) == DRMP3_TRUE);
 } /* MP3_rewind */
 
 static int MP3_seek(Sound_Sample *sample, Uint32 ms)
@@ -155,7 +165,7 @@ static int MP3_seek(Sound_Sample *sample, Uint32 ms)
     drmp3 *dr = (drmp3 *) internal->decoder_private;
     const float frames_per_ms = ((float) sample->actual.rate) / 1000.0f;
     const drmp3_uint64 frame_offset = (drmp3_uint64) (frames_per_ms * ((float) ms));
-    return (drmp3_seek_to_frame(dr, frame_offset) == DRMP3_TRUE);
+    return (drmp3_seek_to_pcm_frame(dr, frame_offset) == DRMP3_TRUE);
 } /* MP3_seek */
 
 /* dr_mp3 will play layer 1 and 2 files, too */

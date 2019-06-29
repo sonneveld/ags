@@ -782,6 +782,7 @@ struct stb_vorbis
    SDL_RWops *rwops;
    uint32 rwops_start;
    int close_on_free;
+   void *alloc_buffer;
 #endif
 
    uint8 *stream;
@@ -4245,8 +4246,14 @@ static void vorbis_deinit(stb_vorbis *p)
 void stb_vorbis_close(stb_vorbis *p)
 {
    if (p == NULL) return;
+#ifdef __SDL_SOUND_INTERNAL__
+   auto alloc_buffer = p->alloc_buffer;
+#endif
    vorbis_deinit(p);
    setup_free(p,p);
+#ifdef __SDL_SOUND_INTERNAL__
+   if (alloc_buffer) { free(alloc_buffer); }
+#endif
 }
 
 static void vorbis_init(stb_vorbis *p, const stb_vorbis_alloc *z)
@@ -5060,11 +5067,21 @@ stb_vorbis * stb_vorbis_open_filename(const char *filename, int *error, const st
 stb_vorbis * stb_vorbis_open_rwops_section(SDL_RWops *rwops, int close_on_free, int *error, const stb_vorbis_alloc *alloc, unsigned int length)
 {
    stb_vorbis *f, p;
+
+   stb_vorbis_alloc a = { NULL, 0 };
+   if (alloc == NULL) {
+       a.alloc_buffer_length_in_bytes = 256 * 1024;
+       a.alloc_buffer = (char*)malloc(a.alloc_buffer_length_in_bytes);
+       alloc = &a;
+   }
+
    vorbis_init(&p, alloc);
    p.rwops = rwops;
    p.rwops_start = (uint32) SDL_RWtell(rwops);
    p.stream_len   = length;
    p.close_on_free = close_on_free;
+   p.alloc_buffer = a.alloc_buffer;
+
    if (start_decoder(&p)) {
       f = vorbis_alloc(&p);
       if (f) {

@@ -255,6 +255,19 @@ ccInstance *ccInstance::Fork()
     return CreateEx(instanceof, this);
 }
 
+void ccInstance::OverrideGlobalData(const char *data, int size)
+{
+    if (size != this->globaldatasize)
+        quit("script data segment size has changed");
+    memcpy(this->globaldata, data, size);
+}
+
+void ccInstance::GetGlobalData(const char *&data, int &size)
+{
+    data = this->globaldata;
+    size = this->globaldatasize;
+}
+
 void ccInstance::Abort()
 {
     if ((this != nullptr) && (pc != 0))
@@ -395,6 +408,12 @@ int ccInstance::CallScriptFunction(const char *funcname, int32_t numargs, const 
     }
     return ccError;
 }
+
+int ccInstance::GetReturnValue()
+{
+    return this->returnValue;
+}
+
 
 // Macros to maintain the call stack
 #define PUSH_CALL_STACK \

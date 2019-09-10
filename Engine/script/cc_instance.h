@@ -159,6 +159,11 @@ public:
     ~ccInstance();
     // Create a runnable instance of the same script, sharing global memory
     ccInstance *Fork();
+
+    // for manipulating the global data.
+    void OverrideGlobalData(const char *data, int size);
+    void GetGlobalData(const char *&data, int &size);
+
     // Specifies that when the current function returns to the script, it
     // will stop and return from CallInstance
     void    Abort();
@@ -169,6 +174,8 @@ public:
     int     CallScriptFunction(const char *funcname, int32_t num_params, const RuntimeScriptValue *params);
     // Begin executing script starting from the given bytecode index
     int     Run(int32_t curpc);
+
+    int GetReturnValue();
     
     // Get the script's execution position and callstack as human-readable text
     Common::String GetCallStack(int maxLines);

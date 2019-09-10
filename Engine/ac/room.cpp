@@ -232,10 +232,14 @@ void convert_room_background_to_game_res()
 void save_room_data_segment () {
     croom->FreeScriptData();
     
-    croom->tsdatasize = roominst->globaldatasize;
+    const char *globaldata;
+    int globaldatasize;
+    roominst->GetGlobalData(globaldata, globaldatasize);
+
+    croom->tsdatasize = globaldatasize;
     if (croom->tsdatasize > 0) {
-        croom->tsdata=(char*)malloc(croom->tsdatasize+10);
-        memcpy(croom->tsdata,&roominst->globaldata[0],croom->tsdatasize);
+        croom->tsdata=(char*)malloc(croom->tsdatasize+10);  // why +10?
+        memcpy(croom->tsdata,globaldata,croom->tsdatasize);
     }
 
 }
@@ -724,9 +728,12 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
     else if (thisroom.CompiledScript!=nullptr) {
         compile_room_script();
         if (croom->tsdatasize>0) {
+            #if 0
             if (croom->tsdatasize != roominst->globaldatasize)
                 quit("room script data segment size has changed");
             memcpy(&roominst->globaldata[0],croom->tsdata,croom->tsdatasize);
+            #endif
+            roominst->OverrideGlobalData(croom->tsdata,croom->tsdatasize);
         }
     }
     our_eip=207;

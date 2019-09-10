@@ -375,8 +375,13 @@ void DoBeforeRestore(PreservedParams &pp)
         guibgbmp[i] = nullptr;
     }
 
+    const char *globaldata;
+    int globaldatasize;
+
     // preserve script data sizes and cleanup scripts
-    pp.GlScDataSize = gameinst->globaldatasize;
+    gameinst->GetGlobalData(globaldata, globaldatasize);
+
+    pp.GlScDataSize = globaldatasize;
     delete gameinstFork;
     delete gameinst;
     gameinstFork = nullptr;
@@ -384,7 +389,8 @@ void DoBeforeRestore(PreservedParams &pp)
     pp.ScMdDataSize.resize(numScriptModules);
     for (int i = 0; i < numScriptModules; ++i)
     {
-        pp.ScMdDataSize[i] = moduleInst[i]->globaldatasize;
+        moduleInst[i]->GetGlobalData(globaldata, globaldatasize);
+        pp.ScMdDataSize[i] = globaldatasize;
         delete moduleInstFork[i];
         delete moduleInst[i];
         moduleInst[i] = nullptr;
@@ -498,15 +504,26 @@ HSaveError DoAfterRestore(const PreservedParams &pp, const RestoredData &r_data)
 
     // read the global data into the newly created script
     if (r_data.GlobalScript.Data.get())
+    {
+        #if 0
         memcpy(gameinst->globaldata, r_data.GlobalScript.Data.get(),
                 Math::Min((size_t)gameinst->globaldatasize, r_data.GlobalScript.Len));
+        #endif
+        gameinst->OverrideGlobalData(r_data.GlobalScript.Data.get(), r_data.GlobalScript.Len);
+    }
 
     // restore the script module data
     for (int i = 0; i < numScriptModules; ++i)
     {
         if (r_data.ScriptModules[i].Data.get())
+        {
+            #if 0
             memcpy(moduleInst[i]->globaldata, r_data.ScriptModules[i].Data.get(),
                     Math::Min((size_t)moduleInst[i]->globaldatasize, r_data.ScriptModules[i].Len));
+            #endif
+            moduleInst[i]->OverrideGlobalData(r_data.ScriptModules[i].Data.get(), r_data.ScriptModules[i].Len);
+        }
+            
     }
 
     setup_player_character(game.playercharacter);

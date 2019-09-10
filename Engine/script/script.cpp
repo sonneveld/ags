@@ -500,10 +500,12 @@ String GetScriptName(ccInstance *sci)
     // TODO: check script modules too?
     if (!sci)
         return "Not in a script";
+#if 0
     else if (sci->instanceof == gamescript)
         return "Global script";
     else if (sci->instanceof == thisroom.CompiledScript)
         return String::FromFormat("Room %d script", displayed_room);
+#endif
     return "Unknown script";
 }
 

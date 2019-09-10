@@ -35,6 +35,7 @@ extern int currentline; // in script/script_common
 
 std::pair<String, String> cc_error_at_line(const char *error_msg)
 {
+#if 0
     ccInstance *sci = ccInstance::GetCurrentInstance();
     if (!sci)
     {
@@ -44,6 +45,8 @@ std::pair<String, String> cc_error_at_line(const char *error_msg)
     {
         return std::make_pair(String::FromFormat("Error: %s\n", error_msg), ccInstance::GetCurrentInstance()->GetCallStack(5));
     }
+#endif
+    return std::make_pair(String::FromFormat("Error (line %d): %s", currentline, error_msg), String());
 }
 
 String cc_error_without_line(const char *error_msg)

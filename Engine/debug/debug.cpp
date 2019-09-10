@@ -196,6 +196,7 @@ void debug_set_console(bool enable)
 // Prepends message text with current room number and running script info, then logs result
 void debug_script_print(const String &msg, MessageType mt)
 {
+#if 0
     String script_ref;
     ccInstance *curinst = ccInstance::GetCurrentInstance();
     if (curinst != nullptr) {
@@ -212,6 +213,7 @@ void debug_script_print(const String &msg, MessageType mt)
     }
 
     Debug::Printf(kDbgGroup_Script, mt, "(room:%d)%s %s", displayed_room, script_ref.GetCStr(), msg.GetCStr());
+#endif
 }
 
 void debug_script_warn(const char *msg, ...)
@@ -236,9 +238,11 @@ void debug_script_log(const char *msg, ...)
 String get_cur_script(int numberOfLinesOfCallStack)
 {
     String callstack;
+#if 0
     ccInstance *sci = ccInstance::GetCurrentInstance();
     if (sci)
         callstack = sci->GetCallStack(numberOfLinesOfCallStack);
+#endif
     if (callstack.IsEmpty())
         callstack = ccErrorCallStack;
     return callstack;
@@ -246,12 +250,14 @@ String get_cur_script(int numberOfLinesOfCallStack)
 
 bool get_script_position(ScriptPosition &script_pos)
 {
+#if 0
     ccInstance *cur_instance = ccInstance::GetCurrentInstance();
     if (cur_instance)
     {
         cur_instance->GetScriptPosition(script_pos);
         return true;
     }
+#endif
     return false;
 }
 
@@ -465,6 +471,7 @@ extern int pluginsWantingDebugHooks;
 
 // allow LShift to single-step,  RShift to pause flow
 void scriptDebugHook (ccInstance *ccinst, int linenum) {
+#if 0
 
     if (pluginsWantingDebugHooks > 0) {
         // a plugin is handling the debugging
@@ -499,6 +506,7 @@ void scriptDebugHook (ccInstance *ccinst, int linenum) {
             break;
         }
     }
+#endif
 }
 
 int scrlockWasDown = 0;

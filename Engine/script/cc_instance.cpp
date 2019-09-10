@@ -39,6 +39,151 @@
 using namespace AGS::Common;
 using namespace AGS::Common::Memory;
 
+struct ScriptInstruction
+{
+    ScriptInstruction()
+    {
+        Code		= 0;
+        InstanceId	= 0;
+    }
+
+    int32_t	Code;
+    int32_t	InstanceId;
+};
+
+struct ScriptOperation
+{
+	ScriptOperation()
+	{
+		ArgCount = 0;
+	}
+
+	ScriptInstruction   Instruction;
+	RuntimeScriptValue	Args[MAX_SCMD_ARGS];
+	int				    ArgCount;
+};
+
+struct FunctionCallStack;
+
+// Running instance of the script
+struct ccInstanceLegacy : public ccInstance
+{
+public:
+    using ScVarMap = std::unordered_map<int32_t, ScriptVariable>;
+    using PScVarMap = std::shared_ptr<ScVarMap>;
+
+    int32_t flags;
+    PScVarMap globalvars;
+    char *globaldata;
+    int32_t globaldatasize;
+    // Executed byte-code. Unlike ccScript's code array which is int32_t, the one
+    // in ccInstance must be intptr_t to accomodate real pointers placed after
+    // performing fixups.
+    intptr_t *code;
+    ccInstanceLegacy *runningInst;  // might point to another instance if in far call
+    int32_t codesize;
+    char *strings;
+    int32_t stringssize;
+    RuntimeScriptValue *exports;
+    RuntimeScriptValue *stack;
+    int  num_stackentries;
+    // An array for keeping stack data; stack entries reference unknown data from here
+    // TODO: probably change to dynamic array later
+    char *stackdata;    // for storing stack data of unknown type
+    char *stackdata_ptr;// works similar to original stack pointer, points to the next unused byte in stack data array
+    int32_t stackdatasize; // conventional size of stack data in bytes
+    //
+    RuntimeScriptValue registers[CC_NUM_REGISTERS];
+    int32_t pc;                     // program counter
+    int32_t line_number;            // source code line number
+    PScript instanceof;
+    int  loadedInstanceId;
+    int  returnValue;
+
+    int  callStackSize;
+    int32_t callStackLineNumber[MAX_CALL_STACK];
+    int32_t callStackAddr[MAX_CALL_STACK];
+    ccInstanceLegacy *callStackCodeInst[MAX_CALL_STACK];
+
+    // array of real import indexes used in script
+    int  *resolved_imports;
+    int  numimports;
+
+    char *code_fixups;
+
+    ccInstanceLegacy();
+    ~ccInstanceLegacy()  override;
+
+    // for manipulating the global data.
+    void OverrideGlobalData(const char *data, int size) override;
+    void GetGlobalData(const char *&data, int &size) override;
+
+    // Create a runnable instance of the same script, sharing global memory
+    ccInstance *Fork()  override;
+
+    // Specifies that when the current function returns to the script, it
+    // will stop and return from CallInstance
+    void    Abort() override;
+    // Aborts instance, then frees the memory later when it is done with
+    void    AbortAndDestroy() override;
+    
+    // Call an exported function in the script
+    int     CallScriptFunction(const char *funcname, int32_t num_params, const RuntimeScriptValue *params) override;
+    // Begin executing script starting from the given bytecode index
+    int     Run(int32_t curpc);
+
+    int GetReturnValue() override;
+    
+    // Get the script's execution position and callstack as human-readable text
+    Common::String GetCallStack(int maxLines);
+    // Get the script's execution position
+    void    GetScriptPosition(ScriptPosition &script_pos);
+    // Get the address of an exported symbol (function or variable) in the script
+    RuntimeScriptValue GetSymbolAddress(const char *symname) override;
+    void    DumpInstruction(const ScriptOperation &op);
+    // Tells whether this instance is in the process of executing the byte-code
+    bool    IsBeingRun() const override;
+
+    bool    _Create(PScript scri, ccInstanceLegacy * joined);
+
+    // free the memory associated with the instance
+    void    Free();
+
+    bool    ResolveScriptImports(PScript scri);
+    bool    CreateGlobalVars(PScript scri);
+    bool    AddGlobalVar(const ScriptVariable &glvar);
+    ScriptVariable *FindGlobalVar(int32_t var_addr);
+    bool    CreateRuntimeCodeFixups(PScript scri);
+	//bool    ReadOperation(ScriptOperation &op, int32_t at_pc);
+
+    // Runtime fixups
+    //bool    FixupArgument(intptr_t code_value, char fixup_type, RuntimeScriptValue &argument);
+
+    // Stack processing
+    // Push writes new value and increments stack ptr;
+    // stack ptr now points to the __next empty__ entry
+    void    PushValueToStack(const RuntimeScriptValue &rval);
+    void    PushDataToStack(int32_t num_bytes);
+    // Pop decrements stack ptr, returns last stored value and invalidates! stack tail;
+    // stack ptr now points to the __next empty__ entry
+    RuntimeScriptValue PopValueFromStack();
+    // helper function to pop & dump several values
+    void    PopValuesFromStack(int32_t num_entries);
+    void    PopDataFromStack(int32_t num_bytes);
+    // Return stack ptr at given offset from stack head;
+    // Offset is in data bytes; program stack ptr is __not__ changed
+    RuntimeScriptValue GetStackPtrOffsetFw(int32_t fw_offset);
+    // Return stack ptr at given offset from stack tail;
+    // Offset is in data bytes; program stack ptr is __not__ changed
+    RuntimeScriptValue GetStackPtrOffsetRw(int32_t rw_offset);
+
+    // Function call stack processing
+    void    PushToFuncCallStack(FunctionCallStack &func_callstack, const RuntimeScriptValue &rval);
+    void    PopFromFuncCallStack(FunctionCallStack &func_callstack, int32_t num_entries);
+};
+
+
+
 extern ccInstance *loadedInstances[MAX_LOADED_INSTANCES]; // in script/script_runtime
 extern int gameHasBeenRestored; // in ac/game
 extern ExecutingScript*curscript; // in script/script
@@ -158,7 +303,7 @@ const char *regnames[] = { "null", "sp", "mar", "ax", "bx", "cx", "op", "dx" };
 
 const char *fixupnames[] = { "null", "fix_gldata", "fix_func", "fix_string", "fix_import", "fix_datadata", "fix_stack" };
 
-ccInstance *current_instance;
+ccInstanceLegacy *current_instance;
 // [IKM] 2012-10-21:
 // NOTE: This is temporary solution (*sigh*, one of many) which allows certain
 // exported functions return value as a RuntimeScriptValue object;
@@ -192,6 +337,13 @@ struct FunctionCallStack
 };
 
 
+ccInstance::~ccInstance()
+{
+    
+}
+
+
+
 ccInstance *ccInstanceGetCurrentInstance()
 {
     return current_instance;
@@ -204,9 +356,14 @@ ccInstance *ccInstanceCreateFromScript(PScript scri)
 
 ccInstance *ccInstanceCreateEx(PScript scri, ccInstance * joined)
 {
+    ccInstanceLegacy *joinedLegacy = nullptr;
+    if (joined) {
+        joinedLegacy = dynamic_cast<ccInstanceLegacy *>(joined);
+        assert(joinedLegacy != nullptr);
+    }
     // allocate and copy all the memory with data, code and strings across
-    ccInstance *cinst = new ccInstance();
-    if (!cinst->_Create(scri, joined))
+    ccInstanceLegacy *cinst = new ccInstanceLegacy();
+    if (!cinst->_Create(scri, joinedLegacy))
     {
         delete cinst;
         return nullptr;
@@ -215,7 +372,7 @@ ccInstance *ccInstanceCreateEx(PScript scri, ccInstance * joined)
     return cinst;
 }
 
-ccInstance::ccInstance()
+ccInstanceLegacy::ccInstanceLegacy()
 {
     flags               = 0;
     globaldata          = nullptr;
@@ -245,36 +402,36 @@ ccInstance::ccInstance()
     memset(callStackCodeInst, 0, sizeof(callStackCodeInst));
 }
 
-ccInstance::~ccInstance()
+ccInstanceLegacy::~ccInstanceLegacy()
 {
     Free();
 }
 
-ccInstance *ccInstance::Fork()
+ccInstance *ccInstanceLegacy::Fork()
 {
     return ccInstanceCreateEx(instanceof, this);
 }
 
-void ccInstance::OverrideGlobalData(const char *data, int size)
+void ccInstanceLegacy::OverrideGlobalData(const char *data, int size)
 {
     if (size != this->globaldatasize)
         quit("script data segment size has changed");
     memcpy(this->globaldata, data, size);
 }
 
-void ccInstance::GetGlobalData(const char *&data, int &size)
+void ccInstanceLegacy::GetGlobalData(const char *&data, int &size)
 {
     data = this->globaldata;
     size = this->globaldatasize;
 }
 
-void ccInstance::Abort()
+void ccInstanceLegacy::Abort()
 {
     if ((this != nullptr) && (pc != 0))
         flags |= INSTF_ABORTED;
 }
 
-void ccInstance::AbortAndDestroy()
+void ccInstanceLegacy::AbortAndDestroy()
 {
     if (this != nullptr) {
         Abort();
@@ -296,14 +453,14 @@ void ccInstance::AbortAndDestroy()
         return -1; \
     }
 
-int ccInstance::CallScriptFunction(const char *funcname, int32_t numargs, const RuntimeScriptValue *params)
+int ccInstanceLegacy::CallScriptFunction(const char *funcname, int32_t numargs, const RuntimeScriptValue *params)
 {
     ccError = 0;
     currentline = 0;
 
     if (numargs > 0 && !params)
     {
-        cc_error("internal error in ccInstance::CallScriptFunction");
+        cc_error("internal error in ccInstanceLegacy::CallScriptFunction");
         return -1; // TODO: correct error value
     }
 
@@ -360,7 +517,7 @@ int ccInstance::CallScriptFunction(const char *funcname, int32_t numargs, const 
     // object pointer needs to start zeroed
     registers[SREG_OP].SetDynamicObject(nullptr, nullptr);
 
-    ccInstance* currentInstanceWas = current_instance;
+    ccInstanceLegacy *currentInstanceWas = current_instance;
     registers[SREG_SP].SetStackPtr( &stack[0] );
     stackdata_ptr = stackdata;
     // NOTE: Pushing parameters to stack in reverse order
@@ -409,7 +566,7 @@ int ccInstance::CallScriptFunction(const char *funcname, int32_t numargs, const 
     return ccError;
 }
 
-int ccInstance::GetReturnValue()
+int ccInstanceLegacy::GetReturnValue()
 {
     return this->returnValue;
 }
@@ -436,7 +593,7 @@ int ccInstance::GetReturnValue()
     currentline = line_number
 
 #define MAXNEST 50  // number of recursive function calls allowed
-int ccInstance::Run(int32_t curpc)
+int ccInstanceLegacy::Run(int32_t curpc)
 {
     pc = curpc;
     returnValue = -1;
@@ -456,7 +613,7 @@ int ccInstance::Run(int32_t curpc)
     thisbase[0] = 0;
     funcstart[0] = pc;
     current_instance = this;
-    ccInstance *codeInst = runningInst;
+    ccInstanceLegacy *codeInst = runningInst;
     int write_debug_dump = ccGetOption(SCOPT_DEBUGRUN);
 	ScriptOperation codeOp;
 
@@ -1033,12 +1190,12 @@ int ccInstance::Run(int32_t curpc)
           }
 
           int oldpc = pc;
-          ccInstance *wasRunning = runningInst;
+          ccInstanceLegacy *wasRunning = runningInst;
 
           // extract the instance ID
           int32_t instId = codeOp.Instruction.InstanceId;
           // determine the offset into the code of the instance we want
-          runningInst = loadedInstances[instId];
+          runningInst = (ccInstanceLegacy *)loadedInstances[instId];
           intptr_t callAddr = reg1.Ptr - (char*)&runningInst->code[0];
           if (callAddr % sizeof(intptr_t) != 0) {
               cc_error("call address not aligned");
@@ -1330,7 +1487,7 @@ int ccInstance::Run(int32_t curpc)
     }
 }
 
-String ccInstance::GetCallStack(int maxLines)
+String ccInstanceLegacy::GetCallStack(int maxLines)
 {
     String buffer = String::FromFormat("in \"%s\", line %d\n", runningInst->instanceof->GetSectionName(pc), line_number);
 
@@ -1346,14 +1503,14 @@ String ccInstance::GetCallStack(int maxLines)
     return buffer;
 }
 
-void ccInstance::GetScriptPosition(ScriptPosition &script_pos)
+void ccInstanceLegacy::GetScriptPosition(ScriptPosition &script_pos)
 {
     script_pos.Section = runningInst->instanceof->GetSectionName(pc);
     script_pos.Line    = line_number;
 }
 
 // get a pointer to a variable or function exported by the script
-RuntimeScriptValue ccInstance::GetSymbolAddress(const char *symname)
+RuntimeScriptValue ccInstanceLegacy::GetSymbolAddress(const char *symname)
 {
     int k;
     char altName[200];
@@ -1370,7 +1527,7 @@ RuntimeScriptValue ccInstance::GetSymbolAddress(const char *symname)
     return rval_null;
 }
 
-void ccInstance::DumpInstruction(const ScriptOperation &op)
+void ccInstanceLegacy::DumpInstruction(const ScriptOperation &op)
 {
     // line_num local var should be shared between all the instances
     static int line_num = 0;
@@ -1409,12 +1566,12 @@ void ccInstance::DumpInstruction(const ScriptOperation &op)
     // the writer will delete data stream internally
 }
 
-bool ccInstance::IsBeingRun() const
+bool ccInstanceLegacy::IsBeingRun() const
 {
     return pc != 0;
 }
 
-bool ccInstance::_Create(PScript scri, ccInstance * joined)
+bool ccInstanceLegacy::_Create(PScript scri, ccInstanceLegacy * joined)
 {
     int i;
     currentline = -1;
@@ -1556,7 +1713,7 @@ bool ccInstance::_Create(PScript scri, ccInstance * joined)
     return true;
 }
 
-void ccInstance::Free()
+void ccInstanceLegacy::Free()
 {
     if (instanceof != nullptr) {
         instanceof->instances--;
@@ -1596,7 +1753,7 @@ void ccInstance::Free()
     code_fixups = nullptr;
 }
 
-bool ccInstance::ResolveScriptImports(PScript scri)
+bool ccInstanceLegacy::ResolveScriptImports(PScript scri)
 {
     // When the import is referenced in code, it's being addressed
     // by it's index in the script imports array. That index is
@@ -1635,7 +1792,7 @@ bool ccInstance::ResolveScriptImports(PScript scri)
 // certain accuracy after all global vars are registered. Each
 // global var's size would be limited by closest next var's ScAddress
 // and globaldatasize.
-bool ccInstance::CreateGlobalVars(PScript scri)
+bool ccInstanceLegacy::CreateGlobalVars(PScript scri)
 {
     ScriptVariable glvar;
 
@@ -1692,7 +1849,7 @@ bool ccInstance::CreateGlobalVars(PScript scri)
     return true;
 }
 
-bool ccInstance::AddGlobalVar(const ScriptVariable &glvar)
+bool ccInstanceLegacy::AddGlobalVar(const ScriptVariable &glvar)
 {
     // [IKM] 2013-02-23:
     // !!! TODO
@@ -1711,7 +1868,7 @@ bool ccInstance::AddGlobalVar(const ScriptVariable &glvar)
     return true;
 }
 
-ScriptVariable *ccInstance::FindGlobalVar(int32_t var_addr)
+ScriptVariable *ccInstanceLegacy::FindGlobalVar(int32_t var_addr)
 {
     // NOTE: see comment for AddGlobalVar()
     if (var_addr < 0 || var_addr >= globaldatasize)
@@ -1725,7 +1882,7 @@ ScriptVariable *ccInstance::FindGlobalVar(int32_t var_addr)
     return it != globalvars->end() ? &it->second : nullptr;
 }
 
-bool ccInstance::CreateRuntimeCodeFixups(PScript scri)
+bool ccInstanceLegacy::CreateRuntimeCodeFixups(PScript scri)
 {
     code_fixups = new char[scri->codesize];
     memset(code_fixups, 0, scri->codesize);
@@ -1773,7 +1930,8 @@ bool ccInstance::CreateRuntimeCodeFixups(PScript scri)
                 // must be replaced with CALLAS
                 if (import->InstancePtr != nullptr && (code[fixup + 1] & INSTANCE_ID_REMOVEMASK) == SCMD_CALLEXT)
                 {
-                    code[fixup + 1] = SCMD_CALLAS | (import->InstancePtr->loadedInstanceId << INSTANCE_ID_SHIFT);
+                    auto instance = (ccInstanceLegacy *)(import->InstancePtr);
+                    code[fixup + 1] = SCMD_CALLAS | (instance->loadedInstanceId << INSTANCE_ID_SHIFT);
                 }
             }
             break;
@@ -1786,7 +1944,7 @@ bool ccInstance::CreateRuntimeCodeFixups(PScript scri)
 }
 
 /*
-bool ccInstance::ReadOperation(ScriptOperation &op, int32_t at_pc)
+bool ccInstanceLegacy::ReadOperation(ScriptOperation &op, int32_t at_pc)
 {
 	op.Instruction.Code			= code[at_pc];
 	op.Instruction.InstanceId	= (op.Instruction.Code >> INSTANCE_ID_SHIFT) & INSTANCE_ID_MASK;
@@ -1823,7 +1981,7 @@ bool ccInstance::ReadOperation(ScriptOperation &op, int32_t at_pc)
 }
 */
 /*
-bool ccInstance::FixupArgument(intptr_t code_value, char fixup_type, RuntimeScriptValue &argument)
+bool ccInstanceLegacy::FixupArgument(intptr_t code_value, char fixup_type, RuntimeScriptValue &argument)
 {
     switch (fixup_type)
     {
@@ -1868,7 +2026,7 @@ bool ccInstance::FixupArgument(intptr_t code_value, char fixup_type, RuntimeScri
 */
 //-----------------------------------------------------------------------------
 
-void ccInstance::PushValueToStack(const RuntimeScriptValue &rval)
+void ccInstanceLegacy::PushValueToStack(const RuntimeScriptValue &rval)
 {
     if (!rval.IsValid())
     {
@@ -1885,7 +2043,7 @@ void ccInstance::PushValueToStack(const RuntimeScriptValue &rval)
     registers[SREG_SP].RValue++;
 }
 
-void ccInstance::PushDataToStack(int32_t num_bytes)
+void ccInstanceLegacy::PushDataToStack(int32_t num_bytes)
 {
     if (registers[SREG_SP].RValue->IsValid())
     {
@@ -1899,7 +2057,7 @@ void ccInstance::PushDataToStack(int32_t num_bytes)
     registers[SREG_SP].RValue++;
 }
 
-RuntimeScriptValue ccInstance::PopValueFromStack()
+RuntimeScriptValue ccInstanceLegacy::PopValueFromStack()
 {
     // rewind stack ptr to the last valid value, decrement stack data ptr if needed and invalidate the stack tail
     registers[SREG_SP].RValue--;
@@ -1912,7 +2070,7 @@ RuntimeScriptValue ccInstance::PopValueFromStack()
     return rval;
 }
 
-void ccInstance::PopValuesFromStack(int32_t num_entries = 1)
+void ccInstanceLegacy::PopValuesFromStack(int32_t num_entries = 1)
 {
     for (int i = 0; i < num_entries; ++i)
     {
@@ -1926,7 +2084,7 @@ void ccInstance::PopValuesFromStack(int32_t num_entries = 1)
     }
 }
 
-void ccInstance::PopDataFromStack(int32_t num_bytes)
+void ccInstanceLegacy::PopDataFromStack(int32_t num_bytes)
 {
     int32_t total_pop = 0;
     while (total_pop < num_bytes && registers[SREG_SP].RValue > &stack[0])
@@ -1951,7 +2109,7 @@ void ccInstance::PopDataFromStack(int32_t num_bytes)
     }
 }
 
-RuntimeScriptValue ccInstance::GetStackPtrOffsetFw(int32_t fw_offset)
+RuntimeScriptValue ccInstanceLegacy::GetStackPtrOffsetFw(int32_t fw_offset)
 {
     int32_t total_off = 0;
     RuntimeScriptValue *stack_entry = &stack[0];
@@ -1978,7 +2136,7 @@ RuntimeScriptValue ccInstance::GetStackPtrOffsetFw(int32_t fw_offset)
     return stack_ptr;
 }
 
-RuntimeScriptValue ccInstance::GetStackPtrOffsetRw(int32_t rw_offset)
+RuntimeScriptValue ccInstanceLegacy::GetStackPtrOffsetRw(int32_t rw_offset)
 {
     int32_t total_off = 0;
     RuntimeScriptValue *stack_entry = registers[SREG_SP].RValue;
@@ -2009,7 +2167,7 @@ RuntimeScriptValue ccInstance::GetStackPtrOffsetRw(int32_t rw_offset)
     return stack_ptr;
 }
 
-void ccInstance::PushToFuncCallStack(FunctionCallStack &func_callstack, const RuntimeScriptValue &rval)
+void ccInstanceLegacy::PushToFuncCallStack(FunctionCallStack &func_callstack, const RuntimeScriptValue &rval)
 {
     if (func_callstack.Count >= MAX_FUNC_PARAMS)
     {
@@ -2022,7 +2180,7 @@ void ccInstance::PushToFuncCallStack(FunctionCallStack &func_callstack, const Ru
     func_callstack.Count++;
 }
 
-void ccInstance::PopFromFuncCallStack(FunctionCallStack &func_callstack, int32_t num_entries)
+void ccInstanceLegacy::PopFromFuncCallStack(FunctionCallStack &func_callstack, int32_t num_entries)
 {
     if (func_callstack.Count == 0)
     {

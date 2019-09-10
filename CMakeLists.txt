@@ -131,4 +131,6 @@ add_subdirectory(Engine/libsrc/libcda-0.5       EXCLUDE_FROM_ALL)
 
 add_subdirectory(Engine)
 
+add_subdirectory(Compiler)
+
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ags)

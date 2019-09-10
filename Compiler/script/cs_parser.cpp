@@ -1,11 +1,12 @@
 
+#include "cs_parser.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
 #include <string>
 #include <vector>
-#include "cs_parser.h"
 #include "cc_internallist.h"    // ccInternalList
 #include "cs_parser_common.h"
 #include "cc_symboltable.h"

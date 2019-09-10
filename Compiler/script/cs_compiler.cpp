@@ -1,8 +1,9 @@
 
+#include "cs_compiler.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cs_compiler.h"
 #include "cc_macrotable.h"
 #include "cc_compiledscript.h"
 #include "cc_symboltable.h"

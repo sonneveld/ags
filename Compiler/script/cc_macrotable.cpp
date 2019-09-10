@@ -1,7 +1,8 @@
 
+#include "cc_macrotable.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "cc_macrotable.h"
 #include "script/cc_error.h"
 
 void MacroTable::init() {

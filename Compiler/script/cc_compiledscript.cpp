@@ -1,8 +1,9 @@
 
+#include "cc_compiledscript.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "cc_compiledscript.h"
 #include "script/script_common.h"       // macro definitions
 #include "cc_symboltable.h"     // symbolTable
 #include "script/cc_options.h"      // ccGetOption

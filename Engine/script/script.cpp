@@ -233,7 +233,7 @@ int run_interaction_script(InteractionScripts *nint, int evnt, int chkAny, int i
 int create_global_script() {
     ccSetOption(SCOPT_AUTOIMPORT, 1);
     for (int kk = 0; kk < numScriptModules; kk++) {
-        moduleInst[kk] = ccInstance::CreateFromScript(scriptModules[kk]);
+        moduleInst[kk] = ccInstanceCreateFromScript(scriptModules[kk]);
         if (moduleInst[kk] == nullptr)
             return -3;
         // create a forked instance for rep_exec_always
@@ -243,7 +243,7 @@ int create_global_script() {
 
         moduleRepExecAddr[kk] = moduleInst[kk]->GetSymbolAddress(REP_EXEC_NAME);
     }
-    gameinst = ccInstance::CreateFromScript(gamescript);
+    gameinst = ccInstanceCreateFromScript(gamescript);
     if (gameinst == nullptr)
         return -3;
     // create a forked instance for rep_exec_always
@@ -253,7 +253,7 @@ int create_global_script() {
 
     if (dialogScriptsScript != nullptr)
     {
-        dialogScriptsInst = ccInstance::CreateFromScript(dialogScriptsScript);
+        dialogScriptsInst = ccInstanceCreateFromScript(dialogScriptsScript);
         if (dialogScriptsInst == nullptr)
             return -3;
     }

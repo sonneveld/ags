@@ -998,7 +998,7 @@ void check_new_room() {
 void compile_room_script() {
     ccError = 0;
 
-    roominst = ccInstance::CreateFromScript(thisroom.CompiledScript);
+    roominst = ccInstanceCreateFromScript(thisroom.CompiledScript);
 
     if ((ccError!=0) || (roominst==nullptr)) {
         quitprintf("Unable to create local script: %s", ccErrorString.GetCStr());

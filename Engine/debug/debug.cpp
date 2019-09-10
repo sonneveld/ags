@@ -198,7 +198,7 @@ void debug_script_print(const String &msg, MessageType mt)
 {
 #if 0
     String script_ref;
-    ccInstance *curinst = ccInstance::GetCurrentInstance();
+    ccInstance *curinst = ccInstanceGetCurrentInstance();
     if (curinst != nullptr) {
         String scriptname;
         if (curinst->instanceof == gamescript)
@@ -239,7 +239,7 @@ String get_cur_script(int numberOfLinesOfCallStack)
 {
     String callstack;
 #if 0
-    ccInstance *sci = ccInstance::GetCurrentInstance();
+    ccInstance *sci = ccInstanceGetCurrentInstance();
     if (sci)
         callstack = sci->GetCallStack(numberOfLinesOfCallStack);
 #endif
@@ -251,7 +251,7 @@ String get_cur_script(int numberOfLinesOfCallStack)
 bool get_script_position(ScriptPosition &script_pos)
 {
 #if 0
-    ccInstance *cur_instance = ccInstance::GetCurrentInstance();
+    ccInstance *cur_instance = ccInstanceGetCurrentInstance();
     if (cur_instance)
     {
         cur_instance->GetScriptPosition(script_pos);

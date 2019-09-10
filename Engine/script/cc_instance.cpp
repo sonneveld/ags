@@ -192,17 +192,17 @@ struct FunctionCallStack
 };
 
 
-ccInstance *ccInstance::GetCurrentInstance()
+ccInstance *ccInstanceGetCurrentInstance()
 {
     return current_instance;
 }
 
-ccInstance *ccInstance::CreateFromScript(PScript scri)
+ccInstance *ccInstanceCreateFromScript(PScript scri)
 {
-    return CreateEx(scri, nullptr);
+    return ccInstanceCreateEx(scri, nullptr);
 }
 
-ccInstance *ccInstance::CreateEx(PScript scri, ccInstance * joined)
+ccInstance *ccInstanceCreateEx(PScript scri, ccInstance * joined)
 {
     // allocate and copy all the memory with data, code and strings across
     ccInstance *cinst = new ccInstance();
@@ -252,7 +252,7 @@ ccInstance::~ccInstance()
 
 ccInstance *ccInstance::Fork()
 {
-    return CreateEx(instanceof, this);
+    return ccInstanceCreateEx(instanceof, this);
 }
 
 void ccInstance::OverrideGlobalData(const char *data, int size)

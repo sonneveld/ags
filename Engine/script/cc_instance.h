@@ -149,12 +149,6 @@ public:
 
     char *code_fixups;
 
-    // returns the currently executing instance, or NULL if none
-    static ccInstance *GetCurrentInstance(void);
-    // create a runnable instance of the supplied script
-    static ccInstance *CreateFromScript(PScript script);
-    static ccInstance *CreateEx(PScript scri, ccInstance * joined);
-
     ccInstance();
     ~ccInstance();
     // Create a runnable instance of the same script, sharing global memory
@@ -224,5 +218,11 @@ protected:
     void    PushToFuncCallStack(FunctionCallStack &func_callstack, const RuntimeScriptValue &rval);
     void    PopFromFuncCallStack(FunctionCallStack &func_callstack, int32_t num_entries);
 };
+
+// returns the currently executing instance, or NULL if none
+ccInstance *ccInstanceGetCurrentInstance(void);
+// create a runnable instance of the supplied script
+ccInstance *ccInstanceCreateFromScript(PScript script);
+ccInstance *ccInstanceCreateEx(PScript scri, ccInstance * joined);
 
 #endif // __CC_INSTANCE_H

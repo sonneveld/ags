@@ -182,7 +182,7 @@ public:
     void    PopFromFuncCallStack(FunctionCallStack &func_callstack, int32_t num_entries);
 };
 
-
+ccInstance *ccInstanceCreateEx(PScript scri, ccInstance * joined);
 
 extern ccInstance *loadedInstances[MAX_LOADED_INSTANCES]; // in script/script_runtime
 extern int gameHasBeenRestored; // in ac/game

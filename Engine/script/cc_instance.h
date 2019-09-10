@@ -101,7 +101,7 @@ public:
     // Get the address of an exported symbol (function or variable) in the script
     // NOTE: only used to check for existance?
     virtual RuntimeScriptValue GetSymbolAddress(const char *symname) = 0;
-    
+
     // Tells whether this instance is in the process of executing the byte-code
     virtual bool    IsBeingRun() const = 0;
 };
@@ -110,6 +110,5 @@ public:
 ccInstance *ccInstanceGetCurrentInstance(void);
 // create a runnable instance of the supplied script
 ccInstance *ccInstanceCreateFromScript(PScript script);
-ccInstance *ccInstanceCreateEx(PScript scri, ccInstance * joined);
 
 #endif // __CC_INSTANCE_H

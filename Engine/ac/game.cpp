@@ -560,7 +560,7 @@ void unload_game_file()
     free(actspswbbmp);
     free(actspswbcache);
 
-    if ((gameinst != nullptr) && (gameinst->pc != 0))
+    if ((gameinst != nullptr) && (gameinst->IsBeingRun()))
     {
         quit("Error: unload_game called while script still running");
     }
@@ -574,7 +574,7 @@ void unload_game_file()
 
     gamescript.reset();
 
-    if ((dialogScriptsInst != nullptr) && (dialogScriptsInst->pc != 0))
+    if ((dialogScriptsInst != nullptr) && (dialogScriptsInst->IsBeingRun()))
     {
         quit("Error: unload_game called while dialog script still running");
     }

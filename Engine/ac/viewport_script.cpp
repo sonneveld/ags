@@ -136,75 +136,6 @@ void Camera_SetSize(ScriptCamera *scam, int width, int height)
     play.GetRoomCamera(scam->GetID())->SetSize(Size(width, height));
 }
 
-RuntimeScriptValue Sc_Camera_Create(const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_SCALL_OBJAUTO(ScriptCamera, Camera_Create);
-}
-
-RuntimeScriptValue Sc_Camera_Delete(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID(ScriptCamera, Camera_Delete);
-}
-
-RuntimeScriptValue Sc_Camera_GetX(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptCamera, Camera_GetX);
-}
-
-RuntimeScriptValue Sc_Camera_SetX(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetX);
-}
-
-RuntimeScriptValue Sc_Camera_GetY(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptCamera, Camera_GetY);
-}
-
-RuntimeScriptValue Sc_Camera_SetY(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetY);
-}
-
-RuntimeScriptValue Sc_Camera_GetWidth(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptCamera, Camera_GetWidth);
-}
-
-RuntimeScriptValue Sc_Camera_SetWidth(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetWidth);
-}
-
-RuntimeScriptValue Sc_Camera_GetHeight(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptCamera, Camera_GetHeight);
-}
-
-RuntimeScriptValue Sc_Camera_SetHeight(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetHeight);
-}
-
-RuntimeScriptValue Sc_Camera_GetAutoTracking(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_BOOL(ScriptCamera, Camera_GetAutoTracking);
-}
-
-RuntimeScriptValue Sc_Camera_SetAutoTracking(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PBOOL(ScriptCamera, Camera_SetAutoTracking);
-}
-
-RuntimeScriptValue Sc_Camera_SetAt(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PINT2(ScriptCamera, Camera_SetAt);
-}
-
-RuntimeScriptValue Sc_Camera_SetSize(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID_PINT2(ScriptCamera, Camera_SetSize);
-}
 
 
 //=============================================================================
@@ -373,6 +304,82 @@ ScriptUserObject *Viewport_RoomToScreenPoint(ScriptViewport *scv, int roomx, int
 
     game_to_data_coords(pt.X, pt.Y);
     return ScriptStructHelpers::CreatePoint(pt.X, pt.Y);
+}
+
+
+
+
+
+/// GENERATED CODE
+
+RuntimeScriptValue Sc_Camera_Create(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_OBJAUTO(ScriptCamera, Camera_Create);
+}
+
+RuntimeScriptValue Sc_Camera_Delete(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID(ScriptCamera, Camera_Delete);
+}
+
+RuntimeScriptValue Sc_Camera_GetX(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptCamera, Camera_GetX);
+}
+
+RuntimeScriptValue Sc_Camera_SetX(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetX);
+}
+
+RuntimeScriptValue Sc_Camera_GetY(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptCamera, Camera_GetY);
+}
+
+RuntimeScriptValue Sc_Camera_SetY(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetY);
+}
+
+RuntimeScriptValue Sc_Camera_GetWidth(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptCamera, Camera_GetWidth);
+}
+
+RuntimeScriptValue Sc_Camera_SetWidth(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetWidth);
+}
+
+RuntimeScriptValue Sc_Camera_GetHeight(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptCamera, Camera_GetHeight);
+}
+
+RuntimeScriptValue Sc_Camera_SetHeight(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT(ScriptCamera, Camera_SetHeight);
+}
+
+RuntimeScriptValue Sc_Camera_GetAutoTracking(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL(ScriptCamera, Camera_GetAutoTracking);
+}
+
+RuntimeScriptValue Sc_Camera_SetAutoTracking(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PBOOL(ScriptCamera, Camera_SetAutoTracking);
+}
+
+RuntimeScriptValue Sc_Camera_SetAt(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT2(ScriptCamera, Camera_SetAt);
+}
+
+RuntimeScriptValue Sc_Camera_SetSize(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID_PINT2(ScriptCamera, Camera_SetSize);
 }
 
 RuntimeScriptValue Sc_Viewport_Create(const RuntimeScriptValue *params, int32_t param_count)

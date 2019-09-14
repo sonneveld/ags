@@ -224,6 +224,9 @@ void System_SetRenderAtScreenResolution(int enable)
     usetup.RenderAtScreenRes = enable != 0;
 }
 
+
+/// GENERATED CODE
+
 //=============================================================================
 //
 // Script API Functions

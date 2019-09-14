@@ -588,6 +588,7 @@ Stream *get_valid_file_stream_from_handle(int32_t handle, const char *operation_
     ScriptFileHandle *sc_handle = check_valid_file_handle_int32(handle, operation_name);
     return sc_handle ? sc_handle->stream : nullptr;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

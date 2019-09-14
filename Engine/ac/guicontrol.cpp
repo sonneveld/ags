@@ -225,6 +225,7 @@ void GUIControl_BringToFront(GUIObject *guio) {
   if (guis[guio->ParentId].BringControlToFront(guio->Id))
     guis_need_update = 1;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

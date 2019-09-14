@@ -370,6 +370,7 @@ GUIListBox* is_valid_listbox (int guin, int objn) {
   guis_need_update = 1;
   return (GUIListBox*)guis[guin].GetControl(objn);
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

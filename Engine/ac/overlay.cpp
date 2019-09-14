@@ -270,6 +270,7 @@ void recreate_overlay_ddbs()
             screenover[i].bmp = nullptr;
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

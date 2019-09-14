@@ -299,6 +299,7 @@ void Button_SetTextAlignment(GUIButton *butt, int align)
         guis_need_update = 1;
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

@@ -170,6 +170,8 @@ ScriptUserObject *Screen_RoomToScreenPoint(int roomx, int roomy)
     return ScriptStructHelpers::CreatePoint(pt.X, pt.Y);
 }
 
+/// GENERATED CODE
+
 RuntimeScriptValue Sc_Screen_GetScreenHeight(const RuntimeScriptValue *params, int32_t param_count)
 {
     API_SCALL_INT(Screen_GetScreenHeight);

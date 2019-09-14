@@ -107,6 +107,7 @@ void Slider_SetHandleOffset(GUISlider *guisl, int newOffset)
         guis_need_update = 1;
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

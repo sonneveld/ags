@@ -58,6 +58,7 @@ int DateTime_GetSecond(ScriptDateTime *sdt) {
 int DateTime_GetRawTime(ScriptDateTime *sdt) {
     return sdt->rawUnixTime;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

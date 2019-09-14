@@ -77,6 +77,7 @@ void TextBox_SetShowBorder(GUITextBox *guit, bool on)
         guis_need_update = 1;
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

@@ -144,6 +144,7 @@ void DialogOptionsRendering_SetActiveOptionID(ScriptDialogOptionsRendering *dlgO
         dlgOptRender->needRepaint = true;
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

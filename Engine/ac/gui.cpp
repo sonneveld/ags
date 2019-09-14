@@ -471,6 +471,7 @@ void export_gui_controls(int ee)
     {
         GUIObject *guio = guis[ee].GetControl(ff);
         if (!guio->Name.IsEmpty())
+/// GENERATED CODE EXT
             ccAddExternalDynamicObject(guio->Name, guio, &ccDynamicGUIObject);
         ccRegisterManagedObject(guio, &ccDynamicGUIObject);
     }
@@ -697,6 +698,7 @@ void gui_on_mouse_down(const int guin, const int mbut)
 
     run_on_event(GE_GUI_MOUSEDOWN, RuntimeScriptValue().SetInt32(guin));
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

@@ -73,6 +73,7 @@ ScriptAudioChannel* AudioClip_PlayQueued(ScriptAudioClip *clip, int priority, in
     ScriptAudioChannel *sc_ch = play_audio_clip(clip, priority, repeat, 0, true);
     return sc_ch;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

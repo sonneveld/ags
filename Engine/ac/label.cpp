@@ -77,6 +77,7 @@ void Label_SetFont(GUILabel *guil, int fontnum) {
         guis_need_update = 1;
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

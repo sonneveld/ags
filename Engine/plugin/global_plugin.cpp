@@ -64,6 +64,8 @@ bool RegisterPluginStubs(const char* name)
   bool is_agsgalaxy = (ags_stricmp(name, "agsgalaxy") == 0) || (ags_stricmp(name, "agsgalaxy-unified") == 0) ||
     (ags_stricmp(name, "agsgalaxy-disjoint") == 0);
 
+/// GENERATED CODE EXT
+
   if (ags_stricmp(name, "ags_shell") == 0)
   {
     // ags_shell.dll

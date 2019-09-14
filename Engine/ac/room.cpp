@@ -654,6 +654,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
         if (thisroom.Objects[cc].ScriptName.IsEmpty())
             continue;
         objectScriptObjNames[cc] = thisroom.Objects[cc].ScriptName;
+/// GENERATED CODE EXT
         ccAddExternalDynamicObject(objectScriptObjNames[cc], &scrObj[cc], &ccDynamicObject);
     }
 
@@ -661,6 +662,7 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
         if (thisroom.Hotspots[cc].ScriptName.IsEmpty())
             continue;
 
+/// GENERATED CODE EXT
         ccAddExternalDynamicObject(thisroom.Hotspots[cc].ScriptName, &scrHotspot[cc], &ccDynamicHotspot);
     }
 
@@ -1079,6 +1081,7 @@ void convert_move_path_to_room_resolution(MoveList *ml)
         ml->ypermove[i] = mask_to_room_coord(ml->ypermove[i]);
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

@@ -2111,6 +2111,7 @@ void setup_player_character(int charid) {
     playerchar = &game.chars[charid];
     _sc_PlayerCharPtr = ccGetObjectHandleFromAddress((char*)playerchar);
     if (loaded_game_file_version < kGameVersion_270) {
+/// GENERATED CODE EXT
         ccAddExternalDynamicObject("player", playerchar, &ccDynamicCharacter);
     }
 }
@@ -2902,6 +2903,7 @@ int update_lip_sync(int talkview, int talkloop, int *talkframeptr) {
     talkframeptr[0] = talkframe;
     return talkwait;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

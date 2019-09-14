@@ -216,6 +216,7 @@ void AudioChannel_SetRoomLocation(ScriptAudioChannel *channel, int xPos, int yPo
         }
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

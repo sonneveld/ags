@@ -128,6 +128,7 @@ int get_hotspot_at(int xpp,int ypp) {
     if (croom->hotspot_enabled[onhs]==0) return 0;
     return onhs;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

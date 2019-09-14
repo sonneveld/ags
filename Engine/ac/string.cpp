@@ -317,6 +317,7 @@ void my_strncpy(char *dest, const char *src, int len) {
     else
         strcpy(dest, src);
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

@@ -2082,6 +2082,7 @@ bool unserialize_audio_script_object(int index, const char *objectType, const ch
     }
     return true;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

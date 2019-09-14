@@ -146,6 +146,7 @@ void InitAndRegisterAudioObjects()
         // between game versions, for now.
         game.audioClips[i].id = i;
         ccRegisterManagedObject(&game.audioClips[i], &ccDynamicAudioClip);
+/// GENERATED CODE EXT
         ccAddExternalDynamicObject(game.audioClips[i].scriptName, &game.audioClips[i], &ccDynamicAudioClip);
     }
 }
@@ -173,6 +174,7 @@ void InitAndRegisterCharacters()
 
         // export the character's script object
         characterScriptObjNames[i] = game.chars[i].scrname;
+/// GENERATED CODE EXT
         ccAddExternalDynamicObject(characterScriptObjNames[i], &game.chars[i], &ccDynamicCharacter);
     }
 }
@@ -188,6 +190,7 @@ void InitAndRegisterDialogs()
         ccRegisterManagedObject(&scrDialog[i], &ccDynamicDialog);
 
         if (!game.dialogScriptNames[i].IsEmpty())
+/// GENERATED CODE EXT
             ccAddExternalDynamicObject(game.dialogScriptNames[i], &scrDialog[i], &ccDynamicDialog);
     }
 }
@@ -225,6 +228,7 @@ HError InitAndRegisterGUI()
         // because ccAddExtSymbol only keeps a reference
         guiScriptObjNames[i] = guis[i].Name;
         scrGui[i].id = i;
+/// GENERATED CODE EXT
         ccAddExternalDynamicObject(guiScriptObjNames[i], &scrGui[i], &ccDynamicGUI);
         ccRegisterManagedObject(&scrGui[i], &ccDynamicGUI);
     }
@@ -241,6 +245,7 @@ void InitAndRegisterInvItems()
         ccRegisterManagedObject(&scrInv[i], &ccDynamicInv);
 
         if (!game.invScriptNames[i].IsEmpty())
+/// GENERATED CODE EXT
             ccAddExternalDynamicObject(game.invScriptNames[i], &scrInv[i], &ccDynamicInv);
     }
 }

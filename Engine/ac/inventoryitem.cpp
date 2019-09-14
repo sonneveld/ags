@@ -116,6 +116,7 @@ void set_inv_item_cursorpic(int invItemId, int piccy)
         set_mouse_cursor(cur_cursor);
     }
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

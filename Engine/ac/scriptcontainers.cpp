@@ -130,60 +130,6 @@ void *Dict_GetValuesAsArray(ScriptDictBase *dic)
     return arr.second;
 }
 
-RuntimeScriptValue Sc_Dict_Create(const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_SCALL_OBJAUTO_PBOOL2(ScriptDictBase, Dict_Create);
-}
-
-RuntimeScriptValue Sc_Dict_Clear(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_VOID(ScriptDictBase, Dict_Clear);
-}
-
-RuntimeScriptValue Sc_Dict_Contains(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_BOOL_POBJ(ScriptDictBase, Dict_Contains, const char);
-}
-
-RuntimeScriptValue Sc_Dict_Get(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_OBJ_POBJ(ScriptDictBase, const char, myScriptStringImpl, Dict_Get, const char);
-}
-
-RuntimeScriptValue Sc_Dict_Remove(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_BOOL_POBJ(ScriptDictBase, Dict_Remove, const char);
-}
-
-RuntimeScriptValue Sc_Dict_Set(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_BOOL_POBJ2(ScriptDictBase, Dict_Set, const char, const char);
-}
-
-RuntimeScriptValue Sc_Dict_GetCompareStyle(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptDictBase, Dict_GetCompareStyle);
-}
-
-RuntimeScriptValue Sc_Dict_GetSortStyle(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptDictBase, Dict_GetSortStyle);
-}
-
-RuntimeScriptValue Sc_Dict_GetItemCount(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_INT(ScriptDictBase, Dict_GetItemCount);
-}
-
-RuntimeScriptValue Sc_Dict_GetKeysAsArray(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_OBJ(ScriptDictBase, void, globalDynamicArray, Dict_GetKeysAsArray);
-}
-
-RuntimeScriptValue Sc_Dict_GetValuesAsArray(void *self, const RuntimeScriptValue *params, int32_t param_count)
-{
-    API_OBJCALL_OBJ(ScriptDictBase, void, globalDynamicArray, Dict_GetValuesAsArray);
-}
 
 //=============================================================================
 //
@@ -273,6 +219,69 @@ void *Set_GetItemsAsArray(ScriptSetBase *set)
     DynObjectRef arr = DynamicArrayHelpers::CreateStringArray(items);
     return arr.second;
 }
+
+
+
+
+
+/// GENERATED CODE
+
+RuntimeScriptValue Sc_Dict_Create(const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_SCALL_OBJAUTO_PBOOL2(ScriptDictBase, Dict_Create);
+}
+
+RuntimeScriptValue Sc_Dict_Clear(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_VOID(ScriptDictBase, Dict_Clear);
+}
+
+RuntimeScriptValue Sc_Dict_Contains(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL_POBJ(ScriptDictBase, Dict_Contains, const char);
+}
+
+RuntimeScriptValue Sc_Dict_Get(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_OBJ_POBJ(ScriptDictBase, const char, myScriptStringImpl, Dict_Get, const char);
+}
+
+RuntimeScriptValue Sc_Dict_Remove(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL_POBJ(ScriptDictBase, Dict_Remove, const char);
+}
+
+RuntimeScriptValue Sc_Dict_Set(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_BOOL_POBJ2(ScriptDictBase, Dict_Set, const char, const char);
+}
+
+RuntimeScriptValue Sc_Dict_GetCompareStyle(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptDictBase, Dict_GetCompareStyle);
+}
+
+RuntimeScriptValue Sc_Dict_GetSortStyle(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptDictBase, Dict_GetSortStyle);
+}
+
+RuntimeScriptValue Sc_Dict_GetItemCount(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_INT(ScriptDictBase, Dict_GetItemCount);
+}
+
+RuntimeScriptValue Sc_Dict_GetKeysAsArray(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_OBJ(ScriptDictBase, void, globalDynamicArray, Dict_GetKeysAsArray);
+}
+
+RuntimeScriptValue Sc_Dict_GetValuesAsArray(void *self, const RuntimeScriptValue *params, int32_t param_count)
+{
+    API_OBJCALL_OBJ(ScriptDictBase, void, globalDynamicArray, Dict_GetValuesAsArray);
+}
+
+
 
 RuntimeScriptValue Sc_Set_Create(const RuntimeScriptValue *params, int32_t param_count)
 {

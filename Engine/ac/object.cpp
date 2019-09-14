@@ -524,6 +524,7 @@ int check_click_on_object(int roomx, int roomy, int mood)
     RunObjectInteraction(aa, mood);
     return 1;
 }
+/// GENERATED CODE
 
 //=============================================================================
 //

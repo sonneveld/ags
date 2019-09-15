@@ -33,6 +33,8 @@
 #define CC_NUM_REGISTERS  8
 
 // virtual CPU commands
+
+// 2.2 (2.2 rewrote the interpeter and introduced these ops)
 #define SCMD_ADD          1     // reg1 += arg2
 #define SCMD_SUB          2     // reg1 -= arg2
 #define SCMD_REGTOREG     3     // reg2 = reg1
@@ -69,14 +71,20 @@
 #define SCMD_PUSHREAL     34    // push reg1 onto real stack
 #define SCMD_SUBREALSTACK 35    // decrement stack ptr by literal
 #define SCMD_LINENUM      36    // debug info - source code line number
+
+// 2.3
 #define SCMD_CALLAS       37    // call external script function
 #define SCMD_THISBASE     38    // current relative address
+
+// 2.6
 #define SCMD_NUMFUNCARGS  39    // number of arguments for ext func call
 #define SCMD_MODREG       40    // reg1 %= reg2
 #define SCMD_XORREG       41    // reg1 ^= reg2
 #define SCMD_NOTREG       42    // reg1 = !reg1
 #define SCMD_SHIFTLEFT    43    // reg1 = reg1 << reg2
 #define SCMD_SHIFTRIGHT   44    // reg1 = reg1 >> reg2
+
+// 2.7
 #define SCMD_CALLOBJ      45    // next call is member function of reg1
 #define SCMD_CHECKBOUNDS  46    // check reg1 is between 0 and arg2
 #define SCMD_MEMWRITEPTR  47    // m[MAR] = reg1 (adjust ptr addr)
@@ -102,10 +110,15 @@
 #define SCMD_CHECKNULLREG 67    // error if reg1 == NULL
 #define SCMD_LOOPCHECKOFF 68    // no loop checking for this function
 #define SCMD_MEMZEROPTRND 69    // m[MAR] = 0    (blank ptr, no dispose if = ax)
+
+// 3.1
 #define SCMD_JNZ          70    // jump to arg1 if ax!=0
 #define SCMD_DYNAMICBOUNDS 71   // check reg1 is between 0 and m[MAR-4]
 #define SCMD_NEWARRAY     72    // reg1 = new array of reg1 elements, each of size arg2 (arg3=managed type?)
+
+// 3.4
 #define SCMD_NEWUSEROBJECT 73   // reg1 = new user object of arg1 size
+
 
 #define CC_NUM_SCCMDS     74
 #define MAX_SCMD_ARGS     3     // maximal possible number of arguments

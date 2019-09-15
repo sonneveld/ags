@@ -2079,15 +2079,15 @@ RuntimeScriptValue Sc_sc_strcat(const RuntimeScriptValue *params, int32_t param_
     return params[1];
 }
 
+    // Calling C stdlib function ags_stricmp
 RuntimeScriptValue Sc_stricmp(const RuntimeScriptValue *params, int32_t param_count)
 {
-    // Calling C stdlib function ags_stricmp
     API_SCALL_INT_POBJ2(ags_stricmp, const char, const char);
 }
 
+    // Calling C stdlib function strcmp
 RuntimeScriptValue Sc_strcmp(const RuntimeScriptValue *params, int32_t param_count)
 {
-    // Calling C stdlib function strcmp
     API_SCALL_INT_POBJ2(strcmp, const char, const char);
 }
 
@@ -2125,9 +2125,9 @@ RuntimeScriptValue Sc_StringToInt(const RuntimeScriptValue *params, int32_t para
     API_SCALL_INT_POBJ(StringToInt, const char);
 }
 
+// Calling C stdlib function strlen
 RuntimeScriptValue Sc_strlen(const RuntimeScriptValue *params, int32_t param_count)
 {
-    // Calling C stdlib function strlen
     API_SCALL_INT_POBJ(strlen, const char);
 }
 

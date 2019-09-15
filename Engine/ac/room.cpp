@@ -277,9 +277,7 @@ void unload_old_room() {
     if (croom==nullptr) ;
     else if (roominst!=nullptr) {
         save_room_data_segment();
-        delete roominstFork;
         delete roominst;
-        roominstFork = nullptr;
         roominst=nullptr;
     }
     else croom->tsdatasize=0;
@@ -1000,15 +998,11 @@ void check_new_room() {
 void compile_room_script() {
     ccError = 0;
 
-    roominst = ccInstanceCreateFromScript(thisroom.CompiledScript);
+    roominst = coreExecutor.LoadScript(thisroom.CompiledScript);
 
     if ((ccError!=0) || (roominst==nullptr)) {
         quitprintf("Unable to create local script: %s", ccErrorString.GetCStr());
     }
-
-    roominstFork = roominst->Fork();
-    if (roominstFork == nullptr)
-        quitprintf("Unable to create forked room instance: %s", ccErrorString.GetCStr());
 
     repExecAlways.roomHasFunction = true;
     lateRepExecAlways.roomHasFunction = true;

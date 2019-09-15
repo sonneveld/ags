@@ -87,7 +87,6 @@ extern StaticArray StaticInventoryArray;
 extern StaticArray StaticDialogArray;
 
 extern std::vector<ccInstance *> moduleInst;
-extern std::vector<ccInstance *> moduleInstFork;
 extern std::vector<RuntimeScriptValue> moduleRepExecAddr;
 
 // Old dialog support (defined in ac/dialog)
@@ -338,7 +337,6 @@ void LoadFonts(GameDataVersion data_ver)
 void AllocScriptModules()
 {
     moduleInst.resize(numScriptModules, nullptr);
-    moduleInstFork.resize(numScriptModules, nullptr);
     moduleRepExecAddr.resize(numScriptModules);
     repExecAlways.moduleHasFunction.resize(numScriptModules, true);
     lateRepExecAlways.moduleHasFunction.resize(numScriptModules, true);

@@ -85,7 +85,6 @@ extern PScript gamescript;
 extern PScript dialogScriptsScript;
 extern ccInstance *gameinst, *roominst;
 extern ccInstance *dialogScriptsInst;
-extern ccInstance *gameinstFork, *roominstFork;
 
 extern int num_scripts;
 extern int post_script_cleanup_stack;
@@ -106,7 +105,6 @@ extern ScriptSystem scsystem;
 
 extern std::vector<PScript> scriptModules;
 extern std::vector<ccInstance *> moduleInst;
-extern std::vector<ccInstance *> moduleInstFork;
 extern std::vector<RuntimeScriptValue> moduleRepExecAddr;
 extern int numScriptModules;
 

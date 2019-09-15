@@ -382,16 +382,16 @@ void DoBeforeRestore(PreservedParams &pp)
     gameinst->GetGlobalData(globaldata, globaldatasize);
 
     pp.GlScDataSize = globaldatasize;
-    delete gameinstFork;
+    // delete gameinstFork;
     delete gameinst;
-    gameinstFork = nullptr;
+    // gameinstFork = nullptr;
     gameinst = nullptr;
     pp.ScMdDataSize.resize(numScriptModules);
     for (int i = 0; i < numScriptModules; ++i)
     {
         moduleInst[i]->GetGlobalData(globaldata, globaldatasize);
         pp.ScMdDataSize[i] = globaldatasize;
-        delete moduleInstFork[i];
+        // delete moduleInstFork[i];
         delete moduleInst[i];
         moduleInst[i] = nullptr;
     }
@@ -399,9 +399,9 @@ void DoBeforeRestore(PreservedParams &pp)
     play.FreeProperties();
     play.FreeViewportsAndCameras();
 
-    delete roominstFork;
+    // delete roominstFork;
     delete roominst;
-    roominstFork = nullptr;
+    // roominstFork = nullptr;
     roominst = nullptr;
 
     delete dialogScriptsInst;

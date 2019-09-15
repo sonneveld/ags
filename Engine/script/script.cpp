@@ -59,7 +59,6 @@ PScript gamescript;
 PScript dialogScriptsScript;
 ccInstance *gameinst = nullptr, *roominst = nullptr;
 ccInstance *dialogScriptsInst = nullptr;
-ccInstance *gameinstFork = nullptr, *roominstFork = nullptr;
 
 int num_scripts=0;
 int post_script_cleanup_stack = 0;
@@ -80,7 +79,6 @@ ScriptSystem scsystem;
 
 std::vector<PScript> scriptModules;
 std::vector<ccInstance *> moduleInst;
-std::vector<ccInstance *> moduleInstFork;
 std::vector<RuntimeScriptValue> moduleRepExecAddr;
 int numScriptModules = 0;
 
@@ -120,20 +118,19 @@ void run_function_on_non_blocking_thread(NonBlockingScriptFunction* funcToRun) {
     funcToRun->atLeastOneImplementationExists = false;
 
     // run modules
-    // modules need a forkedinst for this to work
     for (int kk = 0; kk < numScriptModules; kk++) {
-        funcToRun->moduleHasFunction[kk] = DoRunScriptFuncCantBlock(moduleInstFork[kk], funcToRun, funcToRun->moduleHasFunction[kk]);
+        funcToRun->moduleHasFunction[kk] = DoRunScriptFuncCantBlock(moduleInst[kk], funcToRun, funcToRun->moduleHasFunction[kk]);
 
         if (room_changes_was != play.room_changes)
             return;
     }
 
-    funcToRun->globalScriptHasFunction = DoRunScriptFuncCantBlock(gameinstFork, funcToRun, funcToRun->globalScriptHasFunction);
+    funcToRun->globalScriptHasFunction = DoRunScriptFuncCantBlock(gameinst, funcToRun, funcToRun->globalScriptHasFunction);
 
     if (room_changes_was != play.room_changes)
         return;
 
-    funcToRun->roomHasFunction = DoRunScriptFuncCantBlock(roominstFork, funcToRun, funcToRun->roomHasFunction);
+    funcToRun->roomHasFunction = DoRunScriptFuncCantBlock(roominst, funcToRun, funcToRun->roomHasFunction);
 }
 
 //-----------------------------------------------------------
@@ -233,27 +230,19 @@ int run_interaction_script(InteractionScripts *nint, int evnt, int chkAny, int i
 int create_global_script() {
     ccSetOption(SCOPT_AUTOIMPORT, 1);
     for (int kk = 0; kk < numScriptModules; kk++) {
-        moduleInst[kk] = ccInstanceCreateFromScript(scriptModules[kk]);
+        moduleInst[kk] = coreExecutor.LoadScript(scriptModules[kk]);
         if (moduleInst[kk] == nullptr)
-            return -3;
-        // create a forked instance for rep_exec_always
-        moduleInstFork[kk] = moduleInst[kk]->Fork();
-        if (moduleInstFork[kk] == nullptr)
             return -3;
 
         moduleRepExecAddr[kk] = moduleInst[kk]->GetSymbolAddress(REP_EXEC_NAME);
     }
-    gameinst = ccInstanceCreateFromScript(gamescript);
+    gameinst = coreExecutor.LoadScript(gamescript);
     if (gameinst == nullptr)
-        return -3;
-    // create a forked instance for rep_exec_always
-    gameinstFork = gameinst->Fork();
-    if (gameinstFork == nullptr)
         return -3;
 
     if (dialogScriptsScript != nullptr)
     {
-        dialogScriptsInst = ccInstanceCreateFromScript(dialogScriptsScript);
+        dialogScriptsInst = coreExecutor.LoadScript(dialogScriptsScript);
         if (dialogScriptsInst == nullptr)
             return -3;
     }
@@ -320,7 +309,7 @@ bool DoRunScriptFuncCantBlock(ccInstance *sci, NonBlockingScriptFunction* funcTo
 
     if (funcToRun->numParameters < 3)
     {
-        result = sci->CallScriptFunction((char*)funcToRun->functionName, funcToRun->numParameters, funcToRun->params);
+        result = coreExecutor.CallScriptFunction(sci, (char*)funcToRun->functionName, funcToRun->numParameters, funcToRun->params);
     }
     else
         quit("DoRunScriptFuncCantBlock called with too many parameters");
@@ -353,20 +342,8 @@ int PrepareTextScript(ccInstance *sci, const char**tsname)
         ccErrorString = "no such function in script";
         return -2;
     }
-    if (sci->IsBeingRun()) {
-        ccErrorString = "script is already in execution";
-        return -3;
-    }
     scripts[num_scripts].init();
     scripts[num_scripts].inst = sci;
-    // CHECKME: this conditional block will never run, because
-    // function would have quit earlier (deprecated functionality?)
-    if (sci->IsBeingRun()) {
-        scripts[num_scripts].inst = sci->Fork();
-        if (scripts[num_scripts].inst == nullptr)
-            quit("unable to fork instance for secondary script");
-        scripts[num_scripts].forked = 1;
-    }
     curscript = &scripts[num_scripts];
     num_scripts++;
     if (num_scripts >= MAX_SCRIPT_AT_ONCE)
@@ -404,7 +381,7 @@ int RunScriptFunctionIfExists(ccInstance *sci, const char*tsname, int numParam, 
 
     if (numParam < 3)
     {
-        toret = curscript->inst->CallScriptFunction(tsname, numParam, params);
+        toret = coreExecutor.CallScriptFunction(curscript->inst, tsname, numParam, params);
     }
     else
         quit("Too many parameters to RunScriptFunctionIfExists");

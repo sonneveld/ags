@@ -32,6 +32,7 @@ const char *ScriptVSprintf__(char *buffer, size_t buf_length, const char *format
 
 void Test_ScriptSprintf()
 {
+    #if 0
     const int argi = 123;
     const float argf = 0.456F;
     const char *argcc = "string literal";
@@ -122,6 +123,7 @@ void Test_ScriptSprintf()
     result = ScriptVSprintf__(ScSfBuffer, 10, "A%sB", NULL);
     assert(strcmp(result, "A(null)B") == 0);
     loaded_game_file_version = kGameVersion_Undefined;
+    #endif
 }
 
 #endif // AGS_PLATFORM_DEBUG

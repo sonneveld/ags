@@ -230,18 +230,23 @@ int run_interaction_script(InteractionScripts *nint, int evnt, int chkAny, int i
 int create_global_script() {
     ccSetOption(SCOPT_AUTOIMPORT, 1);
     for (int kk = 0; kk < numScriptModules; kk++) {
+        printf("SCRIPT: loading module %d\n", kk);
+
         moduleInst[kk] = coreExecutor.LoadScript(scriptModules[kk]);
         if (moduleInst[kk] == nullptr)
             return -3;
 
         moduleRepExecAddr[kk] = moduleInst[kk]->GetSymbolAddress(REP_EXEC_NAME);
     }
+
+    printf("SCRIPT: loading game\n");
     gameinst = coreExecutor.LoadScript(gamescript);
     if (gameinst == nullptr)
         return -3;
 
     if (dialogScriptsScript != nullptr)
     {
+        printf("SCRIPT: loading dialog\n");
         dialogScriptsInst = coreExecutor.LoadScript(dialogScriptsScript);
         if (dialogScriptsInst == nullptr)
             return -3;

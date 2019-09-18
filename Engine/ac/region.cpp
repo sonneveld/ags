@@ -128,6 +128,8 @@ void generate_light_table()
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -269,3 +271,4 @@ void RegisterRegionAPI()
     ccAddExternalFunctionForPlugin("Region::get_TintRed",          (void*)Region_GetTintRed);
     ccAddExternalFunctionForPlugin("Region::get_TintSaturation",   (void*)Region_GetTintSaturation);
 }
+#endif

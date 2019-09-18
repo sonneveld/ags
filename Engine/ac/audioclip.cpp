@@ -75,6 +75,8 @@ ScriptAudioChannel* AudioClip_PlayQueued(ScriptAudioClip *clip, int priority, in
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -153,3 +155,5 @@ void RegisterAudioClipAPI()
     ccAddExternalFunctionForPlugin("AudioClip::get_IsAvailable",   (void*)AudioClip_GetIsAvailable);
     ccAddExternalFunctionForPlugin("AudioClip::get_Type",          (void*)AudioClip_GetType);
 }
+
+#endif

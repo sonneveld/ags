@@ -79,6 +79,9 @@ void Label_SetFont(GUILabel *guil, int fontnum) {
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -171,3 +174,4 @@ void RegisterLabelAPI()
     ccAddExternalFunctionForPlugin("Label::get_TextColor", (void*)Label_GetColor);
     ccAddExternalFunctionForPlugin("Label::set_TextColor", (void*)Label_SetColor);
 }
+#endif

@@ -118,6 +118,9 @@ void set_inv_item_cursorpic(int invItemId, int piccy)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -265,3 +268,4 @@ void RegisterInventoryItemAPI()
     ccAddExternalFunctionForPlugin("InventoryItem::get_Name",                  (void*)InventoryItem_GetName_New);
     ccAddExternalFunctionForPlugin("InventoryItem::set_Name",                  (void*)InventoryItem_SetName);
 }
+#endif

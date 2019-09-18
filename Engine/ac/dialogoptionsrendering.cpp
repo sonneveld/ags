@@ -146,6 +146,9 @@ void DialogOptionsRendering_SetActiveOptionID(ScriptDialogOptionsRendering *dlgO
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -331,3 +334,4 @@ void RegisterDialogOptionsRenderingAPI()
     ccAddExternalFunctionForPlugin("DialogOptionsRenderingInfo::get_Y",                (void*)DialogOptionsRendering_GetY);
     ccAddExternalFunctionForPlugin("DialogOptionsRenderingInfo::set_Y",                (void*)DialogOptionsRendering_SetY);
 }
+#endif

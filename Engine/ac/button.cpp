@@ -301,6 +301,10 @@ void Button_SetTextAlignment(GUIButton *butt, int align)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -500,3 +504,4 @@ void RegisterButtonAPI()
     ccAddExternalFunctionForPlugin("Button::get_TextColor",        (void*)Button_GetTextColor);
     ccAddExternalFunctionForPlugin("Button::set_TextColor",        (void*)Button_SetTextColor);
 }
+#endif

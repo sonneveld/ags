@@ -1077,6 +1077,8 @@ void convert_move_path_to_room_resolution(MoveList *ml)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -1222,3 +1224,4 @@ void RegisterRoomAPI()
     ccAddExternalFunctionForPlugin("Room::get_TopEdge",                        (void*)Room_GetTopEdge);
     ccAddExternalFunctionForPlugin("Room::get_Width",                          (void*)Room_GetWidth);
 }
+#endif

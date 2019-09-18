@@ -227,6 +227,8 @@ void System_SetRenderAtScreenResolution(int enable)
 
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -458,3 +460,4 @@ void RegisterSystemAPI()
     ccAddExternalFunctionForPlugin("System::set_VSync",                (void*)System_SetVsync);
     ccAddExternalFunctionForPlugin("System::get_Windowed",             (void*)System_GetWindowed);
 }
+#endif

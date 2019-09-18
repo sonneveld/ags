@@ -73,6 +73,9 @@
 extern ScriptString myScriptStringImpl;
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 // void (char*texx, ...)
 RuntimeScriptValue Sc_sc_AbortGame(const RuntimeScriptValue *params, int32_t param_count)
 {
@@ -3013,3 +3016,4 @@ void RegisterGlobalAPI()
     ccAddExternalFunctionForPlugin("WaitKey",                  (void*)WaitKey);
     ccAddExternalFunctionForPlugin("WaitMouseKey",             (void*)WaitMouseKey);
 }
+#endif

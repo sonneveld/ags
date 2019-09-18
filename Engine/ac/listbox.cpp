@@ -372,6 +372,9 @@ GUIListBox* is_valid_listbox (int guin, int objn) {
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -673,3 +676,4 @@ void RegisterListBoxAPI()
     ccAddExternalFunctionForPlugin("ListBox::get_TopItem",         (void*)ListBox_GetTopItem);
     ccAddExternalFunctionForPlugin("ListBox::set_TopItem",         (void*)ListBox_SetTopItem);
 }
+#endif

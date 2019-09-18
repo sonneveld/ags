@@ -312,6 +312,8 @@ ScriptUserObject *Viewport_RoomToScreenPoint(ScriptViewport *scv, int roomx, int
 
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 RuntimeScriptValue Sc_Camera_Create(const RuntimeScriptValue *params, int32_t param_count)
 {
     API_SCALL_OBJAUTO(ScriptCamera, Camera_Create);
@@ -522,3 +524,4 @@ void RegisterViewportAPI()
     ccAddExternalObjectFunction("Viewport::ScreenToRoomPoint", Sc_Viewport_ScreenToRoomPoint);
     ccAddExternalObjectFunction("Viewport::RoomToScreenPoint", Sc_Viewport_RoomToScreenPoint);
 }
+#endif

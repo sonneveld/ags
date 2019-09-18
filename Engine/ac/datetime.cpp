@@ -60,6 +60,8 @@ int DateTime_GetRawTime(ScriptDateTime *sdt) {
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -140,3 +142,4 @@ void RegisterDateTimeAPI()
     ccAddExternalFunctionForPlugin("DateTime::get_Second",     (void*)DateTime_GetSecond);
     ccAddExternalFunctionForPlugin("DateTime::get_Year",       (void*)DateTime_GetYear);
 }
+#endif

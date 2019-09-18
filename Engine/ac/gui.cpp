@@ -700,6 +700,9 @@ void gui_on_mouse_down(const int guin, const int mbut)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -1000,3 +1003,4 @@ void RegisterGUIAPI()
     ccAddExternalFunctionForPlugin("GUI::get_ZOrder",              (void*)GUI_GetZOrder);
     ccAddExternalFunctionForPlugin("GUI::set_ZOrder",              (void*)GUI_SetZOrder);
 }
+#endif

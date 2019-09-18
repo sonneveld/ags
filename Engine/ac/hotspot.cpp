@@ -130,6 +130,9 @@ int get_hotspot_at(int xpp,int ypp) {
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -272,3 +275,4 @@ void RegisterHotspotAPI()
     ccAddExternalFunctionForPlugin("Hotspot::get_WalkToX",         (void*)Hotspot_GetWalkToX);
     ccAddExternalFunctionForPlugin("Hotspot::get_WalkToY",         (void*)Hotspot_GetWalkToY);
 }
+#endif

@@ -182,6 +182,8 @@ void DrawViewFrame(Bitmap *ds, const ViewFrame *vframe, int x, int y, bool alpha
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -286,3 +288,4 @@ void RegisterViewFrameAPI()
     ccAddExternalFunctionForPlugin("ViewFrame::get_Speed",         (void*)ViewFrame_GetSpeed);
     ccAddExternalFunctionForPlugin("ViewFrame::get_View",          (void*)ViewFrame_GetView);
 }
+#endif

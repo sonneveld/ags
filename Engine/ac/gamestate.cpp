@@ -375,7 +375,14 @@ ScriptCamera *GameState::RegisterRoomCamera(int index, int32_t handle)
     auto &scobj = _scCameraRefs[index];
     if (handle == 0)
     {
-        handle = ccRegisterManagedObject(scobj.first, scobj.first);
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = scobj.first;
+        objinfo.address = scobj.first;
+        objinfo.buffer = scobj.first;
+        objinfo.buffer_size = sizeof(ScriptCamera);
+        handle = ccRegisterManagedObject2(objinfo);
+        
         ccAddObjectReference(handle); // one reference for the GameState
     }
     else

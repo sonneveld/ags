@@ -156,6 +156,9 @@ int __Rand(int upto)
 
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -317,3 +320,4 @@ void RegisterMathAPI()
     ccAddExternalFunctionForPlugin("Maths::Tanh^1",                (void*)Math_Tanh);
     ccAddExternalFunctionForPlugin("Maths::get_Pi",                (void*)Math_GetPi);
 }
+#endif

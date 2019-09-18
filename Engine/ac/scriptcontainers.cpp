@@ -223,8 +223,9 @@ void *Set_GetItemsAsArray(ScriptSetBase *set)
 
 
 
-
 /// GENERATED CODE
+
+#ifndef IGNORE_GENERATED
 
 RuntimeScriptValue Sc_Dict_Create(const RuntimeScriptValue *params, int32_t param_count)
 {
@@ -354,3 +355,4 @@ void RegisterContainerAPI()
     ccAddExternalObjectFunction("Set::get_ItemCount", Sc_Set_GetItemCount);
     ccAddExternalObjectFunction("Set::GetItemsAsArray", Sc_Set_GetItemAsArray);
 }
+#endif

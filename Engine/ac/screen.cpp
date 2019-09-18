@@ -172,6 +172,8 @@ ScriptUserObject *Screen_RoomToScreenPoint(int roomx, int roomy)
 
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 RuntimeScriptValue Sc_Screen_GetScreenHeight(const RuntimeScriptValue *params, int32_t param_count)
 {
     API_SCALL_INT(Screen_GetScreenHeight);
@@ -229,3 +231,4 @@ void RegisterScreenAPI()
     ccAddExternalStaticFunction("Screen::ScreenToRoomPoint", Sc_Screen_ScreenToRoomPoint);
     ccAddExternalStaticFunction("Screen::RoomToScreenPoint", Sc_Screen_RoomToScreenPoint);
 }
+#endif

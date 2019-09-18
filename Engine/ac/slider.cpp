@@ -109,6 +109,8 @@ void Slider_SetHandleOffset(GUISlider *guisl, int newOffset)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -222,3 +224,4 @@ void RegisterSliderAPI()
     ccAddExternalFunctionForPlugin("Slider::get_Value",                (void*)Slider_GetValue);
     ccAddExternalFunctionForPlugin("Slider::set_Value",                (void*)Slider_SetValue);
 }
+#endif

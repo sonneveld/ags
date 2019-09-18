@@ -272,6 +272,8 @@ void recreate_overlay_ddbs()
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -386,3 +388,4 @@ void RegisterOverlayAPI()
     ccAddExternalFunctionForPlugin("Overlay::get_Y",               (void*)Overlay_GetY);
     ccAddExternalFunctionForPlugin("Overlay::set_Y",               (void*)Overlay_SetY);
 }
+#endif

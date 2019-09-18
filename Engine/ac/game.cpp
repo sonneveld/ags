@@ -2074,6 +2074,9 @@ bool unserialize_audio_script_object(int index, const char *objectType, const ch
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -2518,3 +2521,4 @@ void RegisterStaticObjects()
 	ccAddExternalStaticObject("system",&scsystem, &GlobalStaticManager);
 	ccAddExternalStaticObject("savegameindex",&play.filenumbers[0], &GlobalStaticManager);
 }
+#endif

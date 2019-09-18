@@ -590,6 +590,9 @@ Stream *get_valid_file_stream_from_handle(int32_t handle, const char *operation_
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
+
 //=============================================================================
 //
 // Script API Functions
@@ -758,3 +761,4 @@ void RegisterFileAPI()
     ccAddExternalFunctionForPlugin("File::get_EOF",            (void*)File_GetEOF);
     ccAddExternalFunctionForPlugin("File::get_Error",          (void*)File_GetError);
 }
+#endif

@@ -79,6 +79,8 @@ SkipSpeechStyle internal_skip_speech_to_user(int internal_val)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -253,3 +255,4 @@ void RegisterSpeechAPI(ScriptAPIVersion base_api, ScriptAPIVersion compat_api)
 
     /* -- Don't register more unsafe plugin symbols until new plugin interface is designed --*/
 }
+#endif

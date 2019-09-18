@@ -79,6 +79,8 @@ void TextBox_SetShowBorder(GUITextBox *guit, bool on)
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -170,3 +172,4 @@ void RegisterTextBoxAPI()
     ccAddExternalFunctionForPlugin("TextBox::get_TextColor",   (void*)TextBox_GetTextColor);
     ccAddExternalFunctionForPlugin("TextBox::set_TextColor",   (void*)TextBox_SetTextColor);
 }
+#endif

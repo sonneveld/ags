@@ -319,6 +319,8 @@ void my_strncpy(char *dest, const char *src, int len) {
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
+
 //=============================================================================
 //
 // Script API Functions
@@ -505,3 +507,4 @@ void RegisterStringAPI()
     ccAddExternalFunctionForPlugin("String::geti_Chars",       (void*)String_GetChars);
     ccAddExternalFunctionForPlugin("String::get_Length",       (void*)strlen);
 }
+#endif

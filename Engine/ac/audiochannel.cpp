@@ -218,6 +218,7 @@ void AudioChannel_SetRoomLocation(ScriptAudioChannel *channel, int xPos, int yPo
 }
 /// GENERATED CODE
 
+#ifndef IGNORE_GENERATED
 //=============================================================================
 //
 // Script API Functions
@@ -352,3 +353,4 @@ void RegisterAudioChannelAPI()
     ccAddExternalFunctionForPlugin("AudioChannel::get_Volume",         (void*)AudioChannel_GetVolume);
     ccAddExternalFunctionForPlugin("AudioChannel::set_Volume",         (void*)AudioChannel_SetVolume);
 }
+#endif

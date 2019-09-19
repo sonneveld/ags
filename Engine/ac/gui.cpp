@@ -470,10 +470,20 @@ void export_gui_controls(int ee)
     for (int ff = 0; ff < guis[ee].GetControlCount(); ff++)
     {
         GUIObject *guio = guis[ee].GetControl(ff);
-        if (!guio->Name.IsEmpty())
-/// GENERATED CODE EXT
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicGUIObject;
+        objinfo.address = guio;
+        objinfo.buffer = guio;
+        objinfo.buffer_size = sizeof(GUIObject);
+        ccRegisterManagedObject2(objinfo);
+
+        if (!guio->Name.IsEmpty()){
+            /// GENERATED CODE EXT
             ccAddExternalDynamicObject(guio->Name, guio, &ccDynamicGUIObject);
-        ccRegisterManagedObject(guio, &ccDynamicGUIObject);
+        }
+
     }
 }
 

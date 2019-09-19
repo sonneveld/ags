@@ -76,7 +76,14 @@ void AGSDeSerializer::Unserialize(int index, const char *objectType, const char 
         // files cannot be restored properly -- so just recreate
         // the object; attempting any operations on it will fail
         sc_File *scf = new sc_File();
-        ccRegisterUnserializedObject(index, scf, scf);
+        ManagedObjectInfo objinfo;
+        objinfo.handle = index;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager =  scf;
+        objinfo.address =  scf;
+        objinfo.buffer =  scf;
+        objinfo.buffer_size = sizeof(sc_File);
+        ccRegisterUnserializedObject2(objinfo);
     }
     else if (strcmp(objectType, "Overlay") == 0) {
         ScriptOverlay *scf = new ScriptOverlay();

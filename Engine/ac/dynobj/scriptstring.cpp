@@ -53,7 +53,14 @@ void ScriptString::Unserialize(int index, const char *serializedData, int dataSi
     int textsize = UnserializeInt();
     text = (char*)malloc(textsize + 1);
     strcpy(text, &serializedData[bytesSoFar]);
-    ccRegisterUnserializedObject(index, text, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  text;
+    objinfo.buffer =  text;
+    objinfo.buffer_size = textsize + 1;
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptString::ScriptString() {

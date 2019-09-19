@@ -29,6 +29,17 @@ using namespace AGS; // FIXME later
 // A pair of managed handle and abstract object pointer
 typedef std::pair<int32_t, void*> DynObjectRef;
 
+struct ManagedObjectInfo
+{
+    int32_t handle = -1;
+    ScriptValueType obj_type = kScValUndefined;
+    ICCDynamicObject *object_manager = nullptr;
+    // TODO: this makes no sense having this as "const char*",
+    // void* will be proper (and in all related functions)
+    void *address = nullptr; // pointer passed to scripting engine, must be _within_ buffer
+    void *buffer = nullptr; // usually the same pointer but could be different (dynamic arrays have a sneaky extra prepended bytes)
+    size_t buffer_size = 0;
+};
 
 // OBJECT-BASED SCRIPTING RUNTIME FUNCTIONS
 // interface
@@ -90,9 +101,9 @@ struct ICCStringClass {
 extern void  ccSetStringClassImpl(ICCStringClass *theClass);
 // register a memory handle for the object and allow script
 // pointers to point to it
-extern int32_t ccRegisterManagedObject(const void *object, ICCDynamicObject *, bool plugin_object = false);
+extern int32_t ccRegisterManagedObject2(ManagedObjectInfo &info);
 // register a de-serialized object
-extern int32_t ccRegisterUnserializedObject(int index, const void *object, ICCDynamicObject *, bool plugin_object = false);
+extern int32_t ccRegisterUnserializedObject2(ManagedObjectInfo &info);
 // unregister a particular object
 extern int   ccUnRegisterManagedObject(const void *object);
 // remove all registered objects
@@ -104,11 +115,10 @@ extern int   ccUnserializeAllObjects(Common::Stream *in, ICCObjectReader *callba
 // dispose the object if RefCount==0
 extern void  ccAttemptDisposeObject(int32_t handle);
 // translate between object handles and memory addresses
-extern int32_t ccGetObjectHandleFromAddress(const char *address);
+int ccGetObjectInfoFromAddress(ManagedObjectInfo &info, void *address);
 // TODO: not sure if it makes any sense whatsoever to use "const char*"
 // in these functions, might as well change to char* or just void*.
-extern const char *ccGetObjectAddressFromHandle(int32_t handle);
-extern ScriptValueType ccGetObjectAddressAndManagerFromHandle(int32_t handle, void *&object, ICCDynamicObject *&manager);
+int ccGetObjectInfoFromHandle(ManagedObjectInfo &info, int32_t handle);
 
 extern int ccAddObjectReference(int32_t handle);
 extern int ccReleaseObjectReference(int32_t handle);

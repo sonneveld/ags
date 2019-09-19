@@ -37,7 +37,14 @@ void ScriptViewFrame::Unserialize(int index, const char *serializedData, int dat
     view = UnserializeInt();
     loop = UnserializeInt();
     frame = UnserializeInt();
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptViewFrame);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptViewFrame::ScriptViewFrame(int p_view, int p_loop, int p_frame) {

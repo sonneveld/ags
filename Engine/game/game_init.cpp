@@ -135,7 +135,14 @@ void InitAndRegisterAudioObjects()
     for (int i = 0; i <= MAX_SOUND_CHANNELS; ++i) 
     {
         scrAudioChannel[i].id = i;
-        ccRegisterManagedObject(&scrAudioChannel[i], &ccDynamicAudio);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicAudio;
+        objinfo.address = &scrAudioChannel[i];
+        objinfo.buffer = &scrAudioChannel[i];
+        objinfo.buffer_size = sizeof(ScriptAudioChannel);
+        ccRegisterManagedObject2(objinfo);
     }
 
     for (size_t i = 0; i < game.audioClips.size(); ++i)
@@ -144,7 +151,15 @@ void InitAndRegisterAudioObjects()
         // to actual item index in array, so we don't make any difference
         // between game versions, for now.
         game.audioClips[i].id = i;
-        ccRegisterManagedObject(&game.audioClips[i], &ccDynamicAudioClip);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicAudioClip;
+        objinfo.address = &game.audioClips[i];
+        objinfo.buffer = &game.audioClips[i];
+        objinfo.buffer_size = sizeof(ScriptAudioClip);
+        ccRegisterManagedObject2(objinfo);
+
 /// GENERATED CODE EXT
         ccAddExternalDynamicObject(game.audioClips[i].scriptName, &game.audioClips[i], &ccDynamicAudioClip);
     }
@@ -169,11 +184,19 @@ void InitAndRegisterCharacters()
         game.chars[i].loop = 0;
         game.chars[i].frame = 0;
         game.chars[i].walkwait = -1;
-        ccRegisterManagedObject(&game.chars[i], &ccDynamicCharacter);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicCharacter;
+        objinfo.address = &game.chars[i];
+        objinfo.buffer = &game.chars[i];
+        objinfo.buffer_size = sizeof(CharacterInfo);
+        ccRegisterManagedObject2(objinfo);
 
         // export the character's script object
         characterScriptObjNames[i] = game.chars[i].scrname;
-/// GENERATED CODE EXT
+
+        /// GENERATED CODE EXT
         ccAddExternalDynamicObject(characterScriptObjNames[i], &game.chars[i], &ccDynamicCharacter);
     }
 }
@@ -186,7 +209,14 @@ void InitAndRegisterDialogs()
     {
         scrDialog[i].id = i;
         scrDialog[i].reserved = 0;
-        ccRegisterManagedObject(&scrDialog[i], &ccDynamicDialog);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicDialog;
+        objinfo.address = &scrDialog[i];
+        objinfo.buffer = &scrDialog[i];
+        objinfo.buffer_size = sizeof(ScriptDialog);
+        ccRegisterManagedObject2(objinfo);
 
         if (!game.dialogScriptNames[i].IsEmpty())
 /// GENERATED CODE EXT
@@ -197,12 +227,30 @@ void InitAndRegisterDialogs()
 // Initializes dialog options rendering objects and registers them in the script system
 void InitAndRegisterDialogOptions()
 {
-    ccRegisterManagedObject(&ccDialogOptionsRendering, &ccDialogOptionsRendering);
+    {
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = &ccDialogOptionsRendering;
+    objinfo.address = &ccDialogOptionsRendering;
+    objinfo.buffer = &ccDialogOptionsRendering;
+    objinfo.buffer_size = sizeof(ScriptDialogOptionsRendering);
+    ccRegisterManagedObject2(objinfo);
+    }
 
+    {
     dialogOptionsRenderingSurface = new ScriptDrawingSurface();
     dialogOptionsRenderingSurface->isLinkedBitmapOnly = true;
-    long dorsHandle = ccRegisterManagedObject(dialogOptionsRenderingSurface, dialogOptionsRenderingSurface);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = dialogOptionsRenderingSurface;
+    objinfo.address = dialogOptionsRenderingSurface;
+    objinfo.buffer = dialogOptionsRenderingSurface;
+    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
+    auto dorsHandle = ccRegisterManagedObject2(objinfo);
+
     ccAddObjectReference(dorsHandle);
+    }
 }
 
 // Initializes gui and registers them in the script system
@@ -227,9 +275,17 @@ HError InitAndRegisterGUI()
         // because ccAddExtSymbol only keeps a reference
         guiScriptObjNames[i] = guis[i].Name;
         scrGui[i].id = i;
-/// GENERATED CODE EXT
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicGUI;
+        objinfo.address = &scrGui[i];
+        objinfo.buffer = &scrGui[i];
+        objinfo.buffer_size = sizeof(ScriptGUI);
+        ccRegisterManagedObject2(objinfo);
+
+        /// GENERATED CODE EXT
         ccAddExternalDynamicObject(guiScriptObjNames[i], &scrGui[i], &ccDynamicGUI);
-        ccRegisterManagedObject(&scrGui[i], &ccDynamicGUI);
     }
     return HError::None();
 }
@@ -241,10 +297,17 @@ void InitAndRegisterInvItems()
     {
         scrInv[i].id = i;
         scrInv[i].reserved = 0;
-        ccRegisterManagedObject(&scrInv[i], &ccDynamicInv);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicInv;
+        objinfo.address = &scrInv[i];
+        objinfo.buffer = &scrInv[i];
+        objinfo.buffer_size = sizeof(ScriptInvItem);
+        ccRegisterManagedObject2(objinfo);
 
         if (!game.invScriptNames[i].IsEmpty())
-/// GENERATED CODE EXT
+            /// GENERATED CODE EXT
             ccAddExternalDynamicObject(game.invScriptNames[i], &scrInv[i], &ccDynamicInv);
     }
 }
@@ -256,7 +319,14 @@ void InitAndRegisterHotspots()
     {
         scrHotspot[i].id = i;
         scrHotspot[i].reserved = 0;
-        ccRegisterManagedObject(&scrHotspot[i], &ccDynamicHotspot);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicHotspot;
+        objinfo.address = &scrHotspot[i];
+        objinfo.buffer = &scrHotspot[i];
+        objinfo.buffer_size = sizeof(ScriptHotspot);
+        ccRegisterManagedObject2(objinfo);
     }
 }
 
@@ -265,7 +335,13 @@ void InitAndRegisterRoomObjects()
 {
     for (int i = 0; i < MAX_ROOM_OBJECTS; ++i)
     {
-        ccRegisterManagedObject(&scrObj[i], &ccDynamicObject);
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicObject;
+        objinfo.address = &scrObj[i];
+        objinfo.buffer = &scrObj[i];
+        objinfo.buffer_size = sizeof(ScriptObject);
+        ccRegisterManagedObject2(objinfo);
     }
 }
 
@@ -276,7 +352,14 @@ void InitAndRegisterRegions()
     {
         scrRegion[i].id = i;
         scrRegion[i].reserved = 0;
-        ccRegisterManagedObject(&scrRegion[i], &ccDynamicRegion);
+
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = &ccDynamicRegion;
+        objinfo.address = &scrRegion[i];
+        objinfo.buffer = &scrRegion[i];
+        objinfo.buffer_size = sizeof(ScriptRegion);
+        ccRegisterManagedObject2(objinfo);
     }
 }
 
@@ -292,12 +375,25 @@ void RegisterStaticArrays()
     StaticDialogArray.Create(&ccDynamicDialog, sizeof(ScriptDialog), sizeof(ScriptDialog));
 
     ccAddExternalStaticArray("character",&game.chars[0], &StaticCharacterArray);
+    coreExecutor.AddMemoryWindow(game.chars, sizeof(CharacterInfo)*(game.numcharacters+5), false);
+
     ccAddExternalStaticArray("object",&scrObj[0], &StaticObjectArray);
+    coreExecutor.AddMemoryWindow(scrObj, sizeof(scrObj), false);
+
     ccAddExternalStaticArray("gui",&scrGui[0], &StaticGUIArray);
+    coreExecutor.AddMemoryWindow(scrGui, sizeof(ScriptGUI)*game.numgui, false);
+
     ccAddExternalStaticArray("hotspot",&scrHotspot[0], &StaticHotspotArray);
+    coreExecutor.AddMemoryWindow(scrHotspot, sizeof(scrHotspot), false);
+
     ccAddExternalStaticArray("region",&scrRegion[0], &StaticRegionArray);
+    coreExecutor.AddMemoryWindow(scrRegion, sizeof(scrRegion), false);
+
     ccAddExternalStaticArray("inventory",&scrInv[0], &StaticInventoryArray);
+    coreExecutor.AddMemoryWindow(scrInv, sizeof(scrInv), false);
+
     ccAddExternalStaticArray("dialog", &scrDialog[0], &StaticDialogArray);
+    coreExecutor.AddMemoryWindow(scrDialog, sizeof(ScriptDialog)*game.numdialog, false);
 }
 
 // Initializes various game entities and registers them in the script system
@@ -320,8 +416,10 @@ HError InitAndRegisterGameEntities()
     RegisterStaticArrays();
 
     setup_player_character(game.playercharacter);
-    if (loaded_game_file_version >= kGameVersion_270)
+    if (loaded_game_file_version >= kGameVersion_270) {
         ccAddExternalStaticObject("player", &_sc_PlayerCharPtr, &GlobalStaticManager);
+        coreExecutor.AddMemoryWindow(&_sc_PlayerCharPtr, sizeof(_sc_PlayerCharPtr), false);
+    }
     return HError::None();
 }
 

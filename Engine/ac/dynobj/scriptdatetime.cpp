@@ -45,7 +45,14 @@ void ScriptDateTime::Unserialize(int index, const char *serializedData, int data
     minute = UnserializeInt();
     second = UnserializeInt();
     rawUnixTime = UnserializeInt();
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptDateTime);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptDateTime::ScriptDateTime() {

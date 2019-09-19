@@ -27,7 +27,15 @@ ScriptDateTime* DateTime_Now_Core() {
 
 ScriptDateTime* DateTime_Now() {
     ScriptDateTime *sdt = DateTime_Now_Core();
-    ccRegisterManagedObject(sdt, sdt);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = sdt;
+    objinfo.address = sdt;
+    objinfo.buffer = sdt;
+    objinfo.buffer_size = sizeof(ScriptDateTime);
+    ccRegisterManagedObject2(objinfo);
+
     return sdt;
 }
 

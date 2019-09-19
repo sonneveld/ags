@@ -35,5 +35,12 @@ int CCInventory::Serialize(const char *address, char *buffer, int bufsize) {
 void CCInventory::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int num = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrInv[num], this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  &scrInv[num];
+    objinfo.buffer =  &scrInv[num];
+    objinfo.buffer_size = sizeof(ScriptInvItem);
+    ccRegisterUnserializedObject2(objinfo);
 }

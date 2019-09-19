@@ -36,5 +36,12 @@ int CCObject::Serialize(const char *address, char *buffer, int bufsize) {
 void CCObject::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int num = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrObj[num], this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  &scrObj[num];
+    objinfo.buffer =  &scrObj[num];
+    objinfo.buffer_size = sizeof(ScriptObject);
+    ccRegisterUnserializedObject2(objinfo);
 }

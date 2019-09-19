@@ -66,7 +66,14 @@ ScriptDrawingSurface* DynamicSprite_GetDrawingSurface(ScriptDynamicSprite *dss)
     if ((game.SpriteInfos[dss->slot].Flags & SPF_ALPHACHANNEL) != 0)
         surface->hasAlphaChannel = true;
 
-    ccRegisterManagedObject(surface, surface);
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = surface;
+    objinfo.address = surface;
+    objinfo.buffer = surface;
+    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
+    ccRegisterManagedObject2(objinfo);
+
     return surface;
 }
 

@@ -101,7 +101,14 @@ void ScriptDrawingSurface::Unserialize(int index, const char *serializedData, in
     modified = UnserializeInt();
     hasAlphaChannel = UnserializeInt();
     isLinkedBitmapOnly = (UnserializeInt() != 0);
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptDrawingSurface::ScriptDrawingSurface() 

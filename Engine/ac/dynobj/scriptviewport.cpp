@@ -44,7 +44,14 @@ void ScriptViewport::Unserialize(int index, const char *serializedData, int data
 {
     StartUnserialize(serializedData, dataSize);
     _id = UnserializeInt();
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptViewport);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptViewport *Viewport_Unserialize(int handle, const char *serializedData, int dataSize)

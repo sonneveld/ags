@@ -46,5 +46,12 @@ void ScriptSetBase::Unserialize(int index, const char *serializedData, int dataS
     // this is awkward, but I did not find better design solution atm
     StartUnserialize(serializedData, dataSize);
     UnserializeContainer(serializedData);
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptSetBase);
+    ccRegisterUnserializedObject2(objinfo);
 }

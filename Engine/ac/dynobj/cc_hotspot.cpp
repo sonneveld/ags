@@ -36,5 +36,13 @@ int CCHotspot::Serialize(const char *address, char *buffer, int bufsize) {
 void CCHotspot::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int num = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrHotspot[num], this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = &scrHotspot[num];
+    objinfo.buffer = &scrHotspot[num];
+    objinfo.buffer_size = sizeof(ScriptHotspot);
+    ccRegisterUnserializedObject2(objinfo);
 }

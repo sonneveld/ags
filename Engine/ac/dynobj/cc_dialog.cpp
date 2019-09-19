@@ -34,5 +34,13 @@ int CCDialog::Serialize(const char *address, char *buffer, int bufsize) {
 void CCDialog::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int num = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrDialog[num], this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = &scrDialog[num];
+    objinfo.buffer = &scrDialog[num];
+    objinfo.buffer_size = sizeof(ScriptDialog);
+    ccRegisterUnserializedObject2(objinfo);
 }

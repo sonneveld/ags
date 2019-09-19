@@ -36,5 +36,12 @@ int CCRegion::Serialize(const char *address, char *buffer, int bufsize) {
 void CCRegion::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int num = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrRegion[num], this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  &scrRegion[num];
+    objinfo.buffer =  &scrRegion[num];
+    objinfo.buffer_size = sizeof(ScriptRegion);
+    ccRegisterUnserializedObject2(objinfo);
 }

@@ -32,5 +32,13 @@ int CCAudioChannel::Serialize(const char *address, char *buffer, int bufsize) {
 void CCAudioChannel::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int id = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrAudioChannel[id], this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = &scrAudioChannel[id];
+    objinfo.buffer = &scrAudioChannel[id];
+    objinfo.buffer_size = sizeof(ScriptAudioChannel);
+    ccRegisterUnserializedObject2(objinfo);
 }

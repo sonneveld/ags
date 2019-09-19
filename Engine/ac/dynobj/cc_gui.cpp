@@ -34,5 +34,13 @@ int CCGUI::Serialize(const char *address, char *buffer, int bufsize) {
 void CCGUI::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int num = UnserializeInt();
-    ccRegisterUnserializedObject(index, &scrGui[num], this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = &scrGui[num];
+    objinfo.buffer = &scrGui[num];
+    objinfo.buffer_size = sizeof(ScriptGUI);
+    ccRegisterUnserializedObject2(objinfo);
 }

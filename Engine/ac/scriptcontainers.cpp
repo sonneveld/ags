@@ -57,7 +57,15 @@ ScriptDictBase *Dict_CreateImpl(bool sorted, bool case_sensitive)
 ScriptDictBase *Dict_Create(bool sorted, bool case_sensitive)
 {
     ScriptDictBase *dic = Dict_CreateImpl(sorted, case_sensitive);
-    ccRegisterManagedObject(dic, dic);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = dic;
+    objinfo.address = dic;
+    objinfo.buffer = dic;
+    objinfo.buffer_size = sizeof(ScriptDictBase);
+    ccRegisterManagedObject2(objinfo);
+
     return dic;
 }
 
@@ -160,7 +168,15 @@ ScriptSetBase *Set_CreateImpl(bool sorted, bool case_sensitive)
 ScriptSetBase *Set_Create(bool sorted, bool case_sensitive)
 {
     ScriptSetBase *set = Set_CreateImpl(sorted, case_sensitive);
-    ccRegisterManagedObject(set, set);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = set;
+    objinfo.address = set;
+    objinfo.buffer = set;
+    objinfo.buffer_size = sizeof(ScriptSetBase);
+    ccRegisterManagedObject2(objinfo);
+
     return set;
 }
 

@@ -134,7 +134,15 @@ ScriptDrawingSurface* Room_GetDrawingSurfaceForBackground(int backgroundNumber)
 
     ScriptDrawingSurface *surface = new ScriptDrawingSurface();
     surface->roomBackgroundNumber = backgroundNumber;
-    ccRegisterManagedObject(surface, surface);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = surface;
+    objinfo.address = surface;
+    objinfo.buffer = surface;
+    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
+    ccRegisterManagedObject2(objinfo);
+
     return surface;
 }
 

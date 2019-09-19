@@ -36,7 +36,15 @@ ScriptUserObject::~ScriptUserObject()
 {
     ScriptUserObject *suo = new ScriptUserObject();
     suo->Create(nullptr, size);
-    ccRegisterManagedObject(suo, suo);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = suo;
+    objinfo.address = suo;
+    objinfo.buffer = suo->_data;
+    objinfo.buffer_size = suo->_size;
+    ccRegisterManagedObject2(objinfo);
+
     return suo;
 }
 
@@ -75,7 +83,14 @@ int ScriptUserObject::Serialize(const char *address, char *buffer, int bufsize)
 void ScriptUserObject::Unserialize(int index, const char *serializedData, int dataSize)
 {
     Create(serializedData, dataSize);
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this->_data;
+    objinfo.buffer_size = this->_size;
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 const char* ScriptUserObject::GetFieldPtr(const char *address, intptr_t offset)

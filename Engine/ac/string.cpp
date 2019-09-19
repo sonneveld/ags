@@ -229,7 +229,15 @@ DynObjectRef CreateNewScriptStringObj(const char *fromText, bool reAllocate)
         str->text = (char*)fromText;
     }
     void *obj_ptr = str->text;
-    int32_t handle = ccRegisterManagedObject(obj_ptr, str);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = str;
+    objinfo.address = str->text;
+    objinfo.buffer = str->text;
+    objinfo.buffer_size = strlen(str->text) + 1;
+    int32_t handle = ccRegisterManagedObject2(objinfo);
+
     if (handle == 0)
     {
         delete str;

@@ -62,7 +62,14 @@ void ScriptOverlay::Unserialize(int index, const char *serializedData, int dataS
     borderWidth = UnserializeInt();
     borderHeight = UnserializeInt();
     isBackgroundSpeech = UnserializeInt();
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptOverlay);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 void ScriptOverlay::Remove() 

@@ -26,7 +26,14 @@ int ScriptDialogOptionsRendering::Serialize(const char *address, char *buffer, i
 }
 
 void ScriptDialogOptionsRendering::Unserialize(int index, const char *serializedData, int dataSize) {
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptDialogOptionsRendering);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 void ScriptDialogOptionsRendering::Reset()

@@ -44,7 +44,14 @@ void ScriptCamera::Unserialize(int index, const char *serializedData, int dataSi
 {
     StartUnserialize(serializedData, dataSize);
     _id = UnserializeInt();
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptCamera);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptCamera *Camera_Unserialize(int handle, const char *serializedData, int dataSize)

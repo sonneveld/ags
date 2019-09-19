@@ -32,5 +32,13 @@ int CCAudioClip::Serialize(const char *address, char *buffer, int bufsize) {
 void CCAudioClip::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int id = UnserializeInt();
-    ccRegisterUnserializedObject(index, &game.audioClips[id], this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = &game.audioClips[id];
+    objinfo.buffer = &game.audioClips[id];
+    objinfo.buffer_size = sizeof(ScriptAudioClip);
+    ccRegisterUnserializedObject2(objinfo);
 }

@@ -28,20 +28,15 @@ struct ManagedObjectPool final {
 private:
     // TODO: find out if we can make handle size_t
     struct ManagedObject {
-        ScriptValueType obj_type;
-        int32_t handle;
-        // TODO: this makes no sense having this as "const char*",
-        // void* will be proper (and in all related functions)
-        const char *addr;
-        ICCDynamicObject *callback;
+
+        ManagedObjectInfo info;
+
         int refCount;
 
-        bool isUsed() const { return obj_type != kScValUndefined; }
+        bool isUsed() const { return info.obj_type != kScValUndefined; }
 
-        ManagedObject() 
-            : obj_type(kScValUndefined), handle(0), addr(nullptr), callback(nullptr), refCount(0) {}
-        ManagedObject(ScriptValueType obj_type, int32_t handle, const char *addr, ICCDynamicObject * callback) 
-            : obj_type(obj_type), handle(handle), addr(addr), callback(callback), refCount(0) {}
+        ManagedObject();
+        ManagedObject(ManagedObjectInfo &info);
     };
 
     int objectCreationCounter;  // used to do garbage collection every so often
@@ -61,13 +56,12 @@ public:
     int32_t AddRef(int32_t handle);
     int CheckDispose(int32_t handle);
     int32_t SubRef(int32_t handle);
-    int32_t AddressToHandle(const char *addr);
-    const char* HandleToAddress(int32_t handle);
-    ScriptValueType HandleToAddressAndManager(int32_t handle, void *&object, ICCDynamicObject *&manager);
+    int GetInfoByHandle(ManagedObjectInfo &info, int32_t handle);
+    int GetInfoByAddress(ManagedObjectInfo &info, void *address);
     int RemoveObject(const char *address);
     void RunGarbageCollectionIfAppropriate();
-    int AddObject(const char *address, ICCDynamicObject *callback, bool plugin_object);
-    int AddUnserializedObject(const char *address, ICCDynamicObject *callback, bool plugin_object, int handle);
+    int AddObject(ManagedObjectInfo &info);
+    int AddUnserializedObject(ManagedObjectInfo &info);
     void WriteToDisk(Common::Stream *out);
     int ReadFromDisk(Common::Stream *in, ICCObjectReader *reader);
     void reset();

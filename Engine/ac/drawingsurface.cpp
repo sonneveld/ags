@@ -137,7 +137,15 @@ ScriptDrawingSurface* DrawingSurface_CreateCopy(ScriptDrawingSurface *sds)
             ScriptDrawingSurface *newSurface = new ScriptDrawingSurface();
             newSurface->dynamicSurfaceNumber = i;
             newSurface->hasAlphaChannel = sds->hasAlphaChannel;
-            ccRegisterManagedObject(newSurface, newSurface);
+
+            ManagedObjectInfo objinfo;
+            objinfo.obj_type = kScValDynamicObject;
+            objinfo.object_manager = newSurface;
+            objinfo.address = newSurface;
+            objinfo.buffer = newSurface;
+            objinfo.buffer_size = sizeof(ScriptDrawingSurface);
+            ccRegisterManagedObject2(objinfo);
+
             return newSurface;
         }
     }

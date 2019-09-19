@@ -754,7 +754,15 @@ ScriptViewFrame* Game_GetViewFrame(int viewNumber, int loopNumber, int frame) {
         quit("!GetGameParameter: invalid frame specified");
 
     ScriptViewFrame *sdt = new ScriptViewFrame(viewNumber - 1, loopNumber, frame);
-    ccRegisterManagedObject(sdt, sdt);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = sdt;
+    objinfo.address = sdt;
+    objinfo.buffer = sdt;
+    objinfo.buffer_size = sizeof(ScriptViewFrame);
+    ccRegisterManagedObject2(objinfo);
+    
     return sdt;
 }
 
@@ -2515,10 +2523,21 @@ void RegisterGameAPI()
 void RegisterStaticObjects()
 {
     ccAddExternalStaticObject("game",&play, &GameStaticManager);
+    coreExecutor.AddMemoryWindow(&play, sizeof(GameState), false);
+
 	ccAddExternalStaticObject("gs_globals",&play.globalvars[0], &GlobalStaticManager);
+    // coreExecutor.AddMemoryWindow(play.globalvars, sizeof(play.globalvars), false);
+
 	ccAddExternalStaticObject("mouse",&scmouse, &GlobalStaticManager);
+    coreExecutor.AddMemoryWindow(&scmouse, sizeof(ScriptMouse), false);
+
 	ccAddExternalStaticObject("palette",&palette[0], &GlobalStaticManager);
+    coreExecutor.AddMemoryWindow(palette, sizeof(palette), false);
+
 	ccAddExternalStaticObject("system",&scsystem, &GlobalStaticManager);
+    coreExecutor.AddMemoryWindow(&scsystem, sizeof(ScriptSystem), false);
+
 	ccAddExternalStaticObject("savegameindex",&play.filenumbers[0], &GlobalStaticManager);
+    // coreExecutor.AddMemoryWindow(play.filenumbers, sizeof(play.filenumbers), false);
 }
 #endif

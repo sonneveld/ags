@@ -37,12 +37,26 @@ int ScriptDynamicSprite::Serialize(const char *address, char *buffer, int bufsiz
 void ScriptDynamicSprite::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     slot = UnserializeInt();
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptDynamicSprite);
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 ScriptDynamicSprite::ScriptDynamicSprite(int theSlot) {
     slot = theSlot;
-    ccRegisterManagedObject(this, this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = this;
+    objinfo.buffer = this;
+    objinfo.buffer_size = sizeof(ScriptDynamicSprite);
+    ccRegisterManagedObject2(objinfo);
 }
 
 ScriptDynamicSprite::ScriptDynamicSprite() {

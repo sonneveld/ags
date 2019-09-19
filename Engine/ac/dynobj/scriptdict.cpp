@@ -46,5 +46,12 @@ void ScriptDictBase::Unserialize(int index, const char *serializedData, int data
     // this is awkward, but I did not find better design solution atm
     StartUnserialize(serializedData, dataSize);
     UnserializeContainer(serializedData);
-    ccRegisterUnserializedObject(index, this, this);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager =  this;
+    objinfo.address =  this;
+    objinfo.buffer =  this;
+    objinfo.buffer_size = sizeof(ScriptDictBase);
+    ccRegisterUnserializedObject2(objinfo);
 }

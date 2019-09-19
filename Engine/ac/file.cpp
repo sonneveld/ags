@@ -89,7 +89,15 @@ void *sc_OpenFile(const char *fnmm, int mode) {
     delete scf;
     return nullptr;
   }
-  ccRegisterManagedObject(scf, scf);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = scf;
+    objinfo.address = scf;
+    objinfo.buffer = scf;
+    objinfo.buffer_size = sizeof(sc_File);
+    ccRegisterManagedObject2(objinfo);
+
   return scf;
 }
 

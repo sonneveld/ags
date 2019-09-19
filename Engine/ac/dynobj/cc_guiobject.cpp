@@ -38,5 +38,13 @@ void CCGUIObject::Unserialize(int index, const char *serializedData, int dataSiz
     StartUnserialize(serializedData, dataSize);
     int guinum = UnserializeInt();
     int objnum = UnserializeInt();
-    ccRegisterUnserializedObject(index, guis[guinum].GetControl(objnum), this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = guis[guinum].GetControl(objnum);
+    objinfo.buffer = guis[guinum].GetControl(objnum);
+    objinfo.buffer_size = sizeof(GUIObject);
+    ccRegisterUnserializedObject2(objinfo);
 }

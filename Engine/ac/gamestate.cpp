@@ -313,12 +313,26 @@ ScriptViewport *GameState::RegisterRoomViewport(int index, int32_t handle)
     auto &scobj = _scViewportRefs[index];
     if (handle == 0)
     {
-        handle = ccRegisterManagedObject(scobj.first, scobj.first);
+        ManagedObjectInfo objinfo;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager = scobj.first;
+        objinfo.address = scobj.first;
+        objinfo.buffer = scobj.first;
+        objinfo.buffer_size = sizeof(ScriptViewport);
+        handle = ccRegisterManagedObject2(objinfo);
+
         ccAddObjectReference(handle); // one reference for the GameState
     }
     else
     {
-        ccRegisterUnserializedObject(handle, scobj.first, scobj.first);
+        ManagedObjectInfo objinfo;
+        objinfo.handle = handle;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager =  scobj.first;
+        objinfo.address =  scobj.first;
+        objinfo.buffer =  scobj.first;
+        objinfo.buffer_size = sizeof(ScriptViewport);
+        ccRegisterUnserializedObject2(objinfo);
     }
     scobj.second = handle;
     return scobj.first;
@@ -387,7 +401,14 @@ ScriptCamera *GameState::RegisterRoomCamera(int index, int32_t handle)
     }
     else
     {
-        ccRegisterUnserializedObject(handle, scobj.first, scobj.first);
+        ManagedObjectInfo objinfo;
+        objinfo.handle = handle;
+        objinfo.obj_type = kScValDynamicObject;
+        objinfo.object_manager =  scobj.first;
+        objinfo.address =  scobj.first;
+        objinfo.buffer =  scobj.first;
+        objinfo.buffer_size = sizeof(ScriptCamera);
+        ccRegisterUnserializedObject2(objinfo);
     }
     scobj.second = handle;
     return scobj.first;

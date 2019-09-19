@@ -742,7 +742,16 @@ void IAGSEngine::QueueGameScriptFunction(const char *name, int32 globalScript, i
 
 int IAGSEngine::RegisterManagedObject(const void *object, IAGSScriptManagedObject *callback) {
     GlobalReturnValue.SetPluginObject((void*)object, (ICCDynamicObject*)callback);
-    return ccRegisterManagedObject(object, (ICCDynamicObject*)callback, true);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValPluginObject;
+    objinfo.object_manager = (ICCDynamicObject*)callback;
+    objinfo.address = (void*)object;
+    objinfo.buffer = (void*)object;
+    objinfo.buffer_size = 1024*1024; // don't know managed object size.
+    int32_t handle = ccRegisterManagedObject2(objinfo);
+
+    return handle;
 }
 
 void IAGSEngine::AddManagedObjectReader(const char *typeName, IAGSManagedObjectReader *reader) {
@@ -764,26 +773,39 @@ void IAGSEngine::AddManagedObjectReader(const char *typeName, IAGSManagedObjectR
 
 void IAGSEngine::RegisterUnserializedObject(int key, const void *object, IAGSScriptManagedObject *callback) {
     GlobalReturnValue.SetPluginObject((void*)object, (ICCDynamicObject*)callback);
-    ccRegisterUnserializedObject(key, object, (ICCDynamicObject*)callback, true);
+    ManagedObjectInfo objinfo;
+    objinfo.handle = key;
+    objinfo.obj_type = kScValPluginObject;
+    objinfo.object_manager =  (ICCDynamicObject*)callback;
+    objinfo.address = (void*)object;
+    objinfo.buffer =  (void*)object;
+    objinfo.buffer_size = 1024*1024;
+    ccRegisterUnserializedObject2(objinfo);
 }
 
-int IAGSEngine::GetManagedObjectKeyByAddress(const char *address) {
-    return ccGetObjectHandleFromAddress(address);
+int IAGSEngine::GetManagedObjectKeyByAddress(const char *address) 
+{
+    ManagedObjectInfo info;
+    auto err = ccGetObjectInfoFromAddress(info, (void*)address);
+    assert(err == 0);
+    return info.handle;
 }
 
-void* IAGSEngine::GetManagedObjectAddressByKey(int key) {
-    void *object;
-    ICCDynamicObject *manager;
-    ScriptValueType obj_type = ccGetObjectAddressAndManagerFromHandle(key, object, manager);
-    if (obj_type == kScValPluginObject)
+void* IAGSEngine::GetManagedObjectAddressByKey(int key) 
+{
+    ManagedObjectInfo info;
+    auto err = ccGetObjectInfoFromHandle(info, key);
+    assert(err == 0);
+
+    if (info.obj_type == kScValPluginObject)
     {
-        GlobalReturnValue.SetPluginObject(object, manager);
+        GlobalReturnValue.SetPluginObject(info.address, info.object_manager);
     }
     else
     {
-        GlobalReturnValue.SetDynamicObject(object, manager);
+        GlobalReturnValue.SetDynamicObject(info.address, info.object_manager);
     }
-    return object;
+    return info.address;
 }
 
 const char* IAGSEngine::CreateScriptString(const char *fromText) {

@@ -120,7 +120,14 @@ ScriptOverlay* Overlay_CreateGraphical(int x, int y, int slot, int transparent) 
     sco->borderWidth = 0;
     sco->isBackgroundSpeech = 0;
 
-    ccRegisterManagedObject(sco, sco);
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = sco;
+    objinfo.address = sco;
+    objinfo.buffer = sco;
+    objinfo.buffer_size = sizeof(ScriptOverlay);
+    ccRegisterManagedObject2(objinfo);
+
     return sco;
 }
 
@@ -137,7 +144,14 @@ ScriptOverlay* Overlay_CreateTextual(int x, int y, int width, int font, int colo
     sco->borderHeight = game_to_data_coord(screenover[ovri].y - y);
     sco->isBackgroundSpeech = 0;
 
-    ccRegisterManagedObject(sco, sco);
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = sco;
+    objinfo.address = sco;
+    objinfo.buffer = sco;
+    objinfo.buffer_size = sizeof(ScriptOverlay);
+    ccRegisterManagedObject2(objinfo);
+    
     return sco;
 }
 

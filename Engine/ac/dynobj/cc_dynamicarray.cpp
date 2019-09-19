@@ -63,7 +63,16 @@ int CCDynamicArray::Serialize(const char *address, char *buffer, int bufsize) {
 void CCDynamicArray::Unserialize(int index, const char *serializedData, int dataSize) {
     char *newArray = new char[dataSize];
     memcpy(newArray, serializedData, dataSize);
-    ccRegisterUnserializedObject(index, &newArray[8], this);
+    void *obj_ptr = &newArray[8];
+
+    ManagedObjectInfo objinfo;
+    objinfo.handle = index;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = obj_ptr;
+    objinfo.buffer = newArray;
+    objinfo.buffer_size = dataSize;
+    ccRegisterUnserializedObject2(objinfo);
 }
 
 DynObjectRef CCDynamicArray::Create(int numElements, int elementSize, bool isManagedType)
@@ -76,7 +85,15 @@ DynObjectRef CCDynamicArray::Create(int numElements, int elementSize, bool isMan
     if (isManagedType) 
         sizePtr[0] |= ARRAY_MANAGED_TYPE_FLAG;
     void *obj_ptr = &newArray[8];
-    int32_t handle = ccRegisterManagedObject(obj_ptr, this);
+
+    ManagedObjectInfo objinfo;
+    objinfo.obj_type = kScValDynamicObject;
+    objinfo.object_manager = this;
+    objinfo.address = obj_ptr;
+    objinfo.buffer = newArray;
+    objinfo.buffer_size = numElements * elementSize + 8;
+    int32_t handle = ccRegisterManagedObject2(objinfo);
+
     if (handle == 0)
     {
         delete[] newArray;

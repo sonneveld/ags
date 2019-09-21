@@ -177,24 +177,51 @@ uint32_t ccExecutor::AddMemoryWindow(const void *addr, size_t size, bool readonl
 
     uint32_t next = 0x10000000;
 
-    // search and return if already exists.
-    for (const auto& m : dumbmemory) {
-        if (m.addr == addr) {
-            return m.virtualaddr;
-        }
+    // DONT' search and return if already exists. because in real memory they may overlap
+    // just find next spot.
+    for (auto& m : dumbmemory) {
         if (m.virtualaddr + m.size > next) {
-            next = m.virtualaddr + m.size + 16;
+            next = m.virtualaddr + m.size + 128*1024;  // add large gap to detect incorrect sizes
+            next |= 0xFFF;
+            next += 1;
         }
     }
 
     dumbmemory.push_back( {next, addr, size} );
 
 #ifdef DEBUG_MACHINE
+    printf("MEM WINDOW TOTAL - %d items\n", dumbmemory.size());
     printf("memwindow new vaddr:%08x addr:%p size:%d\n", next, addr, size);
 #endif
 
     return next;
 }
+
+void ccExecutor::RemoveMemoryWindow(const void *addr, size_t size) 
+{
+
+    if (addr == nullptr) { return; }
+
+    auto it = dumbmemory.begin();
+    while (it != dumbmemory.end()) {
+
+        if (it->addr == addr && it->size == size) {
+#ifdef DEBUG_MACHINE
+            printf("memwindow delete vaddr:%08x addr:%p size:%d\n", it->virtualaddr, it->addr, it->size);
+#endif
+            dumbmemory.erase(it);
+            break;
+        }
+        ++it;
+    }
+
+#ifdef DEBUG_MACHINE
+    printf("MEM WINDOW TOTAL DELETE - %d items\n", dumbmemory.size());
+#endif
+
+}
+
+char err_buff[1000];
 
 void *ccExecutor::ResolveVirtualAddress(uint32_t vaddr)
 {
@@ -206,8 +233,8 @@ void *ccExecutor::ResolveVirtualAddress(uint32_t vaddr)
             return (void*)result; // this removes const :(
         }
     }
-    // return nullptr;
-    throw std::runtime_error("could not find addr");
+    sprintf(err_buff, "could not find virtual addr %08x", vaddr);
+    throw std::runtime_error(err_buff);
 }
 
 uint32_t ccExecutor::ToVirtualAddress(const void *addr)
@@ -216,15 +243,31 @@ uint32_t ccExecutor::ToVirtualAddress(const void *addr)
         return 0;
     }
 
+    // find the largest window because we still have overlap
+    bool found = false;
+    uint32_t vaddr = 0;
+    char *window_end = nullptr;
+
     for (const auto& m : dumbmemory) {
         if (addr >= m.addr && addr < (char*)m.addr+m.size) {
-            auto result = m.virtualaddr + ((char*)addr - (char*)m.addr);
-            return result; // this removes const :(
+            auto cur_vaddr = m.virtualaddr + ((char*)addr - (char*)m.addr);
+            auto cur_window_end = (char*)m.addr + m.size;
+
+            if (cur_window_end > window_end) {
+                vaddr = cur_vaddr;
+                window_end = cur_window_end;
+            }
+
+            found = true;
         }
     }
 
-    return AddMemoryWindow(addr, 1024*1024, false);
-    // throw std::runtime_error("could not find addr");
+    if (!found){
+        sprintf(err_buff, "could not find real addr %016x", addr);
+        throw std::runtime_error(err_buff);
+    }
+
+    return vaddr;
 }
 
 
@@ -310,26 +353,26 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
     switch (scri->fixuptypes[i]) {
         case FIXUP_GLOBALDATA:
 #ifdef DEBUG_MACHINE
-            printf("FIXUP_GLOBALDATA %x\n", cinst->code_vaddr + fixup*4);
+            printf("FIXUP_GLOBALDATA %x : ", cinst->code_vaddr + fixup*4);
 #endif
             cptr[fixup] += cinst->globaldata_vaddr;
             break;
         case FIXUP_FUNCTION:
 #ifdef DEBUG_MACHINE
-            printf("FIXUP_FUNCTION %x\n", cinst->code_vaddr + fixup*4);
+            printf("FIXUP_FUNCTION %x : ", cinst->code_vaddr + fixup*4);
 #endif
             //cptr[fixup] += cinst->code_vaddr;
             break;
         case FIXUP_STRING:
 #ifdef DEBUG_MACHINE
-            printf("FIXUP_STRING %x\n", cinst->code_vaddr + fixup*4);
+            printf("FIXUP_STRING %x : ", cinst->code_vaddr + fixup*4);
 #endif
             cptr[fixup] += cinst->strings_vaddr;
             break;
         case FIXUP_IMPORT:
         {
 #ifdef DEBUG_MACHINE
-            printf("FIXUP_IMPORT %x\n", cinst->code_vaddr + fixup*4);
+            printf("FIXUP_IMPORT %x : ", cinst->code_vaddr + fixup*4);
 #endif
 
             auto import_index = cptr[fixup];
@@ -347,23 +390,26 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
                 case kScValPluginObject:
                 {
 #ifdef DEBUG_MACHINE
-                    printf("MEM\n");
+                    printf("MEM %s : ", import_name);
 #endif
-                    auto vaddr = AddMemoryWindow(sym->Value.Ptr, 1024*1024, false);
-                    cptr[fixup] = vaddr;
+                    // auto vaddr = AddMemoryWindow(sym->Value.Ptr, 1024*1024, false);
+                    assert(sym->Value.Ptr != nullptr);
+                    cptr[fixup] = ToVirtualAddress(sym->Value.Ptr);
                     break;
                 }
 
-                case kScMachineData:
+                case kScMachineDataAddress:
 #ifdef DEBUG_MACHINE
-                    printf("DATA\n");
+                    printf("DATA : ");
 #endif
+                    assert(sym->Value.IValue != 0);
+
                     cptr[fixup] = sym->Value.IValue;
                     break;
 
                 default:
 #ifdef DEBUG_MACHINE
-                    printf("SYM\n");
+                    printf("SYM : ");
 #endif
                     cptr[fixup] = system_index | 0x80000000;
             }
@@ -384,6 +430,9 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
             break;
 
     }
+#ifdef DEBUG_MACHINE
+    printf("\n");
+#endif
   }
 
 
@@ -409,13 +458,13 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
             if (e.type == EXPORT_DATA) {
                 RuntimeScriptValue rsv;
                 rsv.SetInt32(e.vaddr);
-                rsv.Type = kScMachineData;
+                rsv.Type = kScMachineDataAddress;
                 ccAddExternalScriptSymbol(e.name, rsv, cinst);
                 //printf("export %s\n", e.name.GetCStr());
             } else {
                 RuntimeScriptValue rsv;
                 rsv.SetInt32(e.vaddr);
-                rsv.Type = kScMachineFunction;
+                rsv.Type = kScMachineFunctionAddress;
                 ccAddExternalScriptSymbol(e.name, rsv, cinst);
                 //printf("export %s\n", e.name.GetCStr());
             }
@@ -511,6 +560,10 @@ int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, con
     // restore OP
     registers[SREG_OP] = old_sreg_op;
     pc = old_pc;
+
+    if (stackframes.size() <= 0) {
+        pool.RunGarbageCollectionIfAppropriate();
+    }
 
     if (reterr)
         return -6;
@@ -670,15 +723,6 @@ int ccExecutor::Run()
 #endif
 
                 assert(value >= 0 && value < arg_lit);
-                break;
-            }
-
-
-            case SCMD_CHECKNULLREG: // 67    // error if reg1 == NULL
-            {
-                const auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto value = read_reg_t<uint32_t>(registers, arg_reg);
-                assert(value != 0);
                 break;
             }
 
@@ -1065,6 +1109,9 @@ int ccExecutor::Run()
 
             case SCMD_CHECKNULL: //    52    // error if MAR==0
             {
+#ifdef DEBUG_MACHINE
+                printf("check MAR != null\n");
+#endif
                 assert(registers[SREG_MAR] != 0);
                 auto ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
                 assert(ptr != nullptr);
@@ -1192,25 +1239,29 @@ int ccExecutor::Run()
                 auto arg_reg = read_code(codeptr2, pc);
 
 #ifdef DEBUG_MACHINE
-                printf("mem[MAR=%x] = %s(%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
+                printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
 #endif
 
                 auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                assert(handleptr != nullptr);
 
                 auto objptr = (const char*)ResolveVirtualAddress(registers[arg_reg]);
 #ifdef DEBUG_MACHINE
                 printf("objptr=%x\n", objptr);
 #endif
-                int32_t newhandle;
-                if (objptr != nullptr) {
-                    newhandle = ccGetObjectHandleFromAddress(objptr);
-                } else {
-                    newhandle = 0;
-                }
-                assert(newhandle != -1);
 
-                ccAddObjectReference(newhandle);
-                *handleptr = newhandle;
+                if (objptr != nullptr) {
+                    ManagedObjectInfo objinfo;
+                    auto err = ccGetObjectInfoFromAddress(objinfo, (void*)objptr);
+                    assert(err == 0);
+#ifdef DEBUG_MACHINE
+                    printf("handle=%d\n", objinfo.handle);
+#endif
+                    *handleptr = objinfo.handle;
+                    ccAddObjectReference(objinfo.handle);
+                } else {
+                    *handleptr = 0;
+                }   
 
                 break;
             }
@@ -1221,27 +1272,31 @@ int ccExecutor::Run()
                 auto arg_reg = read_code(codeptr2, pc);
 
 #ifdef DEBUG_MACHINE
-                printf("mar: 0x%x reg: 0x%x\n", registers[SREG_MAR], registers[arg_reg]);
-                printf("mem[MAR=%x] = freed\n", registers[SREG_MAR], regnames[arg_reg]);
-                printf("mem[MAR=%x] = %s\n", registers[SREG_MAR], regnames[arg_reg]);
+                printf("free handle of mem[MAR=%x]\n", registers[SREG_MAR], regnames[arg_reg]);
+                printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
 #endif
 
                 auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                assert(handleptr != nullptr);
                 auto oldhandle = *handleptr;
 
                 auto objptr = (const char*)ResolveVirtualAddress(registers[arg_reg]);
-                int32_t newhandle;
-                if (objptr != nullptr) {
-                    newhandle = ccGetObjectHandleFromAddress(objptr);
-                } else {
-                    newhandle = 0;
-                }
-                assert(newhandle != -1);
 
-                if (oldhandle != newhandle) {
+                if (objptr != nullptr) {
+                    ManagedObjectInfo objinfo;
+                    auto err = ccGetObjectInfoFromAddress(objinfo, (void*)objptr);
+                    assert(err == 0);
+#ifdef DEBUG_MACHINE
+                    printf("handle=%d\n", objinfo.handle);
+#endif
+                    *handleptr = objinfo.handle;
+                    ccAddObjectReference(objinfo.handle);
+                } else {
+                    *handleptr = 0;
+                }   
+
+                if (oldhandle != 0) {
                     ccReleaseObjectReference(oldhandle);
-                    ccAddObjectReference(newhandle);
-                    *handleptr = newhandle;
                 }
 
                 // this->AddObjectReference(...);
@@ -1253,35 +1308,68 @@ int ccExecutor::Run()
             {
                 auto arg_reg = read_code(codeptr2, pc);
 #ifdef DEBUG_MACHINE
-                printf("SCMD_MEMREADPTR\n");
+                printf("%s = address of object with handle m[MAR]\n", regnames[arg_reg]);
 #endif
 
 
                 auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                assert(handleptr != nullptr);
                 auto handle = *handleptr;
-                auto objaddr = (char *)ccGetObjectAddressFromHandle(handle);
-
 #ifdef DEBUG_MACHINE
-                printf("hp=%x h=%x obj=%x\n", handleptr, handle, objaddr);
+                printf("handle=%d\n", handle);
 #endif
-                registers[arg_reg] = AddMemoryWindow(objaddr, 1024*1024, false);  // TODO, we don't know the object size.
+
+                if (handle != 0) {
+                    ManagedObjectInfo objinfo;
+                    auto err = ccGetObjectInfoFromHandle(objinfo, handle);
+                    assert(err == 0);
+                    assert(objinfo.address != nullptr);
+    #ifdef DEBUG_MACHINE
+                    printf("hp=0x%08x h=%d obj=0x%08x\n", handleptr, handle, objinfo.address);
+    #endif
+                    
+                    registers[arg_reg] = ToVirtualAddress(objinfo.address);
+                } else {
+                    registers[arg_reg] = 0;
+                }
+
+
 
                 break;
             }
             case SCMD_MEMZEROPTR: //   49    // m[MAR] = 0    (blank ptr)
             {
+#ifdef DEBUG_MACHINE
+                printf("m[MAR] = 0\n");
+    #endif
                 auto marvalue = registers[SREG_MAR];
                 auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                assert(handleptr != nullptr);
                 auto handle = *handleptr;
-                ccReleaseObjectReference(handle);
+#ifdef DEBUG_MACHINE
+                printf("handle=%d (to free)\n", handle);
+    #endif
+                if (handle != 0) {
+                    ccReleaseObjectReference(handle);
+                }
                 *handleptr = 0;
                 break;
             }
 
             case SCMD_MEMZEROPTRND: // 69    // m[MAR] = 0    (blank ptr, no dispose if = ax)
             {
+                // WHY AX?
+                // Because SCMD_MEMZEROPTRND is called when exiting the outer most loop of a function
+                // ax might be a pointer or it might just be a normal number, depends on 
+                // what the function is returning.
+
+#ifdef DEBUG_MACHINE
+                printf("m[MAR] = 0 (hold reference)\n");
+    #endif
+
                 auto marvalue = registers[SREG_MAR];
                 auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                assert(handleptr != nullptr);
                 auto handle = *handleptr;
 
                 // don't do the Dispose check for the object being returned -- this is
@@ -1289,24 +1377,28 @@ int ccExecutor::Run()
                 // Note: we might be freeing a dynamic array which contains the DisableDispose
                 // object, that will be handled inside the recursive call to SubRef.
 
-                pool.disableDisposeForObject = (char *)ResolveVirtualAddress(registers[SREG_AX]);
-                ccReleaseObjectReference(handle);
-                pool.disableDisposeForObject = nullptr;
+                if (handle != 0) {
+#ifdef DEBUG_MACHINE
+                    printf("handle=%d (to free LATER)\n", handle);
+    #endif
+                    try {
+                       pool.disableDisposeForObject = (char*)ResolveVirtualAddress(registers[SREG_AX]);
+                    } catch (const std::runtime_error& error) {}
+                    ccReleaseObjectReference(handle);
+                    pool.disableDisposeForObject = nullptr;
+                }
                 *handleptr = 0;
                 break;
             }
 
 
-
             // control transfer
             // ------------------------------------------------------------------------------------------------
 
-            case SCMD_THISBASE: //     38    // current relative address
+            case SCMD_LOOPCHECKOFF: // 68    // no loop checking for this function
             {
-                auto arg_base = read_code_t<uint32_t>(codeptr2, pc);
-                stackframes.back().thisbase = arg_base;
 #ifdef DEBUG_MACHINE
-                printf("base: 0x%08x baseadj=0x%08x funcstart=0x%08x\n", arg_base, arg_base*4, stackframes.back().funcstart);
+                printf("TODO\n");
 #endif
                 break;
             }
@@ -1351,23 +1443,63 @@ int ccExecutor::Run()
             }
 
 
-            case SCMD_LOOPCHECKOFF: // 68    // no loop checking for this function
+            // sub routines
+            // ------------------------------------------------------------------------------------------------
+
+            case SCMD_THISBASE: //     38    // current relative address
             {
+                auto arg_base = read_code_t<uint32_t>(codeptr2, pc);
+                stackframes.back().thisbase = arg_base;
 #ifdef DEBUG_MACHINE
-                printf("TODO\n");
+                printf("base: 0x%08x baseadj=0x%08x funcstart=0x%08x\n", arg_base, arg_base*4, stackframes.back().funcstart);
 #endif
                 break;
             }
 
+            case SCMD_NUMFUNCARGS: //  39    // number of arguments for ext func call
+            {
+                auto arg_numfuncs = read_code(codeptr2, pc);
+
+                stackframes.back().num_args_to_func = arg_numfuncs;
+
+                break;
+            }
+
+            case SCMD_CALLOBJ: //      45    // next call is member function of reg1
+            {
+                auto arg_reg = read_code(codeptr2, pc);
+
+                // set the OP register
+                if (registers[arg_reg] == 0) {
+                    cc_error("!Null pointer referenced");
+                    assert(0);
+                    return -1;
+                }
+                registers[SREG_OP] = registers[arg_reg];
+
+#ifdef DEBUG_MACHINE
+                printf("SREG_OP = 0x%08x\n", registers[SREG_OP]);
+#endif
+
+                stackframes.back().next_call_needs_object = 1;
+                break;
+
+            }
 
             case SCMD_CALL: //         23    // jump to subroutine at reg1
             {
                 auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
+                // not used here, but collect and clear.
+                auto need_object = stackframes.back().next_call_needs_object;
+                stackframes.back().next_call_needs_object = 0; // clear
+
+                auto func_args_count = stackframes.back().num_args_to_func;
+                stackframes.back().num_args_to_func = -1;
+
 #ifdef DEBUG_MACHINE
                 printf("\nCALL reg=%s 0x%08x adj:0x%08x\n", regnames[arg_reg], read_reg_t<uint32_t>(registers, arg_reg), read_reg_t<uint32_t>(registers, arg_reg)*4);
 #endif
-                stackframes.back().next_call_needs_object = 0;
                 
                 // PUSH_CALL_STACK(inst);
 
@@ -1427,66 +1559,33 @@ int ccExecutor::Run()
                 break;
             }
 
-
-
-            case SCMD_NUMFUNCARGS: //  39    // number of arguments for ext func call
-            {
-                auto arg_numfuncs = read_code(codeptr2, pc);
-
-                stackframes.back().num_args_to_func = arg_numfuncs;
-
-                break;
-            }
-
-
-
-
-            case SCMD_CALLOBJ: //      45    // next call is member function of reg1
-            {
-                auto arg_reg = read_code(codeptr2, pc);
-
-                // set the OP register
-                if (registers[arg_reg] == 0) {
-                    cc_error("!Null pointer referenced");
-                    assert(0);
-                    return -1;
-                }
-                registers[SREG_OP] = registers[arg_reg];
-
-#ifdef DEBUG_MACHINE
-                printf("SREG_OP = 0x%08x\n", registers[SREG_OP]);
-#endif
-
-                stackframes.back().next_call_needs_object = 1;
-                break;
-
-            }
-
-
             case SCMD_PUSHREAL: //     34    // push reg1 onto real stack
             {
                 auto arg_reg = read_code(codeptr2, pc);
                 stackframes.back().callstack.push_back(registers[arg_reg]);
                 break;
             }
+
             case SCMD_SUBREALSTACK: // 35    // decrement stack ptr by literal
             {
                 auto arg_offset = read_code(codeptr2, pc);
 
+                // NOTE: no need to do this, as SCMD_CALLEXT will do it instead
                 // if (stackframes.back().was_just_callas >= 0) {
                 //     registers[SREG_SP] -= arg_offset*4;
                 // }
+                // stackframes.back().was_just_callas = -1;
+
                 while (arg_offset--) {
                     stackframes.back().callstack.pop_back();
                 }
-                // stackframes.back().was_just_callas = -1;
 
                 break;
             }
 
             case SCMD_CALLAS: //       37    // call external script function
             {
-                // this is not actually generated?
+                // this is not actually generated, I think.
                 assert(0);
                 break;
             }
@@ -1494,18 +1593,18 @@ int ccExecutor::Run()
             case SCMD_CALLEXT: //      33    // call external (imported) function reg1
             {
                 auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto extfunc = registers[arg_reg];
+                auto extfunc = registers[arg_reg] & 0x7fffffff;
 
-                auto sysimp = simp.getByIndex(extfunc & 0x7fffffff);
+                auto sysimp = simp.getByIndex(extfunc);
 #ifdef DEBUG_MACHINE
                 printf("name: %s \n", sysimp->Name.GetCStr());
 #endif
 
-                if (sysimp->Value.Type == kScMachineFunction) {
-                    registers[SREG_AX] = CallExternalScriptFunction(extfunc & 0x7fffffff);
+                if (sysimp->Value.Type == kScMachineFunctionAddress) {
+                    registers[SREG_AX] = CallExternalScriptFunction(extfunc);
                 } else {
                     // CallScriptFunction to a real 'C' code function
-                    registers[SREG_AX] = CallExternalFunction(extfunc & 0x7fffffff);
+                    registers[SREG_AX] = CallExternalFunction(extfunc);
                 }
                 break;
             }
@@ -1514,8 +1613,6 @@ int ccExecutor::Run()
 
             // strings
             // ------------------------------------------------------------------------------------------------
-
-
 
             case SCMD_CREATESTRING: // 64    // reg1 = new String(reg1)
             {
@@ -1529,7 +1626,7 @@ int ccExecutor::Run()
 
                 auto fromstr = ResolveVirtualAddress(registers[arg_reg]);
                 auto str = (char *)stringClassImpl->CreateString((const char*)fromstr).second;
-                registers[arg_reg] = AddMemoryWindow(str, strlen(str)+1, false);
+                registers[arg_reg] = ToVirtualAddress(str);
 
 #ifdef DEBUG_MACHINE
                 printf("%s = new string: 0x%x \"%s\"\n", regnames[arg_reg], str, str);
@@ -1567,6 +1664,15 @@ int ccExecutor::Run()
                 break;
             }
 
+            case SCMD_CHECKNULLREG: // 67    // error if reg1 == NULL
+            {
+                const auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
+                auto value = read_reg_t<uint32_t>(registers, arg_reg);
+                assert(value != 0);
+                break;
+            }
+
+
             // dyn objects
             // ------------------------------------------------------------------------------------------------
 
@@ -1589,7 +1695,7 @@ int ccExecutor::Run()
 
                 DynObjectRef ref = globalDynamicArray.Create(num_elements, arg2, arg3 == 1);
 
-                registers[arg1] = AddMemoryWindow(ref.second, num_elements*arg2 + 8, false);
+                registers[arg1] = ToVirtualAddress(ref.second);
 
                 break;
             }

@@ -38,13 +38,13 @@ int ManagedObjectPool::Remove(ManagedObject &o, bool force) {
     bool canBeRemovedFromPool = o.info.object_manager->Dispose((const char*)o.info.address, force) != 0;
     if (!(canBeRemovedFromPool || force)) { return 0; }
 
+    coreExecutor.RemoveMemoryWindow(o.info.buffer, o.info.buffer_size);
+
     auto handle = o.info.handle;
     available_ids.push(o.info.handle);
 
     handleByAddress.erase((const char*)o.info.address);
     o = ManagedObject();
-
-    coreExecutor.RemoveMemoryWindow(o.info.buffer, o.info.buffer_size);
 
     ManagedObjectLog("Line %d Disposed managed object handle=%d", currentline, handle);
 

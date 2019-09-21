@@ -150,6 +150,8 @@ void ccSetDebugHook(new_line_hook_type jibble)
     new_line_hook = jibble;
 }
 
+
+// This is used to call functions directly, which is still the case for plugins
 int call_function(intptr_t addr, const RuntimeScriptValue *object, int numparm, const RuntimeScriptValue *parms)
 {
     if (!addr)

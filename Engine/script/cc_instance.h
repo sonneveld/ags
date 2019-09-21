@@ -92,23 +92,96 @@ public:
     virtual void    Abort() = 0;
     // Aborts instance, then frees the memory later when it is done with
     virtual void    AbortAndDestroy() = 0;
-    
-    // Call an exported function in the script
-    virtual int     CallScriptFunction(const char *funcname, int32_t num_params, const RuntimeScriptValue *params) = 0;
-
-    virtual int GetReturnValue() = 0;
 
     // Get the address of an exported symbol (function or variable) in the script
     // NOTE: only used to check for existance?
     virtual RuntimeScriptValue GetSymbolAddress(const char *symname) = 0;
-
-    // Tells whether this instance is in the process of executing the byte-code
-    virtual bool    IsBeingRun() const = 0;
 };
 
-// returns the currently executing instance, or NULL if none
-ccInstance *ccInstanceGetCurrentInstance(void);
-// create a runnable instance of the supplied script
-ccInstance *ccInstanceCreateFromScript(PScript script);
+
+struct MemWindow
+{
+    uint32_t virtualaddr;
+    const void *addr; 
+    size_t size;
+};
+
+struct ccImport2
+{
+    AGS::Common::String name;
+    // int offset;
+    uint32_t vaddr;
+};
+
+#define MAX_FUNC_PARAMS (20)
+
+struct ccStackFrame
+{
+    std::vector<uint32_t> callstack {};
+    uint32_t thisbase = 0;
+    uint32_t funcstart = 0;
+    // int was_just_callas = -1;
+    int num_args_to_func = -1;
+    int next_call_needs_object = 0;
+};
+
+struct ccExecutor
+{
+    public:
+
+    ccExecutor();
+
+    // Call an exported function in the script
+    int CallScriptFunction(ccInstance *sci, const char *funcname, int32_t num_params, const RuntimeScriptValue *params);
+
+    int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params);
+
+    int Run();
+
+    int GetReturnValue();
+
+
+    // Tells whether this instance is in the process of executing the byte-code
+    bool IsInstanceBeingRun(ccInstance *inst);
+
+    // Is the executor still running?
+    bool IsBeingRun();
+
+    uint32_t AddMemoryWindow(const void *addr, size_t size, bool readonly);
+    void RemoveMemoryWindow(const void *addr, size_t size);
+    void *ResolveVirtualAddress(uint32_t vaddr);
+    uint32_t ToVirtualAddress(const void *addr);
+
+    void Abort();
+
+
+    ccInstance *LoadScript(PScript script);
+
+private:
+
+    // #define SREG_SP           1     // stack pointer
+    // #define SREG_MAR          2     // memory address register
+    // #define SREG_AX           3     // general purpose
+    // #define SREG_BX           4
+    // #define SREG_CX           5
+    // #define SREG_OP           6    // object pointer for member func calls
+    // #define SREG_DX           7
+
+    int line_number;
+
+    uint32_t registers[8];
+    uint32_t pc;
+    uint32_t stacktop;
+    std::vector<char> stack;
+    std::vector<MemWindow> dumbmemory;
+    std::vector<ccStackFrame> stackframes;
+
+
+    uint32_t CallExternalFunction(int symbolindex);
+    uint32_t CallExternalScriptFunction(int symbolindex);
+
+};
+
+extern ccExecutor coreExecutor;
 
 #endif // __CC_INSTANCE_H

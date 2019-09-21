@@ -32,9 +32,9 @@ ScriptDateTime* DateTime_Now() {
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = sdt;
     objinfo.address = sdt;
-    objinfo.buffer = sdt;
-    objinfo.buffer_size = sizeof(ScriptDateTime);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo); // NO DATA
 
     return sdt;
 }

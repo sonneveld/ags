@@ -38,7 +38,7 @@ void CCAudioClip::Unserialize(int index, const char *serializedData, int dataSiz
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = this;
     objinfo.address = &game.audioClips[id];
-    objinfo.buffer = &game.audioClips[id];
-    objinfo.buffer_size = sizeof(ScriptAudioClip);
-    ccRegisterUnserializedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterUnserializedObject2(objinfo);// NO DATA
 }

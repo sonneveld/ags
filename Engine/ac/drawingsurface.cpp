@@ -142,9 +142,9 @@ ScriptDrawingSurface* DrawingSurface_CreateCopy(ScriptDrawingSurface *sds)
             objinfo.obj_type = kScValDynamicObject;
             objinfo.object_manager = newSurface;
             objinfo.address = newSurface;
-            objinfo.buffer = newSurface;
-            objinfo.buffer_size = sizeof(ScriptDrawingSurface);
-            ccRegisterManagedObject2(objinfo);
+            objinfo.buffer = nullptr;
+            objinfo.buffer_size = 0;
+            ccRegisterManagedObject2(objinfo); // NO DATA
 
             return newSurface;
         }

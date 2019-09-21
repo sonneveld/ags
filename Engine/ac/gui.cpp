@@ -475,9 +475,9 @@ void export_gui_controls(int ee)
         objinfo.obj_type = kScValDynamicObject;
         objinfo.object_manager = &ccDynamicGUIObject;
         objinfo.address = guio;
-        objinfo.buffer = guio;
-        objinfo.buffer_size = sizeof(GUIObject);
-        ccRegisterManagedObject2(objinfo);
+        objinfo.buffer = nullptr;
+        objinfo.buffer_size = 0;
+        ccRegisterManagedObject2(objinfo);   // NO DATA
 
         if (!guio->Name.IsEmpty()){
             /// GENERATED CODE EXT

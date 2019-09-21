@@ -140,9 +140,9 @@ void InitAndRegisterAudioObjects()
         objinfo.obj_type = kScValDynamicObject;
         objinfo.object_manager = &ccDynamicAudio;
         objinfo.address = &scrAudioChannel[i];
-        objinfo.buffer = &scrAudioChannel[i];
-        objinfo.buffer_size = sizeof(ScriptAudioChannel);
-        ccRegisterManagedObject2(objinfo);
+        objinfo.buffer = nullptr;
+        objinfo.buffer_size = 0;
+        ccRegisterManagedObject2(objinfo); // NO DATA
     }
 
     for (size_t i = 0; i < game.audioClips.size(); ++i)
@@ -156,9 +156,9 @@ void InitAndRegisterAudioObjects()
         objinfo.obj_type = kScValDynamicObject;
         objinfo.object_manager = &ccDynamicAudioClip;
         objinfo.address = &game.audioClips[i];
-        objinfo.buffer = &game.audioClips[i];
-        objinfo.buffer_size = sizeof(ScriptAudioClip);
-        ccRegisterManagedObject2(objinfo);
+        objinfo.buffer = nullptr;
+        objinfo.buffer_size = 0;
+        ccRegisterManagedObject2(objinfo); // NO DATA
 
 /// GENERATED CODE EXT
         ccAddExternalDynamicObject(game.audioClips[i].scriptName, &game.audioClips[i], &ccDynamicAudioClip);
@@ -232,9 +232,9 @@ void InitAndRegisterDialogOptions()
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = &ccDialogOptionsRendering;
     objinfo.address = &ccDialogOptionsRendering;
-    objinfo.buffer = &ccDialogOptionsRendering;
-    objinfo.buffer_size = sizeof(ScriptDialogOptionsRendering);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo);   // NO DATA
     }
 
     {
@@ -245,9 +245,9 @@ void InitAndRegisterDialogOptions()
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = dialogOptionsRenderingSurface;
     objinfo.address = dialogOptionsRenderingSurface;
-    objinfo.buffer = dialogOptionsRenderingSurface;
-    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
-    auto dorsHandle = ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    auto dorsHandle = ccRegisterManagedObject2(objinfo);   // NO DATA
 
     ccAddObjectReference(dorsHandle);
     }

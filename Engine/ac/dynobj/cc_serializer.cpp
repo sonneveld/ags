@@ -81,9 +81,9 @@ void AGSDeSerializer::Unserialize(int index, const char *objectType, const char 
         objinfo.obj_type = kScValDynamicObject;
         objinfo.object_manager =  scf;
         objinfo.address =  scf;
-        objinfo.buffer =  scf;
-        objinfo.buffer_size = sizeof(sc_File);
-        ccRegisterUnserializedObject2(objinfo);
+        objinfo.buffer = nullptr;
+        objinfo.buffer_size = 0;
+        ccRegisterUnserializedObject2(objinfo);  // NO DATA
     }
     else if (strcmp(objectType, "Overlay") == 0) {
         ScriptOverlay *scf = new ScriptOverlay();

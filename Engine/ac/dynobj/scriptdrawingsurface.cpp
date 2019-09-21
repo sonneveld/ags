@@ -106,9 +106,9 @@ void ScriptDrawingSurface::Unserialize(int index, const char *serializedData, in
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager =  this;
     objinfo.address =  this;
-    objinfo.buffer =  this;
-    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
-    ccRegisterUnserializedObject2(objinfo);
+    objinfo.buffer =  nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterUnserializedObject2(objinfo); // NO DATA
 }
 
 ScriptDrawingSurface::ScriptDrawingSurface() 

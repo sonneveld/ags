@@ -124,9 +124,9 @@ ScriptOverlay* Overlay_CreateGraphical(int x, int y, int slot, int transparent) 
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = sco;
     objinfo.address = sco;
-    objinfo.buffer = sco;
-    objinfo.buffer_size = sizeof(ScriptOverlay);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo);   // NO DATA
 
     return sco;
 }
@@ -148,9 +148,9 @@ ScriptOverlay* Overlay_CreateTextual(int x, int y, int width, int font, int colo
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = sco;
     objinfo.address = sco;
-    objinfo.buffer = sco;
-    objinfo.buffer_size = sizeof(ScriptOverlay);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo);   // NO DATA
     
     return sco;
 }

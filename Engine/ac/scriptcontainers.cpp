@@ -62,9 +62,9 @@ ScriptDictBase *Dict_Create(bool sorted, bool case_sensitive)
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = dic;
     objinfo.address = dic;
-    objinfo.buffer = dic;
-    objinfo.buffer_size = sizeof(ScriptDictBase);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo);   // NO DATA
 
     return dic;
 }
@@ -173,9 +173,9 @@ ScriptSetBase *Set_Create(bool sorted, bool case_sensitive)
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = set;
     objinfo.address = set;
-    objinfo.buffer = set;
-    objinfo.buffer_size = sizeof(ScriptSetBase);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo);   // NO DATA
 
     return set;
 }

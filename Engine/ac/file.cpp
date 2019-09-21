@@ -94,9 +94,9 @@ void *sc_OpenFile(const char *fnmm, int mode) {
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = scf;
     objinfo.address = scf;
-    objinfo.buffer = scf;
-    objinfo.buffer_size = sizeof(sc_File);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo); // NO DATA
 
   return scf;
 }

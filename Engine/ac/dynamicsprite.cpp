@@ -70,9 +70,9 @@ ScriptDrawingSurface* DynamicSprite_GetDrawingSurface(ScriptDynamicSprite *dss)
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = surface;
     objinfo.address = surface;
-    objinfo.buffer = surface;
-    objinfo.buffer_size = sizeof(ScriptDrawingSurface);
-    ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterManagedObject2(objinfo);  // NO DATA
 
     return surface;
 }

@@ -31,9 +31,9 @@ void ScriptDialogOptionsRendering::Unserialize(int index, const char *serialized
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager =  this;
     objinfo.address =  this;
-    objinfo.buffer =  this;
-    objinfo.buffer_size = sizeof(ScriptDialogOptionsRendering);
-    ccRegisterUnserializedObject2(objinfo);
+    objinfo.buffer =  nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterUnserializedObject2(objinfo); // NO DATA
 }
 
 void ScriptDialogOptionsRendering::Reset()

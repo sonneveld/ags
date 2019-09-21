@@ -42,9 +42,9 @@ void ScriptViewFrame::Unserialize(int index, const char *serializedData, int dat
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager =  this;
     objinfo.address =  this;
-    objinfo.buffer =  this;
-    objinfo.buffer_size = sizeof(ScriptViewFrame);
-    ccRegisterUnserializedObject2(objinfo);
+    objinfo.buffer =  nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterUnserializedObject2(objinfo); // NO DATA
 }
 
 ScriptViewFrame::ScriptViewFrame(int p_view, int p_loop, int p_frame) {

@@ -785,9 +785,9 @@ ScriptOverlay* Character_SayBackground(CharacterInfo *chaa, const char *texx) {
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = scOver;
     objinfo.address = scOver;
-    objinfo.buffer = scOver;
-    objinfo.buffer_size = sizeof(ScriptOverlay);
-    int handl = ccRegisterManagedObject2(objinfo);
+    objinfo.buffer = nullptr;
+    objinfo.buffer_size = 0;
+    int handl = ccRegisterManagedObject2(objinfo); // NO DATA
     
     screenover[ovri].associatedOverlayHandle = handl;
 

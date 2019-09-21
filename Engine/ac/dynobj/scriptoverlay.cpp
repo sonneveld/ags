@@ -67,9 +67,9 @@ void ScriptOverlay::Unserialize(int index, const char *serializedData, int dataS
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager =  this;
     objinfo.address =  this;
-    objinfo.buffer =  this;
-    objinfo.buffer_size = sizeof(ScriptOverlay);
-    ccRegisterUnserializedObject2(objinfo);
+    objinfo.buffer =  nullptr;
+    objinfo.buffer_size = 0;
+    ccRegisterUnserializedObject2(objinfo); // NO DATA
 }
 
 void ScriptOverlay::Remove() 

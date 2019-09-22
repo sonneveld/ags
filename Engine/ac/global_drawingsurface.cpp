@@ -34,7 +34,7 @@ using namespace AGS::Engine;
 
 extern Bitmap *raw_saved_screen;
 extern RoomStruct thisroom;
-extern GameState play;
+extern GameState &play;
 extern char lines[MAXLINE][200];
 extern int  numlines;
 extern SpriteCache spriteset;

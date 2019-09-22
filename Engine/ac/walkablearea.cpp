@@ -28,7 +28,7 @@
 using namespace AGS::Common;
 
 extern RoomStruct thisroom;
-extern GameState play;
+extern GameState &play;
 extern GameSetupStruct game;
 extern int displayed_room;
 extern RoomStatus*croom;

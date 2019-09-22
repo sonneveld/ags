@@ -23,7 +23,7 @@ using namespace AGS::Common;
 using namespace AGS::Engine;
 
 extern RoomStruct thisroom;
-extern GameState play;
+extern GameState &play;
 extern IGraphicsDriver *gfxDriver;
 
 

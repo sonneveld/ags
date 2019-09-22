@@ -96,7 +96,7 @@ SkipSpeechStyle internal_skip_speech_to_user(int internal_val)
 #include "script/script_runtime.h"
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 
 RuntimeScriptValue Sc_Speech_GetAnimationStopTimeMargin(const RuntimeScriptValue *params, int32_t param_count)
 {

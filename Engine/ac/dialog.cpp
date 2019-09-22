@@ -55,7 +55,7 @@
 using namespace AGS::Common;
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern ccInstance *dialogScriptsInst;
 extern int in_new_room;
 extern CharacterInfo*playerchar;

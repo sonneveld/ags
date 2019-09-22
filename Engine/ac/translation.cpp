@@ -31,7 +31,7 @@ using namespace AGS::Common;
 
 extern GameSetup usetup;
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern char transFileName[MAX_PATH];
 
 

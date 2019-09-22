@@ -47,7 +47,7 @@ using namespace AGS::Engine;
 extern MoveList *mls;
 extern RoomStatus*croom;
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern RoomStruct thisroom;
 extern RoomObject*objs;
 extern ViewStruct*views;

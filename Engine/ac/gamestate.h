@@ -382,6 +382,6 @@ HorAlignment ConvertLegacyScriptAlignment(LegacyScriptAlignment align);
 // Alignment constants in the Script API and still support old version.
 HorAlignment ReadScriptAlignment(int32_t align);
 
-extern GameState play;
+extern GameState &play;
 
 #endif // __AC_GAMESTATE_H

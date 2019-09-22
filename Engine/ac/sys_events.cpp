@@ -27,7 +27,7 @@ using namespace AGS::Common;
 using namespace AGS::Engine;
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 
 extern int pluginSimulatedClick;
 extern int displayed_room;

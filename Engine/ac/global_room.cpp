@@ -33,7 +33,7 @@
 
 using namespace Common;
 
-extern GameState play;
+extern GameState &play;
 extern GameSetupStruct game;
 extern RoomStatus *croom;
 extern CharacterInfo*playerchar;

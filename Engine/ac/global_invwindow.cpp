@@ -20,7 +20,7 @@
 #include "script/executingscript.h"
 
 extern ExecutingScript*curscript;
-extern GameState play;
+extern GameState &play;
 
 void sc_invscreen() {
     curscript->queue_action(ePSAInvScreen, 0, "InventoryScreen");

@@ -19,7 +19,7 @@
 #include "ac/global_palette.h"
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern color palette[256];
 
 

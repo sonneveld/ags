@@ -36,7 +36,7 @@ using namespace AGS::Engine;
 extern GameSetupStruct game;
 extern RoomStruct thisroom;
 extern CharacterInfo *playerchar;
-extern ScriptSystem scsystem;
+extern ScriptSystem &scsystem;
 
 GameState::GameState()
 {

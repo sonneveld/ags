@@ -18,7 +18,7 @@
 #include "ac/gamestate.h"
 #include "ac/string.h"
 
-extern GameState play;
+extern GameState &play;
 
 int SaidUnknownWord (char*buffer) {
     VALIDATE_STRING(buffer);

@@ -28,7 +28,7 @@
 extern char lines[MAXLINE][200];
 extern int  numlines;
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern int longestline;
 extern ScriptString myScriptStringImpl;
 

@@ -35,9 +35,9 @@ using namespace AGS::Engine;
 
 extern GameSetupStruct game;
 extern GameSetup usetup;
-extern GameState play;
+extern GameState &play;
 extern ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
-extern ScriptSystem scsystem;
+extern ScriptSystem &scsystem;
 extern IGraphicsDriver *gfxDriver;
 extern CCAudioChannel ccDynamicAudio;
 extern volatile bool switched_away;

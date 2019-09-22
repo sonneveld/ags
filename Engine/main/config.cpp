@@ -45,7 +45,7 @@ extern GameSetupStruct game;
 extern GameSetup usetup;
 extern SpriteCache spriteset;
 extern int force_window;
-extern GameState play;
+extern GameState &play;
 
 // Filename of the default config file, the one found in the game installation
 const String DefaultConfigFileName = "acsetup.cfg";

@@ -49,7 +49,7 @@
 using AGS::Common::Bitmap;
 namespace BitmapHelper = AGS::Common::BitmapHelper;
 
-extern GameState play;
+extern GameState &play;
 extern GameSetupStruct game;
 extern int longestline;
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];

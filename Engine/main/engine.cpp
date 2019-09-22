@@ -91,7 +91,7 @@ extern int eip_guinum;
 extern int eip_guiobj;
 extern SpeechLipSyncLine *splipsync;
 extern int numLipLines, curLipLine, curLipLinePhoneme;
-extern ScriptSystem scsystem;
+extern ScriptSystem &scsystem;
 extern IGraphicsDriver *gfxDriver;
 extern Bitmap **actsps;
 extern color palette[256];

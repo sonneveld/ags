@@ -27,7 +27,7 @@ using namespace AGS::Common;
 extern RoomStruct thisroom;
 extern SpriteCache spriteset;
 extern Bitmap *dynamicallyCreatedSurfaces[MAX_DYNAMIC_SURFACES];
-extern GameState play;
+extern GameState &play;
 extern GameSetupStruct game;
 
 Bitmap* ScriptDrawingSurface::GetBitmapSurface()

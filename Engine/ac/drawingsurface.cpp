@@ -37,7 +37,7 @@ using namespace AGS::Common;
 using namespace AGS::Engine;
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern RoomStatus*croom;
 extern RoomObject*objs;
 extern CharacterCache *charcache;

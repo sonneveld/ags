@@ -23,7 +23,7 @@
 
 using namespace AGS::Common;
 
-extern GameState play;
+extern GameState &play;
 extern RoomStruct thisroom;
 extern CCAudioClip ccDynamicAudioClip;
 

@@ -64,7 +64,7 @@ using namespace AGS::Common;
 
 #define ALLEGRO_KEYBOARD_HANDLER
 
-extern GameState play;
+extern GameState &play;
 extern ExecutingScript*curscript;
 extern int displayed_room;
 extern int game_paused;

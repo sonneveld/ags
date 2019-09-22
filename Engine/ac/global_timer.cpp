@@ -17,7 +17,7 @@
 #include "ac/common.h"
 #include "ac/gamestate.h"
 
-extern GameState play;
+extern GameState &play;
 
 
 void script_SetTimer(int tnum,int timeout) {

@@ -26,7 +26,7 @@
 using namespace AGS::Common;
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern DialogTopic *dialog;
 
 ScriptPosition last_in_dialog_request_script_pos;

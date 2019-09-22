@@ -26,7 +26,7 @@
 
 using namespace AGS::Common;
 
-extern GameState play;
+extern GameState &play;
 extern GameSetupStruct game;
 
 // *** LIST BOX FUNCTIONS

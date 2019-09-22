@@ -79,9 +79,9 @@ extern "C" void ios_render();
 
 extern GameSetup usetup;
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern int convert_16bit_bgr;
-extern ScriptSystem scsystem;
+extern ScriptSystem &scsystem;
 extern AGSPlatformDriver *platform;
 extern RoomStruct thisroom;
 extern char noWalkBehindsAtAll;

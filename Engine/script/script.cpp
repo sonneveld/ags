@@ -45,7 +45,7 @@
 #include "media/audio/audio_system.h"
 
 extern GameSetupStruct game;
-extern GameState play;
+extern GameState &play;
 extern int gameHasBeenRestored, displayed_room;
 extern unsigned int load_new_game;
 extern RoomObject*objs;
@@ -75,7 +75,14 @@ NonBlockingScriptFunction runDialogOptionMouseClickHandlerFunc("dialog_options_m
 NonBlockingScriptFunction runDialogOptionKeyPressHandlerFunc("dialog_options_key_press", 2);
 NonBlockingScriptFunction runDialogOptionRepExecFunc("dialog_options_repexec", 1);
 
-ScriptSystem scsystem;
+ScriptSystem *ConstructScriptSystem() {
+    auto p = (ScriptSystem*)calloc(1, sizeof(ScriptSystem));
+    new (p) ScriptSystem();
+    return p;
+}
+
+ScriptSystem *scsystem_ptr = ConstructScriptSystem();
+ScriptSystem &scsystem = *scsystem_ptr;
 
 std::vector<PScript> scriptModules;
 std::vector<ccInstance *> moduleInst;

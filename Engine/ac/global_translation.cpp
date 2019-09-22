@@ -27,7 +27,7 @@
 
 using namespace AGS::Common::Memory;
 
-extern GameState play;
+extern GameState &play;
 extern AGSPlatformDriver *platform;
 extern TreeMap *transtree;
 extern char transFileName[MAX_PATH];

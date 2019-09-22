@@ -38,8 +38,8 @@ using namespace AGS::Common;
 using namespace AGS::Engine;
 
 extern GameSetupStruct game;
-extern GameState play;
-extern ScriptSystem scsystem;
+extern GameState &play;
+extern ScriptSystem &scsystem;
 extern Bitmap *mousecurs[MAXCURSORS];
 extern SpriteCache spriteset;
 extern CharacterInfo*playerchar;
@@ -48,7 +48,14 @@ extern IGraphicsDriver *gfxDriver;
 extern void ags_domouse(int str);
 extern int misbuttondown(int buno);
 
-ScriptMouse scmouse;
+ScriptMouse *ConstructScriptMouse() {
+    auto p = (ScriptMouse*)calloc(1, sizeof(ScriptMouse));
+    new (p) ScriptMouse();
+    return p;
+}
+
+ScriptMouse *scmouse_ptr = ConstructScriptMouse();
+ScriptMouse &scmouse = *scmouse_ptr;
 int cur_mode,cur_cursor;
 int mouse_frame=0,mouse_delay=0;
 int lastmx=-1,lastmy=-1;

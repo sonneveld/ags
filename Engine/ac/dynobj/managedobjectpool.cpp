@@ -38,7 +38,11 @@ int ManagedObjectPool::Remove(ManagedObject &o, bool force) {
     bool canBeRemovedFromPool = o.info.object_manager->Dispose((const char*)o.info.address, force) != 0;
     if (!(canBeRemovedFromPool || force)) { return 0; }
 
-    coreExecutor.RemoveMemoryWindow(o.info.buffer, o.info.buffer_size);
+    if (o.info.buffer) {
+        coreExecutor.RemoveMemoryWindow(o.info.buffer, o.info.buffer_size);
+    } else {
+        coreExecutor.RemoveMemoryWindow(o.info.address, 4);
+    }
 
     auto handle = o.info.handle;
     available_ids.push(o.info.handle);
@@ -161,7 +165,11 @@ int ManagedObjectPool::AddObject(ManagedObjectInfo &info)
     objectCreationCounter++;
 
     // printf("memwindow adding obj\n");
-    coreExecutor.AddMemoryWindow(o.info.buffer, o.info.buffer_size, false);
+    if (o.info.buffer) {
+        coreExecutor.AddMemoryWindow(o.info.buffer, o.info.buffer_size, false);
+    } else {
+        coreExecutor.AddMemoryWindow(o.info.address, 4, true);
+    }
 
     ManagedObjectLog("Allocated managed object handle=%d, type=%s", o.info.handle, o.info.object_manager->GetType());
     return o.info.handle;
@@ -182,8 +190,11 @@ int ManagedObjectPool::AddUnserializedObject(ManagedObjectInfo &info)
 
     handleByAddress.insert({(const char*)info.address, o.info.handle});
 
-    // printf("memwindow adding obj\n");
-    coreExecutor.AddMemoryWindow(o.info.buffer, o.info.buffer_size, false);
+    if (o.info.buffer) {
+        coreExecutor.AddMemoryWindow(o.info.buffer, o.info.buffer_size, false);
+    } else {
+        coreExecutor.AddMemoryWindow(o.info.address, 4, true);
+    }
 
     ManagedObjectLog("Allocated unserialized managed object handle=%d, type=%s", o.info.handle, o.info.object_manager->GetType());
     return o.info.handle;

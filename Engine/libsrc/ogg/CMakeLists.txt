@@ -20,6 +20,13 @@ configure_file(include/ogg/config_types.h.in ${CMAKE_CURRENT_BINARY_DIR}/include
 
 add_library(ogg)
 
+set_target_properties(ogg PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
+)
+
 target_sources(ogg PRIVATE
     src/bitwise.c
     src/framing.c

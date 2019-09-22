@@ -3,6 +3,8 @@ add_library(alogg)
 set_target_properties(alogg PROPERTIES
     C_STANDARD 11
     C_EXTENSIONS NO
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
 )
 
 target_include_directories(alogg PUBLIC . )

@@ -3,6 +3,8 @@ add_library(hq2x)
 set_target_properties(hq2x PROPERTIES
     CXX_STANDARD 11
     CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
 )
 
 target_include_directories(hq2x PUBLIC . )

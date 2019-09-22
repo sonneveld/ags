@@ -6,6 +6,8 @@ add_library(engine)
 set_target_properties(engine PROPERTIES
     CXX_STANDARD 11
     CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
 )
 
 target_include_directories(engine PUBLIC .)
@@ -500,7 +502,9 @@ target_sources(engine
     platform/windows/win_ex_handling.h
     platform/windows/minidump.cpp
     platform/windows/winapi_exclusive.h
+
 )
+
 
 if(MACOS)
     target_sources(engine PRIVATE 
@@ -569,6 +573,7 @@ target_link_libraries(engine PUBLIC
     AlOgg::AlOgg 
     HQ2X::hq2x
     Cda::Cda
+    TinyAlloc::TinyAlloc
 )
 
 # common has a circular dependency on engine
@@ -606,6 +611,8 @@ add_executable(ags)
 set_target_properties(ags PROPERTIES
     CXX_STANDARD 11
     CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
 )
 
 target_include_directories(ags PRIVATE .)
@@ -644,6 +651,8 @@ if (MACOS)
     set_target_properties(ags-app PROPERTIES
         CXX_STANDARD 11
         CXX_EXTENSIONS NO
+        C_STANDARD 11
+        C_EXTENSIONS NO
     )
 
     target_include_directories(ags-app PRIVATE .)

@@ -1,6 +1,8 @@
 add_library(aastr)
 
 set_target_properties(aastr PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
     C_STANDARD 11
     C_EXTENSIONS NO
 )

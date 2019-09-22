@@ -1,8 +1,10 @@
 add_library(glad)
 
 set_target_properties(glad PROPERTIES
-    C_STANDARD          11
-    C_EXTENSIONS        NO
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
 )
 
 target_include_directories(glad PUBLIC include)

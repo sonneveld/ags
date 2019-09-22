@@ -5,6 +5,13 @@ add_library(theoradec)
 
 target_include_directories(theoradec PUBLIC include)
 
+set_target_properties(theoradec PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
+)
+
 target_sources(theoradec PRIVATE
     include/theora/codec.h
     include/theora/theora.h

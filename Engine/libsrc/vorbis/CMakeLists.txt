@@ -5,6 +5,13 @@ include(CheckIncludeFiles)
 
 add_library(vorbis)
 
+set_target_properties(vorbis PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
+)
+
 target_include_directories(vorbis
     PUBLIC include
     PRIVATE lib
@@ -60,6 +67,13 @@ add_library(Vorbis::Vorbis ALIAS vorbis)
 
 
 add_library(vorbisfile)
+
+set_target_properties(vorbisfile PROPERTIES
+    CXX_STANDARD 11
+    CXX_EXTENSIONS NO
+    C_STANDARD 11
+    C_EXTENSIONS NO
+)
 
 target_sources(vorbisfile PRIVATE
     lib/vorbisfile.c

@@ -13,6 +13,9 @@ target_sources(tinyalloc
     PRIVATE
     tinyalloc.c
     tinyalloc.h
+    tinydebug.c
 )
+
+target_compile_definitions(tinyalloc PRIVATE TA_DEBUG)
 
 add_library(TinyAlloc::TinyAlloc ALIAS tinyalloc)

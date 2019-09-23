@@ -19,6 +19,7 @@
 #include "ac/dynobj/scriptaudioclip.h"
 #include "game/interactions.h"
 #include "util/alignedstream.h"
+#include "script/tinyheap.h"
 
 using namespace AGS::Common;
 
@@ -237,7 +238,8 @@ void GameSetupStruct::WriteMouseCursors_Aligned(Stream *out)
 
 void GameSetupStruct::read_characters(Common::Stream *in, GameDataVersion data_ver)
 {
-    chars = new CharacterInfo[numcharacters + 5]; // TODO: why +5, is this really needed?
+    // chars = new CharacterInfo[numcharacters + 5]; // TODO: why +5, is this really needed?
+    chars = (CharacterInfo*)tiny_alloc(sizeof(CharacterInfo) * (numcharacters+5));
 
     ReadCharacters_Aligned(in);
 }

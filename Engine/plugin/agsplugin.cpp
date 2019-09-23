@@ -99,7 +99,7 @@ extern ObjectCache objcache[MAX_ROOM_OBJECTS];
 extern MoveList *mls;
 extern int numlines;
 extern char lines[MAXLINE][200];
-extern color palette[256];
+extern color *palette;
 extern PluginObjectReader pluginReaders[MAX_PLUGIN_OBJECT_READERS];
 extern int numPluginReaders;
 extern RuntimeScriptValue GlobalReturnValue;

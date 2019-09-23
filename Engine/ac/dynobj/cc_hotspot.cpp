@@ -17,7 +17,7 @@
 #include "ac/common_defines.h"
 #include "game/roomstruct.h"
 
-extern ScriptHotspot scrHotspot[MAX_ROOM_HOTSPOTS];
+extern ScriptHotspot *scrHotspot;;
 
 // return the type name of the object
 const char *CCHotspot::GetType() {

@@ -88,10 +88,10 @@ extern CharacterExtras *charextra;
 extern int done_es_error;
 extern int our_eip;
 extern Bitmap *walkareabackup, *walkable_areas_temp;
-extern ScriptObject scrObj[MAX_ROOM_OBJECTS];
+extern ScriptObject *scrObj;;
 extern SpriteCache spriteset;
 extern int in_new_room, new_room_was;  // 1 in new room, 2 first time in new room, 3 loading saved game
-extern ScriptHotspot scrHotspot[MAX_ROOM_HOTSPOTS];
+extern ScriptHotspot *scrHotspot;;
 extern int in_leaves_screen;
 extern CharacterInfo*playerchar;
 extern int starting_room;
@@ -105,7 +105,7 @@ extern IDriverDependantBitmap* *actspsbmp;
 extern Bitmap **actspswb;
 extern IDriverDependantBitmap* *actspswbbmp;
 extern CachedActSpsData* actspswbcache;
-extern color palette[256];
+extern color *palette;
 extern int mouse_z_was;
 
 extern Bitmap **guibg;

@@ -14,6 +14,7 @@
 
 #include <memory.h>
 #include "scriptuserobject.h"
+#include "script/tinyheap.h"
 
 // return the type name of the object
 const char *ScriptUserObject::GetType()
@@ -29,7 +30,8 @@ ScriptUserObject::ScriptUserObject()
 
 ScriptUserObject::~ScriptUserObject()
 {
-    delete [] _data;
+    // delete [] _data;
+    tiny_free(_data);
 }
 
 /* static */ ScriptUserObject *ScriptUserObject::CreateManaged(size_t size)
@@ -50,13 +52,15 @@ ScriptUserObject::~ScriptUserObject()
 
 void ScriptUserObject::Create(const char *data, size_t size)
 {
-    delete [] _data;
+    // delete [] _data;
+    tiny_free(_data);
     _data = nullptr;
 
     _size = size;
     if (_size > 0)
     {
-        _data = new char[size];
+        // _data = new char[size];
+        _data = (char*)tiny_alloc(size);
         if (data)
             memcpy(_data, data, _size);
         else

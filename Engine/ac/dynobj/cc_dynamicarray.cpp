@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include "cc_dynamicarray.h"
+#include "script/tinyheap.h"
 
 // return the type name of the object
 const char *CCDynamicArray::GetType() {
@@ -42,7 +43,8 @@ int CCDynamicArray::Dispose(const char *address, bool force) {
         }
     }
 
-    delete address;
+    // delete address;
+    tiny_free((void*)address);
     return 1;
 }
 
@@ -61,7 +63,8 @@ int CCDynamicArray::Serialize(const char *address, char *buffer, int bufsize) {
 }
 
 void CCDynamicArray::Unserialize(int index, const char *serializedData, int dataSize) {
-    char *newArray = new char[dataSize];
+    // char *newArray = new char[dataSize];
+    char *newArray = (char*)tiny_alloc(dataSize);
     memcpy(newArray, serializedData, dataSize);
     void *obj_ptr = &newArray[8];
 
@@ -77,7 +80,8 @@ void CCDynamicArray::Unserialize(int index, const char *serializedData, int data
 
 DynObjectRef CCDynamicArray::Create(int numElements, int elementSize, bool isManagedType)
 {
-    char *newArray = new char[numElements * elementSize + 8];
+    // char *newArray = new char[numElements * elementSize + 8];
+    char *newArray = (char*)tiny_alloc(numElements * elementSize + 8);
     memset(newArray, 0, numElements * elementSize + 8);
     int *sizePtr = (int*)newArray;
     sizePtr[0] = numElements;
@@ -96,7 +100,8 @@ DynObjectRef CCDynamicArray::Create(int numElements, int elementSize, bool isMan
 
     if (handle == 0)
     {
-        delete[] newArray;
+        // delete[] newArray;
+        tiny_free(newArray);
         return DynObjectRef(0, nullptr);
     }
     return DynObjectRef(handle, obj_ptr);

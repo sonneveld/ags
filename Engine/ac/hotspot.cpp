@@ -29,7 +29,7 @@ using namespace AGS::Common;
 
 extern RoomStruct thisroom;
 extern RoomStatus*croom;
-extern ScriptHotspot scrHotspot[MAX_ROOM_HOTSPOTS];
+extern ScriptHotspot *scrHotspot;;
 extern CCHotspot ccDynamicHotspot;
 
 void Hotspot_SetEnabled(ScriptHotspot *hss, int newval) {

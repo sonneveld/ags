@@ -24,12 +24,12 @@
 
 using namespace AGS::Common;
 
-extern ScriptRegion scrRegion[MAX_ROOM_REGIONS];
+extern ScriptRegion *scrRegion;
 extern RoomStruct thisroom;
 extern RoomStatus*croom;
 extern GameSetupStruct game;
 extern COLOR_MAP maincoltable;
-extern color palette[256];
+extern color *palette;
 extern CCRegion ccDynamicRegion;
 
 

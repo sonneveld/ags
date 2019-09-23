@@ -17,7 +17,7 @@
 #include "ac/common_defines.h"
 #include "game/roomstruct.h"
 
-extern ScriptRegion scrRegion[MAX_ROOM_REGIONS];
+extern ScriptRegion *scrRegion;
 
 // return the type name of the object
 const char *CCRegion::GetType() {

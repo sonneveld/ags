@@ -54,7 +54,7 @@
 using namespace Common;
 
 extern GameSetupStruct game;
-extern color palette[256];
+extern color *palette;
 extern DialogTopic *dialog;
 extern AnimatingGUIButton animbuts[MAX_ANIMATING_BUTTONS];
 extern int numAnimButs;

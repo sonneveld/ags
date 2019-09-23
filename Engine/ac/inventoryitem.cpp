@@ -27,7 +27,7 @@
 
 
 extern GameSetupStruct game;
-extern ScriptInvItem scrInv[MAX_INV];
+extern ScriptInvItem *scrInv;
 extern int cur_cursor;
 extern CharacterInfo*playerchar;
 extern CCInventory ccDynamicInv;

@@ -42,6 +42,7 @@
 #include "script/script_runtime.h"
 #include "util/string_utils.h"
 #include "media/audio/audio_system.h"
+#include "script/tinyheap.h"
 
 using namespace Common;
 using namespace Engine;
@@ -66,11 +67,11 @@ extern CCDialog    ccDynamicDialog;
 extern CCAudioChannel ccDynamicAudio;
 extern CCAudioClip ccDynamicAudioClip;
 extern ScriptString myScriptStringImpl;
-extern ScriptObject scrObj[MAX_ROOM_OBJECTS];
+extern ScriptObject *scrObj;;
 extern ScriptGUI    *scrGui;
-extern ScriptHotspot scrHotspot[MAX_ROOM_HOTSPOTS];
-extern ScriptRegion scrRegion[MAX_ROOM_REGIONS];
-extern ScriptInvItem scrInv[MAX_INV];
+extern ScriptHotspot *scrHotspot;;
+extern ScriptRegion *scrRegion;
+extern ScriptInvItem *scrInv;
 extern ScriptAudioChannel scrAudioChannel[MAX_SOUND_CHANNELS + 1];
 
 extern ScriptDialogOptionsRendering ccDialogOptionsRendering;
@@ -204,7 +205,8 @@ void InitAndRegisterCharacters()
 // Initializes dialog and registers them in the script system
 void InitAndRegisterDialogs()
 {
-    scrDialog = new ScriptDialog[game.numdialog];
+    // scrDialog = new ScriptDialog[game.numdialog];
+    scrDialog = (ScriptDialog*)tiny_alloc(sizeof(ScriptDialog) * game.numdialog);
     for (int i = 0; i < game.numdialog; ++i)
     {
         scrDialog[i].id = i;
@@ -256,7 +258,7 @@ void InitAndRegisterDialogOptions()
 // Initializes gui and registers them in the script system
 HError InitAndRegisterGUI()
 {
-    scrGui = (ScriptGUI*)malloc(sizeof(ScriptGUI) * game.numgui);
+    scrGui = (ScriptGUI*)tiny_alloc(sizeof(ScriptGUI) * game.numgui);
     for (int i = 0; i < game.numgui; ++i)
     {
         scrGui[i].id = -1;
@@ -374,26 +376,21 @@ void RegisterStaticArrays()
     StaticInventoryArray.Create(&ccDynamicInv, sizeof(ScriptInvItem), sizeof(ScriptInvItem));
     StaticDialogArray.Create(&ccDynamicDialog, sizeof(ScriptDialog), sizeof(ScriptDialog));
 
+    // coreExecutor.AddMemoryWindow(game.chars, sizeof(CharacterInfo)*(game.numcharacters+5), false);
+    // coreExecutor.AddMemoryWindow(scrObj, sizeof(scrObj), false);
+    // coreExecutor.AddMemoryWindow(scrGui, sizeof(ScriptGUI)*game.numgui, false);
+    // coreExecutor.AddMemoryWindow(scrHotspot, sizeof(scrHotspot), false);
+    // coreExecutor.AddMemoryWindow(scrRegion, sizeof(scrRegion), false);
+    // coreExecutor.AddMemoryWindow(scrInv, sizeof(scrInv), false);
+    // coreExecutor.AddMemoryWindow(scrDialog, sizeof(ScriptDialog)*game.numdialog, false);
+
     ccAddExternalStaticArray("character",&game.chars[0], &StaticCharacterArray);
-    coreExecutor.AddMemoryWindow(game.chars, sizeof(CharacterInfo)*(game.numcharacters+5), false);
-
     ccAddExternalStaticArray("object",&scrObj[0], &StaticObjectArray);
-    coreExecutor.AddMemoryWindow(scrObj, sizeof(scrObj), false);
-
     ccAddExternalStaticArray("gui",&scrGui[0], &StaticGUIArray);
-    coreExecutor.AddMemoryWindow(scrGui, sizeof(ScriptGUI)*game.numgui, false);
-
     ccAddExternalStaticArray("hotspot",&scrHotspot[0], &StaticHotspotArray);
-    coreExecutor.AddMemoryWindow(scrHotspot, sizeof(scrHotspot), false);
-
     ccAddExternalStaticArray("region",&scrRegion[0], &StaticRegionArray);
-    coreExecutor.AddMemoryWindow(scrRegion, sizeof(scrRegion), false);
-
     ccAddExternalStaticArray("inventory",&scrInv[0], &StaticInventoryArray);
-    coreExecutor.AddMemoryWindow(scrInv, sizeof(scrInv), false);
-
     ccAddExternalStaticArray("dialog", &scrDialog[0], &StaticDialogArray);
-    coreExecutor.AddMemoryWindow(scrDialog, sizeof(ScriptDialog)*game.numdialog, false);
 }
 
 // Initializes various game entities and registers them in the script system
@@ -417,8 +414,8 @@ HError InitAndRegisterGameEntities()
 
     setup_player_character(game.playercharacter);
     if (loaded_game_file_version >= kGameVersion_270) {
-        ccAddExternalStaticObject("player", &_sc_PlayerCharPtr, &GlobalStaticManager);
-        coreExecutor.AddMemoryWindow(&_sc_PlayerCharPtr, sizeof(_sc_PlayerCharPtr), false);
+        ccAddExternalStaticObject("player", _sc_PlayerCharHandlePtr, &GlobalStaticManager);
+        // coreExecutor.AddMemoryWindow(&_sc_PlayerCharPtr, sizeof(_sc_PlayerCharPtr), false);
     }
     return HError::None();
 }

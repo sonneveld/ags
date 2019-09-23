@@ -89,6 +89,7 @@
 #include "util/path.h"
 #include "util/string_utils.h"
 #include "ac/keycode.h"
+#include "script/tinyheap.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -129,7 +130,7 @@ extern CachedActSpsData* actspswbcache;
 extern Bitmap **guibg;
 extern IDriverDependantBitmap **guibgbmp;
 extern char transFileName[MAX_PATH];
-extern color palette[256];
+extern color *palette;
 extern unsigned int loopcounter;
 extern Bitmap *raw_saved_screen;
 extern Bitmap *dynamicallyCreatedSurfaces[MAX_DYNAMIC_SURFACES];
@@ -139,7 +140,7 @@ extern IGraphicsDriver *gfxDriver;
 
 
 GameState *ConstructGameState() {
-    auto p = (GameState*)calloc(1, sizeof(GameState));
+    auto p = (GameState*)tiny_alloc(sizeof(GameState));
     new (p) GameState();
     return p;
 }
@@ -186,12 +187,12 @@ ScriptString myScriptStringImpl;
 // until we implement safe management of such containers in script exports
 // system. Noteably we would need an alternate to StaticArray class to track
 // access to their elements.
-ScriptObject scrObj[MAX_ROOM_OBJECTS];
+ScriptObject *scrObj = (ScriptObject*)tiny_alloc(sizeof(ScriptObject) * MAX_ROOM_OBJECTS);
 ScriptGUI    *scrGui = nullptr;
-ScriptHotspot scrHotspot[MAX_ROOM_HOTSPOTS];
-ScriptRegion scrRegion[MAX_ROOM_REGIONS];
-ScriptInvItem scrInv[MAX_INV];
-ScriptDialog *scrDialog;
+ScriptHotspot *scrHotspot = (ScriptHotspot*)tiny_alloc(sizeof(ScriptHotspot) * MAX_ROOM_HOTSPOTS);
+ScriptRegion *scrRegion = (ScriptRegion*)tiny_alloc(sizeof(ScriptRegion) * MAX_ROOM_REGIONS);
+ScriptInvItem *scrInv = (ScriptInvItem*)tiny_alloc(sizeof(ScriptInvItem) * MAX_INV);
+ScriptDialog *scrDialog = nullptr;
 
 ViewStruct*views=nullptr;
 
@@ -207,7 +208,7 @@ String saveGameDirectory = "./";
 String saveGameParent;
 
 const char* sgnametemplate = "agssave.%03d";
-String saveGameSuffix;
+String saveGameSuffix {};
 
 int game_paused=0;
 char pexbuf[STD_BUFFER_SIZE];
@@ -631,7 +632,7 @@ void unload_game_file()
     }
     free(dialog);
     dialog = nullptr;
-    delete[] scrDialog;
+    tiny_free(scrDialog);
     scrDialog = nullptr;
 
     for (int i = 0; i < game.numgui; ++i) {
@@ -642,7 +643,8 @@ void unload_game_file()
     guiScriptObjNames.clear();
     free(guibg);
     guis.clear();
-    free(scrGui);
+    // free(scrGui);
+    tiny_free(scrGui);
 
     pl_stop_plugins();
     ccRemoveAllSymbols();
@@ -2531,22 +2533,18 @@ void RegisterGameAPI()
 
 void RegisterStaticObjects()
 {
+    // coreExecutor.AddMemoryWindow(&play, sizeof(GameState), false);
+    //   // coreExecutor.AddMemoryWindow(play.globalvars, sizeof(play.globalvars), false);
+    // coreExecutor.AddMemoryWindow(&scmouse, sizeof(ScriptMouse), false);
+    // coreExecutor.AddMemoryWindow(palette, sizeof(palette), false);
+    // coreExecutor.AddMemoryWindow(&scsystem, sizeof(ScriptSystem), false);
+    //   // coreExecutor.AddMemoryWindow(play.filenumbers, sizeof(play.filenumbers), false);
+
     ccAddExternalStaticObject("game",&play, &GameStaticManager);
-    coreExecutor.AddMemoryWindow(&play, sizeof(GameState), false);
-
 	ccAddExternalStaticObject("gs_globals",&play.globalvars[0], &GlobalStaticManager);
-    // coreExecutor.AddMemoryWindow(play.globalvars, sizeof(play.globalvars), false);
-
 	ccAddExternalStaticObject("mouse",&scmouse, &GlobalStaticManager);
-    coreExecutor.AddMemoryWindow(&scmouse, sizeof(ScriptMouse), false);
-
 	ccAddExternalStaticObject("palette",&palette[0], &GlobalStaticManager);
-    coreExecutor.AddMemoryWindow(palette, sizeof(palette), false);
-
 	ccAddExternalStaticObject("system",&scsystem, &GlobalStaticManager);
-    coreExecutor.AddMemoryWindow(&scsystem, sizeof(ScriptSystem), false);
-
 	ccAddExternalStaticObject("savegameindex",&play.filenumbers[0], &GlobalStaticManager);
-    // coreExecutor.AddMemoryWindow(play.filenumbers, sizeof(play.filenumbers), false);
 }
 #endif

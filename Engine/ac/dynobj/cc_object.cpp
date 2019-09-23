@@ -17,7 +17,7 @@
 #include "ac/common_defines.h"
 #include "game/roomstruct.h"
 
-extern ScriptObject scrObj[MAX_ROOM_OBJECTS];
+extern ScriptObject *scrObj;;
 
 // return the type name of the object
 const char *CCObject::GetType() {

@@ -40,7 +40,7 @@
 using namespace AGS::Common;
 
 
-extern ScriptObject scrObj[MAX_ROOM_OBJECTS];
+extern ScriptObject *scrObj;;
 extern RoomStatus*croom;
 extern RoomObject*objs;
 extern RoomStruct thisroom;

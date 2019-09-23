@@ -16,6 +16,7 @@
 #include "ac/string.h"
 #include <stdlib.h>
 #include <string.h>
+#include "script/tinyheap.h"
 
 DynObjectRef ScriptString::CreateString(const char *fromText) {
     return CreateNewScriptStringObj(fromText);
@@ -24,7 +25,8 @@ DynObjectRef ScriptString::CreateString(const char *fromText) {
 int ScriptString::Dispose(const char *address, bool force) {
     // always dispose
     if (text) {
-        free(text);
+        // free(text);
+        tiny_free(text);
         text = nullptr;
     }
     delete this;
@@ -51,7 +53,8 @@ int ScriptString::Serialize(const char *address, char *buffer, int bufsize) {
 void ScriptString::Unserialize(int index, const char *serializedData, int dataSize) {
     StartUnserialize(serializedData, dataSize);
     int textsize = UnserializeInt();
-    text = (char*)malloc(textsize + 1);
+    // text = (char*)malloc(textsize + 1);
+    text = (char*)tiny_alloc(textsize + 1);
     strcpy(text, &serializedData[bytesSoFar]);
     ManagedObjectInfo objinfo;
     objinfo.handle = index;
@@ -68,6 +71,7 @@ ScriptString::ScriptString() {
 }
 
 ScriptString::ScriptString(const char *fromText) {
-    text = (char*)malloc(strlen(fromText) + 1);
+    // text = (char*)malloc(strlen(fromText) + 1);
+    text = (char*)tiny_alloc(strlen(fromText) + 1);
     strcpy(text, fromText);
 }

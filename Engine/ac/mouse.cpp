@@ -33,6 +33,7 @@
 #include "ac/spritecache.h"
 #include "gfx/graphicsdriver.h"
 #include "gfx/gfxfilter.h"
+#include "script/tinyheap.h"
 
 using namespace AGS::Common;
 using namespace AGS::Engine;
@@ -48,8 +49,9 @@ extern IGraphicsDriver *gfxDriver;
 extern void ags_domouse(int str);
 extern int misbuttondown(int buno);
 
+
 ScriptMouse *ConstructScriptMouse() {
-    auto p = (ScriptMouse*)calloc(1, sizeof(ScriptMouse));
+    auto p = (ScriptMouse*)tiny_alloc(sizeof(ScriptMouse));
     new (p) ScriptMouse();
     return p;
 }

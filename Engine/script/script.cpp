@@ -43,6 +43,7 @@
 #include "script/script_runtime.h"
 #include "util/string_compat.h"
 #include "media/audio/audio_system.h"
+#include "script/tinyheap.h"
 
 extern GameSetupStruct game;
 extern GameState &play;
@@ -75,8 +76,9 @@ NonBlockingScriptFunction runDialogOptionMouseClickHandlerFunc("dialog_options_m
 NonBlockingScriptFunction runDialogOptionKeyPressHandlerFunc("dialog_options_key_press", 2);
 NonBlockingScriptFunction runDialogOptionRepExecFunc("dialog_options_repexec", 1);
 
+
 ScriptSystem *ConstructScriptSystem() {
-    auto p = (ScriptSystem*)calloc(1, sizeof(ScriptSystem));
+    auto p = (ScriptSystem*)tiny_alloc(sizeof(ScriptSystem));
     new (p) ScriptSystem();
     return p;
 }

@@ -20,7 +20,7 @@
 
 extern GameSetupStruct game;
 extern GameState &play;
-extern color palette[256];
+extern color *palette;
 
 
 void CyclePalette(int strt,int eend) {

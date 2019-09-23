@@ -24,6 +24,7 @@
 #include "debug/debug_log.h"
 #include "script/runtimescriptvalue.h"
 #include "util/string_compat.h"
+#include "script/tinyheap.h"
 
 extern char lines[MAXLINE][200];
 extern int  numlines;
@@ -45,14 +46,14 @@ const char* String_Copy(const char *srcString) {
 }
 
 const char* String_Append(const char *thisString, const char *extrabit) {
-    char *buffer = (char*)malloc(strlen(thisString) + strlen(extrabit) + 1);
+    char *buffer = (char*)tiny_alloc(strlen(thisString) + strlen(extrabit) + 1);
     strcpy(buffer, thisString);
     strcat(buffer, extrabit);
     return CreateNewScriptString(buffer, false);
 }
 
 const char* String_AppendChar(const char *thisString, char extraOne) {
-    char *buffer = (char*)malloc(strlen(thisString) + 2);
+    char *buffer = (char*)tiny_alloc(strlen(thisString) + 2);
     sprintf(buffer, "%s%c", thisString, extraOne);
     return CreateNewScriptString(buffer, false);
 }
@@ -61,7 +62,7 @@ const char* String_ReplaceCharAt(const char *thisString, int index, char newChar
     if ((index < 0) || (index >= (int)strlen(thisString)))
         quit("!String.ReplaceCharAt: index outside range of string");
 
-    char *buffer = (char*)malloc(strlen(thisString) + 1);
+    char *buffer = (char*)tiny_alloc(strlen(thisString) + 1);
     strcpy(buffer, thisString);
     buffer[index] = newChar;
     return CreateNewScriptString(buffer, false);
@@ -76,7 +77,7 @@ const char* String_Truncate(const char *thisString, int length) {
         return thisString;
     }
 
-    char *buffer = (char*)malloc(length + 1);
+    char *buffer = (char*)tiny_alloc(length + 1);
     strncpy(buffer, thisString, length);
     buffer[length] = 0;
     return CreateNewScriptString(buffer, false);
@@ -88,7 +89,7 @@ const char* String_Substring(const char *thisString, int index, int length) {
     if ((index < 0) || (index > (int)strlen(thisString)))
         quit("!String.Substring: invalid index");
 
-    char *buffer = (char*)malloc(length + 1);
+    char *buffer = (char*)tiny_alloc(length + 1);
     strncpy(buffer, &thisString[index], length);
     buffer[length] = 0;
     return CreateNewScriptString(buffer, false);
@@ -169,14 +170,14 @@ const char* String_Replace(const char *thisString, const char *lookForText, cons
 }
 
 const char* String_LowerCase(const char *thisString) {
-    char *buffer = (char*)malloc(strlen(thisString) + 1);
+    char *buffer = (char*)tiny_alloc(strlen(thisString) + 1);
     strcpy(buffer, thisString);
     ags_strlwr(buffer);
     return CreateNewScriptString(buffer, false);
 }
 
 const char* String_UpperCase(const char *thisString) {
-    char *buffer = (char*)malloc(strlen(thisString) + 1);
+    char *buffer = (char*)tiny_alloc(strlen(thisString) + 1);
     strcpy(buffer, thisString);
     ags_strupr(buffer);
     return CreateNewScriptString(buffer, false);

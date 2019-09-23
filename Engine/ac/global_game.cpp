@@ -81,7 +81,7 @@ extern int gui_disabled_style;
 extern RoomStruct thisroom;
 extern int getloctype_index;
 extern IGraphicsDriver *gfxDriver;
-extern color palette[256];
+extern color *palette;
 
 #if AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_ANDROID
 extern int psp_gfx_renderer;

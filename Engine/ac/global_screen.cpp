@@ -36,7 +36,7 @@ extern GameSetupStruct game;
 extern RoomStruct thisroom;
 extern IGraphicsDriver *gfxDriver;
 extern AGSPlatformDriver *platform;
-extern color palette[256];
+extern color *palette;
 extern unsigned int loopcounter;
 
 void FlipScreen(int amount) {

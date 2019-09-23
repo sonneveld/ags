@@ -54,7 +54,7 @@ extern GameSetupStruct game;
 extern GameSetup usetup;
 extern int our_eip;
 extern IGraphicsDriver *gfxDriver;
-extern color palette[256];
+extern color *palette;
 
 #include <shlobj.h>
 #include <time.h>

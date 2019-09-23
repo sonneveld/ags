@@ -45,15 +45,14 @@ extern ViewStruct*views;
 extern RoomObject*objs;
 extern RoomStruct thisroom;
 extern GameState &play;
-extern ScriptObject scrObj[MAX_ROOM_OBJECTS];
-extern ScriptInvItem scrInv[MAX_INV];
+extern ScriptObject *scrObj;;
+extern ScriptInvItem *scrInv;
 extern ScreenOverlay screenover[MAX_SCREEN_OVERLAYS];
 extern int numscreenover;
 
 // defined in character unit
 extern CharacterExtras *charextra;
 extern CharacterInfo*playerchar;
-extern int32_t _sc_PlayerCharPtr;
 extern CharacterInfo*playerchar;
 
 

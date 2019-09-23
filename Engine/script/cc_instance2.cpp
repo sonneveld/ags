@@ -618,11 +618,16 @@ inline RuntimeScriptValue RuntimeScriptValueFromMachineValue(uint32_t machvalue)
 inline uint32_t MachineValueFromRuntimeScriptValue(const RuntimeScriptValue &value)
 {
     switch(value.Type) {
+
+        // returned in the case of void functions
+        case kScValUndefined:
+            return 0;
+
         case kScValInteger:
         case kScValFloat:
         case kScValPluginArg:
         case kScMachineDataAddress:
-            return value.IValue;
+            return reinterpret_cast<const uint32_t&>(value.IValue);
 
         case kScValData:
         case kScValStringLiteral:

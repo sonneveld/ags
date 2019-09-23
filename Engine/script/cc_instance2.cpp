@@ -1727,7 +1727,8 @@ int ccExecutor::Run()
 #endif
 
                 if (sysimp->Value.Type == kScMachineFunctionAddress) {
-                    registers[SREG_AX] = CallExternalScriptFunction(extfunc);
+                    // DON'T SET AX since the script function itself will set it.
+                    CallExternalScriptFunction(extfunc);
                 } else {
                     // CallScriptFunction to a real 'C' code function
                     registers[SREG_AX] = CallExternalFunction(extfunc);

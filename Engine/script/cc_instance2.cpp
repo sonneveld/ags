@@ -1545,9 +1545,12 @@ int ccExecutor::Run()
             case SCMD_THISBASE: //     38    // current relative address
             {
                 auto arg_base = read_code_t<uint32_t>(codeptr2, pc);
-                stackframes.back().thisbase = arg_base;
+
+                auto &stackframe = stackframes.back();
+
+                stackframe.thisbase = arg_base;
 #ifdef DEBUG_MACHINE
-                printf("base: 0x%08x baseadj=0x%08x funcstart=0x%08x\n", arg_base, arg_base*4, stackframes.back().funcstart);
+                printf("base: 0x%08x baseadj=0x%08x funcstart=0x%08x\n", arg_base, arg_base*4, stackframe.funcstart);
 #endif
                 break;
             }
@@ -1556,7 +1559,9 @@ int ccExecutor::Run()
             {
                 auto arg_numfuncs = read_code(codeptr2, pc);
 
-                stackframes.back().num_args_to_func = arg_numfuncs;
+                auto &stackframe = stackframes.back();
+
+                stackframe.num_args_to_func = arg_numfuncs;
 
                 break;
             }
@@ -1564,6 +1569,7 @@ int ccExecutor::Run()
             case SCMD_CALLOBJ: //      45    // next call is member function of reg1
             {
                 auto arg_reg = read_code(codeptr2, pc);
+                auto &stackframe = stackframes.back();
 
                 // set the OP register
                 if (registers[arg_reg] == 0) {
@@ -1577,7 +1583,7 @@ int ccExecutor::Run()
                 printf("SREG_OP = 0x%08x\n", registers[SREG_OP]);
 #endif
 
-                stackframes.back().next_call_needs_object = 1;
+                stackframe.next_call_needs_object = 1;
                 break;
 
             }
@@ -1586,12 +1592,14 @@ int ccExecutor::Run()
             {
                 auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
-                // not used here, but collect and clear.
-                auto need_object = stackframes.back().next_call_needs_object;
-                stackframes.back().next_call_needs_object = 0; // clear
+                auto &stackframe = stackframes.back();
 
-                auto func_args_count = stackframes.back().num_args_to_func;
-                stackframes.back().num_args_to_func = -1;
+                // not used here, but collect and clear.
+                auto need_object = stackframe.next_call_needs_object;
+                stackframe.next_call_needs_object = 0; // clear
+
+                auto func_args_count = stackframe.num_args_to_func;
+                stackframe.num_args_to_func = -1;
 
 #ifdef DEBUG_MACHINE
                 printf("\nCALL reg=%s 0x%08x adj:0x%08x\n", regnames[arg_reg], read_reg_t<uint32_t>(registers, arg_reg), read_reg_t<uint32_t>(registers, arg_reg)*4);
@@ -1603,7 +1611,7 @@ int ccExecutor::Run()
                 *stackptr = pc;
                 registers[SREG_SP] += 4;
 
-                if (stackframes.back().thisbase == 0) {
+                if (stackframe.thisbase == 0) {
 #ifdef DEBUG_MACHINE
                     printf("direct\n");
 #endif
@@ -1611,10 +1619,10 @@ int ccExecutor::Run()
                     pc = 4 * read_reg_t<uint32_t>(registers, arg_reg);
                 } else {
 #ifdef DEBUG_MACHINE
-                    printf("relative offset=0x%08x\n", stackframes.back().funcstart - 4*stackframes.back().thisbase);
+                    printf("relative offset=0x%08x\n", stackframe.funcstart - 4*stackframe.thisbase);
 #endif
                     // TODO, does base differ from func start at all?
-                    pc = stackframes.back().funcstart - 4*stackframes.back().thisbase + 4*read_reg_t<uint32_t>(registers, arg_reg);
+                    pc = stackframe.funcstart - 4*stackframe.thisbase + 4*read_reg_t<uint32_t>(registers, arg_reg);
                     // pc = 4*read_reg_t<uint32_t>(registers, arg_reg);;
                 }
 
@@ -1830,16 +1838,17 @@ int ccExecutor::Run()
 // CallScriptFunction to a real 'C' code function
 uint32_t ccExecutor::CallExternalFunction(int symbolindex)
 {
-    // stackframes.back().was_just_callas = -1;
+    auto &stackframe = stackframes.back();
+    // stackframe.was_just_callas = -1;
 
-    auto need_object = stackframes.back().next_call_needs_object;
-    stackframes.back().next_call_needs_object = 0; // clear
+    auto need_object = stackframe.next_call_needs_object;
+    stackframe.next_call_needs_object = 0; // clear
 
-    auto func_args_count = stackframes.back().num_args_to_func;
-    stackframes.back().num_args_to_func = -1;
+    auto func_args_count = stackframe.num_args_to_func;
+    stackframe.num_args_to_func = -1;
 
     if (func_args_count < 0) {
-        func_args_count = stackframes.back().callstack.size();
+        func_args_count = stackframe.callstack.size();
     }
 
 #ifdef DEBUG_MACHINE
@@ -1857,8 +1866,8 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     // }
 
     std::vector<RuntimeScriptValue> callparams;
-    callparams.reserve(stackframes.back().callstack.size() + 1);
-    for (const auto &e : stackframes.back().callstack) {
+    callparams.reserve(stackframe.callstack.size() + 1);
+    for (const auto &e : stackframe.callstack) {
         RuntimeScriptValue v;
         v.SetInt32(e);
 
@@ -1924,18 +1933,20 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
 
 uint32_t ccExecutor::CallExternalScriptFunction(int symbolindex)
 {
-    auto need_object = stackframes.back().next_call_needs_object;
-    stackframes.back().next_call_needs_object = 0; // clear
+    auto &stackframe = stackframes.back();
 
-    auto func_args_count = stackframes.back().num_args_to_func;
-    stackframes.back().num_args_to_func = -1;
+    auto need_object = stackframe.next_call_needs_object;
+    stackframe.next_call_needs_object = 0; // clear
+
+    auto func_args_count = stackframe.num_args_to_func;
+    stackframe.num_args_to_func = -1;
 
     // If there are nested CALLAS calls, the stack might
     // contain 2 calls worth of parameters, so only
     // push args for this call
     std::vector<RuntimeScriptValue> params;
-    if (func_args_count < 0) { func_args_count = stackframes.back().callstack.size(); }
-    auto it = stackframes.back().callstack.rbegin();
+    if (func_args_count < 0) { func_args_count = stackframe.callstack.size(); }
+    auto it = stackframe.callstack.rbegin();
     for (int i = 0; i < func_args_count; i++) {
         params.push_back(RuntimeScriptValue().SetInt32(*it));
         it++;

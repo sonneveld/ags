@@ -320,8 +320,9 @@ inline void *ToRealMemoryAddress(uint32_t vaddr)
 
     auto fit = map_by_vaddr.find(vaddr);
     if (fit == map_by_vaddr.end()) { 
-        sprintf(err_buff, "could not find virtual addr %08x", vaddr);
-        throw std::runtime_error(err_buff);
+        // sprintf(err_buff, "could not find virtual addr %08x", vaddr);
+        // throw std::runtime_error(err_buff);
+        return nullptr;
     }
 
     auto it = fit->second;
@@ -607,6 +608,23 @@ bool    ccExecutor::IsBeingRun()  {
     assert(0);
     return false;
 }
+
+#if 0
+inline RuntimeScriptValue RuntimeScriptValueFromMachineValue(uint32_t machvalue)
+{
+    RuntimeScriptValue result;
+
+    result.SetInt32(machvalue);
+
+        try {
+            auto realaddrr = ToRealMemoryAddress(e);
+            if (realaddrr != nullptr) {
+                callparams[cindex].Ptr = (char*)realaddrr;
+                // v.SetData((char*)realaddrr, 1024);
+            }
+        } catch (const std::runtime_error& error) { }
+}
+#endif
 
 inline uint32_t MachineValueFromRuntimeScriptValue(const RuntimeScriptValue &value)
 {
@@ -1227,7 +1245,7 @@ int ccExecutor::Run()
                 break;
             }
 
-            case SCMD_MEMREAD: //      7     // reg1 = m[MAR]
+            case SCMD_MEMREAD: //      7     // reg1 = m[MAR] (4 bytes)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
 #ifdef DEBUG_MACHINE
@@ -1492,9 +1510,9 @@ int ccExecutor::Run()
 #ifdef DEBUG_MACHINE
                     printf("handle=%d (to free LATER)\n", handle);
     #endif
-                    try {
+                    // try {
                        pool.disableDisposeForObject = (char*)ToRealMemoryAddress(registers[SREG_AX]);
-                    } catch (const std::runtime_error& error) {}
+                    // } catch (const std::runtime_error& error) {}
                     ccReleaseObjectReference(handle);
                     pool.disableDisposeForObject = nullptr;
                 }
@@ -1882,12 +1900,12 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     for (int i = 0; i < func_args_count; i++) {
         callparams[i].SetInt32(*cit);
 
-        try {
+        // try {
             auto realaddrr = ToRealMemoryAddress(*cit);
             callparams[i].Ptr = (char*)realaddrr;
-        } catch (const std::runtime_error& error) {
+        // } catch (const std::runtime_error& error) {
             // It might just be an integer that does not map to an address
-        }
+        // }
 
         ++cit;
     }
@@ -1931,7 +1949,7 @@ uint32_t ccExecutor::CallExternalScriptFunction(int symbolindex)
 
     auto func_args_count = stackframe.num_args_to_func;
     stackframe.num_args_to_func = -1;
-    
+
     // If there are nested CALLAS calls, the stack might
     // contain 2 calls worth of parameters, so only
     // push args for this call

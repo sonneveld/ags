@@ -127,21 +127,24 @@ struct ccStackFrame
     int next_call_needs_object = 0;
 };
 
-struct ccExecutor
+struct ccExecutor final
 {
     public:
 
     ccExecutor();
 
+    ccInstance *LoadScript(PScript script);
+
+    // Add real memory address that we just use as a handle essentialy (we never read from it)
+    uint32_t AddRealMemoryAddress(const void *addr);
+    void RemoveRealMemoryAddress(const void *addr);
+
     // Call an exported function in the script
     int CallScriptFunction(ccInstance *sci, const char *funcname, int32_t num_params, const RuntimeScriptValue *params);
 
-    // int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params);
-    int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const uint32_t *machparams);
-
-    int Run();
-
     int GetReturnValue();
+
+    void Abort();
 
 
     // Tells whether this instance is in the process of executing the byte-code
@@ -150,19 +153,6 @@ struct ccExecutor
     // Is the executor still running?
     bool IsBeingRun();
 
-
-    // Add real memory address that we just use as a handle essentialy (we never read from it)
-    uint32_t AddRealMemoryAddress(const void *addr);
-    void RemoveRealMemoryAddress(const void *addr);
-
-
-    // void *ToRealMemoryAddress(uint32_t vaddr);
-    // uint32_t ToVirtualAddress(const void *addr);
-
-    void Abort();
-
-
-    ccInstance *LoadScript(PScript script);
 
 private:
 
@@ -183,6 +173,10 @@ private:
     std::vector<MemWindow> dumbmemory;
     std::vector<ccStackFrame> stackframes;
 
+    // int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params);
+    int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const uint32_t *machparams);
+
+    int Run();
 
     uint32_t CallExternalFunction(int symbolindex);
     uint32_t CallExternalScriptFunction(int symbolindex);

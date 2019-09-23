@@ -62,7 +62,7 @@ bool tiny_heap_init = false;
 void *tiny_heap_base = nullptr;
 void *tiny_heap_limit = nullptr;
 
-int alloc_count = 0;
+// int alloc_count = 0;
 
 void init_tiny_heap()
 {
@@ -88,17 +88,15 @@ void *tiny_alloc(size_t n)
 {
     init_tiny_heap();
 
-    // auto result = ta_alloc(n);
-
-    auto result = ta_calloc(1, n);
-    alloc_count ++;
-
-    // printf("%p: alloc %d bytes - total items %d\n",result, n, alloc_count);
+    auto result = ta_alloc(n);
+    // auto result = ta_calloc(1, n);
     assert(result);
 
     // auto checkok = ta_check();
     // assert(checkok);
 
+    // alloc_count ++;
+    // printf("%p: alloc %d bytes - total items %d\n",result, n, alloc_count);
 
     return result;
 }
@@ -106,11 +104,10 @@ void *tiny_alloc(size_t n)
 void tiny_free(void *p)
 {
     if (!p) { return; }
-
-    alloc_count --;
-
     init_tiny_heap();
+
     ta_free(p);
+    // alloc_count --;
 }
 
 
@@ -792,17 +789,8 @@ int ccExecutor::Run()
     printf("RUN! pc = 0x%08x\n", pc);
 #endif
 
-    // int num_args_to_func = -1;
-    // int next_call_needs_object = 0;
-    // int was_just_callas = -1;
-
-
     auto *pctr = ToRealMemoryAddress(pc);
     const uint8_t *codeptr2 = reinterpret_cast<uint8_t *>(pctr);
-
-    // std::vector<uint32_t> callstack;
-    // callstack.reserve(128);
-
 
     for(;;) {
 

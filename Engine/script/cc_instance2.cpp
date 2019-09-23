@@ -564,14 +564,6 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
 }
 
 
-int ccExecutor::GetReturnValue() 
-{  
-    assert(0);
-    return 0; 
-}
-
-
-
 
 
 // Get the address of an exported symbol (function or variable) in the script
@@ -780,6 +772,10 @@ inline void write_reg_t(uint32_t registers[], reg_t reg, T value)
 }
 
 
+int ccExecutor::GetReturnValue() 
+{  
+    return read_reg_t<int32_t>(registers, SREG_AX);
+}
 
 int ccExecutor::Run()
 {

@@ -608,7 +608,27 @@ bool    ccExecutor::IsBeingRun()  {
     return false;
 }
 
+inline uint32_t MachineValueFromRuntimeScriptValue(const RuntimeScriptValue &value)
+{
+    switch(value.Type) {
+        case kScValInteger:
+        case kScValFloat:
+        case kScValPluginArg:
+        case kScMachineDataAddress:
+            return value.IValue;
 
+        case kScValData:
+        case kScValStringLiteral:
+        case kScValStaticObject:
+        case kScValStaticArray:
+        case kScValDynamicObject:
+        case kScValPluginObject:
+            return ToVirtualAddress(value.Ptr);
+
+        default:
+            throw std::runtime_error("unsupported RuntimeScriptValue type");
+    }
+}
 
 int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params)
 {
@@ -1860,29 +1880,21 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     printf("name: %s \n", sysimp->Name.GetCStr());
 #endif
 
-    // if (sysimp->Value.Type == kScValInteger) {
-    //     assert(0);
-    //     // then call the executor.callfuction thingo
-    // }
+    RuntimeScriptValue callparams[func_args_count];
 
-    std::vector<RuntimeScriptValue> callparams;
-    callparams.reserve(stackframe.callstack.size() + 1);
-    for (const auto &e : stackframe.callstack) {
-        RuntimeScriptValue v;
-        v.SetInt32(e);
+    // reverse call stack into correct order
+    auto cit = stackframe.callstack.rbegin();
+    for (int i = 0; i < func_args_count; i++) {
+        callparams[i].SetInt32(*cit);
 
         try {
-            auto realaddrr = ToRealMemoryAddress(e);
-            if (realaddrr != nullptr) {
-                v.Ptr = (char*)realaddrr;
-                // v.SetData((char*)realaddrr, 1024);
-            }
-        }catch (const std::runtime_error& error)
-        {
-        // your error handling code here
+            auto realaddrr = ToRealMemoryAddress(*cit);
+            callparams[i].Ptr = (char*)realaddrr;
+        } catch (const std::runtime_error& error) {
+            // It might just be an integer that does not map to an address
         }
 
-        callparams.insert(callparams.begin(), v);
+        ++cit;
     }
 
     RuntimeScriptValue return_value;
@@ -1896,11 +1908,11 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
 #ifdef DEBUG_MACHINE
         printf("obj: fake=%08x real=%p\n", registers[SREG_OP], obj);
 #endif
-        return_value = sysimp->Value.ObjPfn(obj, callparams.data(), callparams.size());
+        return_value = sysimp->Value.ObjPfn(obj, callparams, func_args_count);
     }
     else if (!need_object && sysimp->Value.Type == kScValStaticFunction)
     {
-        return_value = sysimp->Value.SPfn(callparams.data(), callparams.size());
+        return_value = sysimp->Value.SPfn(callparams, func_args_count);
     }
     else
     {
@@ -1912,23 +1924,7 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     printf("callext:DONE\n");
 #endif
 
-    switch(return_value.Type) {
-        case kScValInteger:
-        case kScValFloat:
-            return return_value.IValue;
-        case kScValDynamicObject:
-            return ToVirtualAddress(return_value.Ptr);
-        default:
-            printf("%d\n", return_value.Type);
-            assert(0);
-    }
-    // if (return_value.Ptr != nullptr) {
-    //     return ToVirtualAddress(return_value.Ptr);
-    // } else {
-    //     return return_value.IValue;
-    // }
-
-    // printf("done?  %d\n",return_value.IValue);
+    return MachineValueFromRuntimeScriptValue(return_value);
 }
 
 uint32_t ccExecutor::CallExternalScriptFunction(int symbolindex)

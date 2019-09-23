@@ -136,8 +136,8 @@ struct ccExecutor
     // Call an exported function in the script
     int CallScriptFunction(ccInstance *sci, const char *funcname, int32_t num_params, const RuntimeScriptValue *params);
 
-    int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params);
-    // int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const uint32_t *machparams);
+    // int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params);
+    int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const uint32_t *machparams);
 
     int Run();
 

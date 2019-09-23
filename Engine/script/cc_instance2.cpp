@@ -630,7 +630,9 @@ inline uint32_t MachineValueFromRuntimeScriptValue(const RuntimeScriptValue &val
     }
 }
 
-int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params)
+
+// stack_values assumed to be in reverse parameter order
+int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_values, const uint32_t *stack_values)
 {
     ccError = 0;
 
@@ -642,34 +644,23 @@ int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, con
 
     auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
 
-
     // NOTE: Pushing parameters to stack in reverse order
-    for (int i = num_params - 1; i >= 0; --i)
-    {
-        // auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
-        *stackptr = params[i].IValue;
+    for (int i = 0; i < num_values; i++) {
+        *stackptr = stack_values[i];
         registers[SREG_SP] += 4;
         stackptr++;
     }
 
-    // return address on stack
-    // auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
-    // *stackptr = pc;
+    // return address on stack, '0' will tell Run to return.
     *stackptr = 0;
     registers[SREG_SP] += 4;
     stackptr++;
 
     pc = vaddr;
 
-    // runningInst = this;
-
     int reterr = Run();
 
-#ifdef DEBUG_MACHINE
-    printf("RETURN from CallScriptFunctionDirect\n");
-#endif
-
-    registers[SREG_SP] -= 4 *  num_params;
+    registers[SREG_SP] -= 4 * num_values;
 
     // restore OP
     registers[SREG_OP] = old_sreg_op;
@@ -689,8 +680,6 @@ int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, con
 // Call an exported function in the script
 int ccExecutor::CallScriptFunction(ccInstance *sci_, const char *funcname, int32_t num_params, const RuntimeScriptValue *params) 
 { 
-
-
     auto sci = (ccInstanceExperiment *)sci_;
 
     ccError = 0;
@@ -724,7 +713,13 @@ int ccExecutor::CallScriptFunction(ccInstance *sci_, const char *funcname, int32
         return -2;
     }
 
-    return CallScriptFunctionDirect(startat, num_params, params);
+    // reverse order
+    uint32_t stack_values[num_params];
+    for (int i = 0; i < num_params; i++) {
+        stack_values[i] = MachineValueFromRuntimeScriptValue(params[num_params - i - 1]);
+    }
+
+    return CallScriptFunctionDirect(startat, num_params, stack_values);
 
 }
 
@@ -1936,24 +1931,23 @@ uint32_t ccExecutor::CallExternalScriptFunction(int symbolindex)
 
     auto func_args_count = stackframe.num_args_to_func;
     stackframe.num_args_to_func = -1;
-
+    
     // If there are nested CALLAS calls, the stack might
     // contain 2 calls worth of parameters, so only
     // push args for this call
-    std::vector<RuntimeScriptValue> params;
-    if (func_args_count < 0) { func_args_count = stackframe.callstack.size(); }
-    auto it = stackframe.callstack.rbegin();
-    for (int i = 0; i < func_args_count; i++) {
-        params.push_back(RuntimeScriptValue().SetInt32(*it));
-        it++;
+    if (func_args_count < 0) { 
+        func_args_count = stackframe.callstack.size(); 
     }
 
     auto sysimp = simp.getByIndex(symbolindex);
+
 #ifdef DEBUG_MACHINE
     printf("name: %s \n", sysimp->Name.GetCStr());
 #endif
 
-    return CallScriptFunctionDirect(sysimp->Value.IValue, params.size(), params.data());
+    uint32_t *stack_values = stackframe.callstack.data() + stackframe.callstack.size() - func_args_count;
+
+    return CallScriptFunctionDirect(sysimp->Value.IValue, func_args_count, stack_values);
 }
 
 

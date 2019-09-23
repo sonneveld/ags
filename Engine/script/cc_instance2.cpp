@@ -14,6 +14,8 @@
 
 #include "script/cc_instance.h"
 
+#include <stdint.h>
+#include <list>
 // #include <string.h>
 // #include "ac/common.h"
 #include "ac/dynobj/cc_dynamicarray.h"
@@ -38,6 +40,8 @@
 // #include "util/memory.h"
 // #include "util/string_utils.h" // linux strnicmp definition
 
+#include "tinyalloc.h"
+
 const auto CC_EXP_STACK_SIZE = 8192;
 
 // #define DEBUG_MACHINE
@@ -51,6 +55,68 @@ RuntimeScriptValue GlobalReturnValue;
 
 
 ccInstance::~ccInstance() { }
+
+
+
+bool tiny_heap_init = false;
+void *tiny_heap_base = nullptr;
+void *tiny_heap_limit = nullptr;
+
+int alloc_count = 0;
+
+void init_tiny_heap()
+{
+    if (tiny_heap_init) { return; }
+
+    tiny_heap_base = malloc(64*1024*1024);
+    assert(tiny_heap_base);
+    tiny_heap_limit = (char*)tiny_heap_base + 64*1024*1024;
+
+    auto initok = ta_init(tiny_heap_base, tiny_heap_limit, 32*1024, 16, 16);
+    assert(initok);
+
+    auto checkok = ta_check();
+    assert(checkok);
+
+    tiny_heap_init = true;
+
+    printf("tiny alloc init! base=%p limit=%p\n", tiny_heap_base, tiny_heap_limit);
+}
+
+
+void *tiny_alloc(size_t n) 
+{
+    init_tiny_heap();
+
+    // auto result = ta_alloc(n);
+
+    auto result = ta_calloc(1, n);
+    alloc_count ++;
+
+    // printf("%p: alloc %d bytes - total items %d\n",result, n, alloc_count);
+    assert(result);
+
+    // auto checkok = ta_check();
+    // assert(checkok);
+
+
+    return result;
+}
+
+void tiny_free(void *p)
+{
+    if (!p) { return; }
+
+    alloc_count --;
+
+    init_tiny_heap();
+    ta_free(p);
+}
+
+
+
+
+
 
 
 using reg_t = uint32_t;
@@ -126,9 +192,9 @@ public:
 
     PScript instanceof;
 
-    std::vector<char> globaldata;
-    std::vector<char> code;
-    std::vector<char> strings;
+    char *globaldata;
+    char *code;
+    char *strings;
 
     uint32_t globaldata_vaddr;
     uint32_t code_vaddr;
@@ -149,8 +215,8 @@ ccInstanceExperiment::ccInstanceExperiment() {}
 ccInstanceExperiment::~ccInstanceExperiment()  {}
 
 // for manipulating the global data.
-void ccInstanceExperiment::OverrideGlobalData(const char *data, int size) {}
-void ccInstanceExperiment::GetGlobalData(const char *&data, int &size) {}
+void ccInstanceExperiment::OverrideGlobalData(const char *data, int size) { assert(0); }
+void ccInstanceExperiment::GetGlobalData(const char *&data, int &size) { assert(0); }
 
 // Create a runnable instance of the same script, sharing global memory
 ccInstance *ccInstanceExperiment::Fork()  
@@ -171,105 +237,118 @@ void    ccInstanceExperiment::AbortAndDestroy() {
 
 
 
-uint32_t ccExecutor::AddMemoryWindow(const void *addr, size_t size, bool readonly)
+// We assume that these addresses are references to managed objects
+// with NO body
+struct RealMemoryAddressInfo
 {
-    if (addr == nullptr) { return 0; }
+    void *addr;
+    uint32_t vaddr;
+    int use_count;
+};
 
-    uint32_t next = 0x10000000;
-
-    // DONT' search and return if already exists. because in real memory they may overlap
-    // just find next spot.
-    for (auto& m : dumbmemory) {
-        if (m.virtualaddr + m.size > next) {
-            next = m.virtualaddr + m.size + 128*1024;  // add large gap to detect incorrect sizes
-            next |= 0xFFF;
-            next += 1;
-        }
-    }
-
-    dumbmemory.push_back( {next, addr, size} );
-
-#ifdef DEBUG_MACHINE
-    printf("MEM WINDOW TOTAL - %d items\n", dumbmemory.size());
-    printf("memwindow new vaddr:%08x addr:%p size:%d\n", next, addr, size);
-#endif
-
-    return next;
-}
-
-void ccExecutor::RemoveMemoryWindow(const void *addr, size_t size) 
-{
-
-    if (addr == nullptr) { return; }
-
-    auto it = dumbmemory.begin();
-    while (it != dumbmemory.end()) {
-
-        if (it->addr == addr && it->size == size) {
-#ifdef DEBUG_MACHINE
-            printf("memwindow delete vaddr:%08x addr:%p size:%d\n", it->virtualaddr, it->addr, it->size);
-#endif
-            dumbmemory.erase(it);
-            break;
-        }
-        ++it;
-    }
-
-#ifdef DEBUG_MACHINE
-    printf("MEM WINDOW TOTAL DELETE - %d items\n", dumbmemory.size());
-#endif
-
-}
+std::list<RealMemoryAddressInfo> address_maps {};
+using map_interator_t = std::list<RealMemoryAddressInfo>::iterator;
+std::unordered_map<void *, map_interator_t> map_by_real_addr {};
+std::unordered_map<uint32_t, map_interator_t> map_by_vaddr {};
+uint32_t next_map_addr = 0x40000000;
 
 char err_buff[1000];
 
-void *ccExecutor::ResolveVirtualAddress(uint32_t vaddr)
+uint32_t ccExecutor::AddRealMemoryAddress(const void *addr)
 {
-    if (vaddr == 0) { return nullptr; }
+    if (addr == nullptr) { return 0; }
 
-    for (const auto& m : dumbmemory) {
-        if (vaddr >= m.virtualaddr && vaddr < m.virtualaddr+m.size) {
-            auto result = (const char *)m.addr + (vaddr - m.virtualaddr);
-            return (void*)result; // this removes const :(
-        }
-    }
-    sprintf(err_buff, "could not find virtual addr %08x", vaddr);
-    throw std::runtime_error(err_buff);
-}
-
-uint32_t ccExecutor::ToVirtualAddress(const void *addr)
-{
-    if (addr == nullptr) {
-        return 0;
+    // if (addr & 0xC0000000 == 0)
+    if (addr >= tiny_heap_base && addr < tiny_heap_limit)
+    {
+        // don't track if in tiny heap
+        return (char*)addr - (char*)tiny_heap_base;
     }
 
-    // find the largest window because we still have overlap
-    bool found = false;
-    uint32_t vaddr = 0;
-    char *window_end = nullptr;
-
-    for (const auto& m : dumbmemory) {
-        if (addr >= m.addr && addr < (char*)m.addr+m.size) {
-            auto cur_vaddr = m.virtualaddr + ((char*)addr - (char*)m.addr);
-            auto cur_window_end = (char*)m.addr + m.size;
-
-            if (cur_window_end > window_end) {
-                vaddr = cur_vaddr;
-                window_end = cur_window_end;
-            }
-
-            found = true;
-        }
+    auto fit = map_by_real_addr.find((void*)addr);
+    if (fit != map_by_real_addr.end()) {
+        auto it = fit->second;
+        it->use_count++;
+        return it->vaddr;
     }
 
-    if (!found){
-        sprintf(err_buff, "could not find real addr %016x", addr);
-        throw std::runtime_error(err_buff);
-    }
+    auto vaddr = next_map_addr;
+    next_map_addr += 64;
 
+    address_maps.push_back({(void*)addr, vaddr, 1});
+    auto it = address_maps.end();
+    it--;
+    map_by_real_addr[(void*)addr] = it;
+    map_by_vaddr[vaddr] = it;
+
+    // printf("mapped count: %d\n", address_maps.size());
     return vaddr;
 }
 
+void ccExecutor::RemoveRealMemoryAddress(const void *addr)
+{
+    if (addr == nullptr) { return; }
+
+    if (addr >= tiny_heap_base && addr < tiny_heap_limit) {
+        // don't track if in tiny heap
+        return;
+    }
+
+    auto fit = map_by_real_addr.find((void*)addr);
+    if (fit == map_by_real_addr.end()) { return; }
+
+    auto it = fit->second;
+    it->use_count --;
+    if (it->use_count <= 0) {
+        map_by_real_addr.erase(it->addr);
+        map_by_vaddr.erase(it->vaddr);
+        address_maps.erase(it);
+    }
+
+}
+
+inline void *ToRealMemoryAddress(uint32_t vaddr)
+{
+    if (vaddr == 0) { return nullptr; }
+
+    // mapped addresses start from 0x4000000
+    if ((vaddr & 0xF0000000) == 0)
+    // if (vaddr < ((char*)tiny_heap_limit - (char*)tiny_heap_base)) 
+    {
+        return (char*)tiny_heap_base + vaddr;
+    }
+
+    auto fit = map_by_vaddr.find(vaddr);
+    if (fit == map_by_vaddr.end()) { 
+        sprintf(err_buff, "could not find virtual addr %08x", vaddr);
+        throw std::runtime_error(err_buff);
+    }
+
+    auto it = fit->second;
+
+    return it->addr;
+
+}
+
+inline uint32_t ToVirtualAddress(const void *addr)
+{
+    if (addr == nullptr) { return 0; }
+
+    if (addr >= tiny_heap_base && addr < tiny_heap_limit) {
+        // don't track if in tiny heap
+        return (char*)addr - (char*)tiny_heap_base;
+    }
+
+    auto fit = map_by_real_addr.find((void*)addr);
+    if (fit == map_by_real_addr.end()) { 
+        sprintf(err_buff, "could not find read addr %p", addr);
+        throw std::runtime_error(err_buff);
+    }
+
+    auto it = fit->second;
+
+    return it->vaddr;
+}
 
 ccExecutor::ccExecutor() 
 {
@@ -278,9 +357,11 @@ ccExecutor::ccExecutor()
 
     this->pc = 0;
 
-    this->stack.resize(1024*8);
+    // this->stack.resize(1024*8);
+    this->stack = (char*)tiny_alloc(8*1024);
 
-    this->stacktop = AddMemoryWindow(stack.data(), stack.size(), false);
+    // this->stacktop = AddMemoryWindow(stack, 8*1024, false);
+    this->stacktop = ToVirtualAddress(this->stack);
     registers[SREG_SP] = this->stacktop;
 
 }
@@ -295,25 +376,33 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
     cinst->instanceof = scri;
 
     // create own memory space
-    cinst->globaldata.insert(cinst->globaldata.end(), scri->globaldata, scri->globaldata+scri->globaldatasize);
+    // cinst->globaldata.insert(cinst->globaldata.end(), scri->globaldata, scri->globaldata+scri->globaldatasize);
+    cinst->globaldata = (char*)tiny_alloc(scri->globaldatasize);
+    memcpy(cinst->globaldata, scri->globaldata, scri->globaldatasize);
     // for (int i = 0; i < 16*1024; i++) {
     //     cinst->globaldata.push_back(0);
     // }
     // assert(cinst->globaldata.size() == scri->globaldatasize);
-    cinst->code.resize(scri->codesize * 4);
-    auto cptr = reinterpret_cast<uint32_t *>(cinst->code.data());
+    // cinst->code.resize(scri->codesize * 4);
+    cinst->code = (char*)tiny_alloc(scri->codesize * 4);
+    // memcpy(cinst->code, scri->globaldata, scri->codesize);
+    auto cptr = reinterpret_cast<uint32_t *>(cinst->code);
     for (int i = 0; i < scri->codesize; i++) {
         *(cptr++) = (intptr_t)scri->code[i];
     }
 
     // TODO
     // just use the pointer to the strings since they don't change
-    cinst->strings.insert(cinst->strings.end(), scri->strings, scri->strings+scri->stringssize);
+    // cinst->strings.insert(cinst->strings.end(), scri->strings, scri->strings+scri->stringssize);
+    cinst->strings = (char*)tiny_alloc(scri->stringssize);
+    memcpy(cinst->strings, scri->strings, scri->stringssize);
 
-
-    cinst->globaldata_vaddr = AddMemoryWindow(cinst->globaldata.data(), cinst->globaldata.size(), false);
-    cinst->code_vaddr = AddMemoryWindow(cinst->code.data(), cinst->code.size(), false);
-    cinst->strings_vaddr = AddMemoryWindow(cinst->strings.data(), cinst->strings.size(), false);
+    // cinst->globaldata_vaddr = AddMemoryWindow(cinst->globaldata.data(), cinst->globaldata.size(), false);
+    cinst->globaldata_vaddr = ToVirtualAddress(cinst->globaldata);
+    // cinst->code_vaddr = AddMemoryWindow(cinst->code.data(), cinst->code.size(), false);
+    cinst->code_vaddr = ToVirtualAddress(cinst->code);
+    // cinst->strings_vaddr = AddMemoryWindow(cinst->strings.data(), cinst->strings.size(), false);
+    cinst->strings_vaddr = ToVirtualAddress(cinst->strings);
 
 
 #ifdef DEBUG_MACHINE
@@ -346,7 +435,7 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
     //     imports.push_back( {scri->imports[i], 0});
     // }
 
-    cptr = reinterpret_cast<uint32_t *>(cinst->code.data());
+    cptr = reinterpret_cast<uint32_t *>(cinst->code);
 
     for (int i = 0; i < scri->numfixups; i++) {
     long fixup = scri->fixups[i];
@@ -418,7 +507,7 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
         }
         case FIXUP_DATADATA:
         {
-            auto p = reinterpret_cast<uint32_t *>(cinst->globaldata.data() + fixup);
+            auto p = reinterpret_cast<uint32_t *>(cinst->globaldata + fixup);
             *p += cinst->globaldata_vaddr;
         }
         case FIXUP_STACK:
@@ -531,19 +620,24 @@ int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, con
     stackframes.push_back({});
     stackframes.back().funcstart = vaddr;
 
+    auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
+
+
     // NOTE: Pushing parameters to stack in reverse order
     for (int i = num_params - 1; i >= 0; --i)
     {
-        auto stackptr = reinterpret_cast<uint32_t*>( ResolveVirtualAddress(registers[SREG_SP]) );
+        // auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
         *stackptr = params[i].IValue;
         registers[SREG_SP] += 4;
+        stackptr++;
     }
 
     // return address on stack
-    auto stackptr = reinterpret_cast<uint32_t*>( ResolveVirtualAddress(registers[SREG_SP]) );
+    // auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
     // *stackptr = pc;
     *stackptr = 0;
     registers[SREG_SP] += 4;
+    stackptr++;
 
     pc = vaddr;
 
@@ -670,7 +764,7 @@ int ccExecutor::Run()
     // int was_just_callas = -1;
 
 
-    auto *pctr = ResolveVirtualAddress(pc);
+    auto *pctr = ToRealMemoryAddress(pc);
     const uint8_t *codeptr2 = reinterpret_cast<uint8_t *>(pctr);
 
     // std::vector<uint32_t> callstack;
@@ -1062,7 +1156,7 @@ int ccExecutor::Run()
             {
                 auto arg_reg = read_code(codeptr2, pc);
 
-                auto stackptr = reinterpret_cast<uint32_t*>( ResolveVirtualAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
                 *stackptr = registers[arg_reg];
                 registers[SREG_SP] += 4;
 
@@ -1079,7 +1173,7 @@ int ccExecutor::Run()
                 auto arg_reg = read_code(codeptr2, pc);
 
                 registers[SREG_SP] -= 4;
-                auto stackptr = reinterpret_cast<uint32_t*>( ResolveVirtualAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
                 registers[arg_reg] = *stackptr;
 #ifdef DEBUG_MACHINE
                 printf("pop %s\n", regnames[arg_reg]);
@@ -1113,7 +1207,7 @@ int ccExecutor::Run()
                 printf("check MAR != null\n");
 #endif
                 assert(registers[SREG_MAR] != 0);
-                auto ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(ptr != nullptr);
                 break;
             }
@@ -1124,7 +1218,7 @@ int ccExecutor::Run()
 #ifdef DEBUG_MACHINE
                 printf("%s = mem[MAR]\n", regnames[arg1_reg]);
 #endif
-                auto src_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto src_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint32_t value = src_ptr[0] | (src_ptr[1]<<8) | (src_ptr[2] << 16) | (src_ptr[3] << 24);
                 write_reg_t(registers, arg1_reg, value);
@@ -1133,7 +1227,7 @@ int ccExecutor::Run()
             case SCMD_MEMREADB: //     24    // reg1 = m[MAR] (1 byte)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto src_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto src_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint8_t value = *src_ptr;
                 write_reg_t<uint32_t>(registers, arg1_reg, value);
@@ -1142,7 +1236,7 @@ int ccExecutor::Run()
             case SCMD_MEMREADW: //     25    // reg1 = m[MAR] (2 bytes)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto src_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto src_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint16_t value_raw = src_ptr[0] | (src_ptr[1]<<8);
                 int32_t value = reinterpret_cast<int16_t&>(value_raw);
@@ -1161,9 +1255,11 @@ int ccExecutor::Run()
                 printf("m[MAR] = %d bytes from %08x\n", arg1_size, arg2_data);
 #endif
 
-                auto dest_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
 
+                // 4 bytes is the only size ever used.
+                // if 2 or 1 bytes are requested.. should we sign extend?
                 switch(arg1_size) {
                     case 4:
                         dest_ptr[3] = (arg2_data >> 24) & 0xFF;
@@ -1185,7 +1281,7 @@ int ccExecutor::Run()
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
-                auto dest_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
 #ifdef DEBUG_MACHINE
                 printf("m[MAR] = %s\n", regnames[arg1_reg]);
@@ -1199,7 +1295,7 @@ int ccExecutor::Run()
             case SCMD_MEMWRITEB: //    26    // m[MAR] = reg1 (1 byte)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto dest_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
                 dest_ptr[0] = value & 0xFF;
@@ -1208,7 +1304,7 @@ int ccExecutor::Run()
             case SCMD_MEMWRITEW: //    27    // m[MAR] = reg1 (2 bytes)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto dest_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
                 dest_ptr[0] = value & 0xFF;
@@ -1218,7 +1314,7 @@ int ccExecutor::Run()
             case SCMD_ZEROMEMORY: //   63    // m[MAR]..m[MAR+(arg1-1)] = 0
             {
                 const auto arg1_count = read_code_t<uint32_t>(codeptr2, pc);
-                auto dest_ptr = (uint8_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
                 memset(dest_ptr, 0, arg1_count);
                 break;
@@ -1242,10 +1338,10 @@ int ccExecutor::Run()
                 printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
 #endif
 
-                auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
 
-                auto objptr = (const char*)ResolveVirtualAddress(registers[arg_reg]);
+                auto objptr = (const char*)ToRealMemoryAddress(registers[arg_reg]);
 #ifdef DEBUG_MACHINE
                 printf("objptr=%x\n", objptr);
 #endif
@@ -1276,11 +1372,11 @@ int ccExecutor::Run()
                 printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
 #endif
 
-                auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto oldhandle = *handleptr;
 
-                auto objptr = (const char*)ResolveVirtualAddress(registers[arg_reg]);
+                auto objptr = (const char*)ToRealMemoryAddress(registers[arg_reg]);
 
                 if (objptr != nullptr) {
                     ManagedObjectInfo objinfo;
@@ -1312,7 +1408,7 @@ int ccExecutor::Run()
 #endif
 
 
-                auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
 #ifdef DEBUG_MACHINE
@@ -1343,7 +1439,7 @@ int ccExecutor::Run()
                 printf("m[MAR] = 0\n");
     #endif
                 auto marvalue = registers[SREG_MAR];
-                auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
 #ifdef DEBUG_MACHINE
@@ -1368,7 +1464,7 @@ int ccExecutor::Run()
     #endif
 
                 auto marvalue = registers[SREG_MAR];
-                auto handleptr = (uint32_t *)ResolveVirtualAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
 
@@ -1382,7 +1478,7 @@ int ccExecutor::Run()
                     printf("handle=%d (to free LATER)\n", handle);
     #endif
                     try {
-                       pool.disableDisposeForObject = (char*)ResolveVirtualAddress(registers[SREG_AX]);
+                       pool.disableDisposeForObject = (char*)ToRealMemoryAddress(registers[SREG_AX]);
                     } catch (const std::runtime_error& error) {}
                     ccReleaseObjectReference(handle);
                     pool.disableDisposeForObject = nullptr;
@@ -1411,7 +1507,7 @@ int ccExecutor::Run()
 #endif
 
                 pc += arg_rel*4;
-                codeptr2 = reinterpret_cast<const uint8_t *>(ResolveVirtualAddress(pc));
+                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
 
 #ifdef DEBUG_MACHINE
                 printf("jmp to 0x%08x\n", pc);
@@ -1426,7 +1522,7 @@ int ccExecutor::Run()
 
                 if (registers[SREG_AX] == 0) {
                     pc += arg_rel*4;
-                    codeptr2 = reinterpret_cast<const uint8_t *>(ResolveVirtualAddress(pc));
+                    codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
                 }
                 break;
             }
@@ -1437,7 +1533,7 @@ int ccExecutor::Run()
 
                 if (registers[SREG_AX] != 0) {
                     pc += arg_rel*4;
-                    codeptr2 = reinterpret_cast<const uint8_t *>(ResolveVirtualAddress(pc));
+                    codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
                 }
                 break;
             }
@@ -1503,7 +1599,7 @@ int ccExecutor::Run()
                 
                 // PUSH_CALL_STACK(inst);
 
-                auto stackptr = reinterpret_cast<uint32_t*>( ResolveVirtualAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
                 *stackptr = pc;
                 registers[SREG_SP] += 4;
 
@@ -1525,7 +1621,7 @@ int ccExecutor::Run()
 #ifdef DEBUG_MACHINE
                 printf("pc should be 0x%08x\n", pc);
 #endif
-                codeptr2 = reinterpret_cast<const uint8_t *>(ResolveVirtualAddress(pc));
+                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
 
                 stackframes.push_back({});
                 stackframes.back().thisbase = 0;
@@ -1540,12 +1636,12 @@ int ccExecutor::Run()
                 printf("\nRET!\n");
 #endif
                 registers[SREG_SP] -= 4;
-                auto stackptr = reinterpret_cast<uint32_t*>( ResolveVirtualAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
 
                 stackframes.pop_back();
 
                 pc = *stackptr;
-                codeptr2 = reinterpret_cast<const uint8_t *>(ResolveVirtualAddress(pc));
+                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
 
 #ifdef DEBUG_MACHINE
                 printf("new pc: %d\n",pc);
@@ -1624,7 +1720,7 @@ int ccExecutor::Run()
                     return -1;
                 }
 
-                auto fromstr = ResolveVirtualAddress(registers[arg_reg]);
+                auto fromstr = ToRealMemoryAddress(registers[arg_reg]);
                 auto str = (char *)stringClassImpl->CreateString((const char*)fromstr).second;
                 registers[arg_reg] = ToVirtualAddress(str);
 
@@ -1639,8 +1735,8 @@ int ccExecutor::Run()
                 auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto arg2_reg = read_code_t<reg_t>(codeptr2, pc);
 
-                auto arg1_ptr = (char *)ResolveVirtualAddress(registers[arg1_reg]);
-                auto arg2_ptr = (char *)ResolveVirtualAddress(registers[arg2_reg]);
+                auto arg1_ptr = (char *)ToRealMemoryAddress(registers[arg1_reg]);
+                auto arg2_ptr = (char *)ToRealMemoryAddress(registers[arg2_reg]);
 
                 if (strcmp(arg1_ptr, arg2_ptr) == 0)
                     registers[arg1_reg] = 1;
@@ -1654,8 +1750,8 @@ int ccExecutor::Run()
                 auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto arg2_reg = read_code_t<reg_t>(codeptr2, pc);
 
-                auto arg1_ptr = (char *)ResolveVirtualAddress(registers[arg1_reg]);
-                auto arg2_ptr = (char *)ResolveVirtualAddress(registers[arg2_reg]);
+                auto arg1_ptr = (char *)ToRealMemoryAddress(registers[arg1_reg]);
+                auto arg2_ptr = (char *)ToRealMemoryAddress(registers[arg2_reg]);
 
                 if (strcmp(arg1_ptr, arg2_ptr) != 0)
                     registers[arg1_reg] = 1;
@@ -1767,9 +1863,10 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
         v.SetInt32(e);
 
         try {
-            auto realaddrr = ResolveVirtualAddress(e);
+            auto realaddrr = ToRealMemoryAddress(e);
             if (realaddrr != nullptr) {
-                v.SetData((char*)realaddrr, 1024);
+                v.Ptr = (char*)realaddrr;
+                // v.SetData((char*)realaddrr, 1024);
             }
         }catch (const std::runtime_error& error)
         {
@@ -1786,7 +1883,7 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     if (need_object && sysimp->Value.Type == kScValObjectFunction)
     {
         // member function call
-        auto obj = ResolveVirtualAddress(registers[SREG_OP]);
+        auto obj = ToRealMemoryAddress(registers[SREG_OP]);
 #ifdef DEBUG_MACHINE
         printf("obj: fake=%08x real=%p\n", registers[SREG_OP], obj);
 #endif
@@ -1806,11 +1903,21 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     printf("callext:DONE\n");
 #endif
 
-    if (return_value.Ptr != nullptr) {
-        return ToVirtualAddress(return_value.Ptr);
-    } else {
-        return return_value.IValue;
+    switch(return_value.Type) {
+        case kScValInteger:
+        case kScValFloat:
+            return return_value.IValue;
+        case kScValDynamicObject:
+            return ToVirtualAddress(return_value.Ptr);
+        default:
+            printf("%d\n", return_value.Type);
+            assert(0);
     }
+    // if (return_value.Ptr != nullptr) {
+    //     return ToVirtualAddress(return_value.Ptr);
+    // } else {
+    //     return return_value.IValue;
+    // }
 
     // printf("done?  %d\n",return_value.IValue);
 }

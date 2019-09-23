@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <stdint.h>
 
 #include "script/script_common.h"
 #include "script/cc_script.h"  // ccScript
@@ -80,6 +81,7 @@ struct ccInstance
 {
 public:
     virtual ~ccInstance() = 0;
+    // TOOD: on delete, remove from executor
 
     // Create a runnable instance of the same script, sharing global memory
     virtual ccInstance *Fork() = 0;
@@ -135,6 +137,7 @@ struct ccExecutor
     int CallScriptFunction(ccInstance *sci, const char *funcname, int32_t num_params, const RuntimeScriptValue *params);
 
     int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const RuntimeScriptValue *params);
+    // int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const uint32_t *machparams);
 
     int Run();
 
@@ -147,10 +150,14 @@ struct ccExecutor
     // Is the executor still running?
     bool IsBeingRun();
 
-    uint32_t AddMemoryWindow(const void *addr, size_t size, bool readonly);
-    void RemoveMemoryWindow(const void *addr, size_t size);
-    void *ResolveVirtualAddress(uint32_t vaddr);
-    uint32_t ToVirtualAddress(const void *addr);
+
+    // Add real memory address that we just use as a handle essentialy (we never read from it)
+    uint32_t AddRealMemoryAddress(const void *addr);
+    void RemoveRealMemoryAddress(const void *addr);
+
+
+    // void *ToRealMemoryAddress(uint32_t vaddr);
+    // uint32_t ToVirtualAddress(const void *addr);
 
     void Abort();
 
@@ -172,7 +179,7 @@ private:
     uint32_t registers[8];
     uint32_t pc;
     uint32_t stacktop;
-    std::vector<char> stack;
+    char *stack;
     std::vector<MemWindow> dumbmemory;
     std::vector<ccStackFrame> stackframes;
 

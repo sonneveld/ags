@@ -62,7 +62,7 @@ bool tiny_heap_init = false;
 void *tiny_heap_base = nullptr;
 void *tiny_heap_limit = nullptr;
 
-// int alloc_count = 0;
+int alloc_count = 0;
 
 void init_tiny_heap()
 {
@@ -72,7 +72,7 @@ void init_tiny_heap()
     assert(tiny_heap_base);
     tiny_heap_limit = (char*)tiny_heap_base + 64*1024*1024;
 
-    auto initok = ta_init(tiny_heap_base, tiny_heap_limit, 32*1024, 16, 16);
+    auto initok = ta_init(tiny_heap_base, tiny_heap_limit, 64*1024, 16, 16);
     assert(initok);
 
     auto checkok = ta_check();
@@ -90,12 +90,15 @@ void *tiny_alloc(size_t n)
 
     auto result = ta_alloc(n);
     // auto result = ta_calloc(1, n);
-    assert(result);
+    if (!result) {
+        printf("%p: alloc %d bytes - total items %d\n",result, n, alloc_count);
+        assert(result);
+    }
 
     // auto checkok = ta_check();
     // assert(checkok);
 
-    // alloc_count ++;
+    alloc_count ++;
     // printf("%p: alloc %d bytes - total items %d\n",result, n, alloc_count);
 
     return result;
@@ -107,7 +110,7 @@ void tiny_free(void *p)
     init_tiny_heap();
 
     ta_free(p);
-    // alloc_count --;
+    alloc_count --;
 }
 
 

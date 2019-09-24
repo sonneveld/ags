@@ -42,9 +42,40 @@
 
 #include "tinyalloc.h"
 
+
+/*
+
+TODO
+
+instruction logging like dosbox/debug
+https://github.com/svn2github/dosbox/blob/master/src/debug/debug.cpp#L2522
+06571FBF    2E8F06A4 1F11111111 2E8F06A4 2E8F06A4    POPREG    pop ax    
+AX:%08x BX:%08x CX:%08x DX:%08x MAR:%08x OP:%08x SP:%08x (line= base=  callobj=0/1 callargs=xx )
+registers= flags= otherstate= MAR=0x2344,handle(if exists)
+
+
+reuse mapped memory addresses
+
+
+SAVE all registers when calling an external C function, in case it calls more scripts
+
+
+string cache, save memory
+- be careful when unloading rooms though!
+
+look up if function needs object..
+
+Sc_String_Format does some weird things with parameters
+
+replace cc_error with exceptions?
+
+support notify_alive and infinite loop count checks
+
+*/
+
 const auto CC_EXP_STACK_SIZE = 8192;
 
-// #define DEBUG_MACHINE
+#define DEBUG_MACHINE
 
 // [IKM] 2012-10-21:
 // NOTE: This is temporary solution (*sigh*, one of many) which allows certain
@@ -295,7 +326,7 @@ std::list<RealMemoryAddressInfo> address_maps {};
 using map_interator_t = std::list<RealMemoryAddressInfo>::iterator;
 std::unordered_map<void *, map_interator_t> map_by_real_addr {};
 std::unordered_map<uint32_t, map_interator_t> map_by_vaddr {};
-uint32_t next_map_addr = 0x40000000;
+uint32_t next_map_addr = 0x20000000;
 
 char err_buff[1000];
 
@@ -356,7 +387,7 @@ inline void *ToRealMemoryAddress(uint32_t vaddr)
 {
     if (vaddr == 0) { return nullptr; }
 
-    // mapped addresses start from 0x4000000
+    // mapped addresses start from 0x20000000
     if ((vaddr & 0xF0000000) == 0)
     // if (vaddr < ((char*)tiny_heap_limit - (char*)tiny_heap_base)) 
     {
@@ -381,7 +412,7 @@ inline void *ToRealMemoryAddressFromHeap(uint32_t vaddr)
 {
     if (vaddr == 0) { return nullptr; }
     assert ((vaddr & 0xF0000000) == 0);
-    // mapped addresses start from 0x4000000
+    // mapped addresses start from 0x20000000
     return (char*)tiny_heap_base + vaddr;
 }
 
@@ -564,7 +595,7 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
 #ifdef DEBUG_MACHINE
                     printf("SYM : ");
 #endif
-                    cptr[fixup] = system_index | 0x80000000;
+                    cptr[fixup] = system_index | 0x40000000;
             }
 
             break;
@@ -744,6 +775,7 @@ int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_values, con
     auto old_sreg_op = registers[SREG_OP];
 
     stackframes.push_back({});
+    assert(stackframes.back().next_call_needs_object == 0);
     stackframes.back().funcstart = vaddr;
 
     auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
@@ -833,21 +865,23 @@ void ccExecutor::Abort() {
 
 
 
-inline uint32_t read_code(const uint8_t * &code, uint32_t &pc)
-{
-    auto value = code[0] | (code[1]<<8) | (code[2]<<16) | (code[3]<<24);
-    code += 4;
-    pc += 4;
-    return value;
-}
+// inline uint32_t read_code(const uint8_t * &code, uint32_t &pc)
+// {
+//     auto value = code[0] | (code[1]<<8) | (code[2]<<16) | (code[3]<<24);
+//     code += 4;
+//     pc += 4;
+//     return value;
+// }
 
 template <class T>
 inline T read_code_t(const uint8_t * &code, uint32_t &pc)
 {
     static_assert(sizeof(T) == sizeof(uint32_t));
-    auto value_raw = read_code(code, pc);
-    auto value = reinterpret_cast<T &>(value_raw);
-    return value;
+    const auto value = (code[0]) | (code[1]<<8) | (code[2]<<16) | (code[3]<<24);
+    const auto value_t = reinterpret_cast<const T &>(value);
+    code += 4;
+    pc += 4;
+    return value_t;
 }
 
 
@@ -855,8 +889,8 @@ template <class T>
 inline T read_reg_t(uint32_t registers[], reg_t reg)
 {
     static_assert(sizeof(T) == sizeof(uint32_t));
-    auto value_raw = registers[reg];
-    auto value = reinterpret_cast<T &>(value_raw);
+    const auto value_raw = registers[reg];
+    const auto value = reinterpret_cast<const T &>(value_raw);
     return value;
 }
 
@@ -864,7 +898,7 @@ template <class T>
 inline void write_reg_t(uint32_t registers[], reg_t reg, T value)
 {
     static_assert(sizeof(T) == sizeof(uint32_t));
-    auto value_raw = reinterpret_cast<uint32_t&>(value);
+    const auto value_raw = reinterpret_cast<const uint32_t&>(value);
     registers[reg] = value_raw;
 }
 
@@ -874,34 +908,19 @@ int ccExecutor::GetReturnValue()
     return read_reg_t<int32_t>(registers, SREG_AX);
 }
 
+
 int ccExecutor::Run()
 {
-#ifdef DEBUG_MACHINE
-                printf("\n");
-
-    printf("RUN! pc = 0x%08x\n", pc);
-#endif
-
     auto *pctr = ToRealMemoryAddressFromHeap(pc);
     const uint8_t *codeptr2 = reinterpret_cast<uint8_t *>(pctr);
+
 
     for(;;) {
 
         assert(pc != 0);
 
-        auto op = read_code(codeptr2, pc);
+        auto op = read_code_t<uint32_t>(codeptr2, pc);
 
-#ifdef DEBUG_MACHINE
-        printf("pc=0x%08x op:%d\t\t sp=%08x mar=%08x ax=%08x bx=%08x cx=%08x dx=%08x op=%08x\n", pc, op, 
-            registers[SREG_SP],
-            registers[SREG_MAR],
-            registers[SREG_AX],
-            registers[SREG_BX],
-            registers[SREG_CX],
-            registers[SREG_DX],
-            registers[SREG_OP]
-            );
-#endif
 
         switch(op) {
 
@@ -913,9 +932,6 @@ int ccExecutor::Run()
             {
                 auto arg_line = read_code_t<int32_t>(codeptr2, pc);
 
-#ifdef DEBUG_MACHINE
-                printf("\nline: %d\n", arg_line);
-#endif
                 break;
             }
 
@@ -926,9 +942,6 @@ int ccExecutor::Run()
                 const auto arg_lit = read_code_t<int32_t>(codeptr2, pc);
 
                 auto value = read_reg_t<int32_t>(registers, arg_reg);
-#ifdef DEBUG_MACHINE
-                printf("assert %s is between 0 and %d\n", regnames[arg_reg], arg_lit);
-#endif
 
                 assert(value >= 0 && value < arg_lit);
                 break;
@@ -944,10 +957,6 @@ int ccExecutor::Run()
                 const auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
                 const auto arg_lit = read_code_t<uint32_t>(codeptr2, pc);
 
-#ifdef DEBUG_MACHINE
-                printf("%s = 0x%x\n", regnames[arg_reg], arg_lit);
-#endif
-
                 write_reg_t(registers, arg_reg, arg_lit);
                 break;
             }
@@ -957,10 +966,6 @@ int ccExecutor::Run()
             {
                 const auto arg_reg_src = read_code_t<reg_t>(codeptr2, pc);
                 const auto arg_reg_dest = read_code_t<reg_t>(codeptr2, pc);
-
-#ifdef DEBUG_MACHINE
-                printf("%s = %s\n", regnames[arg_reg_dest], regnames[arg_reg_src]);
-#endif
 
                 const auto value = read_reg_t<uint32_t>(registers, arg_reg_src);
 
@@ -978,9 +983,6 @@ int ccExecutor::Run()
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc);
                 const auto value = read_reg_t<int32_t>(registers, arg1_reg) + arg2_lit;
-#ifdef DEBUG_MACHINE
-                printf("%s += %d = %d\n", regnames[arg1_reg], arg2_lit, value);
-#endif
                 write_reg_t(registers, arg1_reg, value);
                 break;
             }
@@ -997,9 +999,6 @@ int ccExecutor::Run()
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc);
                 const auto value = read_reg_t<int32_t>(registers, arg1_reg) * arg2_lit;
-#ifdef DEBUG_MACHINE
-                printf("%s *= %d = %d\n", regnames[arg1_reg], arg2_lit, value);
-#endif
                 write_reg_t(registers, arg1_reg, value);
                 break;
             }
@@ -1009,9 +1008,6 @@ int ccExecutor::Run()
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc);
                 const auto value = read_reg_t<int32_t>(registers, arg1_reg) + read_reg_t<int32_t>(registers, arg2_reg);
-#ifdef DEBUG_MACHINE
-                printf("%s = %s + %s\n", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg], value);
-#endif
                 write_reg_t(registers, arg1_reg, value);
                 break;
             }
@@ -1268,15 +1264,11 @@ int ccExecutor::Run()
 
             case SCMD_PUSHREG: //      29    // m[sp]=reg1; sp++
             {
-                auto arg_reg = read_code(codeptr2, pc);
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
                 auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
                 *stackptr = registers[arg_reg];
                 registers[SREG_SP] += 4;
-
-#ifdef DEBUG_MACHINE
-                printf("push %s\n", regnames[arg_reg]);
-#endif
 
                 break;
             }
@@ -1284,14 +1276,11 @@ int ccExecutor::Run()
 
             case SCMD_POPREG: //       30    // sp--; reg1=m[sp]
             {
-                auto arg_reg = read_code(codeptr2, pc);
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
                 registers[SREG_SP] -= 4;
                 auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
                 registers[arg_reg] = *stackptr;
-#ifdef DEBUG_MACHINE
-                printf("pop %s\n", regnames[arg_reg]);
-#endif
 
                 break;
 
@@ -1301,10 +1290,6 @@ int ccExecutor::Run()
             case SCMD_LOADSPOFFS: //   51    // MAR = SP - arg1 (optimization for local var access)
             {
                 auto arg1_lit = read_code_t<int32_t>(codeptr2, pc);
-
-#ifdef DEBUG_MACHINE
-                printf("mar = sp - %d\n", arg1_lit);
-#endif
 
                 registers[SREG_MAR] = registers[SREG_SP] - arg1_lit;
                 break;
@@ -1317,9 +1302,6 @@ int ccExecutor::Run()
 
             case SCMD_CHECKNULL: //    52    // error if MAR==0
             {
-#ifdef DEBUG_MACHINE
-                printf("check MAR != null\n");
-#endif
                 assert(registers[SREG_MAR] != 0);
                 auto ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(ptr != nullptr);
@@ -1329,9 +1311,6 @@ int ccExecutor::Run()
             case SCMD_MEMREAD: //      7     // reg1 = m[MAR] (4 bytes)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-#ifdef DEBUG_MACHINE
-                printf("%s = mem[MAR]\n", regnames[arg1_reg]);
-#endif
                 auto src_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint32_t value = src_ptr[0] | (src_ptr[1]<<8) | (src_ptr[2] << 16) | (src_ptr[3] << 24);
@@ -1365,10 +1344,6 @@ int ccExecutor::Run()
                 const auto arg1_size = read_code_t<uint32_t>(codeptr2, pc);
                 const auto arg2_data = read_code_t<uint32_t>(codeptr2, pc);
 
-#ifdef DEBUG_MACHINE
-                printf("m[MAR] = %d bytes from %08x\n", arg1_size, arg2_data);
-#endif
-
                 auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
 
@@ -1397,9 +1372,6 @@ int ccExecutor::Run()
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
                 auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
-#ifdef DEBUG_MACHINE
-                printf("m[MAR] = %s\n", regnames[arg1_reg]);
-#endif
                 dest_ptr[0] = (value >> 0) & 0xFF ;
                 dest_ptr[1] = (value >> 8) & 0xFF ;
                 dest_ptr[2] = (value >> 16) & 0xFF ;
@@ -1446,27 +1418,17 @@ int ccExecutor::Run()
 
             case SCMD_MEMINITPTR: //   50    // m[MAR] = reg1 (but don't free old one)
             {
-                auto arg_reg = read_code(codeptr2, pc);
-
-#ifdef DEBUG_MACHINE
-                printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
-#endif
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
 
                 auto objptr = (const char*)ToRealMemoryAddress(registers[arg_reg]);
-#ifdef DEBUG_MACHINE
-                printf("objptr=%x\n", objptr);
-#endif
 
                 if (objptr != nullptr) {
                     ManagedObjectInfo objinfo;
                     auto err = ccGetObjectInfoFromAddress(objinfo, (void*)objptr);
                     assert(err == 0);
-#ifdef DEBUG_MACHINE
-                    printf("handle=%d\n", objinfo.handle);
-#endif
                     *handleptr = objinfo.handle;
                     ccAddObjectReference(objinfo.handle);
                 } else {
@@ -1479,12 +1441,7 @@ int ccExecutor::Run()
             // for keeping track of memory handles
             case SCMD_MEMWRITEPTR: //  47    // m[MAR] = reg1 (adjust ptr addr)
             {
-                auto arg_reg = read_code(codeptr2, pc);
-
-#ifdef DEBUG_MACHINE
-                printf("free handle of mem[MAR=%x]\n", registers[SREG_MAR], regnames[arg_reg]);
-                printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
-#endif
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
@@ -1496,9 +1453,6 @@ int ccExecutor::Run()
                     ManagedObjectInfo objinfo;
                     auto err = ccGetObjectInfoFromAddress(objinfo, (void*)objptr);
                     assert(err == 0);
-#ifdef DEBUG_MACHINE
-                    printf("handle=%d\n", objinfo.handle);
-#endif
                     *handleptr = objinfo.handle;
                     ccAddObjectReference(objinfo.handle);
                 } else {
@@ -1516,28 +1470,17 @@ int ccExecutor::Run()
             }
             case SCMD_MEMREADPTR: //   48    // reg1 = m[MAR] (adjust ptr addr)
             {
-                auto arg_reg = read_code(codeptr2, pc);
-#ifdef DEBUG_MACHINE
-                printf("%s = address of object with handle m[MAR]\n", regnames[arg_reg]);
-#endif
-
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
-#ifdef DEBUG_MACHINE
-                printf("handle=%d\n", handle);
-#endif
 
                 if (handle != 0) {
                     ManagedObjectInfo objinfo;
                     auto err = ccGetObjectInfoFromHandle(objinfo, handle);
                     assert(err == 0);
                     assert(objinfo.address != nullptr);
-    #ifdef DEBUG_MACHINE
-                    printf("hp=0x%08x h=%d obj=0x%08x\n", handleptr, handle, objinfo.address);
-    #endif
-                    
                     registers[arg_reg] = ToVirtualAddress(objinfo.address);
                 } else {
                     registers[arg_reg] = 0;
@@ -1549,16 +1492,10 @@ int ccExecutor::Run()
             }
             case SCMD_MEMZEROPTR: //   49    // m[MAR] = 0    (blank ptr)
             {
-#ifdef DEBUG_MACHINE
-                printf("m[MAR] = 0\n");
-    #endif
                 auto marvalue = registers[SREG_MAR];
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
-#ifdef DEBUG_MACHINE
-                printf("handle=%d (to free)\n", handle);
-    #endif
                 if (handle != 0) {
                     ccReleaseObjectReference(handle);
                 }
@@ -1573,10 +1510,6 @@ int ccExecutor::Run()
                 // ax might be a pointer or it might just be a normal number, depends on 
                 // what the function is returning.
 
-#ifdef DEBUG_MACHINE
-                printf("m[MAR] = 0 (hold reference)\n");
-    #endif
-
                 auto marvalue = registers[SREG_MAR];
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
@@ -1588,9 +1521,6 @@ int ccExecutor::Run()
                 // object, that will be handled inside the recursive call to SubRef.
 
                 if (handle != 0) {
-#ifdef DEBUG_MACHINE
-                    printf("handle=%d (to free LATER)\n", handle);
-    #endif
                     // try {
                        pool.disableDisposeForObject = (char*)ToRealMemoryAddress(registers[SREG_AX]);
                     // } catch (const std::runtime_error& error) {}
@@ -1608,7 +1538,7 @@ int ccExecutor::Run()
             case SCMD_LOOPCHECKOFF: // 68    // no loop checking for this function
             {
 #ifdef DEBUG_MACHINE
-                printf("TODO\n");
+                printf("SCMD_LOOPCHECKOFF: TODO\n");
 #endif
                 break;
             }
@@ -1616,17 +1546,8 @@ int ccExecutor::Run()
             case SCMD_JMP: //          31    // jump to arg1
             {
                 auto arg_rel = read_code_t<int32_t>(codeptr2, pc);
-#ifdef DEBUG_MACHINE
-                printf("pc = 0x%08x    rel=%d \n", pc, arg_rel);
-#endif
-
                 pc += arg_rel*4;
                 codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
-
-#ifdef DEBUG_MACHINE
-                printf("jmp to 0x%08x\n", pc);
-#endif
-
                 break;
             }
 
@@ -1664,14 +1585,14 @@ int ccExecutor::Run()
 
                 stackframe.thisbase = arg_base;
 #ifdef DEBUG_MACHINE
-                printf("base: 0x%08x baseadj=0x%08x funcstart=0x%08x\n", arg_base, arg_base*4, stackframe.funcstart);
+                printf("SCMD_THISBASE: base:0x%08x baseadj:0x%08x funcstart:0x%08x\n", arg_base, arg_base*4, stackframe.funcstart);
 #endif
                 break;
             }
 
             case SCMD_NUMFUNCARGS: //  39    // number of arguments for ext func call
             {
-                auto arg_numfuncs = read_code(codeptr2, pc);
+                auto arg_numfuncs = read_code_t<int32_t>(codeptr2, pc);
 
                 auto &stackframe = stackframes.back();
 
@@ -1682,7 +1603,7 @@ int ccExecutor::Run()
 
             case SCMD_CALLOBJ: //      45    // next call is member function of reg1
             {
-                auto arg_reg = read_code(codeptr2, pc);
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto &stackframe = stackframes.back();
 
                 // set the OP register
@@ -1692,10 +1613,6 @@ int ccExecutor::Run()
                     return -1;
                 }
                 registers[SREG_OP] = registers[arg_reg];
-
-#ifdef DEBUG_MACHINE
-                printf("SREG_OP = 0x%08x\n", registers[SREG_OP]);
-#endif
 
                 stackframe.next_call_needs_object = 1;
                 break;
@@ -1715,10 +1632,10 @@ int ccExecutor::Run()
                 auto func_args_count = stackframe.num_args_to_func;
                 stackframe.num_args_to_func = -1;
 
-#ifdef DEBUG_MACHINE
-                printf("\nCALL reg=%s 0x%08x adj:0x%08x\n", regnames[arg_reg], read_reg_t<uint32_t>(registers, arg_reg), read_reg_t<uint32_t>(registers, arg_reg)*4);
-#endif
-                
+                #ifdef DEBUG_MACHINE
+                printf("SCMD_CALL: num_args_to_func=%d next_call_needs_object=%d\n", func_args_count, need_object);
+                #endif
+
                 // PUSH_CALL_STACK(inst);
 
                 auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
@@ -1726,23 +1643,14 @@ int ccExecutor::Run()
                 registers[SREG_SP] += 4;
 
                 if (stackframe.thisbase == 0) {
-#ifdef DEBUG_MACHINE
-                    printf("direct\n");
-#endif
                     assert(0 /* lookup fixup */); 
                     pc = 4 * read_reg_t<uint32_t>(registers, arg_reg);
                 } else {
-#ifdef DEBUG_MACHINE
-                    printf("relative offset=0x%08x\n", stackframe.funcstart - 4*stackframe.thisbase);
-#endif
                     // TODO, does base differ from func start at all?
                     pc = stackframe.funcstart - 4*stackframe.thisbase + 4*read_reg_t<uint32_t>(registers, arg_reg);
                     // pc = 4*read_reg_t<uint32_t>(registers, arg_reg);;
                 }
 
-#ifdef DEBUG_MACHINE
-                printf("pc should be 0x%08x\n", pc);
-#endif
                 codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
 
                 stackframes.push_back({});
@@ -1754,9 +1662,6 @@ int ccExecutor::Run()
 
             case SCMD_RET: //          5     // return from subroutine
             {
-#ifdef DEBUG_MACHINE
-                printf("\nRET!\n");
-#endif
                 registers[SREG_SP] -= 4;
                 auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
 
@@ -1764,10 +1669,6 @@ int ccExecutor::Run()
 
                 pc = *stackptr;
                 codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
-
-#ifdef DEBUG_MACHINE
-                printf("new pc: %d\n",pc);
-#endif
 
                 if (pc == 0) { 
                     //returnValue = registers[SREG_AX];
@@ -1779,14 +1680,14 @@ int ccExecutor::Run()
 
             case SCMD_PUSHREAL: //     34    // push reg1 onto real stack
             {
-                auto arg_reg = read_code(codeptr2, pc);
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
                 stackframes.back().callstack.push_back(registers[arg_reg]);
                 break;
             }
 
             case SCMD_SUBREALSTACK: // 35    // decrement stack ptr by literal
             {
-                auto arg_offset = read_code(codeptr2, pc);
+                auto arg_offset = read_code_t<int32_t>(codeptr2, pc);
 
                 // NOTE: no need to do this, as SCMD_CALLEXT will do it instead
                 // if (stackframes.back().was_just_callas >= 0) {
@@ -1811,20 +1712,26 @@ int ccExecutor::Run()
             case SCMD_CALLEXT: //      33    // call external (imported) function reg1
             {
                 auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto extfunc = registers[arg_reg] & 0x7fffffff;
+                auto extfunc = registers[arg_reg] & 0x3FFFFFFF;
 
                 auto sysimp = simp.getByIndex(extfunc);
+
 #ifdef DEBUG_MACHINE
-                printf("name: %s \n", sysimp->Name.GetCStr());
+                printf("SCMD_CALLEXT begin:%s\n", sysimp->Name.GetCStr());
 #endif
 
                 if (sysimp->Value.Type == kScMachineFunctionAddress) {
                     // DON'T SET AX since the script function itself will set it.
-                    CallExternalScriptFunction(extfunc);
+                    CallExternalScriptFunction(sysimp);
                 } else {
                     // CallScriptFunction to a real 'C' code function
-                    registers[SREG_AX] = CallExternalFunction(extfunc);
+                    registers[SREG_AX] = CallExternalFunction(sysimp);
                 }
+
+                #ifdef DEBUG_MACHINE
+                printf("SCMD_CALLEXT   end:%s\n", sysimp->Name.GetCStr());
+                #endif
+
                 break;
             }
 
@@ -1835,7 +1742,7 @@ int ccExecutor::Run()
 
             case SCMD_CREATESTRING: // 64    // reg1 = new String(reg1)
             {
-                auto arg_reg = read_code(codeptr2, pc);
+                auto arg_reg = read_code_t<reg_t>(codeptr2, pc);
 
                 if (stringClassImpl == nullptr) {
                     cc_error("No string class implementation set, but opcode was used");
@@ -1848,7 +1755,7 @@ int ccExecutor::Run()
                 registers[arg_reg] = ToVirtualAddressFromHeap(str);
 
 #ifdef DEBUG_MACHINE
-                printf("%s = new string: 0x%x \"%s\"\n", regnames[arg_reg], str, str);
+                printf("SCMD_CREATESTRING: \"%s\"\n",  str);
 #endif
                 break;
             }
@@ -1898,13 +1805,10 @@ int ccExecutor::Run()
 
             case SCMD_NEWARRAY: //     72    // reg1 = new array of reg1 elements, each of size arg2 (arg3=managed type?)
             {
-                auto arg1 = read_code(codeptr2, pc); // num elements
-                auto arg2 = read_code(codeptr2, pc); // element size
-                auto arg3 = read_code(codeptr2, pc); // element type, 1 == managed.
+                auto arg1 = read_code_t<int32_t>(codeptr2, pc); // num elements
+                auto arg2 = read_code_t<int32_t>(codeptr2, pc); // element size
+                auto arg3 = read_code_t<int32_t>(codeptr2, pc); // element type, 1 == managed.
 
-#ifdef DEBUG_MACHINE
-                printf("ax = new array(count=%d elementsize=%d managed=%d)\n", arg1, arg2, arg3);
-#endif
                 auto num_elements = registers[arg1];
                 if (num_elements < 1 || num_elements > 1000000) {
                     cc_error("invalid size for dynamic array; requested: %d, range: 1..1000000", num_elements);
@@ -1921,10 +1825,10 @@ int ccExecutor::Run()
 
             case SCMD_DYNAMICBOUNDS: // 71   // check reg1 is between 0 and m[MAR-4]
             {
-                auto arg1 = read_code(codeptr2, pc); // num elements
+                auto arg1 = read_code_t<reg_t>(codeptr2, pc); // reg of num elements
 
 #ifdef DEBUG_MACHINE
-                printf("TODO\n");
+                printf("SCMD_DYNAMICBOUNDS: TODO\n");
 #endif
                 break;
             }
@@ -1944,14 +1848,11 @@ int ccExecutor::Run()
 
     }
 
-#ifdef DEBUG_MACHINE
-    printf("RETURN!\n");
-#endif
 }
 
 
 // CallScriptFunction to a real 'C' code function
-uint32_t ccExecutor::CallExternalFunction(int symbolindex)
+uint32_t ccExecutor::CallExternalFunction(const ScriptImport *sysimp)
 {
     auto &stackframe = stackframes.back();
     // stackframe.was_just_callas = -1;
@@ -1962,18 +1863,13 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     auto func_args_count = stackframe.num_args_to_func;
     stackframe.num_args_to_func = -1;
 
+#ifdef DEBUG_MACHINE
+    printf("SCMD_CALLEXT: num_args_to_func=%d next_call_needs_object=%d\n", func_args_count, need_object);
+#endif
+
     if (func_args_count < 0) {
         func_args_count = stackframe.callstack.size();
     }
-
-#ifdef DEBUG_MACHINE
-    printf("callext: 0x%08x  num_args_to_func=%d next_call_needs_object=%d\n",  symbolindex, func_args_count, need_object);
-#endif
-
-    auto sysimp = simp.getByIndex(symbolindex);
-#ifdef DEBUG_MACHINE
-    printf("name: %s \n", sysimp->Name.GetCStr());
-#endif
 
     RuntimeScriptValue callparams[func_args_count];
 
@@ -2000,9 +1896,6 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
     {
         // member function call
         auto obj = ToRealMemoryAddress(registers[SREG_OP]);
-#ifdef DEBUG_MACHINE
-        printf("obj: fake=%08x real=%p\n", registers[SREG_OP], obj);
-#endif
         return_value = sysimp->Value.ObjPfn(obj, callparams, func_args_count);
     }
     else if (!need_object && sysimp->Value.Type == kScValStaticFunction)
@@ -2015,14 +1908,10 @@ uint32_t ccExecutor::CallExternalFunction(int symbolindex)
         assert(0);
     }
 
-#ifdef DEBUG_MACHINE
-    printf("callext:DONE\n");
-#endif
-
     return MachineValueFromRuntimeScriptValue(return_value);
 }
 
-uint32_t ccExecutor::CallExternalScriptFunction(int symbolindex)
+uint32_t ccExecutor::CallExternalScriptFunction(const ScriptImport *sysimp)
 {
     auto &stackframe = stackframes.back();
 
@@ -2032,18 +1921,16 @@ uint32_t ccExecutor::CallExternalScriptFunction(int symbolindex)
     auto func_args_count = stackframe.num_args_to_func;
     stackframe.num_args_to_func = -1;
 
+#ifdef DEBUG_MACHINE
+    printf("SCMD_CALLEXT: num_args_to_func=%d next_call_needs_object=%d\n", func_args_count, need_object);
+#endif
+
     // If there are nested CALLAS calls, the stack might
     // contain 2 calls worth of parameters, so only
     // push args for this call
     if (func_args_count < 0) { 
         func_args_count = stackframe.callstack.size(); 
     }
-
-    auto sysimp = simp.getByIndex(symbolindex);
-
-#ifdef DEBUG_MACHINE
-    printf("name: %s \n", sysimp->Name.GetCStr());
-#endif
 
     uint32_t *stack_values = stackframe.callstack.data() + stackframe.callstack.size() - func_args_count;
 

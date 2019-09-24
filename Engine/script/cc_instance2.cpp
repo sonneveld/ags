@@ -34,7 +34,7 @@
 // #include "util/misc.h"
 // #include "util/textstreamwriter.h"
 // #include "ac/dynobj/scriptstring.h"
-// #include "ac/dynobj/scriptuserobject.h"
+#include "ac/dynobj/scriptuserobject.h"
 // #include "ac/statobj/agsstaticobject.h"
 // #include "ac/statobj/staticarray.h"
 // #include "util/memory.h"
@@ -75,7 +75,7 @@ support notify_alive and infinite loop count checks
 
 const auto CC_EXP_STACK_SIZE = 8192;
 
-#define DEBUG_MACHINE
+// #define DEBUG_MACHINE
 
 // [IKM] 2012-10-21:
 // NOTE: This is temporary solution (*sigh*, one of many) which allows certain
@@ -122,7 +122,7 @@ void *tiny_alloc(size_t n)
     auto result = ta_alloc(n);
     // auto result = ta_calloc(1, n);
     if (!result) {
-        printf("%p: alloc %d bytes - total items %d\n",result, n, alloc_count);
+        printf("%p: alloc %zd bytes - total items %d\n",result, n, alloc_count);
         assert(result);
     }
 
@@ -299,6 +299,7 @@ ccInstance *ccInstanceExperiment::Fork()
 { 
     assert(0);
     // return ccInstanceExperimentCreate(this->instanceof, this);
+    return nullptr;
 }
 
 // Specifies that when the current function returns to the script, it
@@ -564,7 +565,6 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
             auto system_index = simp.get_index_of(import_name);
             auto sym = simp.getByIndex(system_index);
 
-            bool isData = false;
             switch(sym->Value.Type) {
                 case kScValData:
                 case kScValStringLiteral:
@@ -876,7 +876,7 @@ void ccExecutor::Abort() {
 template <class T>
 inline T read_code_t(const uint8_t * &code, uint32_t &pc)
 {
-    static_assert(sizeof(T) == sizeof(uint32_t));
+    static_assert(sizeof(T) == sizeof(uint32_t), "Type must be same size as uint32_t");
     const auto value = (code[0]) | (code[1]<<8) | (code[2]<<16) | (code[3]<<24);
     const auto value_t = reinterpret_cast<const T &>(value);
     code += 4;
@@ -888,7 +888,7 @@ inline T read_code_t(const uint8_t * &code, uint32_t &pc)
 template <class T>
 inline T read_reg_t(uint32_t registers[], reg_t reg)
 {
-    static_assert(sizeof(T) == sizeof(uint32_t));
+    static_assert(sizeof(T) == sizeof(uint32_t), "Type must be same size as uint32_t");
     const auto value_raw = registers[reg];
     const auto value = reinterpret_cast<const T &>(value_raw);
     return value;
@@ -897,7 +897,7 @@ inline T read_reg_t(uint32_t registers[], reg_t reg)
 template <class T>
 inline void write_reg_t(uint32_t registers[], reg_t reg, T value)
 {
-    static_assert(sizeof(T) == sizeof(uint32_t));
+    static_assert(sizeof(T) == sizeof(uint32_t), "Type must be same size as uint32_t");
     const auto value_raw = reinterpret_cast<const uint32_t&>(value);
     registers[reg] = value_raw;
 }
@@ -1683,7 +1683,6 @@ int ccExecutor::Run()
             case SCMD_LINENUM: //      36    // debug info - source code line number
             {
                 auto arg_line = read_code_t<int32_t>(codeptr2, pc);
-
                 break;
             }
 
@@ -2244,7 +2243,6 @@ int ccExecutor::Run()
             }
             case SCMD_MEMZEROPTR: //   49    // m[MAR] = 0    (blank ptr)
             {
-                auto marvalue = registers[SREG_MAR];
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
@@ -2262,7 +2260,6 @@ int ccExecutor::Run()
                 // ax might be a pointer or it might just be a normal number, depends on 
                 // what the function is returning.
 
-                auto marvalue = registers[SREG_MAR];
                 auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
@@ -2568,7 +2565,7 @@ int ccExecutor::Run()
                     return -1;
                 }
 
-                DynObjectRef ref = globalDynamicArray.Create(num_elements, arg2, arg3 == 1);
+                auto ref = globalDynamicArray.Create(num_elements, arg2, arg3 == 1);
 
                 registers[arg1] = ToVirtualAddressFromHeap(ref.second);
 
@@ -2577,17 +2574,23 @@ int ccExecutor::Run()
 
             case SCMD_DYNAMICBOUNDS: // 71   // check reg1 is between 0 and m[MAR-4]
             {
-                auto arg1 = read_code_t<reg_t>(codeptr2, pc); // reg of num elements
-
-#ifdef DEBUG_MACHINE
-                printf("SCMD_DYNAMICBOUNDS: TODO\n");
-#endif
+                auto arg1_reg = read_code_t<reg_t>(codeptr2, pc); // reg of num elements
+                auto array_header = (int32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]) - 2;
+                auto numElements = array_header[0] & (~ARRAY_MANAGED_TYPE_FLAG);
+                auto sizeInBytes = array_header[1];
+                assert(registers[arg1_reg] >= 0 && registers[arg1_reg] < sizeInBytes);
                 break;
             }
 
-            case SCMD_NEWUSEROBJECT: // 73   // reg1 = new user object of arg1 size
-            assert(0);
-            break;
+            case SCMD_NEWUSEROBJECT: // 73   // reg1 = new user object of arg2 size
+            {
+                auto arg1_reg = read_code_t<reg_t>(codeptr2, pc); // dest to write ptr
+                auto arg2_size = read_code_t<int32_t>(codeptr2, pc); // size
+                assert(arg2_size >= 0);
+                auto ref = ScriptUserObject::CreateManaged(arg2_size);
+                registers[arg1_reg] = ToVirtualAddressFromHeap(ref.second);
+                break;
+            }
 
 
             // default

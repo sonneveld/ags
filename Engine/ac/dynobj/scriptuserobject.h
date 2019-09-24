@@ -25,11 +25,11 @@ struct ScriptUserObject final : ICCDynamicObject
 public:
     ScriptUserObject();
     
-protected:
+public:
     virtual ~ScriptUserObject();
 
 public:
-    static ScriptUserObject *CreateManaged(size_t size);
+    static DynObjectRef CreateManaged(size_t size);
     void            Create(const char *data, size_t size);
 
     // return the type name of the object
@@ -69,7 +69,7 @@ private:
 namespace ScriptStructHelpers
 {
     // Creates a managed Point object, represented as a pair of X and Y coordinates.
-    ScriptUserObject *CreatePoint(int x, int y);
+    DynObjectRef CreatePoint(int x, int y);
 };
 
 #endif // __AGS_EE_DYNOBJ__SCRIPTUSERSTRUCT_H

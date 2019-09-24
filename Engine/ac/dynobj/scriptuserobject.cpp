@@ -34,20 +34,22 @@ ScriptUserObject::~ScriptUserObject()
     tiny_free(_data);
 }
 
-/* static */ ScriptUserObject *ScriptUserObject::CreateManaged(size_t size)
+/* static */ DynObjectRef ScriptUserObject::CreateManaged(size_t size)
 {
     ScriptUserObject *suo = new ScriptUserObject();
     suo->Create(nullptr, size);
 
+    auto obj_ptr = suo->_data;
+
     ManagedObjectInfo objinfo;
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager = suo;
-    objinfo.address = suo;
-    objinfo.buffer = suo->_data;
+    objinfo.address = obj_ptr;
+    objinfo.buffer = obj_ptr;
     objinfo.buffer_size = suo->_size;
-    ccRegisterManagedObject2(objinfo);
+    auto handle = ccRegisterManagedObject2(objinfo);
 
-    return suo;
+    return DynObjectRef(handle, obj_ptr);
 }
 
 void ScriptUserObject::Create(const char *data, size_t size)
@@ -91,7 +93,7 @@ void ScriptUserObject::Unserialize(int index, const char *serializedData, int da
     objinfo.handle = index;
     objinfo.obj_type = kScValDynamicObject;
     objinfo.object_manager =  this;
-    objinfo.address =  this;
+    objinfo.address =  this->_data;
     objinfo.buffer =  this->_data;
     objinfo.buffer_size = this->_size;
     ccRegisterUnserializedObject2(objinfo);
@@ -154,10 +156,11 @@ void ScriptUserObject::WriteFloat(const char *address, intptr_t offset, float va
 
 
 // Allocates managed struct containing two ints: X and Y
-ScriptUserObject *ScriptStructHelpers::CreatePoint(int x, int y)
+DynObjectRef ScriptStructHelpers::CreatePoint(int x, int y)
 {
-    ScriptUserObject *suo = ScriptUserObject::CreateManaged(sizeof(int32_t) * 2);
-    suo->WriteInt32((const char*)suo, 0, x);
-    suo->WriteInt32((const char*)suo, sizeof(int32_t), y);
-    return suo;
+    auto ref = ScriptUserObject::CreateManaged(sizeof(int32_t) * 2);
+    auto buf = (int32_t *)ref.second;
+    buf[0] = x;
+    buf[1] = y;
+    return ref;
 }

@@ -524,6 +524,10 @@ inline const char *ScriptVSprintf(char *buffer, size_t buf_length, const char *f
     ASSERT_OBJ_PARAM_COUNT(METHOD, 2); \
     return RuntimeScriptValue().SetDynamicObject((void*)(RET_CLASS*)METHOD((CLASS*)self, params[0].IValue, params[1].IValue), &RET_MGR)
 
+#define API_OBJCALL_OBJ_PINT2_PBOOL(CLASS, RET_CLASS, RET_MGR, METHOD) \
+    ASSERT_OBJ_PARAM_COUNT(METHOD, 2); \
+    return RuntimeScriptValue().SetDynamicObject((void*)(RET_CLASS*)METHOD((CLASS*)self, params[0].IValue, params[1].IValue, params[2].GetAsBool()), &RET_MGR)
+
 #define API_OBJCALL_OBJ_PINT3(CLASS, RET_CLASS, RET_MGR, METHOD) \
     ASSERT_OBJ_PARAM_COUNT(METHOD, 3); \
     return RuntimeScriptValue().SetDynamicObject((void*)(RET_CLASS*)METHOD((CLASS*)self, params[0].IValue, params[1].IValue, params[2].IValue), &RET_MGR)

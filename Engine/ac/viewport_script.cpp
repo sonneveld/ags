@@ -281,7 +281,7 @@ void Viewport_SetPosition(ScriptViewport *scv, int x, int y, int width, int heig
     play.GetRoomViewport(scv->GetID())->SetRect(RectWH(x, y, width, height));
 }
 
-ScriptUserObject *Viewport_ScreenToRoomPoint(ScriptViewport *scv, int scrx, int scry, bool clipViewport)
+void *Viewport_ScreenToRoomPoint(ScriptViewport *scv, int scrx, int scry, bool clipViewport)
 {
     if (scv->GetID() < 0) { debug_script_warn("Viewport.ScreenToRoomPoint: trying to use deleted viewport"); return nullptr; }
     data_to_game_coords(&scrx, &scry);
@@ -291,10 +291,10 @@ ScriptUserObject *Viewport_ScreenToRoomPoint(ScriptViewport *scv, int scrx, int 
         return nullptr;
 
     game_to_data_coords(vpt.first.X, vpt.first.Y);
-    return ScriptStructHelpers::CreatePoint(vpt.first.X, vpt.first.Y);
+    return ScriptStructHelpers::CreatePoint(vpt.first.X, vpt.first.Y).second;
 }
 
-ScriptUserObject *Viewport_RoomToScreenPoint(ScriptViewport *scv, int roomx, int roomy, bool clipViewport)
+void *Viewport_RoomToScreenPoint(ScriptViewport *scv, int roomx, int roomy, bool clipViewport)
 {
     if (scv->GetID() < 0) { debug_script_warn("Viewport.RoomToScreenPoint: trying to use deleted viewport"); return nullptr; }
     data_to_game_coords(&roomx, &roomy);
@@ -303,7 +303,7 @@ ScriptUserObject *Viewport_RoomToScreenPoint(ScriptViewport *scv, int roomx, int
         return nullptr;
 
     game_to_data_coords(pt.X, pt.Y);
-    return ScriptStructHelpers::CreatePoint(pt.X, pt.Y);
+    return ScriptStructHelpers::CreatePoint(pt.X, pt.Y).second;
 }
 
 
@@ -474,14 +474,16 @@ RuntimeScriptValue Sc_Viewport_SetPosition(void *self, const RuntimeScriptValue 
     API_OBJCALL_VOID_PINT4(ScriptViewport, Viewport_SetPosition);
 }
 
+static ScriptUserObject dummyUserObjectManager;
+
 RuntimeScriptValue Sc_Viewport_ScreenToRoomPoint(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
-    API_OBJCALL_OBJAUTO_PINT2_PBOOL(ScriptViewport, ScriptUserObject, Viewport_ScreenToRoomPoint);
+    API_OBJCALL_OBJ_PINT2_PBOOL(ScriptViewport, ScriptUserObject, dummyUserObjectManager, Viewport_ScreenToRoomPoint);
 }
 
 RuntimeScriptValue Sc_Viewport_RoomToScreenPoint(void *self, const RuntimeScriptValue *params, int32_t param_count)
 {
-    API_OBJCALL_OBJAUTO_PINT2_PBOOL(ScriptViewport, ScriptUserObject, Viewport_RoomToScreenPoint);
+    API_OBJCALL_OBJ_PINT2_PBOOL(ScriptViewport, ScriptUserObject, dummyUserObjectManager, Viewport_RoomToScreenPoint);
 }
 
 

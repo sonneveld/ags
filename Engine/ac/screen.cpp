@@ -150,7 +150,7 @@ ScriptViewport* Screen_GetAnyViewport(int index)
     return play.GetScriptViewport(index);
 }
 
-ScriptUserObject* Screen_ScreenToRoomPoint(int scrx, int scry)
+void* Screen_ScreenToRoomPoint(int scrx, int scry)
 {
     data_to_game_coords(&scrx, &scry);
 
@@ -159,15 +159,15 @@ ScriptUserObject* Screen_ScreenToRoomPoint(int scrx, int scry)
         return nullptr;
 
     game_to_data_coords(vpt.first.X, vpt.first.Y);
-    return ScriptStructHelpers::CreatePoint(vpt.first.X, vpt.first.Y);
+    return ScriptStructHelpers::CreatePoint(vpt.first.X, vpt.first.Y).second;
 }
 
-ScriptUserObject *Screen_RoomToScreenPoint(int roomx, int roomy)
+void *Screen_RoomToScreenPoint(int roomx, int roomy)
 {
     data_to_game_coords(&roomx, &roomy);
     Point pt = play.RoomToScreen(roomx, roomy);
     game_to_data_coords(pt.X, pt.Y);
-    return ScriptStructHelpers::CreatePoint(pt.X, pt.Y);
+    return ScriptStructHelpers::CreatePoint(pt.X, pt.Y).second;
 }
 
 /// GENERATED CODE
@@ -209,14 +209,16 @@ RuntimeScriptValue Sc_Screen_GetAnyViewport(const RuntimeScriptValue *params, in
     API_SCALL_OBJAUTO_PINT(ScriptViewport, Screen_GetAnyViewport);
 }
 
+static ScriptUserObject dummyUserObjectManager;
+
 RuntimeScriptValue Sc_Screen_ScreenToRoomPoint(const RuntimeScriptValue *params, int32_t param_count)
 {
-    API_SCALL_OBJAUTO_PINT2(ScriptUserObject, Screen_ScreenToRoomPoint);
+    API_SCALL_OBJ_PINT2(ScriptUserObject, dummyUserObjectManager, Screen_ScreenToRoomPoint);
 }
 
 RuntimeScriptValue Sc_Screen_RoomToScreenPoint(const RuntimeScriptValue *params, int32_t param_count)
 {
-    API_SCALL_OBJAUTO_PINT2(ScriptUserObject, Screen_RoomToScreenPoint);
+    API_SCALL_OBJ_PINT2(ScriptUserObject, dummyUserObjectManager, Screen_RoomToScreenPoint);
 }
 
 void RegisterScreenAPI()

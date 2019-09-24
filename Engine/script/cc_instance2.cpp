@@ -331,6 +331,15 @@ inline void *ToRealMemoryAddress(uint32_t vaddr)
 
 }
 
+// as an optimisation, this only returns addresses within heap (code, stack, strings, objects with data)
+inline void *ToRealMemoryAddressFromHeap(uint32_t vaddr)
+{
+    if (vaddr == 0) { return nullptr; }
+    assert ((vaddr & 0xF0000000) == 0);
+    // mapped addresses start from 0x4000000
+    return (char*)tiny_heap_base + vaddr;
+}
+
 inline uint32_t ToVirtualAddress(const void *addr)
 {
     if (addr == nullptr) { return 0; }
@@ -351,6 +360,14 @@ inline uint32_t ToVirtualAddress(const void *addr)
     return it->vaddr;
 }
 
+inline uint32_t ToVirtualAddressFromHeap(const void *addr)
+{
+    if (addr == nullptr) { return 0; }
+    assert (addr >= tiny_heap_base && addr < tiny_heap_limit);
+    // don't track if in tiny heap
+    return (char*)addr - (char*)tiny_heap_base;
+}
+
 ccExecutor::ccExecutor() 
 {
     // reset registers
@@ -362,7 +379,7 @@ ccExecutor::ccExecutor()
     this->stack = (char*)tiny_alloc(8*1024);
 
     // this->stacktop = AddMemoryWindow(stack, 8*1024, false);
-    this->stacktop = ToVirtualAddress(this->stack);
+    this->stacktop = ToVirtualAddressFromHeap(this->stack);
     registers[SREG_SP] = this->stacktop;
 
 }
@@ -399,11 +416,11 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
     memcpy(cinst->strings, scri->strings, scri->stringssize);
 
     // cinst->globaldata_vaddr = AddMemoryWindow(cinst->globaldata.data(), cinst->globaldata.size(), false);
-    cinst->globaldata_vaddr = ToVirtualAddress(cinst->globaldata);
+    cinst->globaldata_vaddr = ToVirtualAddressFromHeap(cinst->globaldata);
     // cinst->code_vaddr = AddMemoryWindow(cinst->code.data(), cinst->code.size(), false);
-    cinst->code_vaddr = ToVirtualAddress(cinst->code);
+    cinst->code_vaddr = ToVirtualAddressFromHeap(cinst->code);
     // cinst->strings_vaddr = AddMemoryWindow(cinst->strings.data(), cinst->strings.size(), false);
-    cinst->strings_vaddr = ToVirtualAddress(cinst->strings);
+    cinst->strings_vaddr = ToVirtualAddressFromHeap(cinst->strings);
 
 
 #ifdef DEBUG_MACHINE
@@ -657,7 +674,7 @@ int ccExecutor::CallScriptFunctionDirect(uint32_t vaddr, int32_t num_values, con
     stackframes.push_back({});
     stackframes.back().funcstart = vaddr;
 
-    auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
+    auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
 
     // NOTE: Pushing parameters to stack in reverse order
     for (int i = 0; i < num_values; i++) {
@@ -793,7 +810,7 @@ int ccExecutor::Run()
     printf("RUN! pc = 0x%08x\n", pc);
 #endif
 
-    auto *pctr = ToRealMemoryAddress(pc);
+    auto *pctr = ToRealMemoryAddressFromHeap(pc);
     const uint8_t *codeptr2 = reinterpret_cast<uint8_t *>(pctr);
 
     for(;;) {
@@ -1181,7 +1198,7 @@ int ccExecutor::Run()
             {
                 auto arg_reg = read_code(codeptr2, pc);
 
-                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
                 *stackptr = registers[arg_reg];
                 registers[SREG_SP] += 4;
 
@@ -1198,7 +1215,7 @@ int ccExecutor::Run()
                 auto arg_reg = read_code(codeptr2, pc);
 
                 registers[SREG_SP] -= 4;
-                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
                 registers[arg_reg] = *stackptr;
 #ifdef DEBUG_MACHINE
                 printf("pop %s\n", regnames[arg_reg]);
@@ -1232,7 +1249,7 @@ int ccExecutor::Run()
                 printf("check MAR != null\n");
 #endif
                 assert(registers[SREG_MAR] != 0);
-                auto ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(ptr != nullptr);
                 break;
             }
@@ -1243,7 +1260,7 @@ int ccExecutor::Run()
 #ifdef DEBUG_MACHINE
                 printf("%s = mem[MAR]\n", regnames[arg1_reg]);
 #endif
-                auto src_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto src_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint32_t value = src_ptr[0] | (src_ptr[1]<<8) | (src_ptr[2] << 16) | (src_ptr[3] << 24);
                 write_reg_t(registers, arg1_reg, value);
@@ -1252,7 +1269,7 @@ int ccExecutor::Run()
             case SCMD_MEMREADB: //     24    // reg1 = m[MAR] (1 byte)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto src_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto src_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint8_t value = *src_ptr;
                 write_reg_t<uint32_t>(registers, arg1_reg, value);
@@ -1261,7 +1278,7 @@ int ccExecutor::Run()
             case SCMD_MEMREADW: //     25    // reg1 = m[MAR] (2 bytes)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto src_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto src_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(src_ptr != nullptr);
                 uint16_t value_raw = src_ptr[0] | (src_ptr[1]<<8);
                 int32_t value = reinterpret_cast<int16_t&>(value_raw);
@@ -1280,7 +1297,7 @@ int ccExecutor::Run()
                 printf("m[MAR] = %d bytes from %08x\n", arg1_size, arg2_data);
 #endif
 
-                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
 
                 // 4 bytes is the only size ever used.
@@ -1306,7 +1323,7 @@ int ccExecutor::Run()
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
-                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
 #ifdef DEBUG_MACHINE
                 printf("m[MAR] = %s\n", regnames[arg1_reg]);
@@ -1320,7 +1337,7 @@ int ccExecutor::Run()
             case SCMD_MEMWRITEB: //    26    // m[MAR] = reg1 (1 byte)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
                 dest_ptr[0] = value & 0xFF;
@@ -1329,7 +1346,7 @@ int ccExecutor::Run()
             case SCMD_MEMWRITEW: //    27    // m[MAR] = reg1 (2 bytes)
             {
                 const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
-                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
                 auto value = read_reg_t<uint32_t>(registers, arg1_reg);
                 dest_ptr[0] = value & 0xFF;
@@ -1339,7 +1356,7 @@ int ccExecutor::Run()
             case SCMD_ZEROMEMORY: //   63    // m[MAR]..m[MAR+(arg1-1)] = 0
             {
                 const auto arg1_count = read_code_t<uint32_t>(codeptr2, pc);
-                auto dest_ptr = (uint8_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto dest_ptr = (uint8_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(dest_ptr != nullptr);
                 memset(dest_ptr, 0, arg1_count);
                 break;
@@ -1363,7 +1380,7 @@ int ccExecutor::Run()
                 printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
 #endif
 
-                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
 
                 auto objptr = (const char*)ToRealMemoryAddress(registers[arg_reg]);
@@ -1397,7 +1414,7 @@ int ccExecutor::Run()
                 printf("mem[MAR=%x] = handle of %s :: (%08x)\n", registers[SREG_MAR], regnames[arg_reg], registers[arg_reg]);
 #endif
 
-                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto oldhandle = *handleptr;
 
@@ -1433,7 +1450,7 @@ int ccExecutor::Run()
 #endif
 
 
-                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
 #ifdef DEBUG_MACHINE
@@ -1464,7 +1481,7 @@ int ccExecutor::Run()
                 printf("m[MAR] = 0\n");
     #endif
                 auto marvalue = registers[SREG_MAR];
-                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
 #ifdef DEBUG_MACHINE
@@ -1489,7 +1506,7 @@ int ccExecutor::Run()
     #endif
 
                 auto marvalue = registers[SREG_MAR];
-                auto handleptr = (uint32_t *)ToRealMemoryAddress(registers[SREG_MAR]);
+                auto handleptr = (uint32_t *)ToRealMemoryAddressFromHeap(registers[SREG_MAR]);
                 assert(handleptr != nullptr);
                 auto handle = *handleptr;
 
@@ -1532,7 +1549,7 @@ int ccExecutor::Run()
 #endif
 
                 pc += arg_rel*4;
-                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
+                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
 
 #ifdef DEBUG_MACHINE
                 printf("jmp to 0x%08x\n", pc);
@@ -1547,7 +1564,7 @@ int ccExecutor::Run()
 
                 if (registers[SREG_AX] == 0) {
                     pc += arg_rel*4;
-                    codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
+                    codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
                 }
                 break;
             }
@@ -1558,7 +1575,7 @@ int ccExecutor::Run()
 
                 if (registers[SREG_AX] != 0) {
                     pc += arg_rel*4;
-                    codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
+                    codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
                 }
                 break;
             }
@@ -1632,7 +1649,7 @@ int ccExecutor::Run()
                 
                 // PUSH_CALL_STACK(inst);
 
-                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
                 *stackptr = pc;
                 registers[SREG_SP] += 4;
 
@@ -1654,7 +1671,7 @@ int ccExecutor::Run()
 #ifdef DEBUG_MACHINE
                 printf("pc should be 0x%08x\n", pc);
 #endif
-                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
+                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
 
                 stackframes.push_back({});
                 stackframes.back().thisbase = 0;
@@ -1669,12 +1686,12 @@ int ccExecutor::Run()
                 printf("\nRET!\n");
 #endif
                 registers[SREG_SP] -= 4;
-                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddress(registers[SREG_SP]) );
+                auto stackptr = reinterpret_cast<uint32_t*>( ToRealMemoryAddressFromHeap(registers[SREG_SP]) );
 
                 stackframes.pop_back();
 
                 pc = *stackptr;
-                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddress(pc));
+                codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc));
 
 #ifdef DEBUG_MACHINE
                 printf("new pc: %d\n",pc);
@@ -1754,9 +1771,9 @@ int ccExecutor::Run()
                     return -1;
                 }
 
-                auto fromstr = ToRealMemoryAddress(registers[arg_reg]);
+                auto fromstr = ToRealMemoryAddressFromHeap(registers[arg_reg]);
                 auto str = (char *)stringClassImpl->CreateString((const char*)fromstr).second;
-                registers[arg_reg] = ToVirtualAddress(str);
+                registers[arg_reg] = ToVirtualAddressFromHeap(str);
 
 #ifdef DEBUG_MACHINE
                 printf("%s = new string: 0x%x \"%s\"\n", regnames[arg_reg], str, str);
@@ -1769,8 +1786,8 @@ int ccExecutor::Run()
                 auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto arg2_reg = read_code_t<reg_t>(codeptr2, pc);
 
-                auto arg1_ptr = (char *)ToRealMemoryAddress(registers[arg1_reg]);
-                auto arg2_ptr = (char *)ToRealMemoryAddress(registers[arg2_reg]);
+                auto arg1_ptr = (char *)ToRealMemoryAddressFromHeap(registers[arg1_reg]);
+                auto arg2_ptr = (char *)ToRealMemoryAddressFromHeap(registers[arg2_reg]);
 
                 if (strcmp(arg1_ptr, arg2_ptr) == 0)
                     registers[arg1_reg] = 1;
@@ -1784,8 +1801,8 @@ int ccExecutor::Run()
                 auto arg1_reg = read_code_t<reg_t>(codeptr2, pc);
                 auto arg2_reg = read_code_t<reg_t>(codeptr2, pc);
 
-                auto arg1_ptr = (char *)ToRealMemoryAddress(registers[arg1_reg]);
-                auto arg2_ptr = (char *)ToRealMemoryAddress(registers[arg2_reg]);
+                auto arg1_ptr = (char *)ToRealMemoryAddressFromHeap(registers[arg1_reg]);
+                auto arg2_ptr = (char *)ToRealMemoryAddressFromHeap(registers[arg2_reg]);
 
                 if (strcmp(arg1_ptr, arg2_ptr) != 0)
                     registers[arg1_reg] = 1;
@@ -1825,7 +1842,7 @@ int ccExecutor::Run()
 
                 DynObjectRef ref = globalDynamicArray.Create(num_elements, arg2, arg3 == 1);
 
-                registers[arg1] = ToVirtualAddress(ref.second);
+                registers[arg1] = ToVirtualAddressFromHeap(ref.second);
 
                 break;
             }

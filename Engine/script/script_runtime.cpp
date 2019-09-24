@@ -82,9 +82,9 @@ void ccRemoveAllSymbols()
     simp.clear();
 }
 
-ccInstance *loadedInstances[MAX_LOADED_INSTANCES] = {nullptr,
-nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 
-nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+// ccInstance *loadedInstances[MAX_LOADED_INSTANCES] = {nullptr,
+// nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 
+// nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
 void nullfree(void *data)
 {

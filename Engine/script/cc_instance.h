@@ -86,8 +86,8 @@ public:
     // Create a runnable instance of the same script, sharing global memory
     virtual ccInstance *Fork() = 0;
 
-    virtual void OverrideGlobalData(const char *data, int size) = 0;
-    virtual void GetGlobalData(const char *&data, int &size) = 0;
+    virtual void OverrideGlobalData(std::vector<char> data) = 0;
+    virtual std::vector<char> GetGlobalData() = 0;
 
     // Specifies that when the current function returns to the script, it
     // will stop and return from CallInstance
@@ -134,6 +134,7 @@ struct ccExecutor final
     ccExecutor();
 
     ccInstance *LoadScript(PScript script);
+    void UnloadScript(ccInstance *instance);
 
     // Add real memory address that we just use as a handle essentialy (we never read from it)
     uint32_t AddRealMemoryAddress(const void *addr);
@@ -155,6 +156,8 @@ struct ccExecutor final
 
 
 private:
+
+    // std::vector<ccInstance *> loadedInstances;
 
     // #define SREG_SP           1     // stack pointer
     // #define SREG_MAR          2     // memory address register

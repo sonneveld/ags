@@ -886,27 +886,25 @@ HSaveError ReadDynamicSurfaces(PStream in, int32_t cmp_ver, const PreservedParam
 
 HSaveError WriteScriptModules(PStream out)
 {
-    const char *globaldata;
-    int globaldatasize;
-
     // write the data segment of the global script
-    gameinst->GetGlobalData(globaldata, globaldatasize);
+    auto gamedata = gameinst->GetGlobalData();
 
-    int data_len = globaldatasize;
+    int data_len = gamedata.size();
     out->WriteInt32(data_len);
     if (data_len > 0)
-        out->Write(globaldata, data_len);
+        out->Write(gamedata.data(), data_len);
     // write the script modules data segments
     out->WriteInt32(numScriptModules);
     for (int i = 0; i < numScriptModules; ++i)
     {
-        moduleInst[i]->GetGlobalData(globaldata, globaldatasize);
+        auto moddata = moduleInst[i]->GetGlobalData();
 
-        data_len = globaldatasize;
+        data_len = moddata.size();
         out->WriteInt32(data_len);
         if (data_len > 0)
-            out->Write(globaldata, data_len);
+            out->Write(moddata.data(), data_len);
     }
+
     return HSaveError::None();
 }
 

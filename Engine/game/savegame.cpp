@@ -375,24 +375,22 @@ void DoBeforeRestore(PreservedParams &pp)
         guibgbmp[i] = nullptr;
     }
 
-    const char *globaldata;
-    int globaldatasize;
+    // NOTE: This is a little memory heavy just to get global data size
 
     // preserve script data sizes and cleanup scripts
-    gameinst->GetGlobalData(globaldata, globaldatasize);
-
-    pp.GlScDataSize = globaldatasize;
-    // delete gameinstFork;
-    delete gameinst;
-    // gameinstFork = nullptr;
+    auto gamedata = gameinst->GetGlobalData();
+    pp.GlScDataSize = gamedata.size();
+    // delete gameinst;
+    coreExecutor.UnloadScript(gameinst);
     gameinst = nullptr;
+
     pp.ScMdDataSize.resize(numScriptModules);
     for (int i = 0; i < numScriptModules; ++i)
     {
-        moduleInst[i]->GetGlobalData(globaldata, globaldatasize);
-        pp.ScMdDataSize[i] = globaldatasize;
-        // delete moduleInstFork[i];
-        delete moduleInst[i];
+        auto moddata = moduleInst[i]->GetGlobalData();
+        pp.ScMdDataSize[i] = moddata.size();
+        // delete moduleInst[i];
+        coreExecutor.UnloadScript(moduleInst[i]);
         moduleInst[i] = nullptr;
     }
 
@@ -400,11 +398,12 @@ void DoBeforeRestore(PreservedParams &pp)
     play.FreeViewportsAndCameras();
 
     // delete roominstFork;
-    delete roominst;
+    // delete roominst;
     // roominstFork = nullptr;
+    coreExecutor.UnloadScript(roominst);
     roominst = nullptr;
 
-    delete dialogScriptsInst;
+    coreExecutor.UnloadScript(dialogScriptsInst);
     dialogScriptsInst = nullptr;
 
     resetRoomStatuses();
@@ -509,7 +508,10 @@ HSaveError DoAfterRestore(const PreservedParams &pp, const RestoredData &r_data)
         memcpy(gameinst->globaldata, r_data.GlobalScript.Data.get(),
                 Math::Min((size_t)gameinst->globaldatasize, r_data.GlobalScript.Len));
         #endif
-        gameinst->OverrideGlobalData(r_data.GlobalScript.Data.get(), r_data.GlobalScript.Len);
+        auto begin = r_data.GlobalScript.Data.get();
+        auto end = r_data.GlobalScript.Data.get()+r_data.GlobalScript.Len;
+        auto gamedata = std::vector<char>(begin, end);
+        gameinst->OverrideGlobalData(gamedata);
     }
 
     // restore the script module data
@@ -521,7 +523,10 @@ HSaveError DoAfterRestore(const PreservedParams &pp, const RestoredData &r_data)
             memcpy(moduleInst[i]->globaldata, r_data.ScriptModules[i].Data.get(),
                     Math::Min((size_t)moduleInst[i]->globaldatasize, r_data.ScriptModules[i].Len));
             #endif
-            moduleInst[i]->OverrideGlobalData(r_data.ScriptModules[i].Data.get(), r_data.ScriptModules[i].Len);
+            auto begin = r_data.ScriptModules[i].Data.get();
+            auto end = r_data.ScriptModules[i].Data.get()+r_data.ScriptModules[i].Len;
+            auto moddata = std::vector<char>(begin, end);
+            moduleInst[i]->OverrideGlobalData(moddata);
         }
             
     }

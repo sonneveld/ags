@@ -175,8 +175,8 @@ public:
     ~ccInstanceExperiment()  override;
 
     // for manipulating the global data.
-    void OverrideGlobalData(const char *data, int size) override;
-    void GetGlobalData(const char *&data, int &size) override;
+    void OverrideGlobalData(std::vector<char> data) override;
+    std::vector<char> GetGlobalData() override;
 
     // Create a runnable instance of the same script, sharing global memory
     ccInstance *Fork()  override;
@@ -193,6 +193,7 @@ public:
     PScript instanceof;
 
     char *globaldata;
+    size_t globaldata_size;
     char *code;
     char *strings;
 
@@ -215,8 +216,52 @@ ccInstanceExperiment::ccInstanceExperiment() {}
 ccInstanceExperiment::~ccInstanceExperiment()  {}
 
 // for manipulating the global data.
-void ccInstanceExperiment::OverrideGlobalData(const char *data, int size) { assert(0); }
-void ccInstanceExperiment::GetGlobalData(const char *&data, int &size) { assert(0); }
+void ccInstanceExperiment::OverrideGlobalData(std::vector<char> data) 
+{
+    auto &script = *this->instanceof;
+
+    assert(data.size() == this->globaldata_size);
+    memcpy(this->globaldata, data.data(), data.size());
+
+    for (int i = 0; i < script.numfixups; i++) {
+        long fixup = script.fixups[i];
+        switch (script.fixuptypes[i]) {
+            case FIXUP_DATADATA:
+            {
+                printf("FIXUP\n");
+                auto p = reinterpret_cast<uint32_t *>(this->globaldata + fixup);
+                *p += this->globaldata_vaddr;
+            }
+            default:
+                break;
+        }
+    }
+}
+
+
+std::vector<char> ccInstanceExperiment::GetGlobalData() 
+{ 
+    auto &script = *this->instanceof;
+
+    auto result = std::vector<char>(this->globaldata, this->globaldata+this->globaldata_size);
+
+    for (int i = 0; i < script.numfixups; i++) {
+        long fixup = script.fixups[i];
+        switch (script.fixuptypes[i]) {
+            case FIXUP_DATADATA:
+            {
+                printf("UNFIXUP\n");
+
+                auto p = reinterpret_cast<uint32_t *>(result.data() + fixup);
+                *p -= this->globaldata_vaddr;
+            }
+            default:
+                break;
+        }
+    }
+
+    return result;
+}
 
 // Create a runnable instance of the same script, sharing global memory
 ccInstance *ccInstanceExperiment::Fork()  
@@ -395,6 +440,7 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
 
     // create own memory space
     // cinst->globaldata.insert(cinst->globaldata.end(), scri->globaldata, scri->globaldata+scri->globaldatasize);
+    cinst->globaldata_size = scri->globaldatasize;
     cinst->globaldata = (char*)tiny_alloc(scri->globaldatasize);
     memcpy(cinst->globaldata, scri->globaldata, scri->globaldatasize);
     // for (int i = 0; i < 16*1024; i++) {
@@ -579,12 +625,38 @@ ccInstance *ccExecutor::LoadScript(PScript scri)
         }
     }
 
-    return cinst;
+    // loadedInstances.push_back(cinst);
 
+    return cinst;
 }
 
 
+void ccExecutor::UnloadScript(ccInstance *instance)
+{
+    if (instance == nullptr) { return; }
 
+    auto inst = (ccInstanceExperiment*)instance;
+
+    simp.RemoveScriptExports(inst);
+
+    inst->exports.clear();
+
+    tiny_free(inst->globaldata);
+    inst->globaldata = nullptr;
+    inst->globaldata_vaddr = 0;
+
+    tiny_free(inst->code);
+    inst->code = nullptr;
+    inst->code_vaddr = 0;
+
+    tiny_free(inst->strings);
+    inst->strings = nullptr;
+    inst->strings_vaddr = 0;
+
+    inst->instanceof = nullptr;
+
+    delete instance;
+}
 
 // Get the address of an exported symbol (function or variable) in the script
 RuntimeScriptValue ccInstanceExperiment::GetSymbolAddress(const char *symname) 

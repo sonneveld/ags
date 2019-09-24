@@ -240,14 +240,12 @@ void convert_room_background_to_game_res()
 void save_room_data_segment () {
     croom->FreeScriptData();
     
-    const char *globaldata;
-    int globaldatasize;
-    roominst->GetGlobalData(globaldata, globaldatasize);
+    auto roomdata = roominst->GetGlobalData();
 
-    croom->tsdatasize = globaldatasize;
+    croom->tsdatasize = roomdata.size();
     if (croom->tsdatasize > 0) {
         croom->tsdata=(char*)malloc(croom->tsdatasize+10);  // why +10?
-        memcpy(croom->tsdata,globaldata,croom->tsdatasize);
+        memcpy(croom->tsdata,roomdata.data(),croom->tsdatasize);
     }
 
 }
@@ -285,7 +283,8 @@ void unload_old_room() {
     if (croom==nullptr) ;
     else if (roominst!=nullptr) {
         save_room_data_segment();
-        delete roominst;
+        // delete roominst;
+        coreExecutor.UnloadScript(roominst);
         roominst=nullptr;
     }
     else croom->tsdatasize=0;
@@ -741,7 +740,8 @@ void load_new_room(int newnum, CharacterInfo*forchar) {
                 quit("room script data segment size has changed");
             memcpy(&roominst->globaldata[0],croom->tsdata,croom->tsdatasize);
             #endif
-            roominst->OverrideGlobalData(croom->tsdata,croom->tsdatasize);
+            auto globaldata = std::vector<char>(croom->tsdata, croom->tsdata+croom->tsdatasize);
+            roominst->OverrideGlobalData(globaldata);
         }
     }
     our_eip=207;

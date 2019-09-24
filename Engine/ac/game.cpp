@@ -575,24 +575,29 @@ void unload_game_file()
         quit("Error: unload_game called while script still running");
     }
 
-    delete gameinst;
+    // delete gameinst;
+    coreExecutor.UnloadScript(gameinst);
     gameinst = nullptr;
 
     gamescript.reset();
 
-    if (dialogScriptsInst != nullptr)
-    {
-        delete dialogScriptsInst;
-        dialogScriptsInst = nullptr;
-    }
+
+    // delete dialogScriptsInst;
+    coreExecutor.UnloadScript(dialogScriptsInst);
+    dialogScriptsInst = nullptr;
 
     dialogScriptsScript.reset();
 
+
     for (int i = 0; i < numScriptModules; ++i)
     {
-        delete moduleInst[i];
+        // delete moduleInst[i];
+        coreExecutor.UnloadScript(moduleInst[i]);
+        moduleInst[i] = nullptr;
+
         scriptModules[i].reset();
     }
+
     moduleInst.resize(0);
     scriptModules.resize(0);
     repExecAlways.moduleHasFunction.resize(0);

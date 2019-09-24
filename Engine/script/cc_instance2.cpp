@@ -909,6 +909,754 @@ int ccExecutor::GetReturnValue()
 }
 
 
+void dump_codes(const uint8_t *cptr, int num_args)
+{
+    auto codeptr2 = reinterpret_cast<const uint32_t *>(cptr);
+
+    int size = num_args + 1;
+    for (int i = 0; i < 4; i++) {
+        if (i < size)
+            printf("%08x ", codeptr2[i]);
+        else
+            printf("         ");
+    }
+    printf("   ");
+}
+
+static bool extra_line = false;
+
+void ccExecutor::DisassembleInstruction()
+{
+    char fbuf[1024];
+
+    auto pc_ = this->pc;
+    auto codeptr2 = reinterpret_cast<const uint8_t *>(ToRealMemoryAddressFromHeap(pc_));
+    assert(codeptr2 != 0);
+
+    if (extra_line) {
+        printf("\n");
+    }
+    extra_line = false;
+
+    printf("%08x    ", pc_);
+
+    auto op = read_code_t<uint32_t>(codeptr2, pc_);
+
+
+    switch(op) {
+
+
+        // debug
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_LINENUM: //      36    // debug info - source code line number
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_line = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "line %d", arg_line);
+            break;
+        }
+
+        case SCMD_CHECKBOUNDS: //  46    // check reg1 is between 0 and arg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "assert 0 <= %s < %d", regnames[arg_reg], arg_lit);
+            break;
+        }
+
+
+        // data transfer
+        // ------------------------------------------------------------------------------------------------
+
+
+        case SCMD_LITTOREG: //     6     // set reg1 to literal value arg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg_lit = read_code_t<uint32_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %d", regnames[arg_reg], arg_lit);
+            break;
+        }
+
+
+        case SCMD_REGTOREG: //     3     // reg2 = reg1
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg_reg_src = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg_reg_dest = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s", regnames[arg_reg_dest], regnames[arg_reg_src]);
+            break;
+        }
+
+
+        // arithmetic
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_ADD: //          1     // reg1 += arg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s += %d", regnames[arg1_reg], arg2_lit);
+            break;
+        }
+        case SCMD_SUB: //          2     // reg1 -= arg2
+        {           
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s -= %d", regnames[arg1_reg], arg2_lit);
+            break;
+        }
+        case SCMD_MUL: //          32    // reg1 *= arg2
+        {           
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s *= %d", regnames[arg1_reg], arg2_lit);
+            break;
+        }
+
+        case SCMD_ADDREG: //       11    // reg1 += reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s += %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_SUBREG: //       12    // reg1 -= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s -= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_MULREG: //       9     // reg1 *= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s *= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_DIVREG: //       10    // reg1 /= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s /= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_MODREG: //       40    // reg1 %= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s %%= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_FADD: //         53    // reg1 += arg2 (int)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "(f)%s += %d", regnames[arg1_reg], arg2_lit);
+            break;
+        }
+
+        case SCMD_FSUB: //         54    // reg1 -= arg2 (int)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "(f)%s -= %d", regnames[arg1_reg], arg2_lit);
+            break;
+        }
+        case SCMD_FMULREG: //      55    // reg1 *= reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "(f)%s *= (f)%s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_FDIVREG: //      56    // reg1 /= reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "(f)%s /= (f)%s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_FADDREG: //      57    // reg1 += reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "(f)%s += (f)%s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_FSUBREG: //      58    // reg1 -= reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "(f)%s -= (f)%s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+
+        // binary
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_BITAND: //       13    // bitwise  reg1 & reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s &= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_BITOR: //        14    // bitwise  reg1 | reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s |= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_XORREG: //       41    // reg1 ^= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s ^= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_SHIFTLEFT: //    43    // reg1 = reg1 << reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s <<= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_SHIFTRIGHT: //   44    // reg1 = reg1 >> reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s >>= %s", regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+
+        // logic
+        // ------------------------------------------------------------------------------------------------
+        case SCMD_AND: //          21    // (reg1!=0) && (reg2!=0) -> reg1
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s && %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_OR: //           22    // (reg1!=0) || (reg2!=0) -> reg1
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s || %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_NOTREG: //       42    // reg1 = !reg1
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = !%s", regnames[arg1_reg], regnames[arg1_reg]);
+            break;
+        }
+
+
+        // comparison
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_ISEQUAL: //      15    // reg1 == reg2   reg1=1 if true, =0 if not
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s == %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_NOTEQUAL: //     16    // reg1 != reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s != %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_GREATER: //      17    // reg1 > reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s > %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_LESSTHAN: //     18    // reg1 < reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s < %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_GTE: //          19    // reg1 >= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s >= %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_LTE: //          20    // reg1 <= reg2
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s <= %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_FGREATER: //     59    // reg1 > reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = %s > %s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_FLESSTHAN: //    60    // reg1 < reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = (f)%s < (f)%s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_FGTE: //         61    // reg1 >= reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = (f)%s >= (f)%s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+        case SCMD_FLTE: //         62    // reg1 <= reg2 (float)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            const auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = (f)%s <= (f)%s", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+
+        // stack
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_PUSHREG: //      29    // m[sp]=reg1; sp++
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "push %s", regnames[arg_reg]);
+            break;
+        }
+
+        case SCMD_POPREG: //       30    // sp--; reg1=m[sp]
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "pop %s", regnames[arg_reg]);
+            break;
+        }
+
+        case SCMD_LOADSPOFFS: //   51    // MAR = SP - arg1 (optimization for local var access)
+        {
+            dump_codes(codeptr2, 1);
+            auto arg1_lit = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "mar = sp - %d", arg1_lit);
+            break;
+        }
+
+
+        // MAR memory
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_CHECKNULL: //    52    // error if MAR==0
+        {
+            dump_codes(codeptr2, 0);
+            sprintf(fbuf, "assert mar==0");
+            break;
+
+        }
+
+        case SCMD_MEMREAD: //      7     // reg1 = m[MAR] (4 bytes)
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = dword ptr [mar]", regnames[arg1_reg]);
+            break;
+
+        }
+        case SCMD_MEMREADB: //     24    // reg1 = m[MAR] (1 byte)
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = byte ptr [mar]", regnames[arg1_reg]);
+            break;
+        }
+        case SCMD_MEMREADW: //     25    // reg1 = m[MAR] (2 bytes)
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = word ptr [mar]", regnames[arg1_reg]);
+            break;
+        }
+
+
+        case SCMD_WRITELIT: //     4     // m[MAR] = arg2 (copy arg1 bytes)
+        {
+            dump_codes(codeptr2, 2);
+            const auto arg1_size = read_code_t<uint32_t>(codeptr2, pc_);
+            const auto arg2_data = read_code_t<uint32_t>(codeptr2, pc_);
+
+            switch (arg1_size) 
+            {
+                case 1:
+                    sprintf(fbuf, "byte ptr [mar] = %d", arg2_data);
+                    break;
+                case 2:
+                    sprintf(fbuf, "word ptr [mar] = %d", arg2_data);
+                    break;
+                case 4:
+                    sprintf(fbuf, "dword ptr [mar] = %d", arg2_data);
+                    break;
+                default:
+                    assert(0);
+            }
+
+            break;
+        }
+        case SCMD_MEMWRITE: //     8     // m[MAR] = reg1
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "dword ptr [mar] = %s", regnames[arg1_reg]);
+            break;
+        }
+        case SCMD_MEMWRITEB: //    26    // m[MAR] = reg1 (1 byte)
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "byte ptr [mar] = %s", regnames[arg1_reg]);
+            break;
+
+        }
+        case SCMD_MEMWRITEW: //    27    // m[MAR] = reg1 (2 bytes)
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "word ptr [mar] = %s", regnames[arg1_reg]);
+            break;
+        }
+        case SCMD_ZEROMEMORY: //   63    // m[MAR]..m[MAR+(arg1-1)] = 0
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg1_count = read_code_t<uint32_t>(codeptr2, pc_);
+            sprintf(fbuf, "memset(mar, '\\0', %d", arg1_count);
+            break;
+        }
+
+
+        // MAR memory handles
+        // ------------------------------------------------------------------------------------------------
+
+        /*
+            registers hold the object address
+
+            but MAR only holds the handle (so we can save/restore)
+        */
+
+        case SCMD_MEMINITPTR: //   50    // m[MAR] = reg1 (but don't free old one)
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "hndl ptr [mar] = retain(%s)", regnames[arg_reg]);
+            break;
+        }
+
+        // for keeping track of memory handles
+        case SCMD_MEMWRITEPTR: //  47    // m[MAR] = reg1 (adjust ptr addr)
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "release(hndl ptr [mar]); hndl ptr [mar] = retain(%s)", regnames[arg_reg]);
+            break;
+
+        }
+        case SCMD_MEMREADPTR: //   48    // reg1 = m[MAR] (adjust ptr addr)
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = addr(hndl ptr [mar])", regnames[arg_reg]);
+            break;
+        }
+        case SCMD_MEMZEROPTR: //   49    // m[MAR] = 0    (blank ptr)
+        {
+            dump_codes(codeptr2, 0);
+            sprintf(fbuf, "release(hndl ptr [mar]); hndl ptr [mar] = 0");
+            break;
+        }
+
+        case SCMD_MEMZEROPTRND: // 69    // m[MAR] = 0    (blank ptr, no dispose if = ax)
+        {
+            dump_codes(codeptr2, 0);
+            sprintf(fbuf, "release(hndl ptr [mar]); hndl ptr [mar] = 0; ax == no dispose");
+            break;
+        }
+
+
+        // control transfer
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_LOOPCHECKOFF: // 68    // no loop checking for this function
+        {
+            dump_codes(codeptr2, 0);
+            sprintf(fbuf, "disable loop check");
+            break;
+        }
+
+        case SCMD_JMP: //          31    // jump to arg1
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_rel = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "jmp %+d", arg_rel);
+            
+            extra_line = true;
+            break;
+        }
+
+        case SCMD_JZ: //           28    // jump if ax==0 to arg1
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_rel = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "if (ax == 0) jmp %+d", arg_rel);
+            extra_line = true;
+            break;
+        }
+
+        case SCMD_JNZ: //          70    // jump to arg1 if ax!=0
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_rel = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "if (ax != 0) jmp %+d", arg_rel);
+            extra_line = true;
+            break;
+        }
+
+
+        // sub routines
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_THISBASE: //     38    // current relative address
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_base = read_code_t<uint32_t>(codeptr2, pc_);
+            sprintf(fbuf, "base = %08x", arg_base);
+            break;
+        }
+
+        case SCMD_NUMFUNCARGS: //  39    // number of arguments for ext func call
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_numfuncs = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "num_args = %d // next call", arg_numfuncs);
+            break;
+        }
+
+        case SCMD_CALLOBJ: //      45    // next call is member function of reg1
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "op = %s // next call", regnames[arg_reg]);
+            break;
+        }
+
+        case SCMD_CALL: //         23    // jump to subroutine at reg1
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "call %s", regnames[arg_reg]);
+            extra_line = true;
+            break;
+        }
+
+        case SCMD_RET: //          5     // return from subroutine
+        {
+            dump_codes(codeptr2, 0);
+            sprintf(fbuf, "return");
+            extra_line = true;
+            break;
+        }
+
+        case SCMD_PUSHREAL: //     34    // push reg1 onto real stack
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "farpush %s", regnames[arg_reg]);
+            break;
+        }
+
+        case SCMD_SUBREALSTACK: // 35    // decrement stack ptr by literal
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_offset = read_code_t<int32_t>(codeptr2, pc_);
+            sprintf(fbuf, "(far)sp -= %d", arg_offset);
+            break;
+        }
+
+        case SCMD_CALLAS: //       37    // call external script function
+        {
+            // this is not actually generated, I think.
+            assert(0);
+            break;
+        }
+
+        case SCMD_CALLEXT: //      33    // call external (imported) function reg1
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "callext %s", regnames[arg_reg]);
+            extra_line = true;
+            break;
+        }
+
+
+
+        // strings
+        // ------------------------------------------------------------------------------------------------
+
+        case SCMD_CREATESTRING: // 64    // reg1 = new String(reg1)
+        {
+            dump_codes(codeptr2, 1);
+            auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = new String(%s)", regnames[arg_reg], regnames[arg_reg]);
+
+            break;
+        }
+
+        case SCMD_STRINGSEQUAL: // 65    // (char*)reg1 == (char*)reg2   reg1=1 if true, =0 if not
+        {
+            dump_codes(codeptr2, 2);
+            auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+
+            sprintf(fbuf, "%s = streq(%s, %s)", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+
+            break;
+        }
+        case SCMD_STRINGSNOTEQ: // 66    // (char*)reg1 != (char*)reg2
+        {
+            dump_codes(codeptr2, 2);
+            auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            auto arg2_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "%s = strneq(%s, %s)", regnames[arg1_reg], regnames[arg1_reg], regnames[arg2_reg]);
+            break;
+        }
+
+        case SCMD_CHECKNULLREG: // 67    // error if reg1 == NULL
+        {
+            dump_codes(codeptr2, 1);
+            const auto arg_reg = read_code_t<reg_t>(codeptr2, pc_);
+            sprintf(fbuf, "assert %s != nullptr", regnames[arg_reg]);
+            break;
+        }
+
+
+        // dyn objects
+        // ------------------------------------------------------------------------------------------------
+
+
+        case SCMD_NEWARRAY: //     72    // reg1 = new array of reg1 elements, each of size arg2 (arg3=managed type?)
+        {
+            dump_codes(codeptr2, 3);
+            auto arg1 = read_code_t<int32_t>(codeptr2, pc_); // num elements
+            auto arg2 = read_code_t<int32_t>(codeptr2, pc_); // element size
+            auto arg3 = read_code_t<int32_t>(codeptr2, pc_); // element type, 1 == managed.
+
+            auto managed = arg3==1 ? "managed " : "";
+            sprintf(fbuf, "%s = new Array[%d](%s%d bytes)", regnames[arg1], registers[arg1], managed, arg2);
+            break;
+        }
+
+        case SCMD_DYNAMICBOUNDS: // 71   // check reg1 is between 0 and m[MAR-4]
+        {
+            dump_codes(codeptr2, 1);
+            auto arg1 = read_code_t<reg_t>(codeptr2, pc_); 
+            sprintf(fbuf, "assert 0 < %s < arraysize(mar)", regnames[arg1]);
+            break;
+        }
+
+        case SCMD_NEWUSEROBJECT: // 73   // reg1 = new user object of arg2 size
+        {
+            dump_codes(codeptr2, 2);
+            auto arg1_reg = read_code_t<reg_t>(codeptr2, pc_);
+            auto arg2 = read_code_t<int32_t>(codeptr2, pc_); // element size
+            sprintf(fbuf, "%s = new UserObject(%d bytes)", regnames[arg1_reg], arg2);
+            break;
+        }
+
+
+        // default
+        // ------------------------------------------------------------------------------------------------
+
+        default:
+            sprintf(fbuf, "ERROR UNABLE TO DECODE");
+    }
+
+
+    printf("%-70s   ", fbuf);
+
+    printf("ax:%08x bx:%08x cx:%08x dx:%08x mar:%08x op:%08x sp:%08x ",
+        registers[SREG_AX],
+        registers[SREG_BX],
+        registers[SREG_CX],
+        registers[SREG_DX],
+        registers[SREG_MAR],
+        registers[SREG_OP],
+        registers[SREG_SP]
+        );
+
+    auto &stackframe = stackframes.back();
+
+    printf("farstk:%-2zd callobj:%-1d callnargs%-2d ", stackframe.callstack.size(), stackframe.next_call_needs_object, stackframe.num_args_to_func);
+
+    printf("\n");
+}
+
+
 int ccExecutor::Run()
 {
     auto *pctr = ToRealMemoryAddressFromHeap(pc);
@@ -918,6 +1666,10 @@ int ccExecutor::Run()
     for(;;) {
 
         assert(pc != 0);
+
+#ifdef DEBUG_MACHINE
+        DisassembleInstruction();
+#endif
 
         auto op = read_code_t<uint32_t>(codeptr2, pc);
 

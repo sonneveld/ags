@@ -180,6 +180,7 @@ private:
     int CallScriptFunctionDirect(uint32_t vaddr, int32_t num_params, const uint32_t *machparams);
 
     int Run();
+    void DisassembleInstruction();
     
     uint32_t CallExternalFunction(const ScriptImport *);
     uint32_t CallExternalScriptFunction(const ScriptImport *);

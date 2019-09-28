@@ -36,9 +36,15 @@ RUN curl -fLOJ "https://dl.google.com/android/repository/android-ndk-${NDK_VERSI
 
 # Make NDK toolchains
 RUN export NDK_HOME=/opt/android-ndk-${NDK_VERSION} && \
-  for arch in arm arm64 x86 x86_64 mips; do \
+  for arch in arm mips x86; do \
     echo Building toolchain for $arch; \
-    $NDK_HOME/build/tools/make_standalone_toolchain.py --arch $arch --api 21 --install-dir $NDK_HOME/platforms/android-14/$arch; \
+    $NDK_HOME/build/tools/make_standalone_toolchain.py --arch $arch --api 14 --install-dir $NDK_HOME/platforms/android-14/$arch; \
+  done
+
+RUN export NDK_HOME=/opt/android-ndk-${NDK_VERSION} && \
+  for arch in arm64 x86_64; do \
+    echo Building toolchain for $arch; \
+    $NDK_HOME/build/tools/make_standalone_toolchain.py --arch $arch --api 21 --install-dir $NDK_HOME/platforms/android-21/$arch; \
   done
 
 # Get Android SDK manager

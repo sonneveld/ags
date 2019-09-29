@@ -13,6 +13,7 @@ export PATH=$NDK_PLATFORM_ROOT/bin:$PATH
 export PKG_CONFIG_PATH=$NDK_ADDITIONAL_LIBRARY_PATH/lib/pkgconfig
 export ACLOCAL_PATH=$NDK_ADDITIONAL_LIBRARY_PATH/share/aclocal
 
-export NDK_CFLAGS=" -D__ANDROID_API__=\$API"
+export NDK_CFLAGS="  -D__ANDROID_API__=\$API"
+export NDK_LDFLAGS="  -Wl "
 export CC=$NDK_PLATFORM_ROOT/bin/${NDK_HOST_NAME}-clang
 export CXX=$NDK_PLATFORM_ROOT/bin/${NDK_HOST_NAME}-clang++ 

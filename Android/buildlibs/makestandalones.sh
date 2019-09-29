@@ -28,6 +28,7 @@ done
 
 # android-21 is the minimum we can go with current Android SDK for 64-bits
 PLATFORM=android-21
+export NDK_STANDALONE=$NDK_HOME/platforms/$PLATFORM
 
 for arch in arm64 x86_64
 do

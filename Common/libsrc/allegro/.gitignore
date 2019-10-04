@@ -1,0 +1,13 @@
+
+build/VS2008/*.ncb
+build/VS2008/*.suo
+build/VS2008/*.user
+build/VS2008/allegro.dir/*
+build/VS2008/lib/*
+
+build/VS2015/*.db
+build/VS2015/*.opendb
+build/VS2015/*.user
+build/VS2015/.vs/*
+build/VS2015/allegro.dir/*
+build/VS2015/lib/*

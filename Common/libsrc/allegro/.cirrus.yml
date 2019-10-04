@@ -1,0 +1,87 @@
+build_windows_task:
+  windows_container:
+    dockerfile: ci/windows/Dockerfile
+    os_version: 2019
+  env:
+    matrix:
+      - BUILD_CONFIG: Release MD
+      - BUILD_CONFIG: Release MT
+      - BUILD_CONFIG: Debug MD
+      - BUILD_CONFIG: Debug MT
+  build_script: >
+    "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86 &&
+    pushd build\vs2015 &&
+    msbuild ALLEGRO.sln /p:PlatformToolset=v140 /p:Configuration="%BUILD_CONFIG%" /p:Platform=Win32 /maxcpucount /nologo
+  binaries_artifacts:
+    path: build/VS2015/lib/alleg-*.lib
+
+build_linux_task:
+  container:
+    dockerfile: ci/linux/Dockerfile
+    docker_arguments:
+      matrix:
+        - FROM_DEBIAN: debian:jessie
+        - FROM_DEBIAN: i386/debian:jessie
+  env:
+    matrix:
+      - BUILD_TYPE: debug
+        SHARED: on
+      - BUILD_TYPE: debug
+        SHARED: off
+      - BUILD_TYPE: release
+        SHARED: on
+      - BUILD_TYPE: release
+        SHARED: off
+  build_script: |
+    filename=lib-allegro_$BUILD_TYPE
+    [ "$SHARED" = "off" ] && filename=${filename}_static
+    filename=${filename}_$(dpkg --print-architecture)
+    mkdir build_$filename && cd build_$filename
+    cmake -DSHARED=$SHARED \
+      -DWANT_MODULES=ON \
+      -DWANT_ALSA=ON \
+      -DWANT_JACK=OFF \
+      -DWANT_SGIAUDIO=OFF \
+      -DWANT_LINUX_CONSOLE=OFF \
+      -DWANT_ALLEGROGL=ON \
+      -DWANT_LOADPNG=ON \
+      -DWANT_LOGG=ON \
+      -DWANT_JPGALLEG=ON \
+      -DWANT_TOOLS=ON \
+      -DWANT_EXAMPLES=OFF \
+      -DWANT_TESTS=ON \
+      -DCMAKE_BUILD_TYPE=$BUILD_TYPE .. && make
+  archive_script: |
+    filename=$(echo build_lib-allegro_*)
+    find $filename/lib -type f -exec chmod 644 "{}" \;
+    tar -cvzf ${filename#build_}.tar.gz -C $filename include/ lib/
+  binaries_artifacts:
+    path: lib-allegro_*.tar.gz
+
+upload_release_task:
+  only_if: $CIRRUS_RELEASE != ''
+  depends_on:
+    - build_windows
+    - build_linux
+  env:
+    GITHUB_TOKEN: ENCRYPTED[1a9b0cfbf411df9e7b799b091f1b7946fe8a8ed5c3a82a1e89da3fd668efb556271b4895b76796759529cb3f5ad77f02]
+  freebsd_instance:
+    image: freebsd-12-0-release-amd64
+  download_script: |
+    mkdir github_release && \
+    for os in windows linux
+    do
+      url="https://api.cirrus-ci.com/v1/artifact/build/$CIRRUS_BUILD_ID/build_$os/binaries.zip"
+      echo "Downloading $url"
+      curl -fLsS "$url" | tar -f - -xvzC github_release -s '|.*/||p'
+    done
+  release_script: |
+    for fpath in $(find github_release -type f)
+    do
+      echo "Uploading $fpath"
+      curl -X POST \
+        --data-binary @$fpath \
+        --header "Authorization: token $GITHUB_TOKEN" \
+        --header "Content-Type: application/octet-stream" \
+        "https://uploads.github.com/repos/$CIRRUS_REPO_FULL_NAME/releases/$CIRRUS_RELEASE/assets?name=${fpath##*/}"
+    done

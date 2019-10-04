@@ -26,7 +26,7 @@
 
 int	 ags_fseek(FILE * stream, file_off_t offset, int whence)
 {
-#if defined(HAVE_FSEEKO) // Contemporary POSIX libc
+#if defined(HAVE_FSEEKO)  && 0 // Contemporary POSIX libc
     return fseeko(stream, offset, whence);
 #elif AGS_PLATFORM_OS_WINDOWS // MSVC
     return _fseeki64(stream, offset, whence); 
@@ -37,7 +37,7 @@ int	 ags_fseek(FILE * stream, file_off_t offset, int whence)
 
 file_off_t ags_ftell(FILE * stream) 
 {
-    #if defined(HAVE_FSEEKO) // Contemporary POSIX libc
+    #if defined(HAVE_FSEEKO) && 0 // Contemporary POSIX libc
         return ftello(stream);
     #elif AGS_PLATFORM_OS_WINDOWS // MSVC
         return _ftelli64(stream); 

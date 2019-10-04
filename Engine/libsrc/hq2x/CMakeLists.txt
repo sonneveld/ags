@@ -12,6 +12,4 @@ target_sources(hq2x
     hq2x3x.cpp
 )
 
-target_link_libraries(hq2x PUBLIC AGS::Common)
-
 add_library(HQ2X::hq2x ALIAS hq2x)

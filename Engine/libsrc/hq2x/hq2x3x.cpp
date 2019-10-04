@@ -17,7 +17,7 @@
 //Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 #include <stdlib.h>
-#include "core/types.h"
+#include <stdint.h>
 
 static int   LUT16to32[65536];
 static int   RGBtoYUV[65536];

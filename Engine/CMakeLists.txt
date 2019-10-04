@@ -571,8 +571,17 @@ target_link_libraries(engine PUBLIC
     Cda::Cda
 )
 
+if (ANDROID)
+    target_link_libraries(engine PUBLIC 
+        log 
+        GLESv1_CM 
+        GLESv2
+    )
+endif()
+
 # common has a circular dependency on engine
-target_link_libraries(common PUBLIC engine)
+# TODO: currently required for gcc support, will look into this.
+# target_link_libraries(common PUBLIC engine)
 
 if (WIN32 OR LINUX)
     target_compile_definitions(engine PRIVATE AGS_HAS_CD_AUDIO)
@@ -601,6 +610,8 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/.. PREFIX "Source Files" FILES ${E
 # Standalone exe
 # -----------------------------------------------------------------------------
 
+if (NOT ANDROID)
+
 add_executable(ags)
 
 set_target_properties(ags PROPERTIES
@@ -615,7 +626,7 @@ target_sources(ags
     main/main_allegro.cpp
 )
 
-target_link_libraries(ags PRIVATE engine)
+target_link_libraries(ags PRIVATE engine Allegro::Main)
 
 if (LINUX)
     # We may override `allegro_icon` and `load_midi_pf` depending on the version
@@ -634,11 +645,13 @@ if (WIN32)
     )
 endif()
 
+endif()
+
 
 # macOS App Bundle
 # -----------------------------------------------------------------------------
 
-if (MACOS)
+if (MACOS AND NOT ANDROID)
     add_executable(ags-app)
 
     set_target_properties(ags-app PROPERTIES

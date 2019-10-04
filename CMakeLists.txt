@@ -24,6 +24,8 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(LINUX TRUE)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(MACOS TRUE)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Android")
+    set(ANDROID TRUE)
 else()
     message(FATAL_ERROR "Unsupported system: ${CMAKE_SYSTEM_NAME}")
 endif ()
@@ -111,7 +113,8 @@ elseif (LINUX)
     find_package(X11)
 endif()
 
-include(FetchAllegro)
+add_subdirectory(Common/libsrc/allegro EXCLUDE_FROM_ALL)
+
 include(FetchOgg)
 include(FetchVorbis)
 include(FetchTheora)
@@ -132,3 +135,7 @@ add_subdirectory(Engine/libsrc/libcda-0.5       EXCLUDE_FROM_ALL)
 add_subdirectory(Engine)
 
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ags)
+
+
+add_library(pe SHARED Android/library/jni/pe_jni.c)
+target_link_libraries(pe engine)

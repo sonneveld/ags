@@ -12,6 +12,6 @@ target_sources(alogg
     alogg.c
 )
 
-target_link_libraries(alogg PUBLIC Allegro::Allegro AGS::Common Vorbis::Vorbis Vorbis::VorbisFile)
+target_link_libraries(alogg PUBLIC Allegro::Allegro Vorbis::Vorbis Vorbis::VorbisFile)
 
 add_library(AlOgg::AlOgg ALIAS alogg)

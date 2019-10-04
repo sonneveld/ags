@@ -37,7 +37,7 @@ using namespace AGS::Common;
 
 #define ANDROID_CONFIG_FILENAME "android.cfg"
 
-bool ReadConfiguration(char* filename, bool read_everything);
+bool ReadConfiguration(const char* filename, bool read_everything);
 void ResetConfiguration();
 
 struct AGSAndroid : AGSPlatformDriver {
@@ -98,7 +98,7 @@ extern int display_fps;
 extern int want_exit;
 extern void PauseGame();
 extern void UnPauseGame();
-extern int main(int argc,char*argv[]);
+extern int ags_entry_point(int argc,char*argv[]);
 
 char android_base_directory[256];
 char android_app_directory[256];
@@ -296,6 +296,8 @@ JNIEXPORT jstring JNICALL
       return env->NewStringUTF(&psp_translation[0]);
       break;
   }
+
+  return nullptr;
 }
 
 
@@ -506,7 +508,7 @@ JNIEXPORT jboolean JNICALL
   psp_load_latest_savegame = loadLastSave;
 
   // Start the engine main function.
-  main(1, &psp_game_file_name_pointer);
+  ags_entry_point(1, &psp_game_file_name_pointer);
   
   // Explicitly quit here, otherwise the app will hang forever.
   exit(0);
@@ -552,7 +554,7 @@ void selectLatestSavegame()
 }
 
 
-int ReadInteger(int* variable, const ConfigTree &cfg, char* section, char* name, int minimum, int maximum, int default_value)
+int ReadInteger(int* variable, const ConfigTree &cfg, const char* section, const char* name, int minimum, int maximum, int default_value)
 {
   if (reset_configuration)
   {
@@ -575,7 +577,7 @@ int ReadInteger(int* variable, const ConfigTree &cfg, char* section, char* name,
 
 
 
-int ReadString(char* variable, const ConfigTree &cfg, char* section, char* name, char* default_value)
+int ReadString(char* variable, const ConfigTree &cfg, const char* section, const char* name, const char* default_value)
 {
   if (reset_configuration)
   {
@@ -587,7 +589,7 @@ int ReadString(char* variable, const ConfigTree &cfg, char* section, char* name,
   if (!INIreaditem(cfg, section, name, temp))
     temp = default_value;
 
-  strcpy(variable, temp);
+  strcpy(variable, temp.GetCStr());
 
   return 1;
 }
@@ -605,7 +607,7 @@ void ResetConfiguration()
 
 
 
-bool ReadConfiguration(char* filename, bool read_everything)
+bool ReadConfiguration(const char* filename, bool read_everything)
 {
   ConfigTree cfg;
   if (IniUtil::Read(filename, cfg) || reset_configuration)

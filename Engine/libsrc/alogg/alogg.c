@@ -7,9 +7,10 @@
 /* See COPYING.txt for license */
 
 
+#include "alogg.h"
+
 #include <string.h>
-#include <allegro.h>
-#include <alogg.h>
+#include "allegro.h"
 #include "vorbis/vorbisfile.h"
 #include "vorbis/codec.h"
 

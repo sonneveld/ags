@@ -577,6 +577,9 @@ if (ANDROID)
         GLESv1_CM 
         GLESv2
     )
+    target_compile_definitions(engine PRIVATE 
+        AGS_INVERTED_COLOR_ORDER
+    )
 endif()
 
 # common has a circular dependency on engine

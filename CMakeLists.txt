@@ -134,8 +134,8 @@ add_subdirectory(Engine/libsrc/libcda-0.5       EXCLUDE_FROM_ALL)
 
 add_subdirectory(Engine)
 
+if (ANDROID)
+    add_subdirectory(Android2/pe_jni)
+endif()
+
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ags)
-
-
-add_library(pe SHARED Android/library/jni/pe_jni.c)
-target_link_libraries(pe engine)

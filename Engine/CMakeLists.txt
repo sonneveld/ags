@@ -678,7 +678,7 @@ if (MACOS AND NOT ANDROID)
         ${RESOURCE_FILES}
     )
 
-    target_link_libraries(ags-app PRIVATE engine)
+    target_link_libraries(ags-app PRIVATE engine Allegro::Main)
 
     set_target_properties(ags-app PROPERTIES
         RUNTIME_OUTPUT_NAME AGS

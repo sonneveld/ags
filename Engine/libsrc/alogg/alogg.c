@@ -7,11 +7,17 @@
 /* See COPYING.txt for license */
 
 
+#include "alogg.h"
+
 #include <string.h>
-#include <allegro.h>
-#include <alogg.h>
+#include "allegro.h"
+#ifndef USE_TREMOR
 #include "vorbis/vorbisfile.h"
 #include "vorbis/codec.h"
+#else
+#include "tremor/ivorbisfile.h"
+#include "tremor/ivorbiscodec.h"
+#endif
 
 #if defined(_WIN32)
     #define ALOGG_WANT_BIG_ENDIAN  (0)
@@ -437,7 +443,12 @@ int alogg_poll_ogg(ALOGG_OGG *ogg) {
   size_done = 0;
   for (i = ogg->audiostream_buffer_len; i > 0; i -= size_done) {
     /* decode */
+
+#ifndef USE_TREMOR
     size_done = ov_read(&(ogg->vf), audiobuf_p, i, ALOGG_WANT_BIG_ENDIAN, 2, 0, &(ogg->current_section));
+#else
+    size_done = ov_read(&(ogg->vf), audiobuf_p, i, &(ogg->current_section));
+#endif
 
 #ifdef USE_TREMOR
     /* Add offset to data because we are using libtremor */
@@ -616,7 +627,11 @@ SAMPLE *alogg_create_sample_from_ogg(ALOGG_OGG *ogg) {
   for (i = sample_len_bytes; !done && (i > 0); i -= size_done) {
 
     /* decode */
+#ifndef USE_TREMOR
     size_done = ov_read(&(ogg->vf), data, i, ALOGG_WANT_BIG_ENDIAN, 2, 0, &(ogg->current_section));
+#else
+    size_done = ov_read(&(ogg->vf), data, i, &(ogg->current_section));
+#endif
 
 #ifdef USE_TREMOR
     /* Add offset to data because we are using libtremor. */
@@ -1002,7 +1017,11 @@ int alogg_poll_oggstream(ALOGG_OGGSTREAM *ogg) {
   audiobuf_p = (char *)audiobuf;
   size_done = 0;
   for (i = ogg->audiostream_buffer_len; i > 0; i -= size_done) {
+#ifndef USE_TREMOR
     size_done = ov_read(&(ogg->vf), audiobuf_p, i, ALOGG_WANT_BIG_ENDIAN, 2, 0, &(ogg->current_section));
+#else
+    size_done = ov_read(&(ogg->vf), audiobuf_p, i, &(ogg->current_section));
+#endif
 
 #ifdef USE_TREMOR
     /* Add offset to data because we are using libtremor. */

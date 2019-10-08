@@ -778,7 +778,7 @@ if(ANDROID)
     target_link_libraries(allegro PRIVATE 
         log 
         GLESv1_CM 
-        GLESv2
+        # GLESv2
     )
 
 endif(ANDROID)

@@ -16,11 +16,19 @@
 *      See readme.txt for copyright information.
 */
 
-#include <GLES/gl.h>
+#include "glm/glm.hpp"
+#include "glm/ext.hpp"
+
+#define ALLEGRO_NO_FIX_CLASS
+
+extern "C" {
 
 #include "allegro.h"
 #include "allegro/internal/aintern.h"
 #include "allegro/platform/aintand.h"
+
+#include <GLES2/gl2.h>
+#include <android/log.h>
 
 
 /* Software version of some blitting methods */
@@ -49,6 +57,8 @@ int android_screen_texture_width = 0;
 int android_screen_texture_height = 0;
 float android_screen_ar = 1.0f;
 float android_device_ar = 1.0f;
+
+static GLuint android_shader_program = 0;
 
 int android_screen_initialized = 0;
 
@@ -158,6 +168,106 @@ static void android_hw_blit(BITMAP *source, BITMAP *dest, int source_x, int sour
 
    if (dest == displayed_video_bitmap)
       android_render();
+}
+
+
+static const char *default_vertex_shader_src =
+   "#version 100\n"
+   "uniform mat4 u_transform;\n"
+   "attribute vec2 a_Position;\n"
+   "attribute vec2 a_TexCoord;\n"
+   "varying vec2 v_TexCoord;\n"
+   "void main() {  \n"
+   "  v_TexCoord = a_TexCoord;\n"
+   "  gl_Position = u_transform * vec4(a_Position.xy, 0.0, 1.0);\n"
+   "}\n";
+
+static const char *default_fragment_shader_src =
+   "#version 100\n"
+   "precision mediump float;\n"
+   "uniform sampler2D u_texture;\n"
+   "varying vec2 v_TexCoord;\n"
+   "void main()\n"
+   "{\n"
+   "  vec4 src_col = texture2D(u_texture, v_TexCoord);\n"
+   "  gl_FragColor = vec4(src_col.rgb, 1.0);\n"  // strip alpha from resultant surface
+   "}";
+
+
+
+void OutputShaderError(GLuint obj_id, const char *obj_name, int is_shader)
+{
+  GLint log_len;
+  if (is_shader)
+    glGetShaderiv(obj_id, GL_INFO_LOG_LENGTH, &log_len);
+  else
+    glGetProgramiv(obj_id, GL_INFO_LOG_LENGTH, &log_len);
+
+  char errorLog[log_len];
+  if (log_len > 0)
+  {
+    if (is_shader)
+      glGetShaderInfoLog(obj_id, log_len, &log_len, &errorLog[0]);
+    else
+      glGetProgramInfoLog(obj_id, log_len, &log_len, &errorLog[0]);
+  }
+
+    __android_log_print(ANDROID_LOG_ERROR, "OutputShaderError", "ERROR: OpenGL: %s %s:", obj_name, is_shader ? "failed to compile" : "failed to link");
+  if (log_len > 0)
+  {
+      __android_log_print(ANDROID_LOG_ERROR, "OutputShaderError", "----------------------------------------");
+      __android_log_print(ANDROID_LOG_ERROR, "OutputShaderError","%s", &errorLog[0]);
+      __android_log_print(ANDROID_LOG_ERROR, "OutputShaderError", "----------------------------------------");
+  }
+  else
+  {
+      __android_log_print(ANDROID_LOG_ERROR, "OutputShaderError", "Shader info log was empty.");
+  }
+}
+
+
+GLuint CreateShaderProgram(const char *vertex_shader_src, const char *fragment_shader_src)
+{
+  GLint result;
+
+  GLint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vertex_shader, 1, &vertex_shader_src, nullptr);
+  glCompileShader(vertex_shader);
+  glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &result);
+  if (result == GL_FALSE)
+  {
+    OutputShaderError(vertex_shader, "vertex", 1);
+    return 0;
+  }
+
+  GLint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragment_shader, 1, &fragment_shader_src, nullptr);
+  glCompileShader(fragment_shader);
+  glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &result);
+  if (result == GL_FALSE)
+  {
+    OutputShaderError(fragment_shader, "fragment", 1);
+    return 0;
+  }
+
+  GLuint program = glCreateProgram();
+  glAttachShader(program, vertex_shader);
+  glAttachShader(program, fragment_shader);
+  glLinkProgram(program);
+  glGetProgramiv(program, GL_LINK_STATUS, &result);
+  if(result == GL_FALSE)
+  {
+    OutputShaderError(program, "program", 0);
+    return 0;
+  }
+
+  glDetachShader(program, vertex_shader);
+  glDeleteShader(vertex_shader);
+
+  glDetachShader(program, fragment_shader);
+  glDeleteShader(fragment_shader);
+
+  return program;
 }
 
 
@@ -278,65 +388,10 @@ void android_initialize_opengl()
    android_screen_ar = (float)android_screen_width / (float)android_screen_height;
    android_device_ar = (float)android_screen_physical_width / (float)android_screen_physical_height;
 
-   glEnable(GL_CULL_FACE);
-   glEnable(GL_TEXTURE_2D);
-   glDisable(GL_DEPTH_TEST);
-   glDisable(GL_LIGHTING);
-   glDisable(GL_BLEND);
-   glShadeModel(GL_FLAT);
-
-   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-   glViewport(0, 0, android_screen_physical_width, android_screen_physical_height);
-   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glDisableClientState(GL_COLOR_ARRAY);
-   glDisableClientState(GL_NORMAL_ARRAY);
-   glEnableClientState(GL_VERTEX_ARRAY);
-   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   glTexCoordPointer(2, GL_FLOAT, 0, android_texture_coordinates);
-   glVertexPointer(2, GL_FLOAT, 0, android_vertices);
+   android_shader_program = CreateShaderProgram(default_vertex_shader_src, default_fragment_shader_src);
 
    android_create_screen_texture(android_screen_width, android_screen_height, android_screen_color_depth);
    android_create_arrays();
-
-   glBindTexture(GL_TEXTURE_2D, android_screen_texture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-   if (psp_gfx_smoothing)
-   {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-   }
-   else
-   {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   }
-
-   glViewport(0, 0, android_screen_physical_width, android_screen_physical_height);
-
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-
-   glOrthof(0, android_screen_physical_width - 1, 0, android_screen_physical_height - 1, 0, 1);
-
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
-   if (psp_gfx_scaling == 1)
-   {
-      if (android_device_ar <= android_screen_ar)
-         glTranslatef(0, (android_screen_physical_height - android_vertices[5] - 1) / 2, 0);
-      else
-         glTranslatef((android_screen_physical_width - android_vertices[2] - 1) / 2, 0, 0);
-   }
-   else if (psp_gfx_scaling == 0)
-   {
-      glTranslatef(android_screen_physical_width / 2.0f, android_screen_physical_height / 2.0f, 0);
-   }
 }
 
 
@@ -349,14 +404,82 @@ void android_render()
       android_screen_initialized = 1;
    }
 
-   if (android_screen_color_depth == 16)
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, android_screen_width, android_screen_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, displayed_video_bitmap->line[0]);
-   else
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, android_screen_width, android_screen_height, GL_RGBA, GL_UNSIGNED_BYTE, displayed_video_bitmap->line[0]);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 
-   glClear(GL_COLOR_BUFFER_BIT);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glViewport(0, 0, android_screen_physical_width, android_screen_physical_height);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+
+   glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, android_screen_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    if (psp_gfx_smoothing)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+
+    if (android_screen_color_depth == 16)
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, android_screen_width, android_screen_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, displayed_video_bitmap->line[0]);
+    else
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, android_screen_width, android_screen_height, GL_RGBA, GL_UNSIGNED_BYTE, displayed_video_bitmap->line[0]);
+
+
+    auto transform = glm::ortho(0.0f, ((float)android_screen_physical_width) - 1.0f, 0.0f, ((float)android_screen_physical_height) - 1.0f, -1.0f, 1.0f);
+
+    if (psp_gfx_scaling == 1)
+    {
+        if (android_device_ar <= android_screen_ar)
+            transform = glm::translate(transform, {0.0f, (android_screen_physical_height - android_vertices[5] - 1) / 2.0f, 0.0f});
+        else
+            transform = glm::translate(transform, {(android_screen_physical_width - android_vertices[2] - 1) / 2.0f, 0.0f, 0.0f});
+    }
+    else if (psp_gfx_scaling == 0)
+    {
+        transform = glm::translate(transform, {android_screen_physical_width / 2.0f, android_screen_physical_height / 2.0f, 0.0f});
+    }
+
+
+    glUseProgram(android_shader_program);
+    glUniformMatrix4fv(glGetUniformLocation(android_shader_program, "u_transform"), 1, GL_FALSE, glm::value_ptr(transform));
+    glUniform1i(glGetUniformLocation(android_shader_program, "u_texture"), 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glEnableVertexAttribArray(0);
+    GLint a_Position = glGetAttribLocation(android_shader_program, "a_Position");
+    glVertexAttribPointer(a_Position, 2, GL_FLOAT, GL_FALSE, 0, android_vertices);
+
+    glEnableVertexAttribArray(1);
+    GLint a_TexCoord = glGetAttribLocation(android_shader_program, "a_TexCoord");
+    glVertexAttribPointer(a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, android_texture_coordinates);
+
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    glFinish();
+
+    GLenum err;
+    for (;;) {
+        err = glGetError();
+        if (err == GL_NO_ERROR) { break; }
+        __android_log_print(ANDROID_LOG_ERROR, "agfx::_render", "glerror: %d", err);
+    }
+
    android_swap_buffers();
+}
+
+
 }

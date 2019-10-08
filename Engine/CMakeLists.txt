@@ -561,7 +561,6 @@ endif()
 target_link_libraries(engine PUBLIC 
     AGS::Common 
     ${CMAKE_DL_LIBS} 
-    Glad::Glad 
     Threads::Threads 
     Allegro::Allegro 
     AlDumb::AlDumb 
@@ -569,16 +568,25 @@ target_link_libraries(engine PUBLIC
     AlOgg::AlOgg 
     HQ2X::hq2x
     Cda::Cda
+    GLM::GLM
 )
 
 if (ANDROID)
     target_link_libraries(engine PUBLIC 
         log 
+        EGL
         GLESv1_CM 
-        GLESv2
+        # GLESv2
+        Glad::GladGLES1
     )
     target_compile_definitions(engine PRIVATE 
         AGS_INVERTED_COLOR_ORDER
+    )
+endif()
+
+if (NOT ANDROID)
+    target_link_libraries(engine PUBLIC 
+        Glad::Glad
     )
 endif()
 

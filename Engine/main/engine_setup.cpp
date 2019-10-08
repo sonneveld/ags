@@ -188,15 +188,18 @@ void engine_setup_color_conversions(int coldepth)
     _rgb_r_shift_32 = 16;
     _rgb_g_shift_32 = 8;
     _rgb_b_shift_32 = 0;
+
     _rgb_r_shift_16 = 11;
     _rgb_g_shift_16 = 5;
     _rgb_b_shift_16 = 0;
+
     _rgb_r_shift_15 = 10;
     _rgb_g_shift_15 = 5;
     _rgb_b_shift_15 = 0;
 
     // Most cards do 5-6-5 RGB, which is the format the files are saved in
     // Some do 5-6-5 BGR, or  6-5-5 RGB, in which case convert the gfx
+#if 0
     if ((coldepth == 16) && ((_rgb_b_shift_16 != 0) || (_rgb_r_shift_16 != 11)))
     {
         convert_16bit_bgr = 1;
@@ -207,19 +210,20 @@ void engine_setup_color_conversions(int coldepth)
             _places_g = 3;
         }
     }
+#endif
     if (coldepth > 16)
     {
         // when we're using 32-bit colour, it converts hi-color images
         // the wrong way round - so fix that
 
 #if AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_ANDROID
-        _rgb_b_shift_16 = 0;
-        _rgb_g_shift_16 = 5;
         _rgb_r_shift_16 = 11;
+        _rgb_g_shift_16 = 5;
+        _rgb_b_shift_16 = 0;
 
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
         _rgb_r_shift_15 = 10;
+        _rgb_g_shift_15 = 5;
+        _rgb_b_shift_15 = 0;
 
         _rgb_r_shift_32 = 0;
         _rgb_g_shift_32 = 8;
@@ -251,9 +255,9 @@ void engine_setup_color_conversions(int coldepth)
         _rgb_g_shift_32 = 8;
         _rgb_b_shift_32 = 16;
 
-        _rgb_b_shift_15 = 0;
-        _rgb_g_shift_15 = 5;
         _rgb_r_shift_15 = 10;
+        _rgb_g_shift_15 = 5;
+        _rgb_b_shift_15 = 0;
 #endif
     }
 

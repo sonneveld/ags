@@ -36,20 +36,8 @@
 
 #elif AGS_PLATFORM_OS_ANDROID
 
-#include <GLES/gl.h>
-#include <GLES2/gl2.h>
-
-#ifndef GL_GLEXT_PROTOTYPES
-#define GL_GLEXT_PROTOTYPES
-#endif
-
-// TODO: we probably should not use GLExt since we use GLES2
-#include <GLES/glext.h>
-
-#define HDC void*
-#define HGLRC void*
-#define HWND void*
-#define HINSTANCE void*
+#include <EGL/egl.h>
+#include "glad/glad.h"
 
 #elif AGS_PLATFORM_OS_IOS
 
@@ -70,8 +58,4 @@
 
 #error "opengl: unsupported platform"
 
-#endif
-
-#ifndef GLAPI
-#define GLAD_GL_VERSION_2_0 (0)
 #endif

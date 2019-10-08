@@ -310,7 +310,8 @@ private:
     void DeleteBackbufferTexture();
 #if AGS_PLATFORM_OS_WINDOWS || AGS_PLATFORM_OS_LINUX
     void CreateDesktopScreen(int width, int height, int depth);
-#elif AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
+#endif
+#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
     void UpdateDeviceScreen();
 #endif
     // Unset parameters and release resources related to the display mode

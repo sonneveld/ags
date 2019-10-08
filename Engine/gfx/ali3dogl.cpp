@@ -27,7 +27,15 @@
 #include "util/math.h"
 #include "ac/timer.h"
 
+// OpenGL Mathematics Library. We could include only the features we need to decrease compilation time.
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
+
+#define AGS_PLATFORM_SHADERS_SUPPORT (AGS_PLATFORM_OS_WINDOWS|AGS_PLATFORM_OS_LINUX)
+
 #if AGS_PLATFORM_OS_ANDROID
+
+#include <android/log.h>
 
 #define glOrtho glOrthof
 #define GL_CLAMP GL_CLAMP_TO_EDGE
@@ -361,10 +369,21 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 {
 #if AGS_PLATFORM_OS_ANDROID
   android_create_screen(mode.Width, mode.Height, mode.ColorDepth);
-#elif AGS_PLATFORM_OS_IOS
+
+  // opengl context should now exist, so load gl function ptrs
+
+  if (!gladLoadGLES1Loader((GLADloadproc)eglGetProcAddress)) {
+	  Debug::Printf(kDbgMsg_Error, "Failed to load GL.");
+	  return false;
+  }
+#endif
+
+#if AGS_PLATFORM_OS_IOS
   ios_create_screen();
   ios_select_buffer();
-#elif AGS_PLATFORM_OS_WINDOWS
+#endif
+
+#if AGS_PLATFORM_OS_WINDOWS
   if (!mode.Windowed)
   {
     if (platform->EnterFullscreenMode(mode))
@@ -412,7 +431,10 @@ bool OGLGraphicsDriver::InitGlScreen(const DisplayMode &mode)
 
   CreateDesktopScreen(mode.Width, mode.Height, mode.ColorDepth);
   win_grab_input();
-#elif AGS_PLATFORM_OS_LINUX
+
+#endif
+
+#if AGS_PLATFORM_OS_LINUX
   if (!_have_window)
   {
     // Use Allegro to create our window. We don't care what size Allegro uses
@@ -572,6 +594,13 @@ void OGLGraphicsDriver::InitGlParams(const DisplayMode &mode)
   // is selected in AGS. This ugly situation causes trouble...
   device_mouse_setup(0, device_screen_physical_width - 1, 0, device_screen_physical_height - 1, 1.0, 1.0);
 #endif
+
+    GLenum err;
+    for (;;) {
+      err = glGetError();
+      if (err == GL_NO_ERROR) { break; }
+      __android_log_print(ANDROID_LOG_ERROR, "OGLGraphicsDriver::InitGlParams", "glerror: %d", err);
+    }
 }
 
 bool OGLGraphicsDriver::CreateGlContext(const DisplayMode &mode)
@@ -661,16 +690,17 @@ void OGLGraphicsDriver::DeleteGlContext()
 
 inline bool CanDoFrameBuffer()
 {
-#ifdef GLAPI
-  return GLAD_GL_EXT_framebuffer_object != 0;
-#else
-#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
+#if AGS_PLATFORM_OS_ANDROID
+  return GLAD_GL_OES_framebuffer_object != 0;
+
+#elif AGS_PLATFORM_OS_IOS
   const char* fbo_extension_string = "GL_OES_framebuffer_object";
-#else
-  const char* fbo_extension_string = "GL_EXT_framebuffer_object";
-#endif
   const char* extensions = (const char*)glGetString(GL_EXTENSIONS);
   return extensions && strstr(extensions, fbo_extension_string) != NULL;
+
+#else
+  return GLAD_GL_EXT_framebuffer_object != 0;
+
 #endif
 }
 
@@ -701,6 +731,12 @@ void OGLGraphicsDriver::TestSupersampling()
         _super_sampling = 1;
     }
 }
+
+#if AGS_PLATFORM_SHADERS_SUPPORT
+
+#ifndef GLAD_GL_VERSION_2_0
+#define GLAD_GL_VERSION_2_0 (0)
+#endif
 
 void OGLGraphicsDriver::CreateShaders()
 {
@@ -868,6 +904,13 @@ void OGLGraphicsDriver::OutputShaderError(GLuint obj_id, const String &obj_name,
     Debug::Printf(kDbgMsg_Error, "Shader info log was empty.");
   }
 }
+
+#else
+
+void OGLGraphicsDriver::CreateShaders() { }
+void OGLGraphicsDriver::DeleteShaderProgram(ShaderProgram &prg) {}
+
+#endif
 
 void OGLGraphicsDriver::SetupBackbufferTexture()
 {
@@ -1166,6 +1209,7 @@ void OGLGraphicsDriver::_renderSprite(const OGLDrawListEntry *drawListEntry, con
   if (bmpToDraw->_transparency >= 255)
     return;
 
+#if AGS_PLATFORM_SHADERS_SUPPORT
   const bool do_tint = bmpToDraw->_tintSaturation > 0 && _tintShader.Program > 0;
   const bool do_light = bmpToDraw->_tintSaturation == 0 && bmpToDraw->_lightLevel > 0 && _lightShader.Program > 0;
   if (do_tint)
@@ -1233,6 +1277,7 @@ void OGLGraphicsDriver::_renderSprite(const OGLDrawListEntry *drawListEntry, con
     glUniform1f(_lightShader.AuxVar, alpha);
   }
   else
+#endif
   {
     // Use default processing
     if (bmpToDraw->_transparency == 0)
@@ -1328,7 +1373,10 @@ void OGLGraphicsDriver::_renderSprite(const OGLDrawListEntry *drawListEntry, con
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   }
-  glUseProgram(0);
+
+#if AGS_PLATFORM_SHADERS_SUPPORT
+   glUseProgram(0);
+#endif
 }
 
 void OGLGraphicsDriver::_render(bool clearDrawListAfterwards)
@@ -1429,6 +1477,13 @@ void OGLGraphicsDriver::_render(bool clearDrawListAfterwards)
     ClearDrawLists();
   }
   ResetFxPool();
+
+  GLenum err;
+  for (;;) {
+    err = glGetError();
+    if (err == GL_NO_ERROR) { break; }
+    __android_log_print(ANDROID_LOG_ERROR, "OGLGraphicsDriver::_render", "glerror: %d", err);
+  }
 }
 
 void OGLGraphicsDriver::RenderSpriteBatches()
@@ -1497,10 +1552,11 @@ void OGLGraphicsDriver::InitSpriteBatch(size_t index, const SpriteBatchDesc &des
 
     Rect orig_viewport = desc.Viewport;
     Rect node_viewport = desc.Viewport;
+
     // Combine both world transform and viewport transform into one matrix for faster perfomance
     // NOTE: in OpenGL order of transformation is REVERSE to the order of commands!
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    glm::mat4 model = glm::mat4(1.0f);  // glLoadIdentity
+
     // Global node transformation (flip and offset)
     int node_tx = desc.Offset.X, node_ty = desc.Offset.Y;
     float node_sx = 1.f, node_sy = 1.f;
@@ -1517,27 +1573,43 @@ void OGLGraphicsDriver::InitSpriteBatch(size_t index, const SpriteBatchDesc &des
         node_sy = -1.f;
     }
     _spriteBatches[index].Viewport = Rect::MoveBy(node_viewport, node_tx, node_ty);
-    glTranslatef(node_tx, -(node_ty), 0.0f);
-    glScalef(node_sx, node_sy, 1.f);
+    // glTranslatef(node_tx, -(node_ty), 0.0f);
+    model = glm::translate(model, {node_tx, -(node_ty), 0.0f}); 
+    // glScalef(node_sx, node_sy, 1.f);
+    model = glm::scale(model, {node_sx, node_sy, 1.f}); 
+    
     // NOTE: before node, translate to viewport position; remove this if this
     // is changed to a separate operation at some point
     // TODO: find out if this is an optimal way to translate scaled room into Top-Left screen coordinates
     float scaled_offx = (_srcRect.GetWidth() - desc.Transform.ScaleX * (float)_srcRect.GetWidth()) / 2.f;
     float scaled_offy = (_srcRect.GetHeight() - desc.Transform.ScaleY * (float)_srcRect.GetHeight()) / 2.f;
-    glTranslatef((float)(orig_viewport.Left - scaled_offx), (float)-(orig_viewport.Top - scaled_offy), 0.0f);
+    // glTranslatef((float)(orig_viewport.Left - scaled_offx), (float)-(orig_viewport.Top - scaled_offy), 0.0f);
+    model = glm::translate(model, {(float)(orig_viewport.Left - scaled_offx), (float)-(orig_viewport.Top - scaled_offy), 0.0f});
+
     // IMPORTANT: while the sprites are usually transformed in the order of Scale-Rotate-Translate,
     // the camera's transformation is essentially reverse world transformation. And the operations
     // are inverse: Translate-Rotate-Scale (here they are double inverse because OpenGL).
-    glScalef(desc.Transform.ScaleX, desc.Transform.ScaleY, 1.f); // scale camera
-    glRotatef(Math::RadiansToDegrees(desc.Transform.Rotate), 0.f, 0.f, 1.f); // rotate camera
-    glTranslatef((float)desc.Transform.X, (float)-desc.Transform.Y, 0.0f); // translate camera
-    glGetFloatv(GL_MODELVIEW_MATRIX, _spriteBatches[index].Matrix.m);
-    glLoadIdentity();
+    // glScalef(desc.Transform.ScaleX, desc.Transform.ScaleY, 1.f); // scale camera
+    model = glm::scale(model, {desc.Transform.ScaleX, desc.Transform.ScaleY, 1.f});
+    // glRotatef(Math::RadiansToDegrees(desc.Transform.Rotate), 0.f, 0.f, 1.f); // rotate camera
+    model = glm::rotate(model, desc.Transform.Rotate, { 0.f, 0.f, 1.f});
+    // glTranslatef(); // translate camera
+    model = glm::translate(model, {(float)desc.Transform.X, (float)-desc.Transform.Y, 0.0f});
+
+    // glGetFloatv(GL_MODELVIEW_MATRIX, _spriteBatches[index].Matrix.m);
+    memcpy(_spriteBatches[index].Matrix.m, glm::value_ptr(model), 16*sizeof(GLfloat));
 
     // create stage screen for plugin raw drawing
     int src_w = orig_viewport.GetWidth() / desc.Transform.ScaleX;
     int src_h = orig_viewport.GetHeight() / desc.Transform.ScaleY;
     CreateStageScreen(index, Size(src_w, src_h));
+
+    GLenum err;
+    for (;;) {
+      err = glGetError();
+      if (err == GL_NO_ERROR) { break; }
+      __android_log_print(ANDROID_LOG_ERROR, "OGLGraphicsDriver::InitSpriteBatch", "glerror: %d", err);
+    }
 }
 
 void OGLGraphicsDriver::ResetAllBatches()

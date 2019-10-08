@@ -854,12 +854,29 @@ void position_mouse_w(int w)
  */
 void set_mouse_range(int x1, int y1, int x2, int y2)
 {
-    return;
    BITMAP *old_mouse_screen = _mouse_screen;
+
+   if (x1 > x2) {
+      int swap_x1 = x1;
+      int swap_x2 = x2;
+      x1 = swap_x2;
+      x2 = swap_x1;
+   }
+   if (y1 > y2) {
+      int swap_y1 = y1;
+      int swap_y2 = y2;
+      y1 = swap_y2;
+      y2 = swap_y1;
+   }
+   if (x1 < 0) {  x1 = 0; }
+   if (x2 < 0) {  x2 = 0; }
+   if (y1 < 0) {  y1 = 0; }
+   if (y2 < 0) {  y2 = 0; }
+
    ASSERT(x1 >= 0);
    ASSERT(y1 >= 0);
    ASSERT(x2 >= x1);
-   ASSERT(y2 >= y2);
+   ASSERT(y2 >= y1);
 
    if (!mouse_driver)
       return;

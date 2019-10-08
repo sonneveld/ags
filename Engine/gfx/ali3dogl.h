@@ -20,6 +20,9 @@
 #define __AGS_EE_GFX__ALI3DOGL_H
 
 #include <memory>
+
+#include "glm/glm.hpp"
+
 #include "gfx/bitmap.h"
 #include "gfx/ddb.h"
 #include "gfx/gfxdriverfactorybase.h"
@@ -125,7 +128,6 @@ public:
 };
 
 typedef SpriteDrawListEntry<OGLBitmap> OGLDrawListEntry;
-typedef struct GLMATRIX { GLfloat m[16]; } GLMATRIX;
 struct OGLSpriteBatch
 {
     // List of sprites to render
@@ -133,7 +135,7 @@ struct OGLSpriteBatch
     // Clipping viewport
     Rect Viewport;
     // Transformation matrix, built from the batch description
-    GLMATRIX Matrix;
+    glm::mat4 Matrix;
 };
 typedef std::vector<OGLSpriteBatch>    OGLSpriteBatches;
 
@@ -165,6 +167,28 @@ private:
     std::vector<DisplayMode> _modes;
 };
 
+// Shader program and its variable references;
+// the variables are rather specific for AGS use (sprite tinting).
+struct ShaderProgram
+{
+    GLuint Program = 0;
+    GLuint Arg[4] {};
+    // GLuint SamplerVar;      // texture ID
+    // GLuint ColorVar;        // primary operation variable
+    // GLuint AuxVar;          // auxiliary variable
+
+    GLuint MVPMatrix = -1;
+
+    GLuint TextureId = -1;
+
+    GLuint Alpha = -1;
+
+    GLuint TintHSV = -1;
+    GLuint TintAmount = -1;
+    GLuint TintLuminance = -1;
+
+    GLuint LightingAmount = -1;
+};
 
 class OGLGfxFilter;
 
@@ -239,19 +263,10 @@ private:
     String previousError;
     bool _smoothScaling;
     bool _legacyPixelShader;
-    // Shader program and its variable references;
-    // the variables are rather specific for AGS use (sprite tinting).
-    struct ShaderProgram
-    {
-        GLuint Program;
-        GLuint SamplerVar;      // texture ID
-        GLuint ColorVar;        // primary operation variable
-        GLuint AuxVar;          // auxiliary variable
 
-        ShaderProgram();
-    };
     ShaderProgram _tintShader;
     ShaderProgram _lightShader;
+    ShaderProgram _transparencyShader;
 
     int device_screen_physical_width;
     int device_screen_physical_height;
@@ -299,18 +314,13 @@ private:
     void TestSupersampling();
     // Create shader programs for sprite tinting and changing light level
     void CreateShaders();
-    void CreateTintShader();
-    void CreateLightShader();
-    void CreateShaderProgram(ShaderProgram &prg, const char *name, const char *fragment_shader_src,
-                                const char *sampler_var, const char *color_var, const char *aux_var);
-    void DeleteShaderProgram(ShaderProgram &prg);
-    void OutputShaderError(GLuint obj_id, const String &obj_name, bool is_shader);
     // Configure backbuffer texture, that is used in render-to-texture mode
     void SetupBackbufferTexture();
     void DeleteBackbufferTexture();
 #if AGS_PLATFORM_OS_WINDOWS || AGS_PLATFORM_OS_LINUX
     void CreateDesktopScreen(int width, int height, int depth);
-#elif AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
+#endif
+#if AGS_PLATFORM_OS_ANDROID || AGS_PLATFORM_OS_IOS
     void UpdateDeviceScreen();
 #endif
     // Unset parameters and release resources related to the display mode
@@ -319,7 +329,7 @@ private:
     void UpdateTextureRegion(OGLTextureTile *tile, Bitmap *bitmap, OGLBitmap *target, bool hasAlpha);
     void CreateVirtualScreen();
     void do_fade(bool fadingOut, int speed, int targetColourRed, int targetColourGreen, int targetColourBlue);
-    void _renderSprite(const OGLDrawListEntry *entry, const GLMATRIX &matGlobal);
+    void _renderSprite(const OGLDrawListEntry *entry, const glm::mat4 &projection, const glm::mat4 &matGlobal);
     void SetupViewport();
     // Converts rectangle in top->down coordinates into OpenGL's native bottom->up coordinates
     Rect ConvertTopDownRect(const Rect &top_down_rect, int surface_height);
@@ -331,8 +341,8 @@ private:
     // Deletes draw list backups
     void ClearDrawBackups();
     void _render(bool clearDrawListAfterwards);
-    void RenderSpriteBatches();
-    void RenderSpriteBatch(const OGLSpriteBatch &batch);
+    void RenderSpriteBatches(const glm::mat4 &projection);
+    void RenderSpriteBatch(const OGLSpriteBatch &batch, const glm::mat4 &projection);
     void _reDrawLastFrame();
 };
 

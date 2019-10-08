@@ -5,7 +5,11 @@ but a workalike plugin created by JJS for the AGS engine PSP port.
 
 */
 
-#include "core/platform.h"
+#ifdef _WIN32
+  #define AGS_PLATFORM_OS_WINDOWS (1)
+#else
+  #define AGS_PLATFORM_OS_WINDOWS (0)
+#endif
 
 #if AGS_PLATFORM_OS_WINDOWS
 #define WIN32_LEAN_AND_MEAN
@@ -28,7 +32,7 @@ but a workalike plugin created by JJS for the AGS engine PSP port.
 #define sin(x) vfpu_sinf(x)
 #endif
 
-#include "plugin/agsplugin.h"
+#include "agsplugin.h"
 
 #if defined(BUILTIN_PLUGINS)
 namespace ags_snowrain {

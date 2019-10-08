@@ -4,7 +4,11 @@ Helper functions for touch devices
 
 */
 
-#include "core/platform.h"
+#ifdef _WIN32
+  #define AGS_PLATFORM_OS_WINDOWS (1)
+#else
+  #define AGS_PLATFORM_OS_WINDOWS (0)
+#endif
 
 #if AGS_PLATFORM_OS_WINDOWS
 #define WIN32_LEAN_AND_MEAN
@@ -16,7 +20,7 @@ Helper functions for touch devices
 #define THIS_IS_THE_PLUGIN
 #endif
 
-#include "plugin/agsplugin.h"
+#include "agsplugin.h"
 
 #if defined(BUILTIN_PLUGINS)
 namespace agstouch {

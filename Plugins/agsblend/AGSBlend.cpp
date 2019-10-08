@@ -11,7 +11,11 @@
 
 #pragma region Defines_and_Includes
 
-#include "core/platform.h"
+#ifdef _WIN32
+  #define AGS_PLATFORM_OS_WINDOWS (1)
+#else
+  #define AGS_PLATFORM_OS_WINDOWS (0)
+#endif
 
 #define MIN_EDITOR_VERSION 1
 #define MIN_ENGINE_VERSION 3
@@ -29,7 +33,7 @@
 #define THIS_IS_THE_PLUGIN
 #endif
 
-#include "plugin/agsplugin.h"
+#include "agsplugin.h"
 
 #if defined(BUILTIN_PLUGINS)
 namespace agsblend {

@@ -146,4 +146,13 @@ if (ANDROID)
     add_subdirectory(Android2/pe_jni)
 endif()
 
+add_subdirectory(Plugins/AGSSpriteFont)
+add_subdirectory(Plugins/AGSflashlight)
+add_subdirectory(Plugins/ags_parallax)
+add_subdirectory(Plugins/ags_snowrain)
+add_subdirectory(Plugins/agsblend)
+# add_subdirectory(Plugins/agslua)
+add_subdirectory(Plugins/agspalrender)
+add_subdirectory(Plugins/agstouch)
+
 set_property(DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ags)

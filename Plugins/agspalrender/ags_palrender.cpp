@@ -4,7 +4,11 @@
 // Copyright (c) 2002 Chris Jones
 //
 
-#include "core/platform.h"
+#ifdef _WIN32
+  #define AGS_PLATFORM_OS_WINDOWS (1)
+#else
+  #define AGS_PLATFORM_OS_WINDOWS (0)
+#endif
 
 #if AGS_PLATFORM_OS_WINDOWS
 #define WIN32_LEAN_AND_MEAN
@@ -28,7 +32,7 @@
 
 
 
-#include "plugin/agsplugin.h"
+#include "agsplugin.h"
 #include "palrender.h"
 #include "raycast.h"
 

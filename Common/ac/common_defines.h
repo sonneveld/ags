@@ -96,9 +96,9 @@
 #define LEGACY_MAX_SPRITES      30000
 #define MAX_CURSOR          20
 
-#ifndef int32
-#define int32 int
-#endif
+// #ifndef int32
+// #define int32 int
+// #endif
 
 #if AGS_PLATFORM_OS_WINDOWS
 #define AGS_INLINE inline

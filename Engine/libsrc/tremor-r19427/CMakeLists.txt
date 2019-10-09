@@ -44,9 +44,10 @@ target_sources(vorbisidec PRIVATE
 
 target_compile_options(vorbisidec PRIVATE -fsigned-char)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
-    target_compile_definitions(vorbisidec PRIVATE _ARM_ASSEM_)
-endif()
+# Doesn't seem to work for Android
+# if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
+#     target_compile_definitions(vorbisidec PRIVATE _ARM_ASSEM_)
+# endif()
 
 # enable 32 bit only multiply operations
 # target_compile_definitions(vorbisidec PRIVATE _LOW_ACCURACY_)

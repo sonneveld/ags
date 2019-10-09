@@ -12,7 +12,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                arguments "-DBUILD_SHARED_LIBS=YES"
+                arguments "-DBUILD_SHARED_LIBS=YES", "-DAGS_USE_TREMOR=YES"
             }
         }
     }

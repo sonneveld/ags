@@ -15,4 +15,9 @@ target_sources(alfont
 
 target_link_libraries(alfont PUBLIC Allegro::Allegro FreeType::FreeType)
 
+# This is not a good idea for now, current implementation of alfont assumes utf8 if ALFONT_LINUX set
+# if(NOT WIN32)
+#     target_compile_definitions(alfont PRIVATE ALFONT_LINUX)
+# endif()
+
 add_library(AlFont::AlFont ALIAS alfont)

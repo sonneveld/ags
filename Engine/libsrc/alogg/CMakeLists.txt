@@ -12,13 +12,14 @@ target_sources(alogg
     alogg.c
 )
 
-target_link_libraries(alogg PUBLIC Allegro::Allegro Vorbis::Vorbis Vorbis::VorbisFile)
+target_link_libraries(alogg PUBLIC Allegro::Allegro)
 
-# for consider for future tremor support:
-# if (ALOGG_USE_TREMOR)
-# target_link_libraries(alogg PUBLIC Tremor::Tremor)
-# target_compile_definitions(alogg PRIVATE USE_TREMOR)
-# endif()
+if (AGS_USE_TREMOR)
+    target_link_libraries(alogg PUBLIC Vorbis::Tremor)
+    target_compile_definitions(alogg PRIVATE USE_TREMOR)
+else()
+    target_link_libraries(alogg PUBLIC Vorbis::Vorbis Vorbis::VorbisFile)
+endif()
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     target_compile_definitions(alogg INTERFACE ALOGG_DLL)

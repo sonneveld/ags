@@ -38,6 +38,13 @@ target_sources(apeg
 
 target_compile_definitions(apeg PUBLIC DISABLE_MPEG_AUDIO)
 
-target_link_libraries(apeg PUBLIC Allegro::Allegro Ogg::Ogg Vorbis::Vorbis Vorbis::VorbisFile Theora::TheoraDecoder)
+target_link_libraries(apeg PUBLIC Allegro::Allegro Ogg::Ogg Theora::TheoraDecoder)
+
+if (AGS_USE_TREMOR)
+    target_link_libraries(apeg PUBLIC Vorbis::Tremor)
+    target_compile_definitions(apeg PRIVATE USE_TREMOR)
+else()
+    target_link_libraries(apeg PUBLIC Vorbis::Vorbis Vorbis::VorbisFile)
+endif()
 
 add_library(Apeg::Apeg ALIAS apeg)

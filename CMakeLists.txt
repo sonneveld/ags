@@ -11,6 +11,7 @@ project(AGS
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
 option(AGS_NO_MP3_PLAYER "Disable MP3" OFF)
+option(AGS_USE_TREMOR "Use the tremor library as alternative to vorbis" OFF)
 option(AGS_NO_VIDEO_PLAYER "Disable Video" OFF)
 option(AGS_BUILTIN_PLUGINS "Built in plugins" OFF)
 set(AGS_BUILD_STR "" CACHE STRING "Engine Build Information")
@@ -116,8 +117,9 @@ endif()
 add_subdirectory(Common/libsrc/allegro EXCLUDE_FROM_ALL)
 
 include(FetchOgg)
-include(FetchVorbis)
 include(FetchTheora)
+include(FetchVorbis)
+add_subdirectory(Engine/libsrc/tremor-r19427    EXCLUDE_FROM_ALL)
 
 add_subdirectory(Common/libsrc/aastr-0.1.1      EXCLUDE_FROM_ALL)
 add_subdirectory(Common/libsrc/alfont-2.0.9     EXCLUDE_FROM_ALL)

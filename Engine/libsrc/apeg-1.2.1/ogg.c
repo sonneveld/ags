@@ -7,7 +7,11 @@
 #ifndef NO_OGG
 
 #include <ogg/ogg.h>
-#include <vorbis/codec.h>
+#ifndef USE_TREMOR
+#include "vorbis/codec.h"
+#else
+#include "tremor/ivorbiscodec.h"
+#endif
 #include <theora/theora.h>
 
 /* Info needed for Ogg parsing, and Theora and Vorbis playback */

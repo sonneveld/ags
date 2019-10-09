@@ -99,14 +99,15 @@ public:
       // Try the engine directory
 
 #if AGS_PLATFORM_OS_ANDROID
-      char buffer[200];
-      sprintf(buffer, "%s%s", android_app_directory, "/lib");
-      _library = dlopen(BuildPath(buffer, libraryName).GetCStr(), RTLD_LAZY);
+        // Do nothing here on android, as we cannot load libraries from the sd card, they should
+        // be bundled with the apk, which would be found earlier.
+//      char buffer[200];
+//      sprintf(buffer, "%s%s", android_app_directory, "/lib");
+//      _library = dlopen(BuildPath(buffer, libraryName).GetCStr(), RTLD_LAZY);
 #else
       _library = dlopen(BuildPath(appDirectory, libraryName).GetCStr(), RTLD_LAZY);
-#endif
-
       AGS::Common::Debug::Printf("dlopen returned: %s", dlerror());
+#endif
     }
 
     return (_library != nullptr);

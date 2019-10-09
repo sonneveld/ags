@@ -41,8 +41,8 @@
 #  define rint(x)   (floor((x)+0.5f)) 
 #  define NO_FLOAT_MATH_LIB
 #  define FAST_HYPOT(a, b) sqrt((a)*(a) + (b)*(b))
-#  define LITTLE_ENDIAN 1
-#  define BYTE_ORDER LITTLE_ENDIAN
+#  define __ORDER_LITTLE_ENDIAN__ 1
+#  define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__
 #endif
 
 #ifdef HAVE_ALLOCA_H

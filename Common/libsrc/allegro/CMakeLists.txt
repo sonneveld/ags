@@ -766,7 +766,7 @@ if(ANDROID)
         src/android/adrivers.c
         src/android/asound.c
         src/android/afile.c
-        src/android/agfx.c
+        src/android/agfx.cpp
         src/android/akey.c
         src/android/asystem.c
         src/android/amouse.c
@@ -777,8 +777,9 @@ if(ANDROID)
 
     target_link_libraries(allegro PRIVATE 
         log 
-        GLESv1_CM 
-        # GLESv2
+        # GLESv1_CM 
+        GLESv2
+        GLM::GLM
     )
 
 endif(ANDROID)

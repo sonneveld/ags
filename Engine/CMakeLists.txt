@@ -575,9 +575,9 @@ if (ANDROID)
     target_link_libraries(engine PUBLIC 
         log 
         EGL
-        GLESv1_CM 
-        # GLESv2
-        Glad::GladGLES1
+        # GLESv1_CM 
+        GLESv2
+        Glad::GladGLES2
     )
     target_compile_definitions(engine PRIVATE 
         AGS_INVERTED_COLOR_ORDER

@@ -233,7 +233,7 @@ class CustomGlSurfaceView extends SurfaceView implements SurfaceHolder.Callback
 
 
 		int[] attrib_list = {
-				EGL_CONTEXT_CLIENT_VERSION, 1,
+				EGL_CONTEXT_CLIENT_VERSION, 2,
 				EGL_NONE
 		};
 

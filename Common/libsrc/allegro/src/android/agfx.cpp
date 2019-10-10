@@ -389,8 +389,7 @@ void android_initialize_opengl()
 
    glUseProgram(program);
 
-   glEnable(GL_CULL_FACE);
-   glEnable(GL_TEXTURE_2D);
+   glDisable(GL_CULL_FACE);
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_BLEND);
 

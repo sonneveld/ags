@@ -1448,16 +1448,22 @@ void OGLGraphicsDriver::_renderSprite(const OGLDrawListEntry *drawListEntry, con
     if (bmpToDraw->_vertex != nullptr)
     {
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(bmpToDraw->_vertex[ti * 4].position));
+        GLint a_Position = glGetAttribLocation(program.Program, "a_Position");
+        glVertexAttribPointer(a_Position, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(bmpToDraw->_vertex[ti * 4].position));
+
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(bmpToDraw->_vertex[ti * 4].tu));
+        GLint a_TexCoord = glGetAttribLocation(program.Program, "a_TexCoord");
+        glVertexAttribPointer(a_TexCoord, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(bmpToDraw->_vertex[ti * 4].tu));
     }
     else
     {
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(defaultVertices[0].position));
+        GLint a_Position = glGetAttribLocation(program.Program, "a_Position");
+        glVertexAttribPointer(a_Position, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(defaultVertices[0].position));
+
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(defaultVertices[0].tu));
+        GLint a_TexCoord = glGetAttribLocation(program.Program, "a_TexCoord");
+        glVertexAttribPointer(a_TexCoord, 2, GL_FLOAT, GL_FALSE, sizeof(OGLCUSTOMVERTEX), &(defaultVertices[0].tu));
     }
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1514,6 +1520,15 @@ void OGLGraphicsDriver::_render(bool clearDrawListAfterwards)
 
   if (_do_render_to_texture)
   {
+    glDisable(GL_BLEND);
+ 
+    // Use default processing
+    ShaderProgram program = _transparencyShader;
+    glUseProgram(_transparencyShader.Program);
+
+    glUniform1i(program.TextureId, 0);
+    glUniform1f(program.Alpha, 1.0f);
+
     // Texture is ready, now create rectangle in the world space and draw texture upon it
 #if AGS_PLATFORM_OS_IOS
     ios_select_buffer();
@@ -1525,22 +1540,27 @@ void OGLGraphicsDriver::_render(bool clearDrawListAfterwards)
 
     projection = glm::ortho(0.0f, (float)_srcRect.GetWidth(), 0.0f, (float)_srcRect.GetHeight(), 0.0f, 1.0f);
 
-    glDisable(GL_BLEND);
+    glUniformMatrix4fv(program.MVPMatrix, 1, GL_FALSE, glm::value_ptr(projection));
 
     // use correct sampling method when stretching buffer to the final rect
     _filter->SetFilteringForStandardSprite();
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _backbuffer);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, _backbuffer_vertices);
+    GLint a_Position = glGetAttribLocation(program.Program, "a_Position");
+    glVertexAttribPointer(a_Position, 2, GL_FLOAT, GL_FALSE, 0, _backbuffer_vertices);
+
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, _backbuffer_texture_coordinates);
+    GLint a_TexCoord = glGetAttribLocation(program.Program, "a_TexCoord");
+    glVertexAttribPointer(a_TexCoord, 2, GL_FLOAT, GL_FALSE, 0, _backbuffer_texture_coordinates);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glEnable(GL_BLEND);
+    glUseProgram(0);
   }
 
   glFinish();

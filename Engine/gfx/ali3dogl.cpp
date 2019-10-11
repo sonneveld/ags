@@ -304,9 +304,6 @@ void OGLGraphicsDriver::RenderSpritesAtScreenResolution(bool enabled, int supers
     TestSupersampling();
   }
 
-  // HACK
-  _do_render_to_texture = false;
-
   if (_do_render_to_texture)
     glDisable(GL_SCISSOR_TEST);
 }

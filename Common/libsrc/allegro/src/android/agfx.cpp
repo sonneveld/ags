@@ -189,7 +189,8 @@ static const char *default_fragment_shader_src =
    "varying vec2 v_TexCoord;\n"
    "void main()\n"
    "{\n"
-   "  gl_FragColor = texture2D(u_texture, v_TexCoord);\n"
+   "  vec4 src_col = texture2D(u_texture, v_TexCoord);\n"
+   "  gl_FragColor = vec4(src_col.rgb, 1.0);\n"  // strip alpha from resultant surface
    "}";
 
 

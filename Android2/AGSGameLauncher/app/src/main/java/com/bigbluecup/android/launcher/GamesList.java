@@ -8,6 +8,8 @@ import com.bigbluecup.android.PreferencesActivity;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -256,55 +258,59 @@ public class GamesList extends ListActivity
 	
 	private String searchForGames()
 	{
-		String[] tempList = null;
-
-		folderList = null;
-		filenameList = null;
+		folderList = new ArrayList<String>();
+		filenameList = new ArrayList<String>();
 		
 		// Check for ac2game.dat in the base directory
 		String ac2game_path = EngineGlue.FindGameDataInDirectory(baseDirectory);
-		if (ac2game_path != null) {
-			File ac2game = new File(ac2game_path);
-			if (ac2game.isFile())
-				return baseDirectory + "/ac2game.dat";
+		if (ac2game_path != null && new File(ac2game_path).isFile()) {
+			return ac2game_path;
 		}
 
-		
 		// Check for games in folders
-		File agsDirectory = new File(baseDirectory);
-		if (agsDirectory.isDirectory())
-		{
-			tempList = agsDirectory.list(new FilenameFilter()
+		List<String> dirList = getDirectoryTree(baseDirectory, null);
+
+		for (String subpath : dirList) {
+			String agsgame_path = EngineGlue.FindGameDataInDirectory(baseDirectory + "/" + subpath);
+			if (agsgame_path != null && new File(agsgame_path).isFile()) {
+				folderList.add(subpath);
+				filenameList.add(agsgame_path);
+			}
+		}
+
+		return null;
+	}
+
+	private List<String> getDirectoryTree(String baseDirectory, String path)
+	{
+		LinkedList<String> result = new LinkedList<String>();
+
+		File searchDirectory = new File(baseDirectory);
+		if (path != null) {
+			searchDirectory = new File(baseDirectory + "/" + path);
+		}
+
+		if (searchDirectory.isDirectory()) {
+			String[] tempList = searchDirectory.list(new FilenameFilter()
 			{
 				public boolean accept(File dir, String filename)
 				{
 					return new File(dir + "/" + filename).isDirectory();
 				}
 			});
-		}
-		
-		if (tempList != null)
-		{
-			java.util.Arrays.sort(tempList);
-			
-			folderList = new ArrayList<String>();
-			filenameList = new ArrayList<String>();
-			
-			int i;
-			for (i = 0; i < tempList.length; i++)
+
+			for (String subpath : tempList)
 			{
-				String agsgame_path = EngineGlue.FindGameDataInDirectory(agsDirectory + "/" + tempList[i]);
-				if (agsgame_path != null) {
-					File agsgame_file = new File(agsgame_path);
-					if (agsgame_file.isFile()) {
-						folderList.add(tempList[i]);
-						filenameList.add(agsgame_path);
-					}
+				String entry = subpath;
+				if (path != null) {
+					entry = path + "/" + entry;
 				}
+				result.add(entry);
+				result.addAll(getDirectoryTree(baseDirectory, entry));
 			}
 		}
-		
-		return null;
+
+		return result;
 	}
 
 	// Prevent the activity from being destroyed on a configuration change

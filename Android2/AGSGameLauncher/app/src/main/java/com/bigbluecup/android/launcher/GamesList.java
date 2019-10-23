@@ -37,6 +37,8 @@ import androidx.core.app.ActivityCompat;
 
 public class GamesList extends ListActivity
 {
+	private static final int AGS_PERMISSION_TO_BUILD_GAMES_LIST = 683;
+
 	private PEHelper pe;
 
 	String filename = null;
@@ -67,7 +69,7 @@ public class GamesList extends ListActivity
 //			baseDirectory = "/" + baseDirectory;
 
 		// Build game list
-		buildGamesList();
+		buildGamesListWithPermission();
 		
 		registerForContextMenu(getListView());
 	}
@@ -114,7 +116,7 @@ public class GamesList extends ListActivity
 					// the engine cannot find the game later.
 					if (!baseDirectory.startsWith("/"))
 						baseDirectory = "/" + baseDirectory;
-					buildGamesList();
+					buildGamesListWithPermission();
 				}
 			});
 				
@@ -208,7 +210,36 @@ public class GamesList extends ListActivity
 		startActivity(intent);
 		finish();
 	}
-	
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+	{
+		switch (requestCode) {
+			case AGS_PERMISSION_TO_BUILD_GAMES_LIST: {
+				if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+					buildGamesList();
+				}
+				return;
+			}
+
+			default:
+			// other 'case' lines to check for other
+			// permissions this app might request.
+		}
+	}
+
+	private void buildGamesListWithPermission()
+	{
+		int check = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+		if (check != PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, AGS_PERMISSION_TO_BUILD_GAMES_LIST);
+			// buildGamesList to be called again when permission granted.
+			return;
+		} else {
+			buildGamesList();
+		}
+	}
+
 	private void buildGamesList()
 	{
 		filename = searchForGames();
@@ -229,22 +260,6 @@ public class GamesList extends ListActivity
 	
 	private String searchForGames()
 	{
-
-		int check = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-		if (check != PackageManager.PERMISSION_GRANTED) {
-			ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1024);
-
-			// TODO I might need to handle a callback here.
-
-			//Do something
-		} else {
-			//requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1024);
-
-
-
-		}
-
-
 		String[] tempList = null;
 
 		folderList = null;

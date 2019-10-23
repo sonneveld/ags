@@ -55,6 +55,7 @@ public class EngineGlue extends Thread implements CustomGlSurfaceView.Renderer
 	private native boolean startEngine(Object object, String filename, String directory, String appDirectory, boolean loadLastSave);
 	private native void pauseEngine();
 	private native void resumeEngine();
+	public native static String FindGameDataInDirectory(String path);
 
 	static {
         System.loadLibrary("engine");

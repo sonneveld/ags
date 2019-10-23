@@ -14,6 +14,7 @@
 #ifndef __AGS_EE_MAIN__ENGINE_H
 #define __AGS_EE_MAIN__ENGINE_H
 
+#include "util/string.h"
 #include "util/ini_util.h"
 
 const char *get_engine_name();
@@ -21,6 +22,7 @@ const char *get_engine_version();
 void        show_preload();
 void        engine_init_game_settings();
 int         initialize_engine(const AGS::Common::ConfigTree &startup_opts);
+AGS::Common::String find_game_data_in_directory(const AGS::Common::String &path);
 
 struct ScreenSetup;
 // Try to set new graphics mode deduced from given configuration;

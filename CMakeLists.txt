@@ -144,10 +144,6 @@ add_library(GLM::GLM ALIAS glm_static)
 
 add_subdirectory(Engine)
 
-if (ANDROID)
-    add_subdirectory(Android2/pe_jni)
-endif()
-
 add_subdirectory(Plugins/AGSSpriteFont)
 add_subdirectory(Plugins/AGSflashlight)
 add_subdirectory(Plugins/ags_parallax)

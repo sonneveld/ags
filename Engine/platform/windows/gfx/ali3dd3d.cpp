@@ -20,6 +20,8 @@
 
 #if AGS_PLATFORM_OS_WINDOWS
 
+#define D3D_DEBUG_INFO
+
 #include "platform/windows/gfx/ali3dd3d.h"
 
 #include <allegro.h>
@@ -625,6 +627,8 @@ static int wnd_reset_device()
   return D3DGraphicsFactory::GetD3DDriver()->_resetDeviceIfNecessary();
 }
 
+D3DVIEWPORT9 d3dViewport; // game viewport
+
 int D3DGraphicsDriver::_resetDeviceIfNecessary()
 {
   HRESULT hr = direct3ddevice->TestCooperativeLevel();
@@ -734,7 +738,7 @@ int D3DGraphicsDriver::_initDLLCallback(const DisplayMode &mode)
 
 void D3DGraphicsDriver::InitializeD3DState()
 {
-  direct3ddevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_RGBA(30, 0, 0, 255), 0.5f, 0);
+  direct3ddevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_RGBA(0, 0, 0, 255), 0.5f, 0);
 
   // set the render flags.
   direct3ddevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
@@ -834,7 +838,7 @@ void D3DGraphicsDriver::SetupViewport()
   ClearScreenRect(RectWH(0, 0, _mode.Width, _mode.Height), nullptr);
 
   // Set Viewport.
-  D3DVIEWPORT9 d3dViewport;
+  //D3DVIEWPORT9 d3dViewport;
   ZeroMemory(&d3dViewport, sizeof(D3DVIEWPORT9));
   d3dViewport.X = _dstRect.Left;
   d3dViewport.Y = _dstRect.Top;
@@ -1300,17 +1304,19 @@ void D3DGraphicsDriver::_renderAndPresent(bool clearDrawListAfterwards)
 
 void D3DGraphicsDriver::_render(bool clearDrawListAfterwards)
 {
-  IDirect3DSurface9 *pBackBuffer = NULL;
+  IDirect3DSurface9 *pBackBuffer = nullptr;
 
-  D3DVIEWPORT9 pViewport;
+  if (direct3ddevice->GetRenderTarget(0, &pBackBuffer) != D3D_OK)
+  {
+      throw Ali3DException("IDirect3DSurface9::GetRenderTarget failed");
+  }
+
+  // clear whole screen (filling borders)
+  direct3ddevice->ColorFill(pBackBuffer, nullptr, D3DCOLOR_RGBA(128, 0, 0, 255));
+
+  direct3ddevice->SetViewport(&d3dViewport); // switch to game area viewport
 
   if (!_renderSprAtScreenRes) {
-    direct3ddevice->GetViewport(&pViewport);
-
-    if (direct3ddevice->GetRenderTarget(0, &pBackBuffer) != D3D_OK)
-    {
-      throw Ali3DException("IDirect3DSurface9::GetRenderTarget failed");
-    }
     if (direct3ddevice->SetRenderTarget(0, pNativeSurface) != D3D_OK)
     {
       throw Ali3DException("IDirect3DSurface9::SetRenderTarget failed");
@@ -1335,6 +1341,10 @@ void D3DGraphicsDriver::_render(bool clearDrawListAfterwards)
     {
       throw Ali3DException("IDirect3DSurface9::SetRenderTarget failed");
     }
+
+    // setting render target will clear viewport
+    direct3ddevice->SetViewport(&d3dViewport); // switch to game area viewport
+
     // use correct sampling method when stretching buffer to the final rect
     _filter->SetSamplerStateForStandardSprite(direct3ddevice);
     D3DTEXTUREFILTERTYPE filterType;
@@ -1343,10 +1353,9 @@ void D3DGraphicsDriver::_render(bool clearDrawListAfterwards)
     {
       throw Ali3DException("IDirect3DSurface9::StretchRect failed");
     }
-    direct3ddevice->SetViewport(&pViewport);
   }
 
-  if (!_renderSprAtScreenRes) {
+  if (pBackBuffer != nullptr) {
     pBackBuffer->Release();
   }
 

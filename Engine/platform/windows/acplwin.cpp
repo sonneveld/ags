@@ -17,7 +17,7 @@
 #if AGS_PLATFORM_OS_WINDOWS
 
 // ********* WINDOWS *********
-
+#define D3D_DEBUG_INFO
 #include <string.h>
 #include <allegro.h>
 #include <allegro/platform/aintwin.h>

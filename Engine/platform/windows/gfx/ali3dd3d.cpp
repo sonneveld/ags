@@ -1357,6 +1357,7 @@ void D3DGraphicsDriver::_render(bool clearDrawListAfterwards)
 
   if (pBackBuffer != nullptr) {
     pBackBuffer->Release();
+    pBackBuffer = nullptr;
   }
 
   if (clearDrawListAfterwards)

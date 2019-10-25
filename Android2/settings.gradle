@@ -1,0 +1,2 @@
+include ':launcher', ':engine'
+rootProject.name='AGS Game Launcher'

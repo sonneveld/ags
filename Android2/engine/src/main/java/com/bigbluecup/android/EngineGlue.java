@@ -58,7 +58,7 @@ public class EngineGlue extends Thread implements CustomGlSurfaceView.Renderer
 	public native static String FindGameDataInDirectory(String path);
 
 	static {
-        System.loadLibrary("engine");
+		NativeLibraryLoader.LoadLibraries();
     }
 
 	public EngineGlue(AgsEngine activity, String filename, String directory, String appDirectory, boolean loadLastSave)

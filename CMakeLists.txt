@@ -118,8 +118,11 @@ add_subdirectory(Common/libsrc/allegro EXCLUDE_FROM_ALL)
 
 include(FetchOgg)
 include(FetchTheora)
-include(FetchVorbis)
-add_subdirectory(Engine/libsrc/tremor-r19427    EXCLUDE_FROM_ALL)
+if(AGS_USE_TREMOR)
+    add_subdirectory(Engine/libsrc/tremor-r19427    EXCLUDE_FROM_ALL)
+else()
+    include(FetchVorbis)
+endif()
 
 add_subdirectory(Common/libsrc/aastr-0.1.1      EXCLUDE_FROM_ALL)
 add_subdirectory(Common/libsrc/alfont-2.0.9     EXCLUDE_FROM_ALL)

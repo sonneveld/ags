@@ -40,7 +40,7 @@ public class PreferencesActivity extends PreferenceActivity
 	private native int getAvailableTranslations(String translations[]);
 
 	static {
-		System.loadLibrary("engine");
+		NativeLibraryLoader.LoadLibraries();
 	}
 
 	@SuppressWarnings("unused")

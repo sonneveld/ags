@@ -14,7 +14,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments "-DBUILD_SHARED_LIBS=YES", "-DAGS_USE_TREMOR=YES"
+                arguments "-DBUILD_SHARED_LIBS=YES", "-DAGS_USE_TREMOR=NO"
             }
         }
     }

@@ -3,6 +3,13 @@ package com.bigbluecup.android;
 public class NativeLibraryLoader {
 
      public static void LoadLibraries() {
+        // Load libraries in reverse dependency order
+        // This might not be necessary for Android-18 (v4.3) onwards
+        // See https://stackoverflow.com/a/11085509/84262
+
+        // In the future it might be a good idea to investigate ReLinker, as it deals with these issues
+        // See https://github.com/KeepSafe/ReLinker
+
         System.loadLibrary("allegro");
 
         System.loadLibrary("freetype");

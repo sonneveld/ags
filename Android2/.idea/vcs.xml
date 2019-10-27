@@ -3,29 +3,29 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/arm64-v8a/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/arm64-v8a/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/arm64-v8a/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/armeabi-v7a/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/armeabi-v7a/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/armeabi-v7a/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/x86/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/x86/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/x86/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/x86_64/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/x86_64/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/debug/x86_64/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/arm64-v8a/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/arm64-v8a/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/arm64-v8a/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/armeabi-v7a/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/armeabi-v7a/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/armeabi-v7a/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/x86/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/x86/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/x86/_deps/vorbis_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/x86_64/_deps/ogg_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/x86_64/_deps/theora_content-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/launcher_list/.cxx/cmake/release/x86_64/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/arm64-v8a/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/arm64-v8a/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/arm64-v8a/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/armeabi-v7a/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/armeabi-v7a/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/armeabi-v7a/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/x86/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/x86/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/x86/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/x86_64/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/x86_64/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/debug/x86_64/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/arm64-v8a/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/arm64-v8a/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/arm64-v8a/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/armeabi-v7a/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/armeabi-v7a/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/armeabi-v7a/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/x86/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/x86/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/x86/_deps/vorbis_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/x86_64/_deps/ogg_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/x86_64/_deps/theora_content-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/.cxx/cmake/release/x86_64/_deps/vorbis_content-src" vcs="Git" />
   </component>
 </project>

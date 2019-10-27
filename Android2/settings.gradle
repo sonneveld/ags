@@ -1,2 +1,2 @@
 include ':launcher', ':engine'
-rootProject.name='AGS Game Launcher'
+rootProject.name='Adventure Game Studio'

@@ -12,6 +12,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
 
+        // https://google.github.io/android-gradle-dsl/current/com.android.build.gradle.internal.dsl.ExternalNativeCmakeOptions.html
         externalNativeBuild {
             cmake {
                 arguments "-DBUILD_SHARED_LIBS=YES", "-DAGS_USE_TREMOR=NO"
@@ -26,14 +27,14 @@ android {
         }
     }
 
-    // https://google.github.io/android-gradle-dsl/current/com.android.build.gradle.internal.dsl.ExternalNativeCmakeOptions.html
+    // https://google.github.io/android-gradle-dsl/current/com.android.build.gradle.internal.dsl.CmakeOptions.html
     externalNativeBuild {
         cmake {
-//            path "src/main/cpp/CMakeLists.txt"
-//            version "3.10.2"
             path "../../CMakeLists.txt"
-            version "3.14.5"
-
+            // Don't set a version here, instead set the path to your cmake installation in `local.properties`
+            // e.g. cmake.dir=/usr/local/Cellar/cmake/3.14.5
+//            version "3.6.0"
+//            version "3.10.2"
         }
     }
 

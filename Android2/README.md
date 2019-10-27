@@ -92,13 +92,21 @@ There are two parts to the Java app, one is the engine library in `<SOURCE>/Andr
 
 Requirements:
 * Android Studio
-* SDK Platform: Android SDK 29 (Android 10 Q)
-* SDK Tools: Android SDK Build-Tools/Platform-Tools/Tools, LLDB, NDK, CMake, Android Emulator (and accelerator if possible)
-* External installation of Cmake (minimum 3.13) and Ninja
+    * SDK Platform: Android SDK 29 (Android 10 Q)
+    * SDK Tools: Android SDK Build-Tools/Platform-Tools/Tools, LLDB, NDK, Android Emulator (and accelerator if possible)
+* External installation of Cmake (minimum 3.13) 
+* External installation of Ninja
 
 Requirements can be installed in Android Studio under "Preferences/Appearance & Behaviour/System Settings/AndroidSDK".
 
-You may need to modify the version of cmake in `Android2/engine/build.gradle` to be the specific external version you have installed.
+By default, Android studio will use an in built version of Cmake v3.6 which is too old for our purposes. Edit `local.properties` and
+add a line to the effect of:
+
+    cmake.dir=/usr/local/Cellar/cmake/3.14.5
+
+which should point to your cmake install. 
+
+Your external install of ninja should be in your PATH
 
 **IMPORTANT:** Android port integrates number of plugins as a part of the engine. Some of the plugin sources
 may be included as submodules, so make sure to initialize submodules before compiling it, e.g. from the

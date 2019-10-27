@@ -98,7 +98,7 @@ Requirements:
 
 Requirements can be installed in Android Studio under "Preferences/Appearance & Behaviour/System Settings/AndroidSDK".
 
-You may need to modify the version of cmake in `Android2/AGSGameLauncher/app/build.gradle` to be the specific external version you have installed.
+You may need to modify the version of cmake in `Android2/engine/build.gradle` to be the specific external version you have installed.
 
 **IMPORTANT:** Android port integrates number of plugins as a part of the engine. Some of the plugin sources
 may be included as submodules, so make sure to initialize submodules before compiling it, e.g. from the
@@ -108,7 +108,7 @@ root <SOURCE> directory:
 
 The native code is built for all current Android architecture, that is armeabi-v7a, arm64-v8a, x86, and x86_64.
 
-Open the Android project in `Android2/AGSGameLauncher`, and build using `Build/Make Project`
+Open the Android project in `Android2`, and build using `Build/Make Project`
 
 This will download, patch, build and properly install the required libraries.
 

@@ -11,19 +11,17 @@
 
 #pragma region Defines_and_Includes
 
-#include "core/platform.h"
-
 #define MIN_EDITOR_VERSION 1
 #define MIN_ENGINE_VERSION 3
 
-#if AGS_PLATFORM_OS_WINDOWS
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <WinBase.h>
 #endif
 
 #define THIS_IS_THE_PLUGIN
-#include "plugin/agsplugin.h"
+#include "agsplugin.h"
 #include "SpriteFontRenderer.h"
 #include "VariableWidthSpriteFont.h"
 
@@ -66,7 +64,7 @@
 #pragma endregion
 
 
-#if AGS_PLATFORM_OS_WINDOWS
+#ifdef _WIN32
 // The standard Windows DLL entry point
 
 BOOL APIENTRY DllMain( HANDLE hModule, 
@@ -121,7 +119,7 @@ void SetSpacing(int fontNum, int spacing)
 }
 //==============================================================================
 
-#if AGS_PLATFORM_OS_WINDOWS && !defined(BUILTIN_PLUGINS)
+#if defined(_WIN32) && !defined(BUILTIN_PLUGINS)
 // ***** Design time *****
 
 IAGSEditor *editor; // Editor interface

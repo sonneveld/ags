@@ -74,46 +74,39 @@ The Android app consists of three parts, each with different requirements:
 - **Native engine library**: needs the Android NDK for Windows, Linux or Mac. Requires built native 3rd party libraries.
 - **Native 3rd party libraries**: need the Android NDK for Linux and number of tools (see full list in the corresponding section below).
 
-For example, if you have got prebuilt native engine library (e.g. provided as a part of AGS release), you may follow instructions for "Java app" straight away.
-If you are building from scratch, then first follow "Native 3rd party libraries", then "Native engine library", and "Java app" only then.
-
+All components are built using Android Studio.
 
 ## Native 3rd party libraries
 
-These are backend and utility libraries necessary for the AGS engine. Building them currently is only possible on Linux.
-
-Requirements:
-* Android NDK r16b (not later). This is the preferred NDK which is still able to build all the libraries and produce output compatible with older devices that we still support. Download link: https://developer.android.com/ndk/downloads/older_releases#ndk-16b-downloads
-* Following tools must be installed on your Linux system as they are used for downloading library sources and  during build process: **autoconf**, **automake**, **cmake**, **curl**, **libtool**.
-
-After you have installed Android NDK you have to prepare three standalone toolchains for the android-14 platform, for "arm", "x86" and "mips" processors.
-(See https://developer.android.com/ndk/guides/standalone_toolchain.html for general reference.)
-
-Set NDK_HOME variable, pointing to the location of Android NDK at your system, e.g. assuming the ndk is installed in '/opt/android-ndk-r16b':
-
-    $ export NDK_HOME=/opt/android-ndk-r16b
-
-then generate toolchains:
-
-    $ $NDK_HOME/build/tools/make_standalone_toolchain.py --arch arm --api 14 --install-dir $NDK_HOME/platforms/android-14/arm
-    $ $NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86 --api 14 --install-dir $NDK_HOME/platforms/android-14/x86
-    $ $NDK_HOME/build/tools/make_standalone_toolchain.py --arch mips --api 14 --install-dir $NDK_HOME/platforms/android-14/mips
-
-If you don't specify "--install-dir" this will create an archive in a working directory, in which case you should manually unpack it to the respective place.
-
-Now, assuming `<SOURCE>` is AGS source location,
-
-    $ cd <SOURCE>/Android/buildlibs
-    $ ./buildall.sh
-
-This will download, patch, build and properly install the required libraries.
-
-Library sources must be available in `<SOURCE>/libsrc`. Compiled libraries will be put in `<SOURCE>/Android/nativelibs`.
-
+These are backend and utility libraries necessary for the AGS engine. 
 
 ## Native engine library
 
-This is the main AGS engine code. Before building it you must have native 3rd party libraries ready.
+This is the main AGS engine code. 
+
+## Java app
+
+There are two parts to the Java app, one is the engine library in `<SOURCE>/Android/library` and the other one is the launcher app. The default launcher which displays a list of games from the SD-card is in `<SOURCE>/Android/launcher_list`.
+
+## Android Studio
+
+Requirements:
+* Android Studio
+    * SDK Platform: Android SDK 29 (Android 10 Q)
+    * SDK Tools: Android SDK Build-Tools/Platform-Tools/Tools, LLDB, NDK, Android Emulator (and accelerator if possible)
+* External installation of Cmake (minimum 3.13) 
+* External installation of Ninja
+
+Requirements can be installed in Android Studio under "Preferences/Appearance & Behaviour/System Settings/AndroidSDK".
+
+By default, Android studio will use an in built version of Cmake v3.6 which is too old for our purposes. Edit `local.properties` and
+add a line to the effect of:
+
+    cmake.dir=/usr/local/Cellar/cmake/3.14.5
+
+which should point to your cmake install. 
+
+Your external install of ninja should be in your PATH
 
 **IMPORTANT:** Android port integrates number of plugins as a part of the engine. Some of the plugin sources
 may be included as submodules, so make sure to initialize submodules before compiling it, e.g. from the
@@ -121,55 +114,15 @@ root <SOURCE> directory:
 
     $ git submodule update --init --recursive
 
-It must be compiled using the Android NDK. This can
-simply be done by running ndk-build within the <SOURCE>Android/library directory.
+The native code is built for all current Android architecture, that is armeabi-v7a, arm64-v8a, x86, and x86_64.
 
-e.g. (assuming the NDK is installed in /opt)
+Open the Android project in `Android`, and build using `Build/Make Project`
 
-    $ export PATH=$PATH:/opt/android-ndk-r16b
-    $ cd <SOURCE>/Android/library
-    $ ndk-build
-
-The native code is built for all current Android architecture, that is armv6, armv7-a,
-x86 and mips.
+This will download, patch, build and properly install the required libraries.
 
 
-## Java app
+# Links
 
-There are two parts to the Java app, one is the engine library in `<SOURCE>/Android/library` and the other one is the launcher app. The default launcher which displays a list of games from the SD-card is in `<SOURCE>/Android/launcher_list`.
-
-You must have installed Android SDK with platform support for **Android 4.1** (api level 16); this may be done through Android Studio's SDK manager.
-
-Alternatively, if you do not want to install full Android Studio IDE, you may download only command-line SDK tools. In that case you will have to use following command to download and install necessary components:
-
-    $ cd <SDK>/tools/bin
-    $ ./sdkmanager "build-tools;x.x.x" "platform-tools" "platforms;android-16"
-
-In the above `<SDK>` is where you've unpacked SDK "tools", and `x.x.x` in `build-tools;x.x.x` is the version of build tools you'd prefer, commonly the latest one. To see the list of available components do e.g. -
-
-    $ ./sdkmanager --list | grep build-tools
-
-The easiest way to build the app is to create an Android project in Eclipse. Choose the "create from existing source" option and point Eclipse to the launcher directory.
-
-To build from the command line, you can use Apache Ant (should have it installed first). If you go this way you also have to download an older version of Android SDK tools folder because ant's scripts were removed from the newer SDKs.
-See [this stackoverflow.com question](https://stackoverflow.com/questions/42912824/the-ant-folder-is-suddenly-missing-from-android-sdk-did-google-remove-it) for the reference.
-The download link for Linux: https://dl.google.com/android/repository/tools_r25.2.5-linux.zip
-
-This archive contains "tools" directory which should be merged with the directory of same name inside SDK, *skipping* existing files.
-
-Now you are ready to run the ant script, e.g. (assuming the SDK is installed in /opt):
-
-    $ export ANDROID_HOME=/opt/android-sdk-linux
-    $ cd <SOURCE>/Android/launcher_list
-    $ ant debug
-    $ ant release # for release build
-
-
-
-## Links
-
-Android SDK: http://developer.android.com/sdk/
-
-Android NDK: http://developer.android.com/ndk/
+Android Studio: https://developer.android.com/studio
 
 Android thread on the AGS forum: http://www.adventuregamestudio.co.uk/yabb/index.php?topic=44768.0

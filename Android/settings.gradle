@@ -1,0 +1,2 @@
+include ':launcher', ':engine'
+rootProject.name='Adventure Game Studio'

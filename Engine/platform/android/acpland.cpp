@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include "util/string_compat.h"
+#include "main/engine.h"
 
 
 
@@ -424,6 +425,31 @@ Java_com_bigbluecup_android_PreferencesActivity_getAvailableTranslations(JNIEnv*
   return i;
 }
 
+
+JNIEXPORT jstring JNICALL
+  Java_com_bigbluecup_android_EngineGlue_FindGameDataInDirectory(JNIEnv* env, jclass klass, jstring path)
+{
+  int tmp_errno = 0;
+  int *orig_allegro_errno;
+  auto path_c = env->GetStringUTFChars(path, NULL);
+  auto path_str = String(path_c);
+
+  // We have to configure our own allegro_errno because
+  // - we call al_find* during the search
+  // - allegro might not have been initialised yet
+
+  orig_allegro_errno = allegro_errno;
+  allegro_errno = &tmp_errno;
+
+  auto result_str = find_game_data_in_directory(path_str);
+  
+  allegro_errno = orig_allegro_errno;
+
+  if (result_str.GetLength() <= 0) { return NULL; }
+
+  auto result_jni = env->NewStringUTF(result_str.GetCStr());
+  return result_jni;
+}
 
 JNIEXPORT void JNICALL
   Java_com_bigbluecup_android_EngineGlue_pauseEngine(JNIEnv* env, jobject object)

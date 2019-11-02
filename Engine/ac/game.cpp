@@ -378,7 +378,7 @@ bool MakeSaveGameDir(const String &newFolder, ResolvedPath &rp)
 {
     rp = ResolvedPath();
     // don't allow absolute paths
-    if (!is_relative_filename(newFolder))
+    if (!is_relative_filename(newFolder.GetCStr()))
         return false;
 
     String base_dir;
@@ -430,7 +430,7 @@ bool MakeSaveGameDir(const String &newFolder, ResolvedPath &rp)
 
 bool SetCustomSaveParent(const String &path)
 {
-    if (SetSaveGameDirectoryPath(path, true))
+    if (SetSaveGameDirectoryPath(path.GetCStr(), true))
     {
         saveGameParent = path;
         return true;
@@ -496,7 +496,7 @@ const char* Game_GetSaveSlotDescription(int slnum) {
     String description;
     if (read_savedgame_description(get_save_game_path(slnum), description))
     {
-        return CreateNewScriptString(description);
+        return CreateNewScriptString(description.GetCStr());
     }
     return nullptr;
 }
@@ -811,7 +811,7 @@ void Game_SetIgnoreUserInputAfterTextTimeoutMs(int newValueMs)
 }
 
 const char *Game_GetFileName() {
-    return CreateNewScriptString(ResPaths.GamePak.Name);
+    return CreateNewScriptString(ResPaths.GamePak.Name.GetCStr());
 }
 
 const char *Game_GetName() {
@@ -907,7 +907,7 @@ int Game_ChangeTranslation(const char *newFilename)
 
     if (!init_translation(newFilename, oldTransFileName.LeftSection('.'), false))
     {
-        strcpy(transFileName, oldTransFileName);
+        strcpy(transFileName, oldTransFileName.GetCStr());
         return 0;
     }
 
@@ -1049,19 +1049,19 @@ long write_screen_shot_for_vista(Stream *out, Bitmap *screenshot)
     long fileSize = 0;
     String tempFileName = String::FromFormat("%s""_tmpscht.bmp", saveGameDirectory.GetCStr());
 
-    screenshot->SaveToFile(tempFileName, palette);
+    screenshot->SaveToFile(tempFileName.GetCStr(), palette);
 
     update_polled_stuff_if_runtime();
 
-    if (exists(tempFileName))
+    if (exists(tempFileName.GetCStr()))
     {
-        fileSize = file_size_ex(tempFileName);
+        fileSize = file_size_ex(tempFileName.GetCStr());
         char *buffer = (char*)malloc(fileSize);
 
         Stream *temp_in = Common::File::OpenFileRead(tempFileName);
         temp_in->Read(buffer, fileSize);
         delete temp_in;
-        ::remove(tempFileName);
+        ::remove(tempFileName.GetCStr());
 
         out->Write(buffer, fileSize);
         free(buffer);
@@ -1710,10 +1710,10 @@ HSaveError load_game(const String &path, int slotNumber, bool &data_overwritten)
         // [IKM] 2012-11-26: this is a workaround, indeed.
         // Try to find wanted game's executable; if it does not exist,
         // continue loading savedgame in current game, and pray for the best
-        get_install_dir_path(gamefilenamebuf, desc.MainDataFilename);
+        get_install_dir_path(gamefilenamebuf, desc.MainDataFilename.GetCStr());
         if (Common::File::TestReadFile(gamefilenamebuf))
         {
-            RunAGSGame (desc.MainDataFilename, 0, 0);
+            RunAGSGame (desc.MainDataFilename.GetCStr(), 0, 0);
             load_new_game_restore = slotNumber;
             return HSaveError::None();
         }
@@ -1753,9 +1753,9 @@ bool try_restore_save(const Common::String &path, int slot)
         // game data was released or overwritten by the data from save file,
         // this is why we tell engine to shutdown if that happened.
         if (data_overwritten)
-            quitprintf(error);
+            quitprintf(error.GetCStr());
         else
-            Display(error);
+            Display(error.GetCStr());
         return false;
     }
     return true;
@@ -2059,7 +2059,7 @@ void get_message_text (int msnum, char *buffer, char giveErr) {
     }
 
     buffer[0]=0;
-    replace_tokens(get_translation(thisroom.Messages[msnum]), buffer, maxlen);
+    replace_tokens(get_translation(thisroom.Messages[msnum].GetCStr()), buffer, maxlen);
 }
 
 bool unserialize_audio_script_object(int index, const char *objectType, const char *serializedData, int dataSize)

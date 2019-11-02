@@ -48,14 +48,14 @@ void cc_error(const char *descr, ...)
     if (currentline > 0)
     {
         // [IKM] Implementation is project-specific
-        std::pair<String, String> errinfo = cc_error_at_line(displbuf);
+        std::pair<String, String> errinfo = cc_error_at_line(displbuf.GetCStr());
         ccErrorString = errinfo.first;
         ccErrorCallStack = errinfo.second;
     }
     else
     {
-        ccErrorString = cc_error_without_line(displbuf);
-        ccErrorCallStack = "";
+        ccErrorString = cc_error_without_line(displbuf.GetCStr());
+        ccErrorCallStack.Empty();
     }
 
     ccError = 1;

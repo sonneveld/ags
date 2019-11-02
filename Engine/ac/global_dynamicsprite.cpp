@@ -34,9 +34,9 @@ int LoadImageFile(const char *filename)
     if (!ResolveScriptPath(filename, true, rp))
         return 0;
 
-    Bitmap *loadedFile = BitmapHelper::LoadFromFile(rp.FullPath);
+    Bitmap *loadedFile = BitmapHelper::LoadFromFile(rp.FullPath.GetCStr());
     if (!loadedFile && !rp.AltPath.IsEmpty() && rp.AltPath.Compare(rp.FullPath) != 0)
-        loadedFile = BitmapHelper::LoadFromFile(rp.AltPath);
+        loadedFile = BitmapHelper::LoadFromFile(rp.AltPath.GetCStr());
     if (!loadedFile)
         return 0;
 

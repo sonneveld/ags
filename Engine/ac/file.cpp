@@ -231,7 +231,7 @@ void FixupFilename(char *filename)
 // Returns TRUE if the new string was created, and FALSE if the path was good.
 bool FixSlashAfterToken(const String &path, const String &token, String &new_path)
 {
-    if (path.CompareLeft(token) == 0 && path.GetLength() > token.GetLength() &&
+    if (path.StartsWith(token) && path.GetLength() > token.GetLength() &&
         path[token.GetLength()] != '/')
     {
         new_path = String::FromFormat("%s/%s", token.GetCStr(), path.Mid(token.GetLength()).GetCStr());
@@ -295,7 +295,7 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, ResolvedPath 
     String parent_dir;
     String child_path;
     String alt_path;
-    if (sc_path.CompareLeft(GameInstallRootToken, GameInstallRootToken.GetLength()) == 0)
+    if (sc_path.StartsWith(GameInstallRootToken))
     {
         if (!read_only)
         {
@@ -307,12 +307,12 @@ bool ResolveScriptPath(const String &orig_sc_path, bool read_only, ResolvedPath 
         parent_dir.AppendChar('/');
         child_path = sc_path.Mid(GameInstallRootToken.GetLength());
     }
-    else if (sc_path.CompareLeft(GameSavedgamesDirToken, GameSavedgamesDirToken.GetLength()) == 0)
+    else if (sc_path.StartsWith(GameSavedgamesDirToken))
     {
         parent_dir = get_save_game_directory();
         child_path = sc_path.Mid(GameSavedgamesDirToken.GetLength());
     }
-    else if (sc_path.CompareLeft(GameDataDirToken, GameDataDirToken.GetLength()) == 0)
+    else if (sc_path.StartsWith(GameDataDirToken))
     {
         parent_dir = MakeAppDataPath();
         child_path = sc_path.Mid(GameDataDirToken.GetLength());

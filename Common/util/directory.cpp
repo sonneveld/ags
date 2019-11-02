@@ -39,7 +39,7 @@ bool CreateAllDirectories(const String &parent, const String &path)
 
     String sub_path = Path::MakeRelativePath(parent, path);
     String make_path = parent;
-    std::vector<String> dirs = sub_path.Split('/');
+    std::vector<String> dirs = sub_path.Split("\\/");
     for (const String &dir : dirs)
     {
         if (dir.IsEmpty() || dir.Compare(".") == 0) continue;

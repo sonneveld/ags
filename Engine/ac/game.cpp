@@ -384,7 +384,7 @@ bool MakeSaveGameDir(const String &newFolder, ResolvedPath &rp)
     String base_dir;
     String newSaveGameDir = FixSlashAfterToken(newFolder);
 
-    if (newSaveGameDir.CompareLeft(UserSavedgamesRootToken, UserSavedgamesRootToken.GetLength()) == 0)
+    if (newSaveGameDir.StartsWith(UserSavedgamesRootToken))
     {
         if (saveGameParent.IsEmpty())
         {
@@ -395,9 +395,12 @@ bool MakeSaveGameDir(const String &newFolder, ResolvedPath &rp)
         {
             // If there is a custom save parent directory, then replace
             // not only root token, but also first subdirectory
-            newSaveGameDir.ClipSection('/', 0, 1);
-            if (!newSaveGameDir.IsEmpty())
-                newSaveGameDir.PrependChar('/');
+            auto sections = newSaveGameDir.Split("\\/", 2);
+            if (sections.size() == 3) {
+                newSaveGameDir = sections[2];
+            } else {
+                newSaveGameDir = String("/");
+            }
             newSaveGameDir.Prepend(saveGameParent);
             base_dir = saveGameParent;
         }
@@ -905,7 +908,9 @@ int Game_ChangeTranslation(const char *newFilename)
     String oldTransFileName;
     oldTransFileName = transFileName;
 
-    if (!init_translation(newFilename, oldTransFileName.LeftSection('.'), false))
+    auto sections = oldTransFileName.Split(".", 1);
+    
+    if (!init_translation(newFilename, sections[0], false))
     {
         strcpy(transFileName, oldTransFileName.GetCStr());
         return 0;

@@ -35,6 +35,8 @@ should accept another stream for it to wrap. unique_ptrs ensure only one owner.
 #include <stdio.h>
 #include "util/stdio_compat.h"
 
+#include "physfs.h"
+
 #include "core/types.h"
 #include "util/string.h"
 #include "util/file.h"
@@ -156,6 +158,32 @@ public:
 private:
     std::vector<char> buffer_;
     file_off_t position_;
+};
+
+class PhysfsStream final : public ICoreStream
+{
+public:
+    PhysfsStream(const String &filename);
+    ~PhysfsStream();
+
+    PhysfsStream(const PhysfsStream& other) = delete; // copy constructor
+    PhysfsStream& operator=(const PhysfsStream& right) = delete; // copy assignment
+
+    virtual bool        EOS() const override;
+
+    virtual size_t      Read(void *buffer, size_t size) override;
+
+    virtual size_t      Write(const void *buffer, size_t size) override;
+    virtual void        Flush() override;
+
+    virtual file_off_t      GetPosition() const override;
+    virtual void        Seek(file_off_t offset, StreamSeek origin = kSeekCurrent) override;
+
+
+    PHYSFS_File *GetPhysfsHandle();
+
+private:
+    PHYSFS_File *handle_;
 };
 
 

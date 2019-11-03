@@ -330,6 +330,74 @@ void CompareStream::Seek(file_off_t offset, StreamSeek origin)
 
 
 // --------------------------------------------------------------------------------------------------------------------
+// PhysfsStream
+// --------------------------------------------------------------------------------------------------------------------
+
+PhysfsStream::PhysfsStream(const String &filename)
+{
+    handle_ = PHYSFS_openRead(filename.GetCStr());
+    if (handle_ == nullptr) {
+        throw std::runtime_error("Error opening file");
+    }
+}
+
+PhysfsStream::~PhysfsStream()
+{
+    if (handle_ != nullptr) {
+        PHYSFS_close(handle_);
+    }
+    handle_ = nullptr;
+}
+
+
+bool PhysfsStream::EOS() const
+{
+    return PHYSFS_eof(handle_);
+}
+
+
+file_off_t PhysfsStream::GetPosition() const
+{
+    return PHYSFS_tell(handle_);
+}
+
+
+size_t PhysfsStream::Read(void *buffer, size_t buffer_size)
+{
+    if (buffer_size <= 0) { return 0; }
+
+    if (buffer == nullptr) {
+        throw std::runtime_error("Null buffer");
+    }
+
+    return PHYSFS_readBytes(handle_, buffer, buffer_size);
+}
+
+size_t PhysfsStream::Write(const void *buffer, size_t buffer_size) { return 0; }
+void PhysfsStream::Flush() { }
+
+void PhysfsStream::Seek(file_off_t offset, StreamSeek origin)
+{
+    PHYSFS_uint64 physfs_pos;
+
+    switch (origin) {
+    case kSeekBegin:    physfs_pos = offset; break;
+    case kSeekCurrent:  physfs_pos = PHYSFS_tell(handle_) + offset; break;
+    case kSeekEnd:      physfs_pos = PHYSFS_fileLength(handle_) + offset; break;
+    }
+
+    if (PHYSFS_seek(handle_, physfs_pos) == 0) {
+        throw std::runtime_error("Error setting file position");
+    }
+}
+
+PHYSFS_File *PhysfsStream::GetPhysfsHandle()
+{
+    return handle_;
+}
+
+
+// --------------------------------------------------------------------------------------------------------------------
 // DataStream
 // --------------------------------------------------------------------------------------------------------------------
 

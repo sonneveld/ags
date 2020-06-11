@@ -13,6 +13,7 @@
 //=============================================================================
 
 #include "cc_treemap.h"
+#include <cstring>
 
 int ccTreeMap::findValue(const char *key) {
 	if (!key || strlen(key) <= 0) { return -1; }
